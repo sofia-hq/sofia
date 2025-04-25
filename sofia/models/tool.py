@@ -4,10 +4,9 @@ Tool abstractions and related logic for the SOFIA package.
 
 import inspect
 
-from .logging import log_error
 from pydantic import BaseModel
 from typing import Callable, Dict, Any, Type
-from .utils import create_base_model
+from ..utils.utils import create_base_model
 
 
 class Tool(BaseModel):
@@ -41,7 +40,7 @@ class Tool(BaseModel):
     def set_parameters(self, parameters: Dict[str, Dict[str, Any]]) -> None:
         self.parameters = parameters
 
-    def get_arguments_basemodel(self) -> Type[BaseModel]:
+    def get_args_model(self) -> Type[BaseModel]:
         camel_case_fn_name = self.name.replace("_", " ").title().replace(" ", "")
         basemodel_name = f"{camel_case_fn_name}Args"
         return create_base_model(
@@ -54,19 +53,6 @@ class Tool(BaseModel):
 
     def __str__(self) -> str:
         return f"Tool(name={self.name}, description={self.description})"
+    
 
-    def get_args_model(self) -> BaseModel:
-        args = {}
-        for key, value in self.parameters.items():
-            if isinstance(value, str):
-                args[key] = str
-            elif isinstance(value, int):
-                args[key] = int
-            elif isinstance(value, float):
-                args[key] = float
-            elif isinstance(value, bool):
-                args[key] = bool
-            else:
-                log_error(f"Unsupported type '{value}' for parameter in tool.")
-                raise ValueError(f"Unsupported type '{value}' for parameter in tool.")
-        return BaseModel(**args)
+__all__ = ["Tool"]
