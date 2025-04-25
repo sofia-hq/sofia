@@ -1,0 +1,72 @@
+"""
+Tool abstractions and related logic for the SOFIA package.
+"""
+
+import inspect
+
+from .logging import log_error
+from pydantic import BaseModel
+from typing import Callable, Dict, Any, Type
+from .utils import create_base_model
+
+
+class Tool(BaseModel):
+    name: str
+    description: str
+    function: Callable
+    parameters: Dict[str, Dict[str, Any]] = {}
+
+    @classmethod
+    def from_function(cls, function: Callable) -> "Tool":
+        sig = inspect.signature(function)
+        params = {}
+        for k, v in function.__annotations__.items():
+            if k == "return":
+                continue
+            param_info = {"type": v}
+            if (
+                k in sig.parameters
+                and sig.parameters[k].default is not inspect.Parameter.empty
+            ):
+                param_info["default"] = sig.parameters[k].default
+            params[k] = param_info
+
+        return cls(
+            name=function.__name__,
+            description=function.__doc__ or "",
+            function=function,
+            parameters=params,
+        )
+
+    def set_parameters(self, parameters: Dict[str, Dict[str, Any]]) -> None:
+        self.parameters = parameters
+
+    def get_arguments_basemodel(self) -> Type[BaseModel]:
+        camel_case_fn_name = self.name.replace("_", " ").title().replace(" ", "")
+        basemodel_name = f"{camel_case_fn_name}Args"
+        return create_base_model(
+            basemodel_name,
+            self.parameters,
+        )
+
+    def run(self, **kwargs) -> Any:
+        return self.function(**kwargs)
+
+    def __str__(self) -> str:
+        return f"Tool(name={self.name}, description={self.description})"
+
+    def get_args_model(self) -> BaseModel:
+        args = {}
+        for key, value in self.parameters.items():
+            if isinstance(value, str):
+                args[key] = str
+            elif isinstance(value, int):
+                args[key] = int
+            elif isinstance(value, float):
+                args[key] = float
+            elif isinstance(value, bool):
+                args[key] = bool
+            else:
+                log_error(f"Unsupported type '{value}' for parameter in tool.")
+                raise ValueError(f"Unsupported type '{value}' for parameter in tool.")
+        return BaseModel(**args)
