@@ -3,15 +3,11 @@ from typing import List, Optional, Union, Dict
 from openai import OpenAI
 from pydantic import BaseModel
 
+from .constants import DEFAULT_SYSTEM_MESSAGE, DEFAULT_PERSONA
 from .models.flow import Step, Message
 from .models.tool import Tool
 from .utils.logging import log_error, log_debug
 
-DEFAULT_SYSTEM_MESSAGE = (
-    "Your task is to decide the next action based on the current step, user input and history. "
-    "Tool calls are only to gather information or to perform actions. (It will not be directly visible to the user) "
-    "You can ask the user for more information, provide an answer, make tool calls or move to the next step (if available and required)."
-)
 
 class LLMBase:
     def __init__(self):
@@ -57,14 +53,17 @@ class LLMBase:
         current_step: Step,
         tools: Dict[str, Tool],
         history: List[Union[Message, Step]],
-        system_message: str
+        system_message: str,
+        persona: str,
     ) -> List[Message]:
         """
         Get the messages to send to the LLM.
         """
         messages = []
-        system_prompt = system_message + "\n\n"
+        system_prompt = system_message + "\n"
+        system_prompt += f"Your Persona: {persona}" + "\n\n"
         system_prompt += f"Current Step: {current_step.step_id}" + "\n"
+        system_prompt += f"Instructions: {current_step.description.strip()}" + "\n"
         system_prompt += "Available Routes:\n" + self.get_routes_desc(steps, current_step)
         if len(current_step.available_tools) > 0:
             system_prompt += "\nAvailable Tools:\n" + self.get_tools_desc(
@@ -93,6 +92,7 @@ class LLMBase:
         history: List[Union[Message, Step]],
         response_format: BaseModel,
         system_message: Optional[str] = None,
+        persona: Optional[str] = None,
     ) -> BaseModel:
         """
         Get a structured response from the LLM.
@@ -102,7 +102,8 @@ class LLMBase:
             current_step=current_step,
             tools=tools,
             history=history,
-            system_message=system_message if system_message else DEFAULT_SYSTEM_MESSAGE
+            system_message=system_message if system_message else DEFAULT_SYSTEM_MESSAGE.strip(),
+            persona=persona if persona else DEFAULT_PERSONA.strip(),
         )
         return self.get_output(
             messages=messages,

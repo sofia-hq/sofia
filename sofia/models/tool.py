@@ -18,6 +18,7 @@ class Tool(BaseModel):
     @classmethod
     def from_function(cls, function: Callable) -> "Tool":
         sig = inspect.signature(function)
+        description = function.__doc__.strip() if function.__doc__ else ""
         params = {}
         for k, v in function.__annotations__.items():
             if k == "return":
@@ -32,7 +33,7 @@ class Tool(BaseModel):
 
         return cls(
             name=function.__name__,
-            description=function.__doc__ or "",
+            description=description,
             function=function,
             parameters=params,
         )

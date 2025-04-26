@@ -7,6 +7,9 @@ from loguru import logger
 LOG_LEVEL = os.getenv("SOFIA_LOG_LEVEL", "INFO").upper()
 ENABLE_LOGGING = os.getenv("SOFIA_ENABLE_LOGGING", "true").lower() == "true"
 
+if ENABLE_LOGGING:
+    logger.info(f"Logging is enabled. Log level set to {LOG_LEVEL}.")
+
 def log_debug(message: str):
     """Log a debug message."""
     if ENABLE_LOGGING and LOG_LEVEL == "DEBUG":

@@ -20,6 +20,7 @@ class FlowSession:
         steps: Dict[str, Step],
         start_step_id: str,
         system_message: Optional[str] = None,
+        persona: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
     ):
@@ -29,6 +30,7 @@ class FlowSession:
         self.steps = steps
         self.show_steps_desc = show_steps_desc
         self.system_message = system_message
+        self.persona = persona
         tools_list = [Tool.from_function(tool) for tool in tools]
         self.tools = {tool.name: tool for tool in tools_list}
         ## Variable
@@ -85,11 +87,12 @@ class FlowSession:
             history=self.history,
             response_format=route_decision_model,
             system_message=self.system_message,
+            persona=self.persona,
         )
         log_debug(f"Model decision: {decision}")
         return decision
 
-    def next(self, user_input: Optional[str] = None) -> tuple[Action, str]:
+    def next(self, user_input: Optional[str] = None) -> BaseModel:
         if user_input:
             log_debug(f"User input received: {user_input}")
             self._add_message("user", user_input)
@@ -99,7 +102,7 @@ class FlowSession:
         log_debug(f"Action decided: {decision.action}")
         if decision.action == Action.ASK or decision.action == Action.ANSWER:
             self._add_message("assistant", decision.input)
-            return decision.action, decision.input
+            return decision
         elif decision.action == Action.TOOL_CALL:
             self._add_message("tool", f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}")
             try:
@@ -146,6 +149,7 @@ class Sofia:
         steps: List[Step],
         start_step_id: str,
         system_message: Optional[str] = None,
+        persona: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
     ):
@@ -153,6 +157,7 @@ class Sofia:
         self.steps = {s.step_id: s for s in steps}
         self.start = start_step_id
         self.system_message = system_message
+        self.persona = persona
         self.show_steps_desc = show_steps_desc
         self.tools = tools
         if start_step_id not in self.steps:
@@ -167,6 +172,7 @@ class Sofia:
             self.steps,
             self.start,
             self.system_message,
+            self.persona,
             self.tools,
             self.show_steps_desc,
         )
