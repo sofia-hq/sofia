@@ -12,6 +12,7 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **OpenAI and custom LLM support**
 - **Session management**: Save and resume conversations.
 - **Extensible**: Build your own tools, steps, and integrations.
+- **Interactive CLI**: Bootstrap new agents with `sofia init` (install with `[cli]` extra).
 
 ---
 
@@ -20,6 +21,11 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 ### From PyPI (coming soon)
 ```bash
 pip install sofia-agent
+```
+
+### With CLI support
+```bash
+pip install sofia-agent[cli]
 ```
 
 ### From Source
@@ -31,9 +37,15 @@ poetry install
 
 ---
 
-## Quickstart Example
+## Usage
 
-### 1. Python API
+### CLI: Bootstrap a New Agent
+```bash
+sofia init
+```
+This will interactively guide you to create a config YAML and starter Python file for your agent.
+
+### Python API Example
 ```python
 from sofia.core import Sofia
 from sofia.llms import OpenAIChatLLM
@@ -69,7 +81,7 @@ sess = agent.create_session()
 # ... interact with sess.next(user_input)
 ```
 
-### 2. YAML Config Example
+### YAML Config Example
 See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a full-featured barista agent.
 
 ---
@@ -78,6 +90,11 @@ See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a full-fe
 - **Persona**: Set in YAML or Python for consistent agent style.
 - **Steps**: Each step defines available tools, description, and routes to other steps.
 - **Tools**: Python functions registered with the agent.
+
+---
+
+## Example: Barista Agent
+A full example is provided in [`examples/barista.py`](examples/barista.py) and [`examples/config.barista.yaml`](examples/config.barista.yaml).
 
 ---
 
