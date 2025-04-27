@@ -2,7 +2,6 @@
 
 SOFIA is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. Define your agent's persona, tools, and step-by-step flows in Python or YAML—perfect for conversational, workflow, and automation use cases.
 
----
 
 ## Features
 - **Step-based agent flows**: Define agent behavior as a sequence of steps, each with its own tools and transitions.
@@ -14,7 +13,6 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Extensible**: Build your own tools, steps, and integrations.
 - **Interactive CLI**: Bootstrap new agents with `sofia init` (install with `[cli]` extra).
 
----
 
 ## Installation
 
@@ -35,7 +33,6 @@ cd sofia
 poetry install
 ```
 
----
 
 ## Usage
 
@@ -84,29 +81,24 @@ sess = agent.create_session()
 ### YAML Config Example
 See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a full-featured barista agent.
 
----
 
 ## Configuration
 - **Persona**: Set in YAML or Python for consistent agent style.
 - **Steps**: Each step defines available tools, description, and routes to other steps.
 - **Tools**: Python functions registered with the agent.
 
----
 
 ## Example: Barista Agent
 A full example is provided in [`examples/barista.py`](examples/barista.py) and [`examples/config.barista.yaml`](examples/config.barista.yaml).
 
----
 
 ## Contributing
 Contributions are welcome! Please open issues or pull requests on GitHub.
 
----
 
 ## License
 MIT License. See [LICENSE](LICENSE).
 
----
 
 ## Acknowledgements
 - Inspired by the open-source LLM community.
