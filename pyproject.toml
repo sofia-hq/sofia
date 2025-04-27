@@ -1,6 +1,6 @@
 [project]
 name = "sofia"
-version = "0.1.1"
+version = "0.1.2"
 description = "SOFIA: Simple Orchestrated Flow Intelligence Agent"
 authors = [
     {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}
@@ -20,3 +20,12 @@ dependencies = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[project.optional-dependencies]
+cli = [
+    "questionary (>=2.1.0,<3.0.0)",
+]
+
+[project.scripts]
+sofia = "sofia.cli:main"
+
