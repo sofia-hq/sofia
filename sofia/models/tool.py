@@ -5,7 +5,7 @@ Tool abstractions and related logic for the SOFIA package.
 import inspect
 
 from pydantic import BaseModel
-from typing import Callable, Dict, Any, Type, Optional
+from typing import Callable, Dict, Any, Type
 from ..utils.utils import create_base_model
 
 
