@@ -1,15 +1,46 @@
-from pydantic_settings import BaseSettings
-from typing import List, Dict, Any
+"""AgentConfig class for managing agent configurations."""
 
-# from .core import Step  # Uncomment and implement Step in core.py later
+from pydantic_settings import BaseSettings
+from typing import List, Dict, Optional
+
+from .models.flow import Step
 
 class AgentConfig(BaseSettings):
     """
-    Configuration for a SOFIA agent, loaded from YAML.
-    - steps: List of step definitions (see Step class).
-    - tool_arg_descriptions: Dict mapping tool names to argument descriptions.
-    """
-    steps: List[Any]  # Replace Any with 'Step' when Step is implemented
-    tool_arg_descriptions: Dict[str, Dict[str, str]]
+    Configuration for the agent, including model settings and flow steps.
 
-    # Implementation for YAML loading and validation will be added later.
+    Attributes:
+        name (str): Name of the agent.
+        persona (Optional[str]): Persona of the agent. Recommended to use a default persona.
+        steps (List[Step]): List of steps in the flow.
+        start_step_id (str): ID of the starting step.
+        tool_arg_descriptions (Dict[str, Dict[str, str]]): Descriptions for tool arguments.
+        system_message (Optional[str]): System message for the agent. Default system message will be used if not provided.
+    Methods:
+        from_yaml(file_path: str) -> "AgentConfig": Load configuration from a YAML file.
+        to_yaml(file_path: str) -> None: Save configuration to a YAML file.
+    """
+    name: str
+    persona: Optional[str] = None # Recommended to use a default persona
+    steps: List[Step]
+    start_step_id: str
+    tool_arg_descriptions: Dict[str, Dict[str, str]]
+    system_message: Optional[str] = None # Default system message will be used if not provided
+    show_steps_desc: bool = False
+
+    # Loading from YAML file
+    @classmethod
+    def from_yaml(cls, file_path: str) -> "AgentConfig":
+        import yaml
+        with open(file_path, 'r') as file:
+            data = yaml.safe_load(file)
+        return cls(**data)
+    
+    def to_yaml(self, file_path: str) -> None:
+        import yaml
+        with open(file_path, 'w') as file:
+            yaml.dump(self.model_dump(), file)
+
+
+__all__ = ["AgentConfig"]
+    

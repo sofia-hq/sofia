@@ -49,6 +49,7 @@ class LLMBase:
     
     def get_messages(
         self,
+        name: str,
         steps: List[Step],
         current_step: Step,
         tools: Dict[str, Tool],
@@ -61,10 +62,11 @@ class LLMBase:
         """
         messages = []
         system_prompt = system_message + "\n"
+        system_prompt += f"Your Name: {name}" + "\n"
         system_prompt += f"Your Persona: {persona}" + "\n\n"
         system_prompt += f"Current Step: {current_step.step_id}" + "\n"
         system_prompt += f"Instructions: {current_step.description.strip()}" + "\n"
-        system_prompt += "Available Routes:\n" + self.get_routes_desc(steps, current_step)
+        system_prompt += "Available Routes (Step and Condition required to move):\n" + self.get_routes_desc(steps, current_step)
         if len(current_step.available_tools) > 0:
             system_prompt += "\nAvailable Tools:\n" + self.get_tools_desc(
                 tools, current_step.available_tools
@@ -86,6 +88,7 @@ class LLMBase:
         raise NotImplementedError("Subclasses should implement this method.")
 
     def _get_output(self,
+        name: str,
         steps: List[Step],
         current_step: Step,
         tools: Dict[str, Tool],
@@ -98,6 +101,7 @@ class LLMBase:
         Get a structured response from the LLM.
         """
         messages = self.get_messages(
+            name=name,
             steps=steps,
             current_step=current_step,
             tools=tools,

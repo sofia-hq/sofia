@@ -11,11 +11,13 @@ from .utils.logging import log_debug, log_error
 from .models.tool import Tool
 from .models.flow import Action, Step, Message, create_route_decision_model
 from .llms import LLMBase
+from .config import AgentConfig
 
 
 class FlowSession:
     def __init__(
         self,
+        name: str,
         llm: LLMBase,
         steps: Dict[str, Step],
         start_step_id: str,
@@ -25,7 +27,8 @@ class FlowSession:
         show_steps_desc: bool = False,
     ):
         ## Fixed
-        self.session_id = str(uuid.uuid4())
+        self.session_id = f"{name}_{str(uuid.uuid4())}"
+        self.name = name
         self.llm = llm
         self.steps = steps
         self.show_steps_desc = show_steps_desc
@@ -65,8 +68,6 @@ class FlowSession:
             if not _tool:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
-            if len(_tool.parameters) == 0:
-                continue
             tool_models.append(_tool.get_args_model())
         return tool_models
 
@@ -81,6 +82,7 @@ class FlowSession:
             tool_models=self._get_tool_models(),
         )
         decision = self.llm._get_output(
+            name=self.name,
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
@@ -101,7 +103,7 @@ class FlowSession:
         self.history.append(self.current_step)
         log_debug(f"Action decided: {decision.action}")
         if decision.action == Action.ASK or decision.action == Action.ANSWER:
-            self._add_message("assistant", decision.input)
+            self._add_message(self.name, decision.input)
             return decision
         elif decision.action == Action.TOOL_CALL:
             self._add_message("tool", f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}")
@@ -146,14 +148,16 @@ class Sofia:
     def __init__(
         self,
         llm: LLMBase,
+        name: str,
         steps: List[Step],
         start_step_id: str,
-        system_message: Optional[str] = None,
         persona: Optional[str] = None,
+        system_message: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
     ):
         self.llm = llm
+        self.name = name
         self.steps = {s.step_id: s for s in steps}
         self.start = start_step_id
         self.system_message = system_message
@@ -165,16 +169,30 @@ class Sofia:
             raise ValueError(f"Start step ID {start_step_id} not found in steps")
         log_debug(f"FlowManager initialized with start step '{start_step_id}'")
 
+    @classmethod
+    def from_config(cls, llm: LLMBase, config: AgentConfig, tools: list[Callable] = []) -> "Sofia":
+        return cls(
+            llm=llm,
+            name=config.name,
+            steps=config.steps,
+            start_step_id=config.start_step_id,
+            system_message=config.system_message,
+            persona=config.persona,
+            tools=tools,
+            show_steps_desc=config.show_steps_desc,
+        )
+
     def create_session(self) -> FlowSession:
         log_debug("Creating new session")
         return FlowSession(
-            self.llm,
-            self.steps,
-            self.start,
-            self.system_message,
-            self.persona,
-            self.tools,
-            self.show_steps_desc,
+            name=self.name,
+            llm=self.llm,
+            steps=self.steps,
+            start_step_id=self.start,
+            system_message=self.system_message,
+            persona=self.persona,
+            tools=self.tools,
+            show_steps_desc=self.show_steps_desc,
         )
 
     def load_session(self, session_id: str) -> FlowSession:
