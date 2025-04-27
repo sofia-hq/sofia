@@ -24,7 +24,7 @@ class AgentConfig(BaseSettings):
     persona: Optional[str] = None # Recommended to use a default persona
     steps: List[Step]
     start_step_id: str
-    tool_arg_descriptions: Dict[str, Dict[str, str]]
+    tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]]
     system_message: Optional[str] = None # Default system message will be used if not provided
     show_steps_desc: bool = False
 

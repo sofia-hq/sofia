@@ -5,7 +5,7 @@ Tool abstractions and related logic for the SOFIA package.
 import inspect
 
 from pydantic import BaseModel
-from typing import Callable, Dict, Any, Type
+from typing import Callable, Dict, Any, Type, Optional
 from ..utils.utils import create_base_model
 
 
@@ -16,14 +16,17 @@ class Tool(BaseModel):
     parameters: Dict[str, Dict[str, Any]] = {}
 
     @classmethod
-    def from_function(cls, function: Callable) -> "Tool":
+    def from_function(cls, function: Callable, tool_arg_descs: Dict[str, str] = {}) -> "Tool":
         sig = inspect.signature(function)
         description = function.__doc__.strip() if function.__doc__ else ""
+        tool_arg_desc = tool_arg_descs.get(function.__name__)
         params = {}
         for k, v in function.__annotations__.items():
             if k == "return":
                 continue
             param_info = {"type": v}
+            if tool_arg_desc.get(k):
+                param_info["description"] = tool_arg_desc[k]
             if (
                 k in sig.parameters
                 and sig.parameters[k].default is not inspect.Parameter.empty
@@ -37,9 +40,6 @@ class Tool(BaseModel):
             function=function,
             parameters=params,
         )
-
-    def set_parameters(self, parameters: Dict[str, Dict[str, Any]]) -> None:
-        self.parameters = parameters
 
     def get_args_model(self) -> Type[BaseModel]:
         camel_case_fn_name = self.name.replace("_", " ").title().replace(" ", "")

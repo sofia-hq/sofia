@@ -25,6 +25,7 @@ class FlowSession:
         persona: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
+        config: Optional[AgentConfig] = None,
     ):
         ## Fixed
         self.session_id = f"{name}_{str(uuid.uuid4())}"
@@ -34,7 +35,9 @@ class FlowSession:
         self.show_steps_desc = show_steps_desc
         self.system_message = system_message
         self.persona = persona
-        tools_list = [Tool.from_function(tool) for tool in tools]
+        self.config = config
+        tool_arg_descs = self.config.tool_arg_descriptions if self.config and self.config.tool_arg_descriptions else {}
+        tools_list = [Tool.from_function(tool, tool_arg_descs) for tool in tools]
         self.tools = {tool.name: tool for tool in tools_list}
         ## Variable
         self.history: List[Union[Message, Step]] = []
@@ -155,6 +158,7 @@ class Sofia:
         system_message: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
+        config: Optional[AgentConfig] = None,
     ):
         self.llm = llm
         self.name = name
@@ -164,6 +168,7 @@ class Sofia:
         self.persona = persona
         self.show_steps_desc = show_steps_desc
         self.tools = tools
+        self.config = config
         if start_step_id not in self.steps:
             log_error(f"Start step ID {start_step_id} not found in steps")
             raise ValueError(f"Start step ID {start_step_id} not found in steps")
@@ -180,6 +185,7 @@ class Sofia:
             persona=config.persona,
             tools=tools,
             show_steps_desc=config.show_steps_desc,
+            config=config,
         )
 
     def create_session(self) -> FlowSession:
