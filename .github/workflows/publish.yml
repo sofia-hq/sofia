@@ -1,0 +1,44 @@
+# .github/workflows/publish.yml
+name: Release
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  pypi-publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python - -y
+
+      - name: Update PATH
+        run: echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.create false
+
+      - name: Install dependencies
+        run: poetry install --sync --no-interaction
+
+      - name: Build package
+        run: poetry build
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
