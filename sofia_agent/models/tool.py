@@ -16,10 +16,10 @@ class Tool(BaseModel):
     parameters: Dict[str, Dict[str, Any]] = {}
 
     @classmethod
-    def from_function(cls, function: Callable, tool_arg_descs: Dict[str, str] = {}) -> "Tool":
+    def from_function(cls, function: Callable, tool_arg_descs: Dict[str, Dict[str, str]] = {}) -> "Tool":
         sig = inspect.signature(function)
         description = function.__doc__.strip() if function.__doc__ else ""
-        tool_arg_desc = tool_arg_descs.get(function.__name__)
+        tool_arg_desc = tool_arg_descs.get(function.__name__, {})
         params = {}
         for k, v in function.__annotations__.items():
             if k == "return":
