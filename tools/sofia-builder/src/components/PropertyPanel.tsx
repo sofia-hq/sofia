@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { StepNodeData } from '../nodes/StepNode';
 import { ToolNodeData } from '../nodes/ToolNode';
-import { RouteEdgeData } from '../edges/RouteEdge';
-import { ToolUsageEdgeData } from '../edges/ToolUsageEdge';
+import { RouteEdgeData, ToolUsageEdgeData } from '../edges/RouteEdge';
 import { SofiaConfig, SofiaEdgeType, SofiaNodeType } from '../models/sofia';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from './ui/select';
+import { Textarea } from './ui/textarea';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { Badge } from './ui/badge';
 
 interface PropertyPanelProps {
+  nodes: Node[];
+  edges: Edge[];
   selectedNode: Node | null;
   selectedEdge: Edge | null;
   onNodeChange: (id: string, data: StepNodeData | ToolNodeData) => void;
@@ -17,12 +23,13 @@ interface PropertyPanelProps {
   onDeleteEdge: (id: string) => void;
   onSetStartStep: (id: string) => void;
   isStartStep: (id: string) => boolean;
-  stepNodes: Node[];
   config: SofiaConfig;
   onAgentConfigChange: (name: string, persona: string) => void;
 }
 
 export default function PropertyPanel({
+  nodes,
+  edges,
   selectedNode,
   selectedEdge,
   onNodeChange,
@@ -31,207 +38,248 @@ export default function PropertyPanel({
   onDeleteEdge,
   onSetStartStep,
   isStartStep,
-  stepNodes,
   config,
   onAgentConfigChange
 }: PropertyPanelProps) {
-  // State for controlled form inputs
-  const [stepId, setStepId] = useState('');
-  const [stepDescription, setStepDescription] = useState('');
-  const [routeCondition, setRouteCondition] = useState('');
-  const [toolUsageName, setToolUsageName] = useState('');
-  
-  // Update local state when selection changes
-  useEffect(() => {
-    if (selectedNode && selectedNode.type === SofiaNodeType.STEP) {
-      const data = selectedNode.data as StepNodeData;
-      setStepId(data.step_id || '');
-      setStepDescription(data.description || '');
-    } else if (selectedNode && selectedNode.type === SofiaNodeType.TOOL) {
-      const data = selectedNode.data as ToolNodeData;
-      setToolUsageName(data.name || '');
-      setRouteCondition(data.description || '');
-    } else if (selectedEdge && selectedEdge.type === SofiaEdgeType.ROUTE) {
-      const data = selectedEdge.data as RouteEdgeData;
-      setRouteCondition(data?.condition || '');
-    } else if (selectedEdge && selectedEdge.type === SofiaEdgeType.TOOL_USAGE) {
-      const data = selectedEdge.data as ToolUsageEdgeData;
-      setToolUsageName(data?.toolName || '');
-    }
-  }, [selectedNode, selectedEdge]);
+  const [agentName, setAgentName] = useState(config.name);
+  const [agentPersona, setAgentPersona] = useState(config.persona);
+  const [openStep, setOpenStep] = useState<string | null>(selectedNode?.type === SofiaNodeType.STEP ? selectedNode.id : null);
+  const [openTool, setOpenTool] = useState<string | null>(selectedNode?.type === SofiaNodeType.TOOL ? selectedNode.id : null);
+  const [edgeDialog, setEdgeDialog] = useState<{ open: boolean; edge: Edge | null }>({ open: false, edge: null });
+  const [edgeCondition, setEdgeCondition] = useState('');
 
-  // Always render as a static flex child
+  useEffect(() => {
+    setAgentName(config.name);
+    setAgentPersona(config.persona);
+  }, [config]);
+
+  useEffect(() => {
+    if (selectedNode?.type === SofiaNodeType.STEP) {
+      setOpenStep(selectedNode.id);
+      setOpenTool(null);
+    } else if (selectedNode?.type === SofiaNodeType.TOOL) {
+      setOpenTool(selectedNode.id);
+      setOpenStep(null);
+    } else {
+      setOpenStep(null);
+      setOpenTool(null);
+    }
+  }, [selectedNode]);
+
+  const handleEdgeDialogSave = () => {
+    if (edgeDialog.edge) {
+      onEdgeChange(edgeDialog.edge.id, { condition: edgeCondition } as RouteEdgeData);
+      setEdgeDialog({ open: false, edge: null });
+    }
+  };
+
+  // Get all steps and tools
+  const stepNodes = (nodes ?? []).filter(n => n.type === SofiaNodeType.STEP);
+  const toolNodes = (nodes ?? []).filter(n => n.type === SofiaNodeType.TOOL);
+
   return (
-    <div className="w-[300px] h-full bg-background border-l flex flex-col">
-      {/* Agent Settings */}
-      {!selectedNode && !selectedEdge && (
-        <div className="space-y-4 p-4">
-          <div>
-            <label className="block text-xs mb-1">Start Step</label>
-            <select
-              className="w-full border rounded-md px-2 py-1 text-sm bg-background"
-              value={config.start_step_id}
-              onChange={(e) => onSetStartStep(e.target.value)}
-            >
-              <option value="">-- Select Start Step --</option>
+    <div className="w-[350px] h-full bg-background border-l flex flex-col overflow-y-auto">
+      {/* Agent Properties */}
+      <div className="space-y-4 p-4 border-b">
+        <div>
+          <label className="block text-xs mb-1">Agent Name</label>
+          <Input
+            value={agentName}
+            onChange={e => setAgentName(e.target.value)}
+            onBlur={() => onAgentConfigChange(agentName, agentPersona)}
+            placeholder="Agent Name"
+          />
+        </div>
+        <div>
+          <label className="block text-xs mb-1">Agent Persona</label>
+          <Textarea
+            value={agentPersona}
+            onChange={e => setAgentPersona(e.target.value)}
+            onBlur={() => onAgentConfigChange(agentName, agentPersona)}
+            placeholder="Agent Persona"
+            rows={4}
+          />
+        </div>
+        <div>
+          <label className="block text-xs mb-1">Start Step</label>
+          <Select value={config.start_step_id} onValueChange={onSetStartStep}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="-- Select Start Step --" />
+            </SelectTrigger>
+            <SelectContent>
               {stepNodes.map((node) => (
-                <option key={node.id} value={node.id}>
+                <SelectItem key={node.id} value={node.id}>
                   {node.data.step_id}
-                </option>
+                </SelectItem>
               ))}
-            </select>
-          </div>
-          <p className="text-muted-foreground text-xs">Select a step, tool, or route to edit its properties.</p>
+            </SelectContent>
+          </Select>
         </div>
-      )}
-      {/* Step Node */}
-      {selectedNode && selectedNode.type === SofiaNodeType.STEP && (
-        <div className="space-y-4 p-4">
-          <div>
-            <label className="block text-xs mb-1">Step ID</label>
-            <Input
-              value={stepId}
-              onChange={e => {
-                const newValue = e.target.value;
-                setStepId(newValue);
-                const data = { ...selectedNode.data as StepNodeData };
-                data.step_id = newValue;
-                onNodeChange(selectedNode.id, data);
-              }}
-              placeholder="Step ID"
-            />
+      </div>
+      {/* Steps */}
+      <div className="space-y-4 p-4 border-b">
+        <div className="font-semibold text-sm mb-2">Steps</div>
+        {stepNodes.map((node) => {
+          const data = node.data as StepNodeData;
+          const isOpen = openStep === node.id;
+          // Find all outgoing route edges from this step
+          const outgoingRoutes = (edges ?? []).filter(e => e.type === SofiaEdgeType.ROUTE && e.source === node.id);
+          return (
+            <Collapsible key={node.id} open={isOpen} onOpenChange={open => setOpenStep(open ? node.id : null)}>
+              <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 border rounded mb-1 bg-muted">
+                <span>{data.label || data.step_id} {isStartStep(node.id) && <span className="ml-2 text-xs text-yellow-600">(Start)</span>}</span>
+                <span>{isOpen ? '-' : '+'}</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="p-3 border rounded-b mb-2 bg-card">
+                <div className="mb-2">
+                  <label className="block text-xs mb-1">Step ID</label>
+                  <Input
+                    value={data.step_id}
+                    onChange={e => onNodeChange(node.id, { ...data, step_id: e.target.value })}
+                    placeholder="Step ID"
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-xs mb-1">Description</label>
+                  <Textarea
+                    value={data.description}
+                    onChange={e => onNodeChange(node.id, { ...data, description: e.target.value })}
+                    placeholder="Description"
+                    rows={3}
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-xs mb-1">Attached Tools</label>
+                  <div className="flex flex-wrap gap-1">
+                    {data.available_tools && data.available_tools.length > 0 ? (
+                      data.available_tools.map((toolId: string) => {
+                        const toolNode = toolNodes.find((n) => n.id === toolId);
+                        const toolName = toolNode && toolNode.data && toolNode.data.name ? toolNode.data.name : toolId;
+                        return (
+                          <Badge
+                            key={toolId}
+                            variant="secondary"
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setOpenTool(toolId);
+                              setOpenStep(null);
+                            }}
+                          >
+                            {toolName}
+                          </Badge>
+                        );
+                      })
+                    ) : (
+                      <span className="text-muted-foreground">No tools attached</span>
+                    )}
+                  </div>
+                </div>
+                {/* List outgoing route edges */}
+                {outgoingRoutes.length > 0 && (
+                  <div className="mb-2">
+                    <label className="block text-xs mb-1">Routes</label>
+                    <div className="flex flex-wrap gap-1">
+                      {outgoingRoutes.map((edge) => {
+                        const targetStep = stepNodes.find(n => n.id === edge.target);
+                        const condition = (edge.data as RouteEdgeData)?.condition || '';
+                        const cappedCondition = condition.length > 32 ? condition.slice(0, 32) + '…' : condition;
+                        return (
+                          <Badge
+                            key={edge.id}
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setOpenStep(node.id);
+                              setEdgeDialog({ open: true, edge });
+                              setEdgeCondition(condition);
+                            }}
+                          >
+                            {`→ ${targetStep?.data?.step_id || edge.target}`}
+                            {cappedCondition && (
+                              <span className="ml-1 text-muted-foreground">({cappedCondition})</span>
+                            )}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant={isStartStep(node.id) ? 'secondary' : 'default'}
+                    onClick={() => onSetStartStep(node.id)}
+                    disabled={isStartStep(node.id)}
+                  >
+                    {isStartStep(node.id) ? 'Start Step' : 'Set as Start Step'}
+                  </Button>
+                  <Button variant="destructive" onClick={() => onDeleteNode(node.id)}>
+                    Delete Step
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
+      </div>
+      {/* Tools */}
+      <div className="space-y-4 p-4 border-b">
+        <div className="font-semibold text-sm mb-2">Tools</div>
+        {toolNodes.map((node) => {
+          const data = node.data as ToolNodeData;
+          const isOpen = openTool === node.id;
+          return (
+            <Collapsible key={node.id} open={isOpen} onOpenChange={open => setOpenTool(open ? node.id : null)}>
+              <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 border rounded mb-1 bg-muted">
+                <span>{data.name}</span>
+                <span>{isOpen ? '-' : '+'}</span>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="p-3 border rounded-b mb-2 bg-card">
+                <div className="mb-2">
+                  <label className="block text-xs mb-1">Name</label>
+                  <Input
+                    value={data.name}
+                    onChange={e => onNodeChange(node.id, { ...data, name: e.target.value })}
+                    placeholder="Tool Name"
+                  />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-xs mb-1">Description</label>
+                  <Textarea
+                    value={data.description}
+                    onChange={e => onNodeChange(node.id, { ...data, description: e.target.value })}
+                    placeholder="Description"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <Button variant="destructive" onClick={() => onDeleteNode(node.id)}>
+                    Delete Tool
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        })}
+      </div>
+      {/* Edge Condition Dialog */}
+      <Dialog open={edgeDialog.open} onOpenChange={open => setEdgeDialog({ open, edge: edgeDialog.edge })}>
+        <DialogContent>
+          <DialogTitle>Edit Edge Condition</DialogTitle>
+          <DialogDescription>
+            Set the condition for when this route should be taken.
+          </DialogDescription>
+          <Textarea
+            value={edgeCondition}
+            onChange={e => setEdgeCondition(e.target.value)}
+            rows={3}
+            placeholder="Condition"
+          />
+          <div className="flex gap-2 mt-4">
+            <Button variant="default" onClick={handleEdgeDialogSave}>Save</Button>
+            <Button variant="secondary" onClick={() => setEdgeDialog({ open: false, edge: null })}>Cancel</Button>
           </div>
-          <div>
-            <label className="block text-xs mb-1">Description</label>
-            <Input
-              as="textarea"
-              value={stepDescription}
-              onChange={e => {
-                const newValue = e.target.value;
-                setStepDescription(newValue);
-                const data = { ...selectedNode.data as StepNodeData };
-                data.description = newValue;
-                onNodeChange(selectedNode.id, data);
-              }}
-              placeholder="Description"
-              rows={3}
-            />
-          </div>
-          {/* Show attached tools for this step */}
-          <div>
-            <label className="block text-xs mb-1">Attached Tools</label>
-            <ul className="text-xs text-accent-foreground pl-2 list-disc">
-              {selectedNode.data.available_tools && selectedNode.data.available_tools.length > 0 ? (
-                selectedNode.data.available_tools.map((toolId: string) => {
-                  const toolNode = stepNodes.find((n) => n.id === toolId);
-                  const toolName = toolNode && toolNode.data && toolNode.data.name ? toolNode.data.name : toolId;
-                  return <li key={toolId}>{toolName}</li>;
-                })
-              ) : (
-                <li className="text-muted-foreground">No tools attached</li>
-              )}
-            </ul>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={isStartStep(selectedNode.id) ? 'secondary' : 'default'}
-              onClick={() => onSetStartStep(selectedNode.id)}
-              disabled={isStartStep(selectedNode.id)}
-            >
-              {isStartStep(selectedNode.id) ? 'Start Step' : 'Set as Start Step'}
-            </Button>
-            <Button variant="destructive" onClick={() => onDeleteNode(selectedNode.id)}>
-              Delete Step
-            </Button>
-          </div>
-        </div>
-      )}
-      {/* Tool Node */}
-      {selectedNode && selectedNode.type === SofiaNodeType.TOOL && (
-        <div className="space-y-4 p-4">
-          <div>
-            <label className="block text-xs mb-1">Name</label>
-            <Input
-              value={toolUsageName}
-              onChange={e => {
-                const newValue = e.target.value;
-                setToolUsageName(newValue);
-                const data = { ...selectedNode.data as ToolNodeData };
-                data.name = newValue;
-                onNodeChange(selectedNode.id, data);
-              }}
-              placeholder="Tool Name"
-            />
-          </div>
-          <div>
-            <label className="block text-xs mb-1">Description</label>
-            <Input
-              as="textarea"
-              value={routeCondition}
-              onChange={e => {
-                const newValue = e.target.value;
-                setRouteCondition(newValue);
-                const data = { ...selectedNode.data as ToolNodeData };
-                data.description = newValue;
-                onNodeChange(selectedNode.id, data);
-              }}
-              placeholder="Description"
-              rows={3}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="destructive" onClick={() => onDeleteNode(selectedNode.id)}>
-              Delete Tool
-            </Button>
-          </div>
-        </div>
-      )}
-      {/* Route Edge */}
-      {selectedEdge && selectedEdge.type === SofiaEdgeType.ROUTE && (
-        <div className="space-y-4 p-4">
-          <div>
-            <label className="block text-xs mb-1">Condition</label>
-            <Input
-              as="textarea"
-              value={routeCondition}
-              onChange={e => {
-                const newValue = e.target.value;
-                setRouteCondition(newValue);
-                onEdgeChange(selectedEdge.id, { condition: newValue } as RouteEdgeData);
-              }}
-              placeholder="Condition (optional)"
-              rows={3}
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="destructive" onClick={() => onDeleteEdge(selectedEdge.id)}>
-              Delete Route
-            </Button>
-          </div>
-        </div>
-      )}
-      {/* Tool Usage Edge */}
-      {selectedEdge && selectedEdge.type === SofiaEdgeType.TOOL_USAGE && (
-        <div className="space-y-4 p-4">
-          <div>
-            <label className="block text-xs mb-1">Tool Name</label>
-            <Input
-              value={toolUsageName}
-              onChange={e => {
-                const newValue = e.target.value;
-                setToolUsageName(newValue);
-                onEdgeChange(selectedEdge.id, { toolName: newValue } as ToolUsageEdgeData);
-              }}
-              placeholder="Tool Name"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button variant="destructive" onClick={() => onDeleteEdge(selectedEdge.id)}>
-              Delete Tool Usage
-            </Button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

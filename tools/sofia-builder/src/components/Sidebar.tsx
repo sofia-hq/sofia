@@ -36,12 +36,6 @@ export default function SofiaSidebar({
     document.getElementById('yaml-import')?.click();
   }, []);
 
-  const handleConfigClick = useCallback(() => {
-    if (config) {
-      setShowConfigForm(true);
-    }
-  }, [config]);
-
   const handleConfigSave = useCallback(() => {
     onAgentConfigChange(agentName, agentPersona);
     setShowConfigForm(false);
@@ -109,20 +103,6 @@ export default function SofiaSidebar({
             >
               + Add Tool
             </Button>
-            <div className="border-t my-3" />
-            <div className="font-semibold mb-2">Current Config</div>
-            {config && (
-              <div className="text-xs space-y-1">
-                <div><strong>Name:</strong> {config.name}</div>
-                <div><strong>Start Step:</strong> {config.start_step_id}</div>
-                <div><strong>Steps:</strong> {config.steps.length}</div>
-                <div className="mt-2">
-                  <Button variant="secondary" className="w-full" onClick={handleConfigClick}>
-                    Edit Agent Config
-                  </Button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </div>

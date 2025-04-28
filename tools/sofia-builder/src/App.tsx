@@ -67,6 +67,12 @@ export default function App() {
     setSelectedEdge(null);
   }, []);
   
+  // Handle edge double click (for editing route condition)
+  const onEdgeDoubleClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+    setSelectedEdge(edge);
+    setSelectedNode(null);
+  }, []);
+  
   // Determine connection type based on source and target
   const getConnectionType = (connection: Connection): SofiaConnectionType | null => {
     const sourceNode = nodes.find(node => node.id === connection.source);
@@ -470,6 +476,7 @@ export default function App() {
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onEdgeClick={onEdgeClick}
+          onEdgeDoubleClick={onEdgeDoubleClick}
           onPaneClick={onPaneClick}
           onDragOver={onDragOver}
           onDrop={onDrop}
@@ -486,6 +493,8 @@ export default function App() {
       </div>
       {/* Property Panel */}
       <PropertyPanel
+        nodes={nodes}
+        edges={edges}
         selectedNode={selectedNode}
         selectedEdge={selectedEdge}
         onNodeChange={handleNodeDataChange}
@@ -494,7 +503,6 @@ export default function App() {
         onDeleteEdge={handleDeleteEdge}
         onSetStartStep={handleSetStartStep}
         isStartStep={isStartStep}
-        stepNodes={getStepNodes()}
         config={config}
         onAgentConfigChange={handleAgentConfigChange}
       />
