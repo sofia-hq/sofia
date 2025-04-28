@@ -1,10 +1,8 @@
 import * as yaml from 'js-yaml';
 import { Edge, Node, XYPosition } from '@xyflow/react';
-import { SofiaConfig, Step, Tool, Route, SofiaNodeType, SofiaEdgeType } from '../models/sofia';
+import { SofiaConfig, Step, Route, SofiaNodeType, SofiaEdgeType } from '../models/sofia';
 import { StepNodeData } from '../nodes/StepNode';
-import { ToolNodeData } from '../nodes/ToolNode';
 import { RouteEdgeData } from '../edges/RouteEdge';
-import { ToolUsageEdgeData } from '../edges/ToolUsageEdge';
 import { MarkerType } from '@xyflow/react';
 
 // Calculate node positions in a circular layout
@@ -83,7 +81,7 @@ export function configToFlow(
   });
   
   // Create edges for routes between steps
-  config.steps.forEach((step, stepIndex) => {
+  config.steps.forEach(step => {
     const sourceNodeId = nodeIdMap[step.step_id];
     
     // Create step-to-step route edges
@@ -100,7 +98,7 @@ export function configToFlow(
           type: SofiaEdgeType.ROUTE,
           data: {
             condition: route.condition,
-          } as RouteEdgeData,
+          } as unknown as Record<string, unknown>,
           animated: true,
           className: 'step-connection',
           markerEnd: {
@@ -112,7 +110,7 @@ export function configToFlow(
     });
     
     // Create step-to-tool usage edges
-    step.available_tools.forEach((toolName, toolIndex) => {
+    step.available_tools?.forEach((toolName, toolIndex) => {
       const targetNodeId = toolNodeIdMap[toolName];
       
       if (sourceNodeId && targetNodeId) {
@@ -125,7 +123,7 @@ export function configToFlow(
           type: SofiaEdgeType.TOOL_USAGE,
           data: {
             toolName,
-          } as ToolUsageEdgeData,
+          } as unknown as Record<string, unknown>,
           animated: true,
           className: 'tool-connection',
         });
@@ -157,7 +155,7 @@ export function flowToConfig(
       const targetNode = nodes.find(n => n.id === targetId);
       
       if (targetNode && targetNode.type === SofiaNodeType.TOOL) {
-        const toolName = targetNode.data.name;
+        const toolName = (targetNode.data as Record<string, unknown>).name as string;
         
         if (!toolUsageMap[sourceId]) {
           toolUsageMap[sourceId] = [];
@@ -171,7 +169,7 @@ export function flowToConfig(
   });
   
   stepNodes.forEach(node => {
-    const stepData = node.data as any;
+    const stepData = node.data as Record<string, unknown>;
     const routes: Route[] = [];
     
     // Find all step-to-step edges that have this node as a source
@@ -181,11 +179,11 @@ export function flowToConfig(
     );
     
     outgoingRouteEdges.forEach(edge => {
-      const routeData = edge.data as RouteEdgeData;
+      const routeData = edge.data as unknown as RouteEdgeData;
       const targetNode = nodes.find(n => n.id === edge.target);
       
       if (targetNode && targetNode.type === SofiaNodeType.STEP) {
-        const targetStepData = targetNode.data as StepNodeData;
+        const targetStepData = targetNode.data as unknown as StepNodeData;
         
         routes.push({
           target: targetStepData.step_id,
@@ -195,10 +193,10 @@ export function flowToConfig(
     });
     
     // Get available tools for this step
-    const availableTools = toolUsageMap[node.id] || stepData.available_tools || [];
+    const availableTools = toolUsageMap[node.id] || (stepData.available_tools as string[]) || [];
     const stepObj: any = {
-      step_id: stepData.step_id,
-      description: stepData.description,
+      step_id: stepData.step_id as string,
+      description: stepData.description as string,
     };
     if (routes.length > 0) stepObj.routes = routes;
     if (availableTools.length > 0) stepObj.available_tools = availableTools;
@@ -206,15 +204,16 @@ export function flowToConfig(
   });
   
   // Collect tool_arg_descriptions if any tool node has arguments
-  const toolArgDescriptions: Record<string, any> = {};
+  const toolArgDescriptions: Record<string, Record<string, string>> = {};
   toolNodes.forEach(node => {
-    const toolData = node.data as any;
-    if (toolData.arguments && toolData.arguments.length > 0) {
+    const toolData = node.data as Record<string, unknown>;
+    const toolArgs = toolData.arguments as Array<{ name: string; description: string }> | undefined;
+    if (toolArgs && toolArgs.length > 0) {
       const argObj: Record<string, string> = {};
-      toolData.arguments.forEach((arg: { name: string; description: string }) => {
+      toolArgs.forEach((arg) => {
         argObj[arg.name] = arg.description;
       });
-      toolArgDescriptions[toolData.name] = argObj;
+      toolArgDescriptions[toolData.name as string] = argObj;
     }
   });
   
@@ -228,7 +227,7 @@ export function flowToConfig(
     // Make sure the start step still exists
     const startStep = stepNodes.find(node => node.id === actualStartStepId);
     if (startStep) {
-      const startStepData = startStep.data as StepNodeData;
+      const startStepData = startStep.data as unknown as StepNodeData;
       actualStartStepId = startStepData.step_id;
     } else {
       // If the start step no longer exists, use the first step
@@ -236,7 +235,7 @@ export function flowToConfig(
     }
   }
   
-  const config: any = {
+  const config: SofiaConfig = {
     name,
     persona,
     start_step_id: actualStartStepId,
