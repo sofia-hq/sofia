@@ -1,0 +1,261 @@
+/* Main layout */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: #242424;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background-color: #1E1E1E;
+}
+
+/* Layout */
+.app-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background-color: #1E1E1E;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #252526;
+  border-right: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  z-index: 5;
+}
+
+.reactflow-wrapper {
+  flex-grow: 1;
+  height: 100%;
+  background-color: #1E1E1E;
+}
+
+.right-panel {
+  width: 300px;
+  background-color: #252526;
+  border-left: 1px solid #333;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+/* Sidebar Components */
+.sidebar-header {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.sidebar-content {
+  padding: 10px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  padding: 10px;
+  border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dragable-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: #2d2d30;
+  border: 1px solid #3e3e42;
+  border-radius: 3px;
+  cursor: grab;
+  transition: all 0.2s;
+  color: #e0e0e0;
+}
+
+.dragable-item:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  background-color: #3e3e42;
+}
+
+/* Node Styling */
+.node {
+  padding: 0;
+  border-radius: 5px;
+  width: 220px;
+  font-size: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.node.selected {
+  box-shadow: 0 0 0 2px #5162ff;
+}
+
+/* Step Node */
+.step-node {
+  background-color: #252526;
+  border: 1px solid #3e3e42;
+}
+
+.node-header {
+  border-radius: 5px 5px 0 0;
+  padding: 10px;
+  margin-bottom: 0;
+  background-color: #333333;
+  border-bottom: 1px solid #444;
+}
+
+.node-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.node-content {
+  padding: 10px;
+  font-size: 12px;
+}
+
+.node-description {
+  margin-bottom: 5px;
+  color: #b0b0b0;
+}
+
+.node-tools {
+  color: #888;
+  font-size: 10px;
+}
+
+/* Tool Node */
+.tool-node {
+  background-color: #252526;
+  border: 1px solid #444;
+}
+
+.tool-node-header {
+  background-color: #2d384d;
+  border-bottom: 1px solid #384e77;
+}
+
+.node-parameters {
+  color: #888;
+  font-size: 10px;
+}
+
+/* Handle styling */
+.node-handle {
+  width: 10px;
+  height: 10px;
+  background-color: #5162ff;
+  border: 2px solid #252526;
+  z-index: 10;
+}
+
+.tool-handle {
+  background-color: #ff9800;
+}
+
+/* Connection styling */
+.step-connection path {
+  stroke: #5162ff;
+  stroke-width: 2;
+}
+
+.tool-connection path {
+  stroke: #ff9800;
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+}
+
+/* Edge labels */
+.edge-label {
+  font-size: 10px;
+  background-color: rgba(48, 48, 48, 0.75);
+  padding: 2px 4px;
+  border-radius: 2px;
+  color: #e0e0e0;
+  pointer-events: all;
+}
+
+.step-edge-label {
+  border: 1px solid #5162ff;
+}
+
+.tool-edge-label {
+  border: 1px solid #ff9800;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  background-color: #3c3c3c;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+textarea.form-control {
+  min-height: 80px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #5162ff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #3a4cc0;
+}
+
+.btn-secondary {
+  background-color: #3c3c3c;
+  color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background-color: #4a4a4a;
+}
+
+.btn-danger {
+  background-color: #e53935;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c62828;
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
