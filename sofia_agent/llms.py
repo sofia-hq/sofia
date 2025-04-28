@@ -1,3 +1,7 @@
+"""
+LLM base classes and OpenAI LLM integration for SOFIA.
+"""
+
 from typing import List, Optional, Union, Dict
 
 from openai import OpenAI
@@ -10,11 +14,24 @@ from .utils.logging import log_error, log_debug
 
 
 class LLMBase:
+    """
+    Abstract base class for LLM integrations in SOFIA.
+    """
     def __init__(self):
+        """
+        Initialize the LLM base class. Subclasses should implement this method.
+        """
         raise NotImplementedError("Subclasses should implement this method.")
     
     @staticmethod
     def get_routes_desc(steps: List[Step], current_step: Step) -> str:
+        """
+        Get a string description of available routes from the current step.
+
+        :param steps: List of all steps.
+        :param current_step: The current step.
+        :return: String description of routes.
+        """
         routes_desc = [
             f"- if '{r.condition}' then -> {steps[r.target].step_id}"
             for r in current_step.routes
@@ -23,6 +40,13 @@ class LLMBase:
     
     @staticmethod
     def get_tools_desc(tools: Dict[str, Tool], available_tools: List[str]) -> str:
+        """
+        Get a string description of available tools for the current step.
+
+        :param tools: Dictionary of tool name to Tool.
+        :param available_tools: List of tool names available in this step.
+        :return: String description of tools.
+        """
         tools_desc = []
         for tool_name in available_tools:
             tool = tools.get(tool_name)
@@ -36,6 +60,12 @@ class LLMBase:
     
     @staticmethod
     def format_history(history: List[Union[Message, Step]]) -> str:
+        """
+        Format the chat history for display or LLM input.
+
+        :param history: List of Message or Step objects.
+        :return: String representation of the history.
+        """
         history_str = []
         log_debug(f"Formatting chat history: {history}")
         for i, item in enumerate(history):
@@ -58,7 +88,16 @@ class LLMBase:
         persona: str,
     ) -> List[Message]:
         """
-        Get the messages to send to the LLM.
+        Construct the list of messages to send to the LLM.
+
+        :param name: Agent name.
+        :param steps: List of steps.
+        :param current_step: Current step.
+        :param tools: Dictionary of tools.
+        :param history: Conversation history.
+        :param system_message: System prompt.
+        :param persona: Agent persona.
+        :return: List of Message objects.
         """
         messages = []
         system_prompt = system_message + "\n"
@@ -84,6 +123,10 @@ class LLMBase:
     ) -> BaseModel:
         """
         Get a structured response from the LLM.
+
+        :param messages: List of Message objects.
+        :param response_format: Pydantic model for the expected response.
+        :return: Parsed response as a BaseModel.
         """
         raise NotImplementedError("Subclasses should implement this method.")
 
@@ -98,7 +141,17 @@ class LLMBase:
         persona: Optional[str] = None,
     ) -> BaseModel:
         """
-        Get a structured response from the LLM.
+        Get a structured response from the LLM using the agent's context.
+
+        :param name: Agent name.
+        :param steps: List of steps.
+        :param current_step: Current step.
+        :param tools: Dictionary of tools.
+        :param history: Conversation history.
+        :param response_format: Pydantic model for the expected response.
+        :param system_message: Optional system prompt.
+        :param persona: Optional agent persona.
+        :return: Parsed response as a BaseModel.
         """
         messages = self.get_messages(
             name=name,
@@ -116,7 +169,15 @@ class LLMBase:
         
     
 class OpenAIChatLLM(LLMBase):
+    """
+    OpenAI Chat LLM integration for SOFIA.
+    """
     def __init__(self, model: str = "gpt-4o-mini"):
+        """
+        Initialize the OpenAIChatLLM.
+
+        :param model: Model name to use (default: gpt-4o-mini).
+        """
         self.model = model
         self.client = OpenAI()
 
@@ -125,6 +186,13 @@ class OpenAIChatLLM(LLMBase):
         messages: List[Message],
         response_format: BaseModel,
     ) -> BaseModel:
+        """
+        Get a structured response from the OpenAI LLM.
+
+        :param messages: List of Message objects.
+        :param response_format: Pydantic model for the expected response.
+        :return: Parsed response as a BaseModel.
+        """
         _messages = [
             msg.model_dump()
             for msg in messages

@@ -44,9 +44,8 @@ This will interactively guide you to create a config YAML and starter Python fil
 
 ### Python API Example
 ```python
-from sofia.core import Sofia
-from sofia.llms import OpenAIChatLLM
-from sofia.models.flow import Step, Route
+from sofia_agent import *
+from sofia_agent.llms import OpenAIChatLLM
 
 def get_time():
     from datetime import datetime

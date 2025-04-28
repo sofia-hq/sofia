@@ -15,6 +15,9 @@ from .config import AgentConfig
 
 
 class FlowSession:
+    """
+    Manages a single agent session, including step transitions, tool calls, and history.
+    """
     def __init__(
         self,
         name: str,
@@ -27,6 +30,19 @@ class FlowSession:
         show_steps_desc: bool = False,
         config: Optional[AgentConfig] = None,
     ):
+        """
+        Initialize a FlowSession.
+
+        :param name: Name of the agent.
+        :param llm: LLMBase instance.
+        :param steps: Dictionary of step_id to Step.
+        :param start_step_id: ID of the starting step.
+        :param system_message: Optional system message.
+        :param persona: Optional persona string.
+        :param tools: List of tool callables.
+        :param show_steps_desc: Whether to show step descriptions.
+        :param config: Optional AgentConfig.
+        """
         ## Fixed
         self.session_id = f"{name}_{str(uuid.uuid4())}"
         self.name = name
@@ -44,12 +60,21 @@ class FlowSession:
         self.current_step = steps[start_step_id]
         
     def save_session(self):
+        """
+        Save the current session to disk as a pickle file.
+        """
         with open(f"{self.session_id}.pkl", "wb") as f:
             pickle.dump(self, f)
         log_debug(f"Session {self.session_id} saved to disk.")
 
     @classmethod
     def load_session(cls, session_id: str) -> "FlowSession":
+        """
+        Load a FlowSession from disk by session_id.
+
+        :param session_id: The session ID string.
+        :return: Loaded FlowSession instance.
+        """
         with open(f"{session_id}.pkl", "rb") as f:
             log_debug(f"Session {session_id} loaded from disk.")
             return pickle.load(f)
@@ -98,6 +123,12 @@ class FlowSession:
         return decision
 
     def next(self, user_input: Optional[str] = None) -> BaseModel:
+        """
+        Advance the session to the next step based on user input and LLM decision.
+
+        :param user_input: Optional user input string.
+        :return: The model decision for the next action.
+        """
         if user_input:
             log_debug(f"User input received: {user_input}")
             self._add_message("user", user_input)
@@ -148,6 +179,9 @@ class FlowSession:
 
 
 class Sofia:
+    """
+    Main interface for creating and managing SOFIA agents.
+    """
     def __init__(
         self,
         llm: LLMBase,
@@ -160,6 +194,19 @@ class Sofia:
         show_steps_desc: bool = False,
         config: Optional[AgentConfig] = None,
     ):
+        """
+        Initialize a Sofia agent.
+
+        :param llm: LLMBase instance.
+        :param name: Name of the agent.
+        :param steps: List of Step objects.
+        :param start_step_id: ID of the starting step.
+        :param persona: Optional persona string.
+        :param system_message: Optional system message.
+        :param tools: List of tool callables.
+        :param show_steps_desc: Whether to show step descriptions.
+        :param config: Optional AgentConfig.
+        """
         self.llm = llm
         self.name = name
         self.steps = {s.step_id: s for s in steps}
@@ -176,6 +223,14 @@ class Sofia:
 
     @classmethod
     def from_config(cls, llm: LLMBase, config: AgentConfig, tools: list[Callable] = []) -> "Sofia":
+        """
+        Create a Sofia agent from an AgentConfig object.
+
+        :param llm: LLMBase instance.
+        :param config: AgentConfig instance.
+        :param tools: List of tool callables.
+        :return: Sofia instance.
+        """
         return cls(
             llm=llm,
             name=config.name,
@@ -189,6 +244,11 @@ class Sofia:
         )
 
     def create_session(self) -> FlowSession:
+        """
+        Create a new FlowSession for this agent.
+
+        :return: FlowSession instance.
+        """
         log_debug("Creating new session")
         return FlowSession(
             name=self.name,
@@ -202,6 +262,12 @@ class Sofia:
         )
 
     def load_session(self, session_id: str) -> FlowSession:
+        """
+        Load a FlowSession by session_id.
+
+        :param session_id: The session ID string.
+        :return: Loaded FlowSession instance.
+        """
         log_debug(f"Loading session {session_id}")
         return FlowSession.load_session(session_id)
 
