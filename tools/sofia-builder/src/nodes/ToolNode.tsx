@@ -1,7 +1,7 @@
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { SofiaNodeType } from '../models/sofia';
 import { cn } from '../lib/utils';
-import { BadgeInfo } from 'lucide-react';
+import { WrenchIcon } from 'lucide-react';
 
 export interface ToolArgument {
   name: string;
@@ -27,7 +27,7 @@ export function ToolNode({ data, selected }: NodeProps<ToolNodeData>) {
       data-selected={selected}
     >
       <div className="node-header flex items-center gap-2 px-3 py-2 border-b bg-muted rounded-t-lg">
-        <BadgeInfo className="text-primary size-4" />
+        <WrenchIcon className="text-primary size-4" />
         <div className="node-title font-semibold text-sm truncate flex-1">{data.name}</div>
       </div>
       <div className="node-content px-3 py-2">
@@ -51,7 +51,7 @@ export function ToolNode({ data, selected }: NodeProps<ToolNodeData>) {
       </div>
       <Handle 
         type="target" 
-        position={Position.Top} 
+        position={Position.Left} 
         id="tool-target"
         className="node-handle tool-handle"
       />

@@ -3,6 +3,7 @@ import { SofiaConfig } from '../models/sofia';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { ThemeToggle } from './ThemeToggle';
+import { PlusCircle } from 'lucide-react';
 
 interface SidebarProps {
   onImportYaml: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -52,7 +53,7 @@ export default function SofiaSidebar({
   return (
     <div className="w-[250px] h-full flex flex-col bg-sidebar text-sidebar-foreground border-r border-border z-5">
       <div className="flex items-center justify-between w-full p-2 border-b">
-        <span className="text-lg font-bold">Sofia Agent Builder</span>
+        <span className="text-lg font-bold">👩‍💼 SOFIA Builder</span>
         <ThemeToggle />
       </div>
       <div className="flex-1 overflow-y-auto p-2">
@@ -86,22 +87,47 @@ export default function SofiaSidebar({
           </div>
         ) : (
           <>
-            <div className="font-semibold mb-2">Components</div>
+            {/* <div className="font-semibold mb-2">Components</div> */}
             <Button
               variant="outline"
-              className="w-full mb-2"
+              className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
               draggable
               onDragStart={event => onDragStart(event, 'step', 'New Step')}
             >
-              + Add Step
+              <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Step</span>
+              <span className="text-xs text-muted-foreground mt-1 block text-center">A step is a state in your<br /> agent's flow</span>
             </Button>
             <Button
               variant="outline"
-              className="w-full mb-2"
+              className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
               draggable
               onDragStart={event => onDragStart(event, 'tool', 'New Tool')}
             >
-              + Add Tool
+              <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Tool</span>
+              <span className="text-xs text-muted-foreground mt-1 block text-center">A tool is an action your agent<br /> can use</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
+              disabled
+            >
+              <span className="font-semibold flex items-center justify-center gap-2">
+                <PlusCircle className="w-4 h-4" />
+               Agent
+              </span>
+              <span className="text-xs text-muted-foreground mt-1 block text-center">
+                Another SOFIA agent<br />to assist your agent<br />(coming soon)
+              </span>
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
+              disabled
+            >
+              <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> MCP</span>
+              <span className="text-xs text-muted-foreground mt-1 block text-center">
+                Conect a MCP Server <br /> to your agent<br />(coming soon)
+              </span>
             </Button>
           </>
         )}

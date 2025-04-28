@@ -1,7 +1,7 @@
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { SofiaNodeType } from '../models/sofia';
 import { cn } from '../lib/utils';
-import { BadgeInfo } from 'lucide-react';
+import { FootprintsIcon } from 'lucide-react';
 import { useStore } from '@xyflow/react';
 
 // Type definition for StepNode data
@@ -39,7 +39,7 @@ export function StepNode({ data, selected, id }: NodeProps<StepNodeData>) {
       data-selected={selected}
     >
       <div className="node-header flex items-center gap-2 px-3 py-2 border-b bg-muted rounded-t-lg">
-        <BadgeInfo className="text-primary size-4" />
+        <FootprintsIcon className="text-primary size-4" />
         <div className="node-title font-semibold text-sm truncate flex-1">{data.label || data.step_id}</div>
       </div>
       <div className="node-content px-3 py-2">
@@ -54,24 +54,21 @@ export function StepNode({ data, selected, id }: NodeProps<StepNodeData>) {
       </div>
       <Handle 
         type="target" 
-        position={Position.Left} 
+        position={Position.Top} 
         id="step-target"
         className="node-handle"
-        style={{ top: '50%' }}
-      />
-      <Handle 
-        type="source" 
-        position={Position.Right} 
-        id="step-source"
-        className="node-handle"
-        style={{ top: '50%' }}
       />
       <Handle 
         type="source" 
         position={Position.Bottom} 
+        id="step-source"
+        className="node-handle"
+      />
+      <Handle 
+        type="source" 
+        position={Position.Right} 
         id="tool-source"
         className="node-handle tool-handle"
-        style={{ left: '50%' }}
       />
     </div>
   );
