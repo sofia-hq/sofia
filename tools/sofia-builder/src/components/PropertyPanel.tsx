@@ -66,6 +66,17 @@ export default function PropertyPanel({
     }
   }, [selectedNode]);
 
+  // Only one open handler for step/tool
+  const handleOpen = (type: 'step' | 'tool', id: string | null) => {
+    if (type === 'step') {
+      setOpenStep(id);
+      setOpenTool(null);
+    } else {
+      setOpenTool(id);
+      setOpenStep(null);
+    }
+  };
+
   const handleEdgeDialogSave = () => {
     if (edgeDialog.edge) {
       onEdgeChange(edgeDialog.edge.id, { condition: edgeCondition } as RouteEdgeData);
@@ -125,7 +136,7 @@ export default function PropertyPanel({
           // Find all outgoing route edges from this step
           const outgoingRoutes = (edges ?? []).filter(e => e.type === SofiaEdgeType.ROUTE && e.source === node.id);
           return (
-            <Collapsible key={node.id} open={isOpen} onOpenChange={open => setOpenStep(open ? node.id : null)}>
+            <Collapsible key={node.id} open={isOpen} onOpenChange={open => handleOpen('step', open ? node.id : null)}>
               <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 border rounded mb-1 bg-muted">
                 <span>{data.label || data.step_id} {isStartStep(node.id) && <span className="ml-2 text-xs text-yellow-600">(Start)</span>}</span>
                 <span>{isOpen ? '-' : '+'}</span>
@@ -160,10 +171,7 @@ export default function PropertyPanel({
                             key={toolId}
                             variant="secondary"
                             className="cursor-pointer"
-                            onClick={() => {
-                              setOpenTool(toolId);
-                              setOpenStep(null);
-                            }}
+                            onClick={() => handleOpen('tool', toolId)}
                           >
                             {toolName}
                           </Badge>
@@ -228,7 +236,7 @@ export default function PropertyPanel({
           const data = node.data as ToolNodeData;
           const isOpen = openTool === node.id;
           return (
-            <Collapsible key={node.id} open={isOpen} onOpenChange={open => setOpenTool(open ? node.id : null)}>
+            <Collapsible key={node.id} open={isOpen} onOpenChange={open => handleOpen('tool', open ? node.id : null)}>
               <CollapsibleTrigger className="w-full flex items-center justify-between px-3 py-2 border rounded mb-1 bg-muted">
                 <span>{data.name}</span>
                 <span>{isOpen ? '-' : '+'}</span>
@@ -243,13 +251,54 @@ export default function PropertyPanel({
                   />
                 </div>
                 <div className="mb-2">
-                  <label className="block text-xs mb-1">Description</label>
-                  <Textarea
-                    value={data.description}
-                    onChange={e => onNodeChange(node.id, { ...data, description: e.target.value })}
-                    placeholder="Description"
-                    rows={3}
-                  />
+                  <label className="block text-xs mb-1">Arguments</label>
+                  <div className="flex flex-col gap-2">
+                    {(data.arguments || []).map((arg, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <Input
+                          className="w-1/3"
+                          value={arg.name}
+                          onChange={e => {
+                            const newArgs = [...data.arguments];
+                            newArgs[idx] = { ...arg, name: e.target.value };
+                            onNodeChange(node.id, { ...data, arguments: newArgs });
+                          }}
+                          placeholder="Arg name"
+                        />
+                        <Input
+                          className="flex-1"
+                          value={arg.description}
+                          onChange={e => {
+                            const newArgs = [...data.arguments];
+                            newArgs[idx] = { ...arg, description: e.target.value };
+                            onNodeChange(node.id, { ...data, arguments: newArgs });
+                          }}
+                          placeholder="Description"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            const newArgs = data.arguments.filter((_, i) => i !== idx);
+                            onNodeChange(node.id, { ...data, arguments: newArgs });
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="mt-1 w-fit"
+                      onClick={() => {
+                        const newArgs = [...(data.arguments || []), { name: '', description: '' }];
+                        onNodeChange(node.id, { ...data, arguments: newArgs });
+                      }}
+                    >
+                      + Add Argument
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex gap-2 mt-2">
                   <Button variant="destructive" onClick={() => onDeleteNode(node.id)}>

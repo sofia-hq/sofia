@@ -29,28 +29,22 @@ export function configToFlow(
 ): { nodes: Node[], edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
-  
-  // Map to track node IDs by step_id
   const nodeIdMap: Record<string, string> = {};
-  
-  // Collect all tool names
   const allToolNames: Set<string> = new Set();
-  config.steps.forEach(step => {
-    step.available_tools.forEach(tool => {
+  const steps = config.steps || [];
+  // Collect all tool names
+  steps.forEach(step => {
+    (step.available_tools || []).forEach(tool => {
       allToolNames.add(tool);
     });
   });
-  
   // Calculate positions for steps
-  const stepPositions = calculateNodePositions(config.steps);
-  
+  const stepPositions = calculateNodePositions(steps);
   // Create step nodes
-  config.steps.forEach((step, index) => {
-    // Create node for each step
+  steps.forEach((step, index) => {
     const isStartNode = step.step_id === config.start_step_id;
     const nodeId = `step_${Date.now()}_${index}`;
     nodeIdMap[step.step_id] = nodeId;
-    
     nodes.push({
       id: nodeId,
       type: SofiaNodeType.STEP,
@@ -59,34 +53,32 @@ export function configToFlow(
         label: `${isStartNode ? '🚀 ' : ''}${step.step_id}`,
         description: step.description,
         step_id: step.step_id,
-        available_tools: step.available_tools,
-      } as StepNodeData,
+        available_tools: step.available_tools || [],
+      },
     });
   });
-  
   // Create tool nodes
   let toolIndex = 0;
   const toolPositions: Record<string, XYPosition> = {};
   const toolNodeIdMap: Record<string, string> = {};
-  
+  // Map tool_arg_descriptions to tool nodes if present
+  const toolArgDescriptions = config.tool_arg_descriptions || {};
   allToolNames.forEach(toolName => {
     const nodeId = `tool_${Date.now()}_${toolIndex}`;
     toolNodeIdMap[toolName] = nodeId;
-    
-    // Position tools to the right of steps
     toolPositions[toolName] = { x: 500, y: 100 + toolIndex * 150 };
-    
+    // Convert tool_arg_descriptions to arguments array
+    const argDescObj = toolArgDescriptions[toolName] || {};
+    const argumentsArr = Object.entries(argDescObj).map(([name, description]) => ({ name, description }));
     nodes.push({
       id: nodeId,
       type: SofiaNodeType.TOOL,
       position: toolPositions[toolName],
       data: {
         name: toolName,
-        description: `Tool: ${toolName}`,
-        parameters: {},
-      } as ToolNodeData,
+        arguments: argumentsArr,
+      },
     });
-    
     toolIndex++;
   });
   
@@ -95,7 +87,7 @@ export function configToFlow(
     const sourceNodeId = nodeIdMap[step.step_id];
     
     // Create step-to-step route edges
-    step.routes.forEach((route, routeIndex) => {
+    (step.routes || []).forEach((route, routeIndex) => {
       const targetNodeId = nodeIdMap[route.target];
       
       if (sourceNodeId && targetNodeId) {
@@ -153,11 +145,8 @@ export function flowToConfig(
   start_step_id?: string
 ): SofiaConfig {
   const steps: Step[] = [];
-  
-  // Process all step nodes
   const stepNodes = nodes.filter(node => node.type === SofiaNodeType.STEP);
-  
-  // Map to track tool usage
+  const toolNodes = nodes.filter(node => node.type === SofiaNodeType.TOOL);
   const toolUsageMap: Record<string, string[]> = {};
   
   // Find all tool usage edges and build the mapping
@@ -182,7 +171,7 @@ export function flowToConfig(
   });
   
   stepNodes.forEach(node => {
-    const stepData = node.data as StepNodeData;
+    const stepData = node.data as any;
     const routes: Route[] = [];
     
     // Find all step-to-step edges that have this node as a source
@@ -207,13 +196,26 @@ export function flowToConfig(
     
     // Get available tools for this step
     const availableTools = toolUsageMap[node.id] || stepData.available_tools || [];
-    
-    steps.push({
+    const stepObj: any = {
       step_id: stepData.step_id,
       description: stepData.description,
-      routes: routes,
-      available_tools: availableTools,
-    });
+    };
+    if (routes.length > 0) stepObj.routes = routes;
+    if (availableTools.length > 0) stepObj.available_tools = availableTools;
+    steps.push(stepObj);
+  });
+  
+  // Collect tool_arg_descriptions if any tool node has arguments
+  const toolArgDescriptions: Record<string, any> = {};
+  toolNodes.forEach(node => {
+    const toolData = node.data as any;
+    if (toolData.arguments && toolData.arguments.length > 0) {
+      const argObj: Record<string, string> = {};
+      toolData.arguments.forEach((arg: { name: string; description: string }) => {
+        argObj[arg.name] = arg.description;
+      });
+      toolArgDescriptions[toolData.name] = argObj;
+    }
   });
   
   // Find the start step ID
@@ -234,12 +236,16 @@ export function flowToConfig(
     }
   }
   
-  return {
+  const config: any = {
     name,
     persona,
     start_step_id: actualStartStepId,
     steps,
   };
+  if (Object.keys(toolArgDescriptions).length > 0) {
+    config.tool_arg_descriptions = toolArgDescriptions;
+  }
+  return config;
 }
 
 // Parse YAML string to Sofia config

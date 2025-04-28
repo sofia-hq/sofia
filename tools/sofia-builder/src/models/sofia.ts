@@ -17,18 +17,16 @@ export interface Step {
   available_tools: string[];
 }
 
-// Represents a tool parameter
-export interface ToolParameter {
-  type: string;
-  description?: string;
-  default?: any;
+// Represents a tool argument
+export interface ToolArgument {
+  name: string;
+  description: string;
 }
 
 // Represents a tool that can be used by the agent
 export interface Tool {
   name: string;
-  description: string;
-  parameters: Record<string, ToolParameter>;
+  arguments: ToolArgument[];
 }
 
 // Represents tool argument descriptions
