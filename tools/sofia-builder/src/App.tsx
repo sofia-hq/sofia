@@ -427,7 +427,7 @@ export default function App() {
   }, [nodes, edges, config]);
   
   return (
-    <div className="app-container">
+    <div className="flex w-screen h-screen">
       {/* Sidebar */}
       <Sidebar
         onImportYaml={handleImportYaml}
@@ -437,9 +437,8 @@ export default function App() {
         onDragStart={onDragStart}
         onAgentConfigChange={handleAgentConfigChange}
       />
-      
       {/* React Flow */}
-      <div className="reactflow-wrapper" ref={reactFlowWrapper}>
+      <div className="flex-grow h-full min-w-0" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
           nodeTypes={nodeTypes}
@@ -454,6 +453,7 @@ export default function App() {
           onDragOver={onDragOver}
           onDrop={onDrop}
           fitView
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         >
           <Background />
           <MiniMap />
@@ -463,7 +463,6 @@ export default function App() {
           </Panel>
         </ReactFlow>
       </div>
-      
       {/* Property Panel */}
       <PropertyPanel
         selectedNode={selectedNode}

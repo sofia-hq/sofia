@@ -5,6 +5,8 @@ import { ToolNodeData } from '../nodes/ToolNode';
 import { RouteEdgeData } from '../edges/RouteEdge';
 import { ToolUsageEdgeData } from '../edges/ToolUsageEdge';
 import { SofiaConfig, SofiaEdgeType, SofiaNodeType } from '../models/sofia';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
 
 interface PropertyPanelProps {
   selectedNode: Node | null;
@@ -61,259 +63,179 @@ export default function PropertyPanel({
       setToolUsageName(data?.toolName || '');
     }
   }, [selectedNode, selectedEdge]);
-  
-  // If nothing is selected, show agent config
-  if (!selectedNode && !selectedEdge) {
-    return (
-      <div className="right-panel">
-        <h3>Agent Settings</h3>
-        
-        {/* Start step selector */}
-        <div className="form-group">
-          <label className="form-label">Start Step</label>
-          <select
-            className="form-control"
-            value={config.start_step_id}
-            onChange={(e) => onSetStartStep(e.target.value)}
-          >
-            <option value="">-- Select Start Step --</option>
-            {stepNodes.map((node) => (
-              <option key={node.id} value={node.id}>
-                {node.data.step_id}
-              </option>
-            ))}
-          </select>
-        </div>
-        
-        <p className="panel-message">
-          Select a step, tool, or route to edit its properties.
-        </p>
-      </div>
-    );
-  }
 
-  // Handle Step Node editing
-  if (selectedNode && selectedNode.type === SofiaNodeType.STEP) {
-    const handleStepIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setStepId(newValue);
-      
-      // Update the node data
-      const data = {...selectedNode.data as StepNodeData};
-      data.step_id = newValue;
-      onNodeChange(selectedNode.id, data);
-    };
-    
-    const handleStepDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      setStepDescription(newValue);
-      
-      // Update the node data
-      const data = {...selectedNode.data as StepNodeData};
-      data.description = newValue;
-      onNodeChange(selectedNode.id, data);
-    };
-    
-    const handleStepToolsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setStepTools(newValue);
-      
-      // Update the node data
-      const toolsList = newValue
-        .split(',')
-        .map(tool => tool.trim())
-        .filter(Boolean);
-      
-      const data = {...selectedNode.data as StepNodeData};
-      data.available_tools = toolsList;
-      onNodeChange(selectedNode.id, data);
-    };
-    
-    return (
-      <div className="right-panel">
-        <h3>Step Properties</h3>
-        
-        <div className="form-group">
-          <label className="form-label">Step ID</label>
-          <input 
-            type="text" 
-            className="form-control"
-            value={stepId}
-            onChange={handleStepIdChange}
-          />
+  // Always render as a static flex child
+  return (
+    <div className="w-[300px] h-full bg-background border-l flex flex-col">
+      {/* Agent Settings */}
+      {!selectedNode && !selectedEdge && (
+        <div className="space-y-4 p-4">
+          <div>
+            <label className="block text-xs mb-1">Start Step</label>
+            <select
+              className="w-full border rounded-md px-2 py-1 text-sm bg-background"
+              value={config.start_step_id}
+              onChange={(e) => onSetStartStep(e.target.value)}
+            >
+              <option value="">-- Select Start Step --</option>
+              {stepNodes.map((node) => (
+                <option key={node.id} value={node.id}>
+                  {node.data.step_id}
+                </option>
+              ))}
+            </select>
+          </div>
+          <p className="text-muted-foreground text-xs">Select a step, tool, or route to edit its properties.</p>
         </div>
-        
-        <div className="form-group">
-          <label className="form-label">Description</label>
-          <textarea 
-            className="form-control"
-            value={stepDescription}
-            onChange={handleStepDescriptionChange}
-          />
+      )}
+      {/* Step Node */}
+      {selectedNode && selectedNode.type === SofiaNodeType.STEP && (
+        <div className="space-y-4 p-4">
+          <div>
+            <label className="block text-xs mb-1">Step ID</label>
+            <Input
+              value={stepId}
+              onChange={e => {
+                const newValue = e.target.value;
+                setStepId(newValue);
+                const data = { ...selectedNode.data as StepNodeData };
+                data.step_id = newValue;
+                onNodeChange(selectedNode.id, data);
+              }}
+              placeholder="Step ID"
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1">Description</label>
+            <Input
+              as="textarea"
+              value={stepDescription}
+              onChange={e => {
+                const newValue = e.target.value;
+                setStepDescription(newValue);
+                const data = { ...selectedNode.data as StepNodeData };
+                data.description = newValue;
+                onNodeChange(selectedNode.id, data);
+              }}
+              placeholder="Description"
+              rows={3}
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1">Available Tools (comma separated)</label>
+            <Input
+              value={stepTools}
+              onChange={e => {
+                const newValue = e.target.value;
+                setStepTools(newValue);
+                const toolsList = newValue.split(',').map(tool => tool.trim()).filter(Boolean);
+                const data = { ...selectedNode.data as StepNodeData };
+                data.available_tools = toolsList;
+                onNodeChange(selectedNode.id, data);
+              }}
+              placeholder="tool1, tool2"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={isStartStep(selectedNode.id) ? 'secondary' : 'default'}
+              onClick={() => onSetStartStep(selectedNode.id)}
+              disabled={isStartStep(selectedNode.id)}
+            >
+              {isStartStep(selectedNode.id) ? 'Start Step' : 'Set as Start Step'}
+            </Button>
+            <Button variant="destructive" onClick={() => onDeleteNode(selectedNode.id)}>
+              Delete Step
+            </Button>
+          </div>
         </div>
-        
-        <div className="form-group">
-          <label className="form-label">Available Tools (comma separated)</label>
-          <input 
-            type="text" 
-            className="form-control"
-            value={stepTools}
-            onChange={handleStepToolsChange}
-          />
+      )}
+      {/* Tool Node */}
+      {selectedNode && selectedNode.type === SofiaNodeType.TOOL && (
+        <div className="space-y-4 p-4">
+          <div>
+            <label className="block text-xs mb-1">Name</label>
+            <Input
+              value={toolName}
+              onChange={e => {
+                const newValue = e.target.value;
+                setToolName(newValue);
+                const data = { ...selectedNode.data as ToolNodeData };
+                data.name = newValue;
+                onNodeChange(selectedNode.id, data);
+              }}
+              placeholder="Tool Name"
+            />
+          </div>
+          <div>
+            <label className="block text-xs mb-1">Description</label>
+            <Input
+              as="textarea"
+              value={toolDescription}
+              onChange={e => {
+                const newValue = e.target.value;
+                setToolDescription(newValue);
+                const data = { ...selectedNode.data as ToolNodeData };
+                data.description = newValue;
+                onNodeChange(selectedNode.id, data);
+              }}
+              placeholder="Description"
+              rows={3}
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="destructive" onClick={() => onDeleteNode(selectedNode.id)}>
+              Delete Tool
+            </Button>
+          </div>
         </div>
-        
-        <div className="form-group">
-          <button 
-            className={`btn ${isStartStep(selectedNode.id) ? 'btn-secondary' : 'btn-primary'}`}
-            onClick={() => onSetStartStep(selectedNode.id)}
-            disabled={isStartStep(selectedNode.id)}
-          >
-            {isStartStep(selectedNode.id) ? 'Start Step' : 'Set as Start Step'}
-          </button>
-        </div>
-        
-        <div className="form-group">
-          <button 
-            className="btn btn-danger"
-            onClick={() => onDeleteNode(selectedNode.id)}
-          >
-            Delete Step
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  // Handle Tool Node editing
-  if (selectedNode && selectedNode.type === SofiaNodeType.TOOL) {
-    const handleToolNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = e.target.value;
-      setToolName(newValue);
-      
-      // Update the node data
-      const data = {...selectedNode.data as ToolNodeData};
-      data.name = newValue;
-      onNodeChange(selectedNode.id, data);
-    };
-    
-    const handleToolDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const newValue = e.target.value;
-      setToolDescription(newValue);
-      
-      // Update the node data
-      const data = {...selectedNode.data as ToolNodeData};
-      data.description = newValue;
-      onNodeChange(selectedNode.id, data);
-    };
-    
-    return (
-      <div className="right-panel">
-        <h3>Tool Properties</h3>
-        
-        <div className="form-group">
-          <label className="form-label">Name</label>
-          <input 
-            type="text" 
-            className="form-control"
-            value={toolName}
-            onChange={handleToolNameChange}
-          />
-        </div>
-        
-        <div className="form-group">
-          <label className="form-label">Description</label>
-          <textarea 
-            className="form-control"
-            value={toolDescription}
-            onChange={handleToolDescriptionChange}
-          />
-        </div>
-        
-        <div className="form-group">
-          <button 
-            className="btn btn-danger"
-            onClick={() => onDeleteNode(selectedNode.id)}
-          >
-            Delete Tool
-          </button>
-        </div>
-      </div>
-    );
-  }
-  
-  // Handle Edge (Route) editing
-  if (selectedEdge) {
-    if (selectedEdge.type === SofiaEdgeType.ROUTE) {
-      const handleConditionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newValue = e.target.value;
-        setRouteCondition(newValue);
-        
-        // Update the edge data
-        onEdgeChange(selectedEdge.id, {
-          condition: newValue
-        } as RouteEdgeData);
-      };
-      
-      return (
-        <div className="right-panel">
-          <h3>Route Properties</h3>
-          
-          <div className="form-group">
-            <label className="form-label">Condition</label>
-            <textarea 
-              className="form-control"
+      )}
+      {/* Route Edge */}
+      {selectedEdge && selectedEdge.type === SofiaEdgeType.ROUTE && (
+        <div className="space-y-4 p-4">
+          <div>
+            <label className="block text-xs mb-1">Condition</label>
+            <Input
+              as="textarea"
               value={routeCondition}
-              onChange={handleConditionChange}
+              onChange={e => {
+                const newValue = e.target.value;
+                setRouteCondition(newValue);
+                onEdgeChange(selectedEdge.id, { condition: newValue } as RouteEdgeData);
+              }}
+              placeholder="Condition (optional)"
+              rows={3}
             />
           </div>
-          
-          <div className="form-group">
-            <button 
-              className="btn btn-danger"
-              onClick={() => onDeleteEdge(selectedEdge.id)}
-            >
+          <div className="flex gap-2">
+            <Button variant="destructive" onClick={() => onDeleteEdge(selectedEdge.id)}>
               Delete Route
-            </button>
+            </Button>
           </div>
         </div>
-      );
-    } else if (selectedEdge.type === SofiaEdgeType.TOOL_USAGE) {
-      const handleToolUsageNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newValue = e.target.value;
-        setToolUsageName(newValue);
-        
-        // Update the edge data
-        onEdgeChange(selectedEdge.id, {
-          toolName: newValue
-        } as ToolUsageEdgeData);
-      };
-      
-      return (
-        <div className="right-panel">
-          <h3>Tool Usage</h3>
-          
-          <div className="form-group">
-            <label className="form-label">Tool Name</label>
-            <input 
-              type="text" 
-              className="form-control"
+      )}
+      {/* Tool Usage Edge */}
+      {selectedEdge && selectedEdge.type === SofiaEdgeType.TOOL_USAGE && (
+        <div className="space-y-4 p-4">
+          <div>
+            <label className="block text-xs mb-1">Tool Name</label>
+            <Input
               value={toolUsageName}
-              onChange={handleToolUsageNameChange}
+              onChange={e => {
+                const newValue = e.target.value;
+                setToolUsageName(newValue);
+                onEdgeChange(selectedEdge.id, { toolName: newValue } as ToolUsageEdgeData);
+              }}
+              placeholder="Tool Name"
             />
           </div>
-          
-          <div className="form-group">
-            <button 
-              className="btn btn-danger"
-              onClick={() => onDeleteEdge(selectedEdge.id)}
-            >
+          <div className="flex gap-2">
+            <Button variant="destructive" onClick={() => onDeleteEdge(selectedEdge.id)}>
               Delete Tool Usage
-            </button>
+            </Button>
           </div>
         </div>
-      );
-    }
-  }
-  
-  return null;
+      )}
+    </div>
+  );
 }

@@ -61,7 +61,6 @@ export function configToFlow(
         step_id: step.step_id,
         available_tools: step.available_tools,
       } as StepNodeData,
-      style: isStartNode ? { borderColor: '#00ff00', borderWidth: 2 } : undefined,
     });
   });
   

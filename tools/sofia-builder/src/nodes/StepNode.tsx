@@ -1,5 +1,7 @@
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { SofiaNodeType } from '../models/sofia';
+import { cn } from '../lib/utils';
+import { BadgeInfo } from 'lucide-react';
 
 // Type definition for StepNode data
 export interface StepNodeData {
@@ -10,23 +12,37 @@ export interface StepNodeData {
 }
 
 export function StepNode({ data, selected }: NodeProps<StepNodeData>) {
+  // Determine if this is the start node
+  const isStartNode = data.label?.startsWith('🚀') || false;
   return (
-    <div className={`node step-node ${selected ? 'selected' : ''}`}>
-      <div className="node-header">
-        <div className="node-title">{data.label || data.step_id}</div>
+    <div
+      className={cn(
+        'sofia-node node step-node rounded-lg border shadow-sm bg-card text-card-foreground transition-all',
+        selected ? 'selected' : '',
+        selected
+          ? 'ring-2 ring-primary border-primary bg-primary/10 shadow-[0_0_0_2px_#3b82f6]'
+          : isStartNode
+            ? 'border-yellow-400 bg-yellow-100 dark:bg-yellow-900 dark:border-yellow-500'
+            : 'border-border',
+        'hover:shadow-lg'
+      )}
+      data-selected={selected}
+      style={isStartNode ? {} : undefined} // Remove any style prop that could set border
+    >
+      <div className="node-header flex items-center gap-2 px-3 py-2 border-b bg-muted rounded-t-lg">
+        <BadgeInfo className="text-primary size-4" />
+        <div className="node-title font-semibold text-sm truncate flex-1">{data.label || data.step_id}</div>
       </div>
-      <div className="node-content">
-        <div className="node-description">
+      <div className="node-content px-3 py-2">
+        <div className="node-description text-xs text-muted-foreground mb-1">
           {data.description ? data.description.substring(0, 100) + (data.description.length > 100 ? '...' : '') : 'No description'}
         </div>
         {data.available_tools && data.available_tools.length > 0 && (
-          <div className="node-tools">
-            <small>Tools: {data.available_tools.join(', ')}</small>
+          <div className="node-tools text-xs text-accent-foreground">
+            <span className="font-medium">Tools:</span> {data.available_tools.join(', ')}
           </div>
         )}
       </div>
-      
-      {/* Input handle on the left side */}
       <Handle 
         type="target" 
         position={Position.Left} 
@@ -34,8 +50,6 @@ export function StepNode({ data, selected }: NodeProps<StepNodeData>) {
         className="node-handle"
         style={{ top: '50%' }}
       />
-      
-      {/* Output handle on the right side */}
       <Handle 
         type="source" 
         position={Position.Right} 
@@ -43,8 +57,6 @@ export function StepNode({ data, selected }: NodeProps<StepNodeData>) {
         className="node-handle"
         style={{ top: '50%' }}
       />
-      
-      {/* Tool connection handle on the bottom */}
       <Handle 
         type="source" 
         position={Position.Bottom} 

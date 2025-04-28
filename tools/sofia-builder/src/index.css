@@ -53,36 +53,36 @@ body,
   background-color: #1E1E1E;
 }
 
-/* Layout */
-.app-container {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  background-color: #1E1E1E;
-}
+/* Remove legacy layout classes that conflict with Tailwind layout */
+/* .app-container { */
+/*   display: flex; */
+/*   width: 100vw; */
+/*   height: 100vh; */
+/*   background-color: #1E1E1E; */
+/* } */
 
-.sidebar {
-  width: 250px;
-  background-color: #252526;
-  border-right: 1px solid #333;
-  display: flex;
-  flex-direction: column;
-  z-index: 5;
-}
+/* .sidebar { */
+/*   width: 250px; */
+/*   background-color: #252526; */
+/*   border-right: 1px solid #333; */
+/*   display: flex; */
+/*   flex-direction: column; */
+/*   z-index: 5; */
+/* } */
 
-.reactflow-wrapper {
-  flex-grow: 1;
-  height: 100%;
-  background-color: #1E1E1E;
-}
+/* .reactflow-wrapper { */
+/*   flex-grow: 1; */
+/*   height: 100%; */
+/*   background-color: #1E1E1E; */
+/* } */
 
-.right-panel {
-  width: 300px;
-  background-color: #252526;
-  border-left: 1px solid #333;
-  padding: 10px;
-  overflow-y: auto;
-}
+/* .right-panel { */
+/*   width: 300px; */
+/*   background-color: #252526; */
+/*   border-left: 1px solid #333; */
+/*   padding: 10px; */
+/*   overflow-y: auto; */
+/* } */
 
 /* Sidebar Components */
 .sidebar-header {
@@ -369,6 +369,26 @@ textarea.form-control {
   --sidebar-ring: oklch(0.553 0.013 58.071);
 }
 
+/* React Flow dark mode overrides */
+.dark .react-flow__renderer,
+.dark .react-flow__panel,
+.dark .react-flow__controls,
+.dark .react-flow__minimap,
+.dark .react-flow__background {
+  color: #444 !important; /* Make dots visible in dark mode */
+}
+
+.dark .react-flow__controls-button {
+  background: #27272a !important;
+  color: #e5e7eb !important;
+  border-color: #3f3f46 !important;
+}
+
+.dark .react-flow__minimap {
+  background: #23232a !important;
+  border: 1px solid #3f3f46 !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -376,4 +396,20 @@ textarea.form-control {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+html, body, #root, #root > div {
+  height: 100% !important;
+  min-height: 100% !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sofia-node.selected,
+.sofia-node[data-selected='true'] {
+  box-shadow: 0 0 0 2px #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  z-index: 10;
 }

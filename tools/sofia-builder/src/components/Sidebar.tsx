@@ -1,5 +1,8 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { SofiaConfig } from '../models/sofia';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { ThemeToggle } from './ThemeToggle';
 
 interface SidebarProps {
   onImportYaml: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -10,7 +13,7 @@ interface SidebarProps {
   onAgentConfigChange: (name: string, persona: string) => void;
 }
 
-export default function Sidebar({ 
+export default function SofiaSidebar({ 
   onImportYaml, 
   onExportYaml, 
   onNewConfig, 
@@ -21,32 +24,30 @@ export default function Sidebar({
   const [showConfigForm, setShowConfigForm] = useState(false);
   const [agentName, setAgentName] = useState('');
   const [agentPersona, setAgentPersona] = useState('');
-  
-  // Update local state when config changes
+
   useEffect(() => {
     if (config) {
       setAgentName(config.name || '');
       setAgentPersona(config.persona || '');
     }
   }, [config]);
-  
+
   const handleImportClick = useCallback(() => {
     document.getElementById('yaml-import')?.click();
   }, []);
-  
+
   const handleConfigClick = useCallback(() => {
     if (config) {
       setShowConfigForm(true);
     }
   }, [config]);
-  
+
   const handleConfigSave = useCallback(() => {
     onAgentConfigChange(agentName, agentPersona);
     setShowConfigForm(false);
   }, [agentName, agentPersona, onAgentConfigChange]);
-  
+
   const handleConfigCancel = useCallback(() => {
-    // Reset to original values
     if (config) {
       setAgentName(config.name);
       setAgentPersona(config.persona);
@@ -55,77 +56,83 @@ export default function Sidebar({
   }, [config]);
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-header">Sofia Agent Builder</div>
-      
-      {showConfigForm ? (
-        <div className="sidebar-content">
-          <h3>Agent Configuration</h3>
-          <div className="form-group">
-            <label className="form-label">Agent Name</label>
-            <input 
-              type="text" 
-              className="form-control"
-              value={agentName} 
-              onChange={(e) => setAgentName(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Agent Persona</label>
-            <textarea 
-              className="form-control"
-              value={agentPersona} 
-              rows={5}
-              onChange={(e) => setAgentPersona(e.target.value)}
-            />
-          </div>
-          <div className="form-group">
-            <button className="btn btn-primary" onClick={handleConfigSave}>Save</button>
-            <button className="btn btn-secondary" style={{ marginLeft: '10px' }} onClick={handleConfigCancel}>Cancel</button>
-          </div>
-        </div>
-      ) : (
-        <div className="sidebar-content">
-          <h3>Components</h3>
-          <div 
-            className="dragable-item"
-            draggable
-            onDragStart={(event) => onDragStart(event, 'step', 'New Step')}
-          >
-            + Add Step
-          </div>
-          
-          <div 
-            className="dragable-item"
-            draggable
-            onDragStart={(event) => onDragStart(event, 'tool', 'New Tool')}
-          >
-            + Add Tool
-          </div>
-          
-          <h3>Current Config</h3>
-          {config && (
-            <div className="config-info">
-              <div><strong>Name:</strong> {config.name}</div>
-              <div><strong>Start Step:</strong> {config.start_step_id}</div>
-              <div><strong>Steps:</strong> {config.steps.length}</div>
-              <div style={{ marginTop: '10px' }}>
-                <button className="btn btn-secondary btn-block" onClick={handleConfigClick}>
-                  Edit Agent Config
-                </button>
+    <div className="w-[250px] h-full flex flex-col bg-sidebar text-sidebar-foreground border-r border-border z-5">
+      <div className="flex items-center justify-between w-full p-2 border-b">
+        <span className="text-lg font-bold">Sofia Agent Builder</span>
+        <ThemeToggle />
+      </div>
+      <div className="flex-1 overflow-y-auto p-2">
+        {showConfigForm ? (
+          <div>
+            <div className="font-semibold mb-2">Agent Configuration</div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs mb-1">Agent Name</label>
+                <Input
+                  value={agentName}
+                  onChange={e => setAgentName(e.target.value)}
+                  placeholder="Agent Name"
+                />
+              </div>
+              <div>
+                <label className="block text-xs mb-1">Agent Persona</label>
+                <Input
+                  as="textarea"
+                  value={agentPersona}
+                  onChange={e => setAgentPersona(e.target.value)}
+                  placeholder="Agent Persona"
+                  rows={4}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="default" onClick={handleConfigSave}>Save</Button>
+                <Button variant="secondary" onClick={handleConfigCancel}>Cancel</Button>
               </div>
             </div>
-          )}
-        </div>
-      )}
-      
-      <div className="sidebar-footer">
-        <button className="btn btn-secondary btn-block" onClick={onNewConfig}>
+          </div>
+        ) : (
+          <>
+            <div className="font-semibold mb-2">Components</div>
+            <Button
+              variant="outline"
+              className="w-full mb-2"
+              draggable
+              onDragStart={event => onDragStart(event, 'step', 'New Step')}
+            >
+              + Add Step
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full mb-2"
+              draggable
+              onDragStart={event => onDragStart(event, 'tool', 'New Tool')}
+            >
+              + Add Tool
+            </Button>
+            <div className="border-t my-3" />
+            <div className="font-semibold mb-2">Current Config</div>
+            {config && (
+              <div className="text-xs space-y-1">
+                <div><strong>Name:</strong> {config.name}</div>
+                <div><strong>Start Step:</strong> {config.start_step_id}</div>
+                <div><strong>Steps:</strong> {config.steps.length}</div>
+                <div className="mt-2">
+                  <Button variant="secondary" className="w-full" onClick={handleConfigClick}>
+                    Edit Agent Config
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div className="p-2 border-t flex flex-col gap-2">
+        <Button variant="secondary" className="w-full mb-2" onClick={onNewConfig}>
           New Config
-        </button>
-        <button className="btn btn-secondary btn-block" onClick={handleImportClick}>
+        </Button>
+        <Button variant="secondary" className="w-full mb-2" onClick={handleImportClick}>
           Import YAML
-        </button>
+        </Button>
         <input
           id="yaml-import"
           type="file"
@@ -133,13 +140,14 @@ export default function Sidebar({
           onChange={onImportYaml}
           style={{ display: 'none' }}
         />
-        <button 
-          className="btn btn-primary btn-block" 
+        <Button 
+          variant="default"
+          className="w-full"
           onClick={onExportYaml}
           disabled={!config || config.steps.length === 0}
         >
           Export YAML
-        </button>
+        </Button>
       </div>
     </div>
   );
