@@ -38,9 +38,6 @@ export default function PropertyPanel({
   // State for controlled form inputs
   const [stepId, setStepId] = useState('');
   const [stepDescription, setStepDescription] = useState('');
-  const [stepTools, setStepTools] = useState('');
-  const [toolName, setToolName] = useState('');
-  const [toolDescription, setToolDescription] = useState('');
   const [routeCondition, setRouteCondition] = useState('');
   const [toolUsageName, setToolUsageName] = useState('');
   
@@ -50,11 +47,10 @@ export default function PropertyPanel({
       const data = selectedNode.data as StepNodeData;
       setStepId(data.step_id || '');
       setStepDescription(data.description || '');
-      setStepTools(data.available_tools?.join(', ') || '');
     } else if (selectedNode && selectedNode.type === SofiaNodeType.TOOL) {
       const data = selectedNode.data as ToolNodeData;
-      setToolName(data.name || '');
-      setToolDescription(data.description || '');
+      setToolUsageName(data.name || '');
+      setRouteCondition(data.description || '');
     } else if (selectedEdge && selectedEdge.type === SofiaEdgeType.ROUTE) {
       const data = selectedEdge.data as RouteEdgeData;
       setRouteCondition(data?.condition || '');
@@ -121,20 +117,20 @@ export default function PropertyPanel({
               rows={3}
             />
           </div>
+          {/* Show attached tools for this step */}
           <div>
-            <label className="block text-xs mb-1">Available Tools (comma separated)</label>
-            <Input
-              value={stepTools}
-              onChange={e => {
-                const newValue = e.target.value;
-                setStepTools(newValue);
-                const toolsList = newValue.split(',').map(tool => tool.trim()).filter(Boolean);
-                const data = { ...selectedNode.data as StepNodeData };
-                data.available_tools = toolsList;
-                onNodeChange(selectedNode.id, data);
-              }}
-              placeholder="tool1, tool2"
-            />
+            <label className="block text-xs mb-1">Attached Tools</label>
+            <ul className="text-xs text-accent-foreground pl-2 list-disc">
+              {selectedNode.data.available_tools && selectedNode.data.available_tools.length > 0 ? (
+                selectedNode.data.available_tools.map((toolId: string) => {
+                  const toolNode = stepNodes.find((n) => n.id === toolId);
+                  const toolName = toolNode && toolNode.data && toolNode.data.name ? toolNode.data.name : toolId;
+                  return <li key={toolId}>{toolName}</li>;
+                })
+              ) : (
+                <li className="text-muted-foreground">No tools attached</li>
+              )}
+            </ul>
           </div>
           <div className="flex gap-2">
             <Button
@@ -156,10 +152,10 @@ export default function PropertyPanel({
           <div>
             <label className="block text-xs mb-1">Name</label>
             <Input
-              value={toolName}
+              value={toolUsageName}
               onChange={e => {
                 const newValue = e.target.value;
-                setToolName(newValue);
+                setToolUsageName(newValue);
                 const data = { ...selectedNode.data as ToolNodeData };
                 data.name = newValue;
                 onNodeChange(selectedNode.id, data);
@@ -171,10 +167,10 @@ export default function PropertyPanel({
             <label className="block text-xs mb-1">Description</label>
             <Input
               as="textarea"
-              value={toolDescription}
+              value={routeCondition}
               onChange={e => {
                 const newValue = e.target.value;
-                setToolDescription(newValue);
+                setRouteCondition(newValue);
                 const data = { ...selectedNode.data as ToolNodeData };
                 data.description = newValue;
                 onNodeChange(selectedNode.id, data);

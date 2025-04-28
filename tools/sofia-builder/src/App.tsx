@@ -93,12 +93,10 @@ export default function App() {
   const onConnect: OnConnect = useCallback(
     (connection) => {
       const connectionType = getConnectionType(connection);
-      
       if (!connectionType) {
         console.warn('Invalid connection type');
         return;
       }
-      
       if (connectionType === SofiaConnectionType.STEP_TO_STEP) {
         // Create a route edge
         const newEdge = {
@@ -114,22 +112,53 @@ export default function App() {
         };
         setEdges((edges) => addEdge(newEdge, edges));
       } else if (connectionType === SofiaConnectionType.STEP_TO_TOOL) {
-        // Get the tool name
-        const targetNode = nodes.find(node => node.id === connection.target);
-        const toolName = targetNode?.data.name || 'unknown';
-        
+        // Get the tool node ID
+        const toolNodeId = connection.target;
         // Create a tool usage edge
         const newEdge = {
           ...connection,
           type: SofiaEdgeType.TOOL_USAGE,
-          data: { toolName } as ToolUsageEdgeData,
+          data: { toolName: toolNodeId } as ToolUsageEdgeData, // store toolNodeId as toolName for pointer
           animated: true,
           className: 'tool-connection',
         };
         setEdges((edges) => addEdge(newEdge, edges));
+        // Add toolNodeId to the step's available_tools
+        setNodes((nds) => nds.map((node) => {
+          if (node.id === connection.source && node.type === SofiaNodeType.STEP) {
+            const data = { ...node.data };
+            if (!data.available_tools) data.available_tools = [];
+            if (!data.available_tools.includes(toolNodeId)) {
+              data.available_tools = [...data.available_tools, toolNodeId];
+            }
+            return { ...node, data };
+          }
+          return node;
+        }));
       }
     },
-    [setEdges, nodes]
+    [setEdges, setNodes, nodes]
+  );
+
+  // Handle edge deletion: remove tool from step's available_tools if TOOL_USAGE edge is deleted
+  const handleDeleteEdge = useCallback(
+    (id: string) => {
+      const edgeToDelete = edges.find((edge) => edge.id === id);
+      if (edgeToDelete && edgeToDelete.type === SofiaEdgeType.TOOL_USAGE) {
+        const stepId = edgeToDelete.source;
+        const toolNodeId = edgeToDelete.target;
+        setNodes((nds) => nds.map((node) => {
+          if (node.id === stepId && node.type === SofiaNodeType.STEP) {
+            const data = { ...node.data };
+            data.available_tools = (data.available_tools || []).filter((tid: string) => tid !== toolNodeId);
+            return { ...node, data };
+          }
+          return node;
+        }));
+      }
+      setEdges((eds) => eds.filter((edge) => edge.id !== id));
+    },
+    [setEdges, setNodes, edges]
   );
   
   // Handle node changes (position, selection, etc.)
@@ -220,14 +249,6 @@ export default function App() {
       setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
     },
     [setNodes, setEdges]
-  );
-  
-  // Delete an edge
-  const handleDeleteEdge = useCallback(
-    (id: string) => {
-      setEdges((eds) => eds.filter((edge) => edge.id !== id));
-    },
-    [setEdges]
   );
   
   // Set a step as the start step

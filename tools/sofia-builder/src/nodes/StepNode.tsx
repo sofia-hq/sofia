@@ -2,16 +2,26 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { SofiaNodeType } from '../models/sofia';
 import { cn } from '../lib/utils';
 import { BadgeInfo } from 'lucide-react';
+import { useStore } from '@xyflow/react';
 
 // Type definition for StepNode data
 export interface StepNodeData {
   label: string;
   description: string;
   step_id: string;
-  available_tools: string[];
+  available_tools: string[]; // array of tool node IDs
 }
 
-export function StepNode({ data, selected }: NodeProps<StepNodeData>) {
+export function StepNode({ data, selected, id }: NodeProps<StepNodeData>) {
+  // Get all nodes from React Flow store
+  const allNodes = useStore((s) => s.nodes);
+  // Map tool node IDs to tool names
+  const toolNames = (data.available_tools || [])
+    .map((toolId) => {
+      const toolNode = allNodes.find((n) => n.id === toolId);
+      return toolNode && toolNode.data && toolNode.data.name ? toolNode.data.name : toolId;
+    })
+    .filter(Boolean);
   // Determine if this is the start node
   const isStartNode = data.label?.startsWith('🚀') || false;
   return (
@@ -27,7 +37,6 @@ export function StepNode({ data, selected }: NodeProps<StepNodeData>) {
         'hover:shadow-lg'
       )}
       data-selected={selected}
-      style={isStartNode ? {} : undefined} // Remove any style prop that could set border
     >
       <div className="node-header flex items-center gap-2 px-3 py-2 border-b bg-muted rounded-t-lg">
         <BadgeInfo className="text-primary size-4" />
@@ -37,9 +46,9 @@ export function StepNode({ data, selected }: NodeProps<StepNodeData>) {
         <div className="node-description text-xs text-muted-foreground mb-1">
           {data.description ? data.description.substring(0, 100) + (data.description.length > 100 ? '...' : '') : 'No description'}
         </div>
-        {data.available_tools && data.available_tools.length > 0 && (
+        {toolNames.length > 0 && (
           <div className="node-tools text-xs text-accent-foreground">
-            <span className="font-medium">Tools:</span> {data.available_tools.join(', ')}
+            <span className="font-medium">Tools:</span> {toolNames.join(', ')}
           </div>
         )}
       </div>
