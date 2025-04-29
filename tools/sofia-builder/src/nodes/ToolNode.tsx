@@ -1,5 +1,4 @@
-import { Handle, Position, NodeProps } from '@xyflow/react';
-import { SofiaNodeType } from '../models/sofia';
+import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { cn } from '../lib/utils';
 import { WrenchIcon } from 'lucide-react';
 
@@ -8,12 +7,14 @@ export interface ToolArgument {
   description: string;
 }
 
+// Define just the data structure for the tool node
 export interface ToolNodeData {
   name: string;
   arguments: ToolArgument[];
+  [key: string]: unknown; // Add index signature to satisfy Record<string, unknown>
 }
 
-export function ToolNode({ data, selected }: NodeProps<ToolNodeData>) {
+export function ToolNode({ data, selected }: NodeProps<Node<ToolNodeData>>) {
   return (
     <div
       className={cn(

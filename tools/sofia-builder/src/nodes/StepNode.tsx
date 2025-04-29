@@ -1,5 +1,4 @@
-import { Handle, Position, NodeProps } from '@xyflow/react';
-import { SofiaNodeType } from '../models/sofia';
+import { Handle, Position, NodeProps, Node } from '@xyflow/react';
 import { cn } from '../lib/utils';
 import { FootprintsIcon } from 'lucide-react';
 import { useStore } from '@xyflow/react';
@@ -10,14 +9,15 @@ export interface StepNodeData {
   description: string;
   step_id: string;
   available_tools: string[]; // array of tool node IDs
+  [key: string]: unknown; // Add index signature to satisfy Record<string, unknown>
 }
 
-export function StepNode({ data, selected, id }: NodeProps<StepNodeData>) {
+export function StepNode({ data, selected }: NodeProps<Node<StepNodeData>>) {
   // Get all nodes from React Flow store
   const allNodes = useStore((s) => s.nodes);
   // Map tool node IDs to tool names
   const toolNames = (data.available_tools || [])
-    .map((toolId) => {
+    .map((toolId: string) => {
       const toolNode = allNodes.find((n) => n.id === toolId);
       return toolNode && toolNode.data && toolNode.data.name ? toolNode.data.name : toolId;
     })

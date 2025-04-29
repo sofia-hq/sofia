@@ -1,22 +1,20 @@
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath } from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Edge } from '@xyflow/react';
+import { CSSProperties } from 'react';
 
-// Type definition for Sofia route edge data
-export interface RouteEdgeData {
+export interface RouteEdgeData extends Edge<{ condition: string }> {
   condition: string;
 }
 
 export function RouteEdge({
-  id,
   sourceX,
   sourceY,
   targetX,
   targetY,
   sourcePosition,
   targetPosition,
-  style = {},
+  style = {} as CSSProperties,
   markerEnd,
-  data,
-  ...edgeProps // get onDoubleClick, etc.
+  data
 }: EdgeProps<RouteEdgeData>) {
   const curvature = 0.6;
   const [edgePath, labelX, labelY] = getBezierPath({
@@ -43,7 +41,6 @@ export function RouteEdge({
         strokeWidth={16}
         style={{ cursor: 'pointer' }}
         pointerEvents="stroke"
-        onDoubleClick={edgeProps.onDoubleClick}
       />
       {/* Actual edge */}
       <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />

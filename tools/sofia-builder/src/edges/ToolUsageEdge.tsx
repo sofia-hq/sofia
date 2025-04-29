@@ -1,21 +1,19 @@
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath } from '@xyflow/react';
+import { BaseEdge, Edge, EdgeProps, getBezierPath } from '@xyflow/react';
+import { CSSProperties } from 'react';
 
-// Type definition for ToolUsageEdge data
-export interface ToolUsageEdgeData {
+export interface ToolUsageEdgeData extends Edge<{ toolName: string }> {
   toolName: string;
 }
 
 export function ToolUsageEdge({
-  id,
   sourceX,
   sourceY,
   targetX,
   targetY,
   sourcePosition,
   targetPosition,
-  style = {},
+  style = {} as CSSProperties,
   markerEnd,
-  data,
 }: EdgeProps<ToolUsageEdgeData>) {
   const curvature = 0.6;
   
