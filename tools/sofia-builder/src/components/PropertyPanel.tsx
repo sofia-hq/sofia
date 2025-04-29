@@ -21,6 +21,7 @@ interface PropertyPanelProps {
   onNodeChange: (id: string, data: StepNodeData | ToolNodeData) => void;
   onEdgeChange: (id: string, data: RouteEdgeData | ToolUsageEdgeData) => void;
   onDeleteNode: (id: string) => void;
+  onDeleteEdge: (id: string) => void;
   onSetStartStep: (id: string) => void;
   isStartStep: (id: string) => boolean;
   config: SofiaConfig;

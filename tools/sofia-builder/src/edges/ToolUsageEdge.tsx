@@ -1,8 +1,13 @@
-import { BaseEdge, Edge, EdgeProps, getBezierPath } from '@xyflow/react';
+import { BaseEdge, EdgeProps, getBezierPath } from '@xyflow/react';
 import { CSSProperties } from 'react';
 
-export interface ToolUsageEdgeData extends Edge<{ toolName: string }> {
+export interface ToolUsageEdgeData extends Record<string, unknown> {
   toolName: string;
+}
+
+export interface ToolUsageEdgeProps extends EdgeProps {
+  data?: ToolUsageEdgeData;
+  style?: CSSProperties;
 }
 
 export function ToolUsageEdge({
@@ -12,9 +17,9 @@ export function ToolUsageEdge({
   targetY,
   sourcePosition,
   targetPosition,
-  style = {} as CSSProperties,
+  style = {},
   markerEnd,
-}: EdgeProps<ToolUsageEdgeData>) {
+}: ToolUsageEdgeProps) {
   const curvature = 0.6;
   
   const [edgePath] = getBezierPath({
@@ -28,6 +33,6 @@ export function ToolUsageEdge({
   });
 
   return (
-    <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+    <BaseEdge path={edgePath} markerEnd={markerEnd} style={style as CSSProperties} />
   );
 }

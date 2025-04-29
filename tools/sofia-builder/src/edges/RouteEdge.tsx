@@ -1,8 +1,14 @@
-import { BaseEdge, EdgeLabelRenderer, EdgeProps, getBezierPath, Edge } from '@xyflow/react';
+import { BaseEdge, EdgeProps, getBezierPath, EdgeLabelRenderer } from '@xyflow/react';
 import { CSSProperties } from 'react';
 
-export interface RouteEdgeData extends Edge<{ condition: string }> {
+// Type definition for Sofia route edge data
+export interface RouteEdgeData extends Record<string, unknown> {
   condition: string;
+}
+
+export interface RouteEdgeProps extends EdgeProps {
+  data?: RouteEdgeData;
+  style?: CSSProperties;
 }
 
 export function RouteEdge({
@@ -12,10 +18,10 @@ export function RouteEdge({
   targetY,
   sourcePosition,
   targetPosition,
-  style = {} as CSSProperties,
+  style = {},
   markerEnd,
-  data
-}: EdgeProps<RouteEdgeData>) {
+  data,
+}: RouteEdgeProps) {
   const curvature = 0.6;
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
@@ -28,7 +34,8 @@ export function RouteEdge({
   });
 
   // Cap the condition string
-  const condition = data?.condition || '';
+  const edgeData = data as RouteEdgeData;
+  const condition = edgeData?.condition || '';
   const cappedCondition = condition.length > 32 ? condition.slice(0, 32) + '…' : condition;
 
   return (
@@ -43,7 +50,7 @@ export function RouteEdge({
         pointerEvents="stroke"
       />
       {/* Actual edge */}
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
+      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style as CSSProperties} />
       {/* Edge label */}
       {cappedCondition && (
         <EdgeLabelRenderer>

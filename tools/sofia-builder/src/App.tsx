@@ -4,18 +4,17 @@ import {
   Background,
   Controls,
   MiniMap,
+  applyEdgeChanges,
+  applyNodeChanges,
   addEdge,
-  useNodesState,
-  useEdgesState,
-  type OnConnect,
-  NodeChange,
-  EdgeChange,
+  Node as FlowNode,
+  Edge as FlowEdge,
   Connection,
-  Node,
-  Edge,
   useReactFlow,
   Panel,
   MarkerType,
+  NodeChange,
+  EdgeChange,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
@@ -31,6 +30,9 @@ import { configToFlow, flowToConfig, parseYaml, generateYaml } from './utils/yam
 import Sidebar from './components/Sidebar';
 import PropertyPanel from './components/PropertyPanel';
 
+type SofiaNode = FlowNode<StepNodeData | ToolNodeData>;
+type SofiaEdge = FlowEdge<RouteEdgeData | ToolUsageEdgeData>;
+
 const defaultConfig: SofiaConfig = {
   name: 'New Sofia Agent',
   persona: 'A helpful assistant',
@@ -42,21 +44,21 @@ export default function App() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes] = useState<SofiaNode[]>([]);
+  const [edges, setEdges] = useState<SofiaEdge[]>([]);
   const [config, setConfig] = useState<SofiaConfig>(defaultConfig);
   
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [selectedEdge, setSelectedEdge] = useState<Edge | null>(null);
+  const [selectedNode, setSelectedNode] = useState<SofiaNode | null>(null);
+  const [selectedEdge, setSelectedEdge] = useState<SofiaEdge | null>(null);
   
   // Handle node selection
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: SofiaNode) => {
     setSelectedNode(node);
     setSelectedEdge(null);
   }, []);
-  
+
   // Handle edge selection
-  const onEdgeClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+  const onEdgeClick = useCallback((_event: React.MouseEvent, edge: SofiaEdge) => {
     setSelectedEdge(edge);
     setSelectedNode(null);
   }, []);
@@ -68,7 +70,7 @@ export default function App() {
   }, []);
   
   // Handle edge double click (for editing route condition)
-  const onEdgeDoubleClick = useCallback((event: React.MouseEvent, edge: Edge) => {
+  const onEdgeDoubleClick = useCallback((_event: React.MouseEvent, edge: SofiaEdge) => {
     setSelectedEdge(edge);
     setSelectedNode(null);
   }, []);
@@ -95,55 +97,76 @@ export default function App() {
     return null;
   };
   
+  // Handle node changes
+  const onNodesChange = useCallback((changes: NodeChange[]) => {
+    setNodes((nds) => applyNodeChanges(changes as NodeChange[], nds) as SofiaNode[]);
+  }, []);
+
+  // Handle edge changes
+  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
+    setEdges((eds) => applyEdgeChanges(changes as EdgeChange[], eds) as SofiaEdge[]);
+  }, []);
+
   // Handle connection between nodes
-  const onConnect: OnConnect = useCallback(
-    (connection) => {
+  const createNewEdge = (connection: Connection, type: SofiaEdgeType, data: RouteEdgeData | ToolUsageEdgeData): SofiaEdge => ({
+    ...connection,
+    id: `${type}_${Date.now()}`,
+    type,
+    data,
+  });
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
       const connectionType = getConnectionType(connection);
       if (!connectionType) {
         console.warn('Invalid connection type');
         return;
       }
+
       if (connectionType === SofiaConnectionType.STEP_TO_STEP) {
-        // Create a route edge
-        const newEdge = {
-          ...connection,
-          type: SofiaEdgeType.ROUTE,
-          data: { condition: 'True' } as RouteEdgeData,
-          animated: true,
-          className: 'step-connection',
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#1a73e8',
-          },
+        const newEdge = createNewEdge(
+          connection,
+          SofiaEdgeType.ROUTE,
+          { condition: 'True' } as RouteEdgeData
+        );
+        newEdge.animated = true;
+        newEdge.className = 'step-connection';
+        newEdge.markerEnd = {
+          type: MarkerType.ArrowClosed,
+          color: '#1a73e8',
         };
-        setEdges((edges) => addEdge(newEdge, edges));
+        setEdges((eds) => addEdge(newEdge, eds));
       } else if (connectionType === SofiaConnectionType.STEP_TO_TOOL) {
-        // Get the tool node ID
         const toolNodeId = connection.target;
-        // Create a tool usage edge
-        const newEdge = {
-          ...connection,
-          type: SofiaEdgeType.TOOL_USAGE,
-          data: { toolName: toolNodeId } as ToolUsageEdgeData, // store toolNodeId as toolName for pointer
-          animated: true,
-          className: 'tool-connection',
-        };
-        setEdges((edges) => addEdge(newEdge, edges));
+        const newEdge = createNewEdge(
+          connection,
+          SofiaEdgeType.TOOL_USAGE,
+          { toolName: toolNodeId } as ToolUsageEdgeData
+        );
+        newEdge.animated = true;
+        newEdge.className = 'tool-connection';
+        setEdges((eds) => addEdge(newEdge, eds));
+        
         // Add toolNodeId to the step's available_tools
         setNodes((nds) => nds.map((node) => {
           if (node.id === connection.source && node.type === SofiaNodeType.STEP) {
-            const data = { ...node.data };
-            if (!data.available_tools) data.available_tools = [];
-            if (!data.available_tools.includes(toolNodeId)) {
-              data.available_tools = [...data.available_tools, toolNodeId];
+            const data = node.data as StepNodeData;
+            const available_tools = Array.isArray(data.available_tools) ? data.available_tools : [];
+            if (!available_tools.includes(toolNodeId)) {
+              return {
+                ...node,
+                data: {
+                  ...data,
+                  available_tools: [...available_tools, toolNodeId]
+                }
+              };
             }
-            return { ...node, data };
           }
           return node;
         }));
       }
     },
-    [setEdges, setNodes, nodes]
+    [nodes]
   );
 
   // Handle edge deletion: remove tool from step's available_tools if TOOL_USAGE edge is deleted
@@ -155,9 +178,14 @@ export default function App() {
         const toolNodeId = edgeToDelete.target;
         setNodes((nds) => nds.map((node) => {
           if (node.id === stepId && node.type === SofiaNodeType.STEP) {
-            const data = { ...node.data };
-            data.available_tools = (data.available_tools || []).filter((tid: string) => tid !== toolNodeId);
-            return { ...node, data };
+            const nodeData = node.data as StepNodeData;
+            return {
+              ...node,
+              data: {
+                ...nodeData,
+                available_tools: nodeData.available_tools.filter(tid => tid !== toolNodeId)
+              }
+            };
           }
           return node;
         }));
@@ -165,32 +193,6 @@ export default function App() {
       setEdges((eds) => eds.filter((edge) => edge.id !== id));
     },
     [setEdges, setNodes, edges]
-  );
-  
-  // Handle node changes (position, selection, etc.)
-  const handleNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      // If a node is removed, deselect it
-      const nodeDeleted = changes.find(change => change.type === 'remove');
-      if (nodeDeleted && selectedNode && nodeDeleted.id === selectedNode.id) {
-        setSelectedNode(null);
-      }
-      onNodesChange(changes);
-    },
-    [onNodesChange, selectedNode]
-  );
-  
-  // Handle edge changes
-  const handleEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      // If an edge is removed, deselect it
-      const edgeDeleted = changes.find(change => change.type === 'remove');
-      if (edgeDeleted && selectedEdge && edgeDeleted.id === selectedEdge.id) {
-        setSelectedEdge(null);
-      }
-      onEdgesChange(changes);
-    },
-    [onEdgesChange, selectedEdge]
   );
   
   // Update node data from property panel
@@ -247,12 +249,29 @@ export default function App() {
     [setConfig]
   );
   
-  // Delete a node
+  // Delete a node and associated tool references
   const handleDeleteNode = useCallback(
     (id: string) => {
       setNodes((nds) => nds.filter((node) => node.id !== id));
       // Also remove any connected edges
       setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id));
+      // If deleting a tool node, remove it from any steps that use it
+      setNodes((nds) => nds.map((node) => {
+        if (node.type === SofiaNodeType.STEP) {
+          const data = node.data as StepNodeData;
+          const available_tools = Array.isArray(data.available_tools) ? data.available_tools : [];
+          if (available_tools.includes(id)) {
+            return {
+              ...node,
+              data: {
+                ...data,
+                available_tools: available_tools.filter((tid) => tid !== id)
+              }
+            };
+          }
+        }
+        return node;
+      }));
     },
     [setNodes, setEdges]
   );
@@ -296,27 +315,13 @@ export default function App() {
     [config]
   );
   
-  // Get all step nodes
-  const getStepNodes = useCallback(
-    () => {
-      return nodes.filter(node => node.type === SofiaNodeType.STEP);
-    },
-    [nodes]
-  );
-  
-  // Handle drag and drop from sidebar
-  const onDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-  }, []);
-  
+  // Handle drag and drop
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       
       const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow/type');
-      const name = event.dataTransfer.getData('application/reactflow/name');
       
       if (typeof type === 'undefined' || !type || !reactFlowBounds) {
         return;
@@ -330,7 +335,7 @@ export default function App() {
       // Create a unique ID
       const id = `${type}_${Date.now()}`;
       
-      let newNode: Node = { id, position } as Node;
+      let newNode: SofiaNode = { id, position } as SofiaNode;
       
       if (type === SofiaNodeType.STEP) {
         const isFirst = nodes.filter(n => n.type === SofiaNodeType.STEP).length === 0;
@@ -366,7 +371,7 @@ export default function App() {
           data: {
             name: toolName,
             description: 'New tool description',
-            parameters: {},
+            arguments: []
           } as ToolNodeData,
         };
       }
@@ -405,10 +410,10 @@ export default function App() {
           const importedConfig = parseYaml(yamlString);
           setConfig(importedConfig);
           
-          // Convert config to nodes and edges
+          // Convert config to nodes and edges and cast to correct types
           const { nodes: importedNodes, edges: importedEdges } = configToFlow(importedConfig);
-          setNodes(importedNodes);
-          setEdges(importedEdges);
+          setNodes(importedNodes as SofiaNode[]);
+          setEdges(importedEdges as SofiaEdge[]);
           
           // Reset selection
           setSelectedNode(null);
@@ -467,19 +472,19 @@ export default function App() {
       {/* React Flow */}
       <div className="flex-grow h-full min-w-0" ref={reactFlowWrapper}>
         <ReactFlow
-          nodes={nodes}
+          nodes={nodes as FlowNode[]}
           nodeTypes={nodeTypes}
-          onNodesChange={handleNodesChange}
-          edges={edges}
+          onNodesChange={onNodesChange}
+          edges={edges as FlowEdge[]}
           edgeTypes={edgeTypes}
-          onEdgesChange={handleEdgesChange}
+          onEdgesChange={onEdgesChange}
           onConnect={onConnect}
-          onNodeClick={onNodeClick}
-          onEdgeClick={onEdgeClick}
-          onEdgeDoubleClick={onEdgeDoubleClick}
+          onNodeClick={onNodeClick as any}
+          onEdgeClick={onEdgeClick as any}
+          onEdgeDoubleClick={onEdgeDoubleClick as any}
           onPaneClick={onPaneClick}
-          onDragOver={onDragOver}
           onDrop={onDrop}
+          onDragOver={(e) => e.preventDefault()}
           fitView
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         >
