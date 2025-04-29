@@ -2,6 +2,7 @@ import React, { useCallback, useState, useEffect } from 'react';
 import { SofiaConfig } from '../models/sofia';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { ThemeToggle } from './ThemeToggle';
 import { PlusCircle } from 'lucide-react';
 
@@ -50,6 +51,10 @@ export default function SofiaSidebar({
     setShowConfigForm(false);
   }, [config]);
 
+  const handleDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: string, label: string) => {
+    onDragStart(event, nodeType, label);
+  };
+
   return (
     <div className="w-[250px] h-full flex flex-col bg-sidebar text-sidebar-foreground border-r border-border z-5">
       <div className="flex items-center justify-between w-full p-2 border-b">
@@ -71,8 +76,7 @@ export default function SofiaSidebar({
               </div>
               <div>
                 <label className="block text-xs mb-1">Agent Persona</label>
-                <Input
-                  as="textarea"
+                <Textarea
                   value={agentPersona}
                   onChange={e => setAgentPersona(e.target.value)}
                   placeholder="Agent Persona"
@@ -87,25 +91,32 @@ export default function SofiaSidebar({
           </div>
         ) : (
           <>
-            {/* <div className="font-semibold mb-2">Components</div> */}
-            <Button
-              variant="outline"
-              className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
+            <div
               draggable
-              onDragStart={event => onDragStart(event, 'step', 'New Step')}
+              onDragStart={(e) => handleDragStart(e, 'step', 'New Step')}
+              className="mb-3"
             >
-              <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Step</span>
-              <span className="text-xs text-muted-foreground mt-1 block text-center">A step is a state in your<br /> agent's flow</span>
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
+              <Button
+                variant="outline"
+                className="w-full h-30 text-base flex flex-col items-center justify-center"
+              >
+                <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Step</span>
+                <span className="text-xs text-muted-foreground mt-1 block text-center">A step is a state in your<br /> agent's flow</span>
+              </Button>
+            </div>
+            <div
               draggable
-              onDragStart={event => onDragStart(event, 'tool', 'New Tool')}
+              onDragStart={(e) => handleDragStart(e, 'tool', 'New Tool')}
+              className="mb-3"
             >
-              <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Tool</span>
-              <span className="text-xs text-muted-foreground mt-1 block text-center">A tool is an action your agent<br /> can use</span>
-            </Button>
+              <Button
+                variant="outline"
+                className="w-full h-30 text-base flex flex-col items-center justify-center"
+              >
+                <span className="font-semibold flex items-center justify-center gap-2"><PlusCircle className="w-4 h-4" /> Tool</span>
+                <span className="text-xs text-muted-foreground mt-1 block text-center">A tool is an action your agent<br /> can use</span>
+              </Button>
+            </div>
             <Button
               variant="outline"
               className="w-full h-30 text-base flex flex-col items-center justify-center mb-3"
