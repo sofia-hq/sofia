@@ -27,5 +27,5 @@ cli = [
 ]
 
 [project.scripts]
-sofia = "sofia.cli:main"
+sofia = "sofia_agent.cli:main"
 
