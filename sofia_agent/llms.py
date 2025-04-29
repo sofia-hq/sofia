@@ -4,7 +4,6 @@ LLM base classes and OpenAI LLM integration for SOFIA.
 
 from typing import List, Optional, Union, Dict
 
-from openai import OpenAI
 from pydantic import BaseModel
 
 from .constants import DEFAULT_SYSTEM_MESSAGE, DEFAULT_PERSONA
@@ -172,14 +171,16 @@ class OpenAIChatLLM(LLMBase):
     """
     OpenAI Chat LLM integration for SOFIA.
     """
-    def __init__(self, model: str = "gpt-4o-mini"):
+    def __init__(self, model: str = "gpt-4o-mini", **kwargs):
         """
         Initialize the OpenAIChatLLM.
 
         :param model: Model name to use (default: gpt-4o-mini).
+        :param kwargs: Additional parameters for OpenAI API.
         """
+        from openai import OpenAI
         self.model = model
-        self.client = OpenAI()
+        self.client = OpenAI(**kwargs)
 
     def get_output(
         self,
@@ -203,3 +204,87 @@ class OpenAIChatLLM(LLMBase):
             response_format=response_format,
         )
         return comp.choices[0].message.parsed
+    
+
+class MistralAILLM(LLMBase):
+    """
+    Mistral AI LLM integration for SOFIA.
+    """
+    def __init__(self, model: str = "mistral-7b", **kwargs):
+        """
+        Initialize the MistralAI LLM.
+
+        :param model: Model name to use (default: mistral-7b).
+        :param kwargs: Additional parameters for Mistral API.
+        """
+        from mistralai import Mistral
+        self.model = model
+        self.client = Mistral(**kwargs)
+
+    def get_output(
+        self,
+        messages: List[Message],
+        response_format: BaseModel,
+    ) -> BaseModel:
+        """
+        Get a structured response from the Mistral LLM.
+
+        :param messages: List of Message objects.
+        :param response_format: Pydantic model for the expected response.
+        :return: Parsed response as a BaseModel.
+        """
+        _messages = [
+            msg.model_dump()
+            for msg in messages
+        ]
+        comp = self.client.chat.parse(
+            model=self.model,
+            messages=_messages,
+            response_format=response_format,
+        )
+        return comp.choices[0].message.parsed
+
+
+class GeminiLLM(LLMBase):
+    """
+    Gemini LLM integration for SOFIA.
+    """
+    def __init__(self, model: str = "gemini-2.0-flash", **kwargs):
+        """
+        Initialize the Gemini LLM.
+
+        :param model: Model name to use (default: gemini-2.0-flash).
+        :param kwargs: Additional parameters for Gemini API.
+        """
+        from google.genai import Client
+        
+        self.model = model
+        self.client = Client(**kwargs)
+
+    def get_output(
+        self,
+        messages: List[Message],
+        response_format: BaseModel,
+    ) -> BaseModel:
+        """
+        Get a structured response from the Gemini LLM.
+
+        :param messages: List of Message objects.
+        :param response_format: Pydantic model for the expected response.
+        :return: Parsed response as a BaseModel.
+        """
+        from google.genai import types
+
+        system_message = next(msg.content for msg in messages if msg.role == "system")
+        user_message = next(msg.content for msg in messages if msg.role == "user")
+
+        comp = self.client.chat.parse(
+            model=self.model,
+            contents=[user_message],
+            config = types.GenerateContentConfig(
+                system_instruction= system_message,
+                response_mime_type='application/json',
+                response_schema=response_format
+            )
+        )
+        return comp.parsed

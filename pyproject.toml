@@ -9,7 +9,6 @@ license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
 dependencies = [
-    "openai (>=1.76.0,<2.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
     "pydantic (>=2.11.3,<3.0.0)",
     "pyyaml (>=6.0.2,<7.0.0)",
@@ -25,6 +24,15 @@ build-backend = "poetry.core.masonry.api"
 cli = [
     "questionary (>=2.1.0,<3.0.0)",
 ]
+openai = [
+    "openai (>=1.76.0,<2.0.0)",
+]
+mistralai = [
+    "mistralai (>=1.7.0,<2.0.0)",
+]
+gemini = [
+    "google-genai (>=1.12.1,<2.0.0)",
+]  
 
 [project.scripts]
 sofia = "sofia_agent.cli:main"
