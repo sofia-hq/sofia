@@ -1,54 +1,46 @@
-![](https://github.com/xyflow/web/blob/main/assets/codesandbox-header-ts.png?raw=true)
+# Sofia Builder
 
-# React Flow starter (Vite + TS)
+A visual builder for Sofia agents.
 
-We've put together this template to serve as a starting point for folks
-interested in React Flow. You can use this both as a base for your own React
-Flow applications, or for small experiments or bug reports.
-
-**TypeScript not your thing?** We also have a vanilla JavaScript starter template,
-just for you!
-
-## Getting up and running
-
-You can get this template without forking/cloning the repo using `degit`:
+## Development
 
 ```bash
-npx degit xyflow/vite-react-flow-template your-app-name
-```
-
-The template contains mostly the minimum dependencies to get up and running, but
-also includes eslint and some additional rules to help you write React code that
-is less likely to run into issues:
-
-```bash
-npm install # or `pnpm install` or `yarn install`
-```
-
-Vite is a great development server and build tool that we recommend our users to
-use. You can start a development server with:
-
-```bash
+npm install
 npm run dev
 ```
 
-While the development server is running, changes you make to the code will be
-automatically reflected in the browser!
+## Production Build
 
-## Things to try:
+```bash
+npm run build
+npm run preview
+```
 
-- Create a new custom node inside `src/nodes/` (don't forget to export it from `src/nodes/index.ts`).
-- Change how things look by [overriding some of the built-in classes](https://reactflow.dev/learn/customization/theming#overriding-built-in-classes).
-- Add a layouting library to [position your nodes automatically](https://reactflow.dev/learn/layouting/layouting)
+## Docker
 
-## Resources
+You can run the Sofia Builder using Docker:
 
-Links:
+### Build the Image
 
-- [React Flow - Docs](https://reactflow.dev)
-- [React Flow - Discord](https://discord.com/invite/Bqt6xrs)
+```bash
+docker build -t sofia-builder .
+```
 
-Learn:
+### Run the Container
 
-- [React Flow – Custom Nodes](https://reactflow.dev/learn/customization/custom-nodes)
-- [React Flow – Layouting](https://reactflow.dev/learn/layouting/layouting)
+```bash
+docker run -p 8080:80 sofia-builder
+```
+
+The application will be available at `http://localhost:8080`
+
+### Configuration
+
+- The default port is 80 inside the container
+- The application is served using nginx with proper caching and routing configuration
+- Static assets are automatically cached for better performance
+- React Router is properly configured to handle client-side routing
+
+### Environment Variables
+
+None required for basic usage.
