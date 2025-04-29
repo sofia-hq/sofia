@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union, Callable, Any
 from pydantic import BaseModel
 
 from .utils.logging import log_debug, log_error
-from .models.tool import Tool
+from .models.tool import Tool, InvalidArgumentsError, FallbackError
 from .models.flow import Action, Step, Message, create_route_decision_model
 from .llms import LLMBase
 from .config import AgentConfig
@@ -108,6 +108,7 @@ class FlowSession:
             available_step_ids=self.current_step.get_available_routes(),
             tool_ids=self.current_step.available_tools,
             tool_models=self._get_tool_models(),
+            set_none=self.llm.set_none
         )
         decision = self.llm._get_output(
             name=self.name,
@@ -152,8 +153,13 @@ class FlowSession:
                 )
                 tool_results = self._run_tool(decision.tool_name, tool_kwargs)
                 self._add_message("tool", f"Tool result: {tool_results}")
+            except InvalidArgumentsError as e:
+                self._add_message("error", f"{str(e)}. Try again with valid arguments.")
+            except FallbackError as e:
+                self._add_message("error", str(e.error))
+                self._add_message("fallback", str(e))
             except Exception as e:
-                self._add_message("error", str(e))
+                self._add_message("error", f"{str(e)}. Please try again.")
             return self.next()
         elif decision.action == Action.MOVE:
             if decision.next_step_id in self.steps:
@@ -176,6 +182,9 @@ class FlowSession:
                     f"Next step ID {decision.next_step_id} not found in steps. Available steps: {self.current_step.get_available_routes()}"
                 )
                 return self.next()
+        elif decision.action == Action.END:
+            self._add_message("end", "Session ended.")
+            return decision
 
 
 class Sofia:

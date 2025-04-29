@@ -2,6 +2,7 @@
 LLM base classes and OpenAI LLM integration for SOFIA.
 """
 
+import os
 from typing import List, Optional, Union, Dict
 
 from pydantic import BaseModel
@@ -16,11 +17,12 @@ class LLMBase:
     """
     Abstract base class for LLM integrations in SOFIA.
     """
-    def __init__(self):
+    def __init__(self, set_none: bool = False):
         """
-        Initialize the LLM base class. Subclasses should implement this method.
+        Initialize the LLM base class.
+        :param set_none: Flag to set None values in the model (default: False).
         """
-        raise NotImplementedError("Subclasses should implement this method.")
+        self.set_none = set_none
     
     @staticmethod
     def get_routes_desc(steps: List[Step], current_step: Step) -> str:
@@ -178,6 +180,7 @@ class OpenAIChatLLM(LLMBase):
         :param model: Model name to use (default: gpt-4o-mini).
         :param kwargs: Additional parameters for OpenAI API.
         """
+        super().__init__(set_none=True)
         from openai import OpenAI
         self.model = model
         self.client = OpenAI(**kwargs)
@@ -210,16 +213,21 @@ class MistralAILLM(LLMBase):
     """
     Mistral AI LLM integration for SOFIA.
     """
-    def __init__(self, model: str = "mistral-7b", **kwargs):
+    def __init__(self, model: str = "ministral-8b-latest", **kwargs):
         """
         Initialize the MistralAI LLM.
 
-        :param model: Model name to use (default: mistral-7b).
+        :param model: Model name to use (default: ministral-8b-latest).
         :param kwargs: Additional parameters for Mistral API.
         """
+        super().__init__(set_none=False)
         from mistralai import Mistral
         self.model = model
-        self.client = Mistral(**kwargs)
+        api_key = os.environ["MISTRAL_API_KEY"]
+        self.client = Mistral(
+            api_key=api_key,
+            **kwargs
+        )
 
     def get_output(
         self,
@@ -237,10 +245,15 @@ class MistralAILLM(LLMBase):
             msg.model_dump()
             for msg in messages
         ]
+        r = {
+            "type": "json_schema",
+            "schema": response_format.model_json_schema()
+        }
+        print(r)
         comp = self.client.chat.parse(
             model=self.model,
             messages=_messages,
-            response_format=response_format,
+            response_format=response_format
         )
         return comp.choices[0].message.parsed
 
@@ -256,6 +269,7 @@ class GeminiLLM(LLMBase):
         :param model: Model name to use (default: gemini-2.0-flash).
         :param kwargs: Additional parameters for Gemini API.
         """
+        super().__init__(set_none=True)
         from google.genai import Client
         
         self.model = model

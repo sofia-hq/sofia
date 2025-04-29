@@ -7,7 +7,7 @@ os.environ["SOFIA_LOG_LEVEL"] = "DEBUG"
 os.environ["SOFIA_ENABLE_LOGGING"] = "true"
 
 from sofia_agent import *
-from sofia_agent.llms import OpenAIChatLLM
+from sofia_agent.llms import MistralAILLM as LLM
 from sofia_agent.utils.logging import log_info
 
 
@@ -136,7 +136,7 @@ def finalize_order(
     )
 
 # Define the LLM and Barista
-llm = OpenAIChatLLM()
+llm = LLM()
 config = AgentConfig.from_yaml("config.barista.yaml")
 barista = Sofia.from_config(llm, config, tools=[get_available_coffee_options, add_to_cart, remove_item, clear_cart, get_order_summary, finalize_order])
 
