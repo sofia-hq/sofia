@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Node, Edge } from '@xyflow/react';
 import { StepNodeData } from '../nodes/StepNode';
 import { ToolNodeData } from '../nodes/ToolNode';
-import { RouteEdgeData, ToolUsageEdgeData } from '../edges/RouteEdge';
+import { RouteEdgeData } from '../edges/RouteEdge';
+import { ToolUsageEdgeData } from '../edges/ToolUsageEdge';
 import { SofiaConfig, SofiaEdgeType, SofiaNodeType } from '../models/sofia';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Badge } from './ui/badge';
 
 interface PropertyPanelProps {
@@ -20,7 +21,6 @@ interface PropertyPanelProps {
   onNodeChange: (id: string, data: StepNodeData | ToolNodeData) => void;
   onEdgeChange: (id: string, data: RouteEdgeData | ToolUsageEdgeData) => void;
   onDeleteNode: (id: string) => void;
-  onDeleteEdge: (id: string) => void;
   onSetStartStep: (id: string) => void;
   isStartStep: (id: string) => boolean;
   config: SofiaConfig;
@@ -31,11 +31,9 @@ export default function PropertyPanel({
   nodes,
   edges,
   selectedNode,
-  selectedEdge,
   onNodeChange,
   onEdgeChange,
   onDeleteNode,
-  onDeleteEdge,
   onSetStartStep,
   isStartStep,
   config,
@@ -77,13 +75,6 @@ export default function PropertyPanel({
     }
   };
 
-  const handleEdgeDialogSave = () => {
-    if (edgeDialog.edge) {
-      onEdgeChange(edgeDialog.edge.id, { condition: edgeCondition } as RouteEdgeData);
-      setEdgeDialog({ open: false, edge: null });
-    }
-  };
-
   // Get all steps and tools
   const stepNodes = (nodes ?? []).filter(n => n.type === SofiaNodeType.STEP);
   const toolNodes = (nodes ?? []).filter(n => n.type === SofiaNodeType.TOOL);
@@ -120,7 +111,7 @@ export default function PropertyPanel({
             <SelectContent>
               {stepNodes.map((node) => (
                 <SelectItem key={node.id} value={node.id}>
-                  {node.data.step_id}
+                  {(node.data as StepNodeData).step_id}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -165,7 +156,8 @@ export default function PropertyPanel({
                     {data.available_tools && data.available_tools.length > 0 ? (
                       data.available_tools.map((toolId: string) => {
                         const toolNode = toolNodes.find((n) => n.id === toolId);
-                        const toolName = toolNode && toolNode.data && toolNode.data.name ? toolNode.data.name : toolId;
+                        const toolData = toolNode?.data as ToolNodeData | undefined;
+                        const toolName = toolData?.name ?? 'Unknown Tool';
                         return (
                           <Badge
                             key={toolId}
@@ -189,7 +181,8 @@ export default function PropertyPanel({
                     <div className="flex flex-wrap gap-1">
                       {outgoingRoutes.map((edge) => {
                         const targetStep = stepNodes.find(n => n.id === edge.target);
-                        const condition = (edge.data as RouteEdgeData)?.condition || '';
+                        const edgeData = edge.data as Record<string, unknown>;
+                        const condition = String(edgeData?.condition || '');
                         const cappedCondition = condition.length > 32 ? condition.slice(0, 32) + '…' : condition;
                         return (
                           <Badge
@@ -310,6 +303,7 @@ export default function PropertyPanel({
           );
         })}
       </div>
+
       {/* Edge Condition Dialog */}
       <Dialog open={edgeDialog.open} onOpenChange={open => setEdgeDialog({ open, edge: edgeDialog.edge })}>
         <DialogContent>
@@ -324,7 +318,16 @@ export default function PropertyPanel({
             placeholder="Condition"
           />
           <div className="flex gap-2 mt-4">
-            <Button variant="default" onClick={handleEdgeDialogSave}>Save</Button>
+            <Button variant="default" onClick={() => {
+              if (edgeDialog.edge) {
+                const edgeData = edgeDialog.edge.data as unknown as RouteEdgeData;
+                onEdgeChange(edgeDialog.edge.id, {
+                  ...edgeData,
+                  condition: edgeCondition
+                });
+                setEdgeDialog({ open: false, edge: null });
+              }
+            }}>Save</Button>
             <Button variant="secondary" onClick={() => setEdgeDialog({ open: false, edge: null })}>Cancel</Button>
           </div>
         </DialogContent>
