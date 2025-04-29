@@ -1,0 +1,415 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Main layout */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: #242424;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.216 0.006 56.043);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.216 0.006 56.043);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.553 0.013 58.071);
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-foreground: oklch(0.216 0.006 56.043);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.709 0.01 56.259);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0.001 106.423);
+  --sidebar-foreground: oklch(0.147 0.004 49.25);
+  --sidebar-primary: oklch(0.216 0.006 56.043);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.97 0.001 106.424);
+  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
+  --sidebar-border: oklch(0.923 0.003 48.717);
+  --sidebar-ring: oklch(0.709 0.01 56.259);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  background-color: #1E1E1E;
+}
+
+/* Remove legacy layout classes that conflict with Tailwind layout */
+/* .app-container { */
+/*   display: flex; */
+/*   width: 100vw; */
+/*   height: 100vh; */
+/*   background-color: #1E1E1E; */
+/* } */
+
+/* .sidebar { */
+/*   width: 250px; */
+/*   background-color: #252526; */
+/*   border-right: 1px solid #333; */
+/*   display: flex; */
+/*   flex-direction: column; */
+/*   z-index: 5; */
+/* } */
+
+/* .reactflow-wrapper { */
+/*   flex-grow: 1; */
+/*   height: 100%; */
+/*   background-color: #1E1E1E; */
+/* } */
+
+/* .right-panel { */
+/*   width: 300px; */
+/*   background-color: #252526; */
+/*   border-left: 1px solid #333; */
+/*   padding: 10px; */
+/*   overflow-y: auto; */
+/* } */
+
+/* Sidebar Components */
+.sidebar-header {
+  padding: 10px;
+  border-bottom: 1px solid #333;
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.sidebar-content {
+  padding: 10px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.sidebar-footer {
+  padding: 10px;
+  border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dragable-item {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: #2d2d30;
+  border: 1px solid #3e3e42;
+  border-radius: 3px;
+  cursor: grab;
+  transition: all 0.2s;
+  color: #e0e0e0;
+}
+
+.dragable-item:hover {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  background-color: #3e3e42;
+}
+
+/* Node Styling */
+.node {
+  padding: 0;
+  border-radius: 5px;
+  width: 220px;
+  font-size: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.node.selected {
+  box-shadow: 0 0 0 2px #5162ff;
+}
+
+/* Step Node */
+.step-node {
+  background-color: #252526;
+  border: 1px solid #3e3e42;
+}
+
+.node-header {
+  border-radius: 5px 5px 0 0;
+  padding: 10px;
+  margin-bottom: 0;
+  background-color: #333333;
+  border-bottom: 1px solid #444;
+}
+
+.node-title {
+  font-weight: bold;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+.node-content {
+  padding: 10px;
+  font-size: 12px;
+}
+
+.node-description {
+  margin-bottom: 5px;
+  color: #b0b0b0;
+}
+
+.node-tools {
+  color: #888;
+  font-size: 10px;
+}
+
+/* Tool Node */
+.tool-node {
+  background-color: #252526;
+  border: 1px solid #444;
+}
+
+.tool-node-header {
+  background-color: #2d384d;
+  border-bottom: 1px solid #384e77;
+}
+
+.node-parameters {
+  color: #888;
+  font-size: 10px;
+}
+
+/* Handle styling */
+.node-handle {
+  width: 10px;
+  height: 10px;
+  background-color: #5162ff;
+  border: 2px solid #252526;
+  z-index: 10;
+}
+
+.tool-handle {
+  background-color: #ff9800;
+}
+
+/* Connection styling */
+.step-connection path {
+  stroke: #5162ff;
+  stroke-width: 2;
+}
+
+.tool-connection path {
+  stroke: #ff9800;
+  stroke-width: 2;
+  stroke-dasharray: 5, 5;
+}
+
+/* Edge labels */
+.edge-label {
+  font-size: 10px;
+  background-color: rgba(48, 48, 48, 0.75);
+  padding: 2px 4px;
+  border-radius: 2px;
+  color: #e0e0e0;
+  pointer-events: all;
+}
+
+.step-edge-label {
+  border: 1px solid #5162ff;
+}
+
+.tool-edge-label {
+  border: 1px solid #ff9800;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  background-color: #3c3c3c;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: 3px;
+  font-size: 14px;
+}
+
+textarea.form-control {
+  min-height: 80px;
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #5162ff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #3a4cc0;
+}
+
+.btn-secondary {
+  background-color: #3c3c3c;
+  color: #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background-color: #4a4a4a;
+}
+
+.btn-danger {
+  background-color: #e53935;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c62828;
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+.dark {
+  --background: oklch(0.147 0.004 49.25);
+  --foreground: oklch(0.985 0.001 106.423);
+  --card: oklch(0.216 0.006 56.043);
+  --card-foreground: oklch(0.985 0.001 106.423);
+  --popover: oklch(0.216 0.006 56.043);
+  --popover-foreground: oklch(0.985 0.001 106.423);
+  --primary: oklch(0.923 0.003 48.717);
+  --primary-foreground: oklch(0.216 0.006 56.043);
+  --secondary: oklch(0.268 0.007 34.298);
+  --secondary-foreground: oklch(0.985 0.001 106.423);
+  --muted: oklch(0.268 0.007 34.298);
+  --muted-foreground: oklch(0.709 0.01 56.259);
+  --accent: oklch(0.268 0.007 34.298);
+  --accent-foreground: oklch(0.985 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.553 0.013 58.071);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.216 0.006 56.043);
+  --sidebar-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-accent: oklch(0.268 0.007 34.298);
+  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.553 0.013 58.071);
+}
+
+/* React Flow dark mode overrides */
+.dark .react-flow__renderer,
+.dark .react-flow__panel,
+.dark .react-flow__controls,
+.dark .react-flow__minimap,
+.dark .react-flow__background {
+  color: #444 !important; /* Make dots visible in dark mode */
+}
+
+.dark .react-flow__controls-button {
+  background: #27272a !important;
+  color: #e5e7eb !important;
+  border-color: #3f3f46 !important;
+}
+
+.dark .react-flow__minimap {
+  background: #23232a !important;
+  border: 1px solid #3f3f46 !important;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+html, body, #root, #root > div {
+  height: 100% !important;
+  min-height: 100% !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sofia-node.selected,
+.sofia-node[data-selected='true'] {
+  box-shadow: 0 0 0 2px #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  z-index: 10;
+}
