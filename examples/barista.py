@@ -242,7 +242,7 @@ sess = barista.create_session()
 # Simulating a conversation (You can use fastapi or any other method to get user input)
 user_input = None
 while True:
-    decision = sess.next(user_input)
+    decision, _ = sess.next(user_input)
     if decision.action == Action.ASK or decision.action == Action.ANSWER:
         user_input = input(f"Assistant: {decision.input}\nYou: ")
     elif decision.action == Action.END:

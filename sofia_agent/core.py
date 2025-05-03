@@ -4,7 +4,7 @@ Core models and logic for the SOFIA package, including flow management, session 
 
 import pickle
 import uuid
-from typing import Dict, List, Optional, Union, Callable, Any
+from typing import Dict, List, Optional, Union, Callable, Any, Literal
 from pydantic import BaseModel
 
 from .utils.logging import log_debug, log_error
@@ -29,6 +29,7 @@ class FlowSession:
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
         max_errors: int = 3,
+        method: Literal["auto", "manual"] = "auto",
         config: Optional[AgentConfig] = None,
     ):
         """
@@ -43,6 +44,7 @@ class FlowSession:
         :param tools: List of tool callables.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback.
+        :param method: Method of handling errors or steps or tool calls.
         :param config: Optional AgentConfig.
         """
         ## Fixed
@@ -54,6 +56,7 @@ class FlowSession:
         self.system_message = system_message
         self.persona = persona
         self.max_errors = max_errors
+        self.method = method
         self.config = config
         tool_arg_descs = self.config.tool_arg_descriptions if self.config and self.config.tool_arg_descriptions else {}
         tools_list = [Tool.from_function(tool, tool_arg_descs) for tool in tools]
@@ -125,13 +128,13 @@ class FlowSession:
         log_debug(f"Model decision: {decision}")
         return decision
 
-    def next(self, user_input: Optional[str] = None, no_errors: int = 0) -> BaseModel:
+    def next(self, user_input: Optional[str] = None, no_errors: int = 0) -> tuple[BaseModel, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
         :param no_errors: Number of consecutive errors encountered.
-        :return: The model decision for the next action.
+        :return: A tuple containing the decision and any tool results.
         """
         if user_input:
             log_debug(f"User input received: {user_input}")
@@ -142,10 +145,10 @@ class FlowSession:
         log_debug(f"Action decided: {decision.action}")
         if decision.action == Action.ASK or decision.action == Action.ANSWER:
             self._add_message(self.name, decision.input)
-            return decision
+            return decision, None
         elif decision.action == Action.TOOL_CALL:
             self._add_message("tool", f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}")
-            _failed = False
+            _error = None
             try:
                 tool_kwargs = (
                     decision.tool_kwargs.model_dump()
@@ -158,39 +161,41 @@ class FlowSession:
                 tool_results = self._run_tool(decision.tool_name, tool_kwargs)
                 self._add_message("tool", f"Tool result: {tool_results}")
             except InvalidArgumentsError as e:
-                _failed = True
+                _error = e
                 self._add_message("error", str(e))
             except FallbackError as e:
-                _failed = True
+                _error = e
                 self._add_message("fallback", str(e))
             except Exception as e:
-                _failed = True
+                _error = e
                 self._add_message("error", str(e))
-            return self.next(no_errors=no_errors + 1) if _failed else self.next()
+            if self.method == "manual":
+                if _error is not None:
+                    raise _error
+                return decision, tool_results
+            return self.next(no_errors=no_errors + 1) if _error is not None else self.next()
         elif decision.action == Action.MOVE:
-            if decision.next_step_id in self.steps:
-                if (
-                    decision.next_step_id
-                    not in self.current_step.get_available_routes()
-                ):
-                    self._add_message(
-                        "error",
-                        f"Invalid route: {decision.next_step_id} not in {self.current_step.get_available_routes()}",
-                    )
-                    return self.next()
+            _error = None
+            if decision.next_step_id in self.current_step.get_available_routes():
                 self.current_step = self.steps[decision.next_step_id]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
                 self.history.append(self.current_step)
-                return self.next()
             else:
                 self._add_message(
                     "error",
-                    f"Next step ID {decision.next_step_id} not found in steps. Available steps: {self.current_step.get_available_routes()}"
+                    f"Invalid route: {decision.next_step_id} not in {self.current_step.get_available_routes()}",
                 )
-                return self.next()
+                _error = ValueError(
+                    f"Invalid route: {decision.next_step_id} not in {self.current_step.get_available_routes()}"
+                )
+            if self.method == "manual":
+                if _error is not None:
+                    raise _error
+                return decision, None
+            return self.next()
         elif decision.action == Action.END:
             self._add_message("end", "Session ended.")
-            return decision
+            return decision, None
 
 
 class Sofia:
@@ -207,6 +212,8 @@ class Sofia:
         system_message: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
+        max_errors: int = 3,
+        method: Literal["auto", "manual"] = "auto",
         config: Optional[AgentConfig] = None,
     ):
         """
@@ -229,6 +236,8 @@ class Sofia:
         self.system_message = system_message
         self.persona = persona
         self.show_steps_desc = show_steps_desc
+        self.max_errors = max_errors
+        self.method = method
         self.tools = tools
         self.config = config
         if start_step_id not in self.steps:
@@ -255,6 +264,8 @@ class Sofia:
             persona=config.persona,
             tools=tools,
             show_steps_desc=config.show_steps_desc,
+            max_errors=config.max_errors,
+            method=config.method,
             config=config,
         )
 
@@ -274,6 +285,9 @@ class Sofia:
             persona=self.persona,
             tools=self.tools,
             show_steps_desc=self.show_steps_desc,
+            max_errors=self.max_errors,
+            method=self.method,
+            config=self.config,
         )
 
     def load_session(self, session_id: str) -> FlowSession:

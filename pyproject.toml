@@ -32,8 +32,21 @@ mistralai = [
 ]
 gemini = [
     "google-genai (>=1.12.1,<2.0.0)",
-]  
+]
 
 [project.scripts]
 sofia = "sofia_agent.cli:main"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=sofia_agent --cov-report=term-missing"
+testpaths = [
+    "tests",
+]
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+pytest-asyncio = "^0.26.0"
 
