@@ -245,6 +245,9 @@ while True:
     decision = sess.next(user_input)
     if decision.action == Action.ASK or decision.action == Action.ANSWER:
         user_input = input(f"Assistant: {decision.input}\nYou: ")
+    elif decision.action == Action.END:
+        print(f"Assistant: {decision.input}")
+        break
     else:
         print("Unknown action. Exiting.")
         break

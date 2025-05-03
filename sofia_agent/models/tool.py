@@ -84,7 +84,7 @@ class FallbackError(Exception):
         self.fallback = fallback
 
     def __str__(self):
-        return f"Ran into an error: {self.error}. Fallback Instructions: {self.fallback}"
+        return f"Ran into an error: {self.error}. Follow this fallback instruction: {self.fallback}"
 
 class InvalidArgumentsError(Exception):
     """
@@ -108,7 +108,7 @@ class InvalidArgumentsError(Exception):
         for error in errors:
             msg = error.get("msg")
             error_messages.append(msg) if msg else None
-        return f"Invalid arguments: {', '.join(error_messages)}"
+        return f"Invalid arguments: {', '.join(error_messages)}. Please Try again with valid arguments."
 
 
 __all__ = ["Tool", "Fallback"]

@@ -28,6 +28,7 @@ class FlowSession:
         persona: Optional[str] = None,
         tools: List[Callable] = [],
         show_steps_desc: bool = False,
+        max_errors: int = 3,
         config: Optional[AgentConfig] = None,
     ):
         """
@@ -41,6 +42,7 @@ class FlowSession:
         :param persona: Optional persona string.
         :param tools: List of tool callables.
         :param show_steps_desc: Whether to show step descriptions.
+        :param max_errors: Maximum consecutive errors before stopping or fallback.
         :param config: Optional AgentConfig.
         """
         ## Fixed
@@ -51,6 +53,7 @@ class FlowSession:
         self.show_steps_desc = show_steps_desc
         self.system_message = system_message
         self.persona = persona
+        self.max_errors = max_errors
         self.config = config
         tool_arg_descs = self.config.tool_arg_descriptions if self.config and self.config.tool_arg_descriptions else {}
         tools_list = [Tool.from_function(tool, tool_arg_descs) for tool in tools]
@@ -107,8 +110,7 @@ class FlowSession:
         route_decision_model = create_route_decision_model(
             available_step_ids=self.current_step.get_available_routes(),
             tool_ids=self.current_step.available_tools,
-            tool_models=self._get_tool_models(),
-            set_none=self.llm.set_none
+            tool_models=self._get_tool_models()
         )
         decision = self.llm._get_output(
             name=self.name,
@@ -123,11 +125,12 @@ class FlowSession:
         log_debug(f"Model decision: {decision}")
         return decision
 
-    def next(self, user_input: Optional[str] = None) -> BaseModel:
+    def next(self, user_input: Optional[str] = None, no_errors: int = 0) -> BaseModel:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
+        :param no_errors: Number of consecutive errors encountered.
         :return: The model decision for the next action.
         """
         if user_input:
@@ -142,6 +145,7 @@ class FlowSession:
             return decision
         elif decision.action == Action.TOOL_CALL:
             self._add_message("tool", f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}")
+            _failed = False
             try:
                 tool_kwargs = (
                     decision.tool_kwargs.model_dump()
@@ -154,13 +158,15 @@ class FlowSession:
                 tool_results = self._run_tool(decision.tool_name, tool_kwargs)
                 self._add_message("tool", f"Tool result: {tool_results}")
             except InvalidArgumentsError as e:
-                self._add_message("error", f"{str(e)}. Try again with valid arguments.")
+                _failed = True
+                self._add_message("error", str(e))
             except FallbackError as e:
-                self._add_message("error", str(e.error))
+                _failed = True
                 self._add_message("fallback", str(e))
             except Exception as e:
-                self._add_message("error", f"{str(e)}. Please try again.")
-            return self.next()
+                _failed = True
+                self._add_message("error", str(e))
+            return self.next(no_errors=no_errors + 1) if _failed else self.next()
         elif decision.action == Action.MOVE:
             if decision.next_step_id in self.steps:
                 if (

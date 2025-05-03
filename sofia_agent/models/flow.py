@@ -77,12 +77,12 @@ class Message(BaseModel):
         content (str): The message content.
     """
 
-    role: str
+    role: Literal["user", "tool", "error", "fallback"] | str
     content: str
 
 
 def create_route_decision_model(
-    available_step_ids: list[str], tool_ids: list[str], tool_models: list[BaseModel], set_none: bool = True
+    available_step_ids: list[str], tool_ids: list[str], tool_models: list[BaseModel]
 ) -> Type[BaseModel]:
     """
     Dynamically create a Pydantic model for route/tool decision output.
@@ -99,32 +99,28 @@ def create_route_decision_model(
         },
         "action": {"type": Action, "description": "Action to take"},
         "input": {
-            "type": Optional[str] if set_none else str,
-            "default": None if set_none else '',
+            "type": Optional[str],
+            "default": None,
             "description": "Input (either a question or answer) if action is ASK (ask_) or ANSWER (provide_answer) - Make sure to use natural language.",
         },
     }
 
     if len(available_step_ids) > 0:
         params["next_step_id"] = {
-            "type": Optional[Literal[*available_step_ids]] if set_none else Literal[*available_step_ids],
-            "default": None if set_none else '',
+            "type": Optional[Literal[*available_step_ids]],
+            "default": None,
             "description": "Next step ID if action is MOVE (move to next step)",
         }
 
     if len(tool_ids) > 0 and len(tool_models) > 0:
         params["tool_name"] = {
-            "type": Optional[Literal[*tool_ids]] if set_none else Literal[*tool_ids],
-            "default": None if set_none else '',
+            "type": Optional[Literal[*tool_ids]],
+            "default": None,
             "description": "Tool name if action is TOOL_CALL (call_tool)",
         }
-        if set_none:
-            tool_kwargs_type = Optional[tool_models[0]] if len(tool_models) == 1 else Optional[Union[*tool_models]]
-        else:
-            tool_kwargs_type = tool_models[0] if len(tool_models) == 1 else Union[*tool_models]
         params["tool_kwargs"] = {
-            "type": tool_kwargs_type,
-            "default": None if set_none else '',
+            "type": Optional[tool_models[0]] if len(tool_models) == 1 else Optional[Union[*tool_models]],
+            "default": None,
             "description": "Tool arguments if action is TOOL_CALL (call_tool).",
         }
 

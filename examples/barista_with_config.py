@@ -7,7 +7,7 @@ os.environ["SOFIA_LOG_LEVEL"] = "DEBUG"
 os.environ["SOFIA_ENABLE_LOGGING"] = "true"
 
 from sofia_agent import *
-from sofia_agent.llms import MistralAILLM as LLM
+from sofia_agent.llms import OpenAIChatLLM as LLM
 from sofia_agent.utils.logging import log_info
 
 
@@ -148,6 +148,9 @@ while True:
     decision = sess.next(user_input)
     if decision.action == Action.ASK or decision.action == Action.ANSWER:
         user_input = input(f"Assistant: {decision.input}\nYou: ")
+    if decision.action == Action.END:
+        print("Session ended.")
+        break
     else:
         print("Unknown action. Exiting.")
         break
