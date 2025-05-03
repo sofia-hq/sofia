@@ -10,19 +10,17 @@ from pydantic import BaseModel
 from .constants import DEFAULT_SYSTEM_MESSAGE, DEFAULT_PERSONA
 from .models.flow import Step, Message
 from .models.tool import Tool
-from .utils.logging import log_error, log_debug
-
+from .utils.logging import log_error
 
 class LLMBase:
     """
     Abstract base class for LLM integrations in SOFIA.
     """
-    def __init__(self, set_none: bool = False):
+    def __init__(self):
         """
-        Initialize the LLM base class.
-        :param set_none: Flag to set None values in the model (default: False).
+        Initialize the LLMBase class.
         """
-        self.set_none = set_none
+        raise NotImplementedError("Subclasses should implement this method.")
     
     @staticmethod
     def get_routes_desc(steps: List[Step], current_step: Step) -> str:
@@ -204,7 +202,6 @@ class OpenAIChatLLM(LLMBase):
         :param model: Model name to use (default: gpt-4o-mini).
         :param kwargs: Additional parameters for OpenAI API.
         """
-        super().__init__(set_none=True)
         from openai import OpenAI
         self.model = model
         self.client = OpenAI(**kwargs)
@@ -244,7 +241,6 @@ class MistralAILLM(LLMBase):
         :param model: Model name to use (default: ministral-8b-latest).
         :param kwargs: Additional parameters for Mistral API.
         """
-        super().__init__(set_none=False)
         from mistralai import Mistral
         self.model = model
         api_key = os.environ["MISTRAL_API_KEY"]
@@ -274,6 +270,7 @@ class MistralAILLM(LLMBase):
             "schema": response_format.model_json_schema()
         }
         print(r)
+        # TODO: Fix the issue where the mistralai client doesnt support None values
         comp = self.client.chat.parse(
             model=self.model,
             messages=_messages,
@@ -293,7 +290,6 @@ class GeminiLLM(LLMBase):
         :param model: Model name to use (default: gemini-2.0-flash).
         :param kwargs: Additional parameters for Gemini API.
         """
-        super().__init__(set_none=True)
         from google.genai import Client
         
         self.model = model
