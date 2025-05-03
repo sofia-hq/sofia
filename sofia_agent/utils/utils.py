@@ -3,7 +3,7 @@ Utility functions and helpers for the SOFIA package.
 """
 
 from typing import Dict, Any, Type
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, Field, create_model, ConfigDict
 
 def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[BaseModel]:
     """
@@ -29,4 +29,9 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
 
         fields[field_name] = (field_type, field_info)
 
-    return create_model(name, **fields)
+    return create_model(name, **fields, __config__= ConfigDict(extra="forbid"))
+
+
+__all__ = [
+    "create_base_model",
+]

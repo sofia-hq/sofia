@@ -1,7 +1,7 @@
 """AgentConfig class for managing agent configurations."""
 
 from pydantic_settings import BaseSettings
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Literal
 
 from .models.flow import Step
 
@@ -27,6 +27,8 @@ class AgentConfig(BaseSettings):
     tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]]
     system_message: Optional[str] = None # Default system message will be used if not provided
     show_steps_desc: bool = False
+    max_errors: int = 3
+    method: Literal["auto", "manual"] = "auto" # Default to auto method
 
     # Loading from YAML file
     @classmethod
