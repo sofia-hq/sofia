@@ -2,6 +2,7 @@
 LLM base classes and OpenAI LLM integration for SOFIA.
 """
 
+import os
 from typing import List, Optional, Union, Dict
 
 from pydantic import BaseModel
@@ -9,8 +10,7 @@ from pydantic import BaseModel
 from .constants import DEFAULT_SYSTEM_MESSAGE, DEFAULT_PERSONA
 from .models.flow import Step, Message
 from .models.tool import Tool
-from .utils.logging import log_error, log_debug
-
+from .utils.logging import log_error
 
 class LLMBase:
     """
@@ -18,7 +18,7 @@ class LLMBase:
     """
     def __init__(self):
         """
-        Initialize the LLM base class. Subclasses should implement this method.
+        Initialize the LLMBase class.
         """
         raise NotImplementedError("Subclasses should implement this method.")
     
@@ -58,18 +58,42 @@ class LLMBase:
         return "\n".join(tools_desc)
     
     @staticmethod
-    def format_history(history: List[Union[Message, Step]]) -> str:
+    def format_history(history: List[Union[Message, Step]], max_errors: int = 3) -> str:
         """
         Format the chat history for display or LLM input.
 
         :param history: List of Message or Step objects.
+        :param max_errors: Maximum number of consecutive errors to display.
         :return: String representation of the history.
         """
         history_str = []
-        log_debug(f"Formatting chat history: {history}")
+        # log_debug(f"Formatting chat history: {history}")
+        n_last_consecutive_errors = 0
+        for item in history:
+            if isinstance(item, Message):
+                if item.role == "error":
+                    n_last_consecutive_errors += 1
+                else:
+                    n_last_consecutive_errors = 0
+            elif isinstance(item, Step):
+                n_last_consecutive_errors = 0
+        if n_last_consecutive_errors > max_errors:
+            log_error(
+                f"Too many consecutive errors in history. Only showing the last {max_errors} errors out of  {n_last_consecutive_errors}"
+            )
         for i, item in enumerate(history):
             if isinstance(item, Message):
-                if item.role == "error" and i < len(history) - 1:
+                if item.role == "error":
+                    if n_last_consecutive_errors > max_errors:
+                        if i < len(history) - max_errors:
+                            continue
+                    history_str.append(f"<Error> {item.content}")
+                    continue
+                if item.role == "fallback":
+                    history_str.append(f"<Fallback> {item.content}")
+                    continue
+                if item.role == "tool":
+                    history_str.append(f"<Tool> {item.content}")
                     continue
                 history_str.append(f"[{item.role}] {item.content}")
             elif isinstance(item, Step):
@@ -210,16 +234,20 @@ class MistralAILLM(LLMBase):
     """
     Mistral AI LLM integration for SOFIA.
     """
-    def __init__(self, model: str = "mistral-7b", **kwargs):
+    def __init__(self, model: str = "ministral-8b-latest", **kwargs):
         """
         Initialize the MistralAI LLM.
 
-        :param model: Model name to use (default: mistral-7b).
+        :param model: Model name to use (default: ministral-8b-latest).
         :param kwargs: Additional parameters for Mistral API.
         """
         from mistralai import Mistral
         self.model = model
-        self.client = Mistral(**kwargs)
+        api_key = os.environ["MISTRAL_API_KEY"]
+        self.client = Mistral(
+            api_key=api_key,
+            **kwargs
+        )
 
     def get_output(
         self,
@@ -237,10 +265,16 @@ class MistralAILLM(LLMBase):
             msg.model_dump()
             for msg in messages
         ]
+        r = {
+            "type": "json_schema",
+            "schema": response_format.model_json_schema()
+        }
+        print(r)
+        # TODO: Fix the issue where the mistralai client doesnt support None values
         comp = self.client.chat.parse(
             model=self.model,
             messages=_messages,
-            response_format=response_format,
+            response_format=response_format
         )
         return comp.choices[0].message.parsed
 
