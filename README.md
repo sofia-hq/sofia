@@ -18,7 +18,7 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 
 ## Installation
 
-### From PyPI (coming soon)
+### From PyPI
 ```bash
 pip install sofia-agent
 ```
