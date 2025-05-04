@@ -1,0 +1,103 @@
+---
+title: Installation & Setup
+description: Get started with SOFIA - installation and initial configuration
+---
+
+## Requirements
+
+- Python 3.8 or higher
+- OpenAI API key (for OpenAI LLM support)
+- Poetry (optional, for development)
+
+## Installation Options
+
+### From PyPI
+
+The simplest way to install SOFIA is through pip:
+
+```bash
+# Basic installation
+pip install sofia-agent
+
+# With CLI support (recommended)
+pip install sofia-agent[cli]
+```
+
+### From Source
+
+For the latest development version or contributing:
+
+```bash
+git clone https://github.com/chandralegend/sofia.git
+cd sofia
+poetry install
+```
+
+## Configuration
+
+### Environment Variables
+
+SOFIA uses the following environment variables:
+
+```bash
+# Required for OpenAI LLM
+OPENAI_API_KEY=your-api-key
+
+# Optional
+SOFIA_LOG_LEVEL=INFO  # Logging verbosity (DEBUG, INFO, WARNING, ERROR)
+SOFIA_CONFIG_PATH=./config.yaml  # Default config file path
+```
+
+### LLM Setup
+
+SOFIA supports OpenAI by default. Configure your OpenAI settings:
+
+```python
+from sofia_agent.llms import OpenAIChatLLM
+
+llm = OpenAIChatLLM(
+    model="gpt-4",  # or "gpt-3.5-turbo"
+    temperature=0.7,
+    max_tokens=150
+)
+```
+
+### Custom LLM Integration
+
+You can integrate other LLM providers by implementing the `BaseLLM` interface:
+
+```python
+from sofia_agent.llms import BaseLLM
+
+class CustomLLM(BaseLLM):
+    def generate(self, messages):
+        # Implement your LLM logic here
+        return "Generated response"
+```
+
+## Project Structure
+
+A typical SOFIA project has this structure:
+
+```
+my_agent/
+├── config.yaml      # Agent configuration
+├── main.py         # Agent implementation
+├── tools/          # Custom tools
+│   └── __init__.py
+└── requirements.txt
+```
+
+You can generate this structure using the CLI:
+
+```bash
+sofia init my_agent
+```
+
+## Next Steps
+
+<Cards>
+  <Card title="Library Guide" href="/docs/library" />
+  <Card title="CLI Usage" href="/docs/cli" />
+  <Card title="Visual Builder" href="/docs/builder" />
+</Cards>

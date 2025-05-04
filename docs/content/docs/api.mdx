@@ -1,0 +1,245 @@
+---
+title: API Reference
+description: Complete API documentation for SOFIA classes and functions
+---
+
+## Core Classes
+
+### Sofia
+
+The main agent class that orchestrates the flow execution.
+
+```python
+class Sofia:
+    def __init__(
+        name: str,
+        llm: BaseLLM,
+        steps: List[Step],
+        start_step_id: str,
+        tools: List[Callable] = None,
+        persona: str = None,
+    ) -> None:
+        """
+        Initialize a SOFIA agent.
+
+        Args:
+            name: Unique identifier for the agent
+            llm: LLM provider instance
+            steps: List of Step objects defining the flow
+            start_step_id: ID of the initial step
+            tools: Optional list of tool functions
+            persona: Optional persona description
+        """
+
+    def create_session(self) -> Session:
+        """Create a new conversation session."""
+
+    def load_session(self, state: dict) -> Session:
+        """Load an existing session from state."""
+```
+
+### Step
+
+Defines a single state in the agent's workflow.
+
+```python
+class Step:
+    def __init__(
+        step_id: str,
+        description: str,
+        available_tools: List[str] = None,
+        routes: List[Route] = None,
+        metadata: dict = None,
+    ) -> None:
+        """
+        Initialize a step.
+
+        Args:
+            step_id: Unique identifier for the step
+            description: Purpose of this step
+            available_tools: Tools accessible in this step
+            routes: Possible transitions from this step
+            metadata: Additional step configuration
+        """
+```
+
+### Route
+
+Defines transitions between steps.
+
+```python
+class Route:
+    def __init__(
+        target: str,
+        condition: str,
+        metadata: dict = None
+    ) -> None:
+        """
+        Initialize a route.
+
+        Args:
+            target: ID of the destination step
+            condition: When to take this route
+            metadata: Additional route configuration
+        """
+```
+
+### Session
+
+Manages conversation state and handles interactions.
+
+```python
+class Session:
+    def next(self, input: str) -> str:
+        """
+        Process the next user input.
+
+        Args:
+            input: User's message
+
+        Returns:
+            Agent's response
+        """
+
+    def save(self) -> dict:
+        """Save current session state."""
+
+    def get_history(self) -> List[dict]:
+        """Get conversation history."""
+```
+
+## LLM Integration
+
+### BaseLLM
+
+Base class for LLM providers.
+
+```python
+class BaseLLM:
+    def generate(
+        self,
+        messages: List[dict]
+    ) -> str:
+        """
+        Generate a response from messages.
+
+        Args:
+            messages: List of conversation messages
+
+        Returns:
+            Generated response
+        """
+```
+
+### OpenAIChatLLM
+
+OpenAI chat model implementation.
+
+```python
+class OpenAIChatLLM(BaseLLM):
+    def __init__(
+        model: str = "gpt-4",
+        api_key: str = None,
+        **kwargs
+    ) -> None:
+        """
+        Initialize OpenAI chat model.
+
+        Args:
+            model: Model identifier
+            api_key: OpenAI API key
+            **kwargs: Additional configuration
+        """
+```
+
+## Tool Decorators
+
+### @tool
+
+Register a function as a SOFIA tool.
+
+```python
+@tool
+def my_tool(
+    param1: str,
+    param2: int = 0
+) -> str:
+    """
+    Tool decorator example.
+
+    Args:
+        param1: First parameter
+        param2: Optional second parameter
+
+    Returns:
+        Tool result
+    """
+```
+
+## Utility Functions
+
+### validate_config
+
+```python
+def validate_config(config: dict) -> bool:
+    """
+    Validate SOFIA configuration.
+
+    Args:
+        config: Configuration dictionary
+
+    Returns:
+        True if valid, raises ValidationError otherwise
+    """
+```
+
+### load_yaml_config
+
+```python
+def load_yaml_config(path: str) -> dict:
+    """
+    Load YAML configuration file.
+
+    Args:
+        path: Path to YAML file
+
+    Returns:
+        Parsed configuration
+    """
+```
+
+## Exceptions
+
+```python
+class SofiaError(Exception):
+    """Base exception for SOFIA errors."""
+
+class ToolExecutionError(SofiaError):
+    """Raised when a tool fails to execute."""
+
+class StepTransitionError(SofiaError):
+    """Raised for invalid step transitions."""
+
+class ConfigurationError(SofiaError):
+    """Raised for invalid configurations."""
+```
+
+## Type Definitions
+
+```python
+from typing import TypedDict, List, Union
+
+class Message(TypedDict):
+    role: str
+    content: str
+
+class StepState(TypedDict):
+    id: str
+    history: List[Message]
+    tools_used: List[str]
+
+class SessionState(TypedDict):
+    current_step: str
+    history: List[Message]
+    step_states: dict[str, StepState]
+```

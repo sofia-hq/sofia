@@ -1,0 +1,133 @@
+---
+title: Contributing
+description: Guide to contributing to SOFIA and getting involved with the community
+---
+
+# Contributing to SOFIA
+
+We welcome contributions of all kinds - whether you're fixing bugs, improving documentation, or suggesting new features.
+
+## Getting Started
+
+1. **Fork the Repository**
+   - Visit [SOFIA on GitHub](https://github.com/chandralegend/sofia)
+   - Click the "Fork" button
+
+2. **Clone Your Fork**
+   ```bash
+   git clone https://github.com/YOUR-USERNAME/sofia.git
+   cd sofia
+   ```
+
+3. **Set Up Development Environment**
+   ```bash
+   poetry install
+   pre-commit install
+   ```
+
+## Development Workflow
+
+1. **Create a Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make Changes**
+   - Write code
+   - Add tests
+   - Update documentation
+
+3. **Run Tests**
+   ```bash
+   poetry run pytest
+   ```
+
+4. **Submit a Pull Request**
+   - Push your changes
+   - Create a PR on GitHub
+   - Fill out the PR template
+
+## Code Style
+
+We use:
+- Black for Python formatting
+- isort for import sorting
+- flake8 for linting
+- mypy for type checking
+
+## Testing
+
+- Write tests for new features
+- Maintain test coverage
+- Run the test suite before submitting PRs
+
+## Documentation
+
+When adding features, please update:
+- Docstrings
+- README.md if needed
+- Documentation files in `/docs`
+- Example code if relevant
+
+## Community
+
+### Getting Help
+
+- **GitHub Issues**: Bug reports and feature requests
+- **Discussions**: General questions and ideas
+- **Discord**: Real-time chat with the community
+
+### Code of Conduct
+
+We follow a standard code of conduct to ensure a welcoming community. Key points:
+
+- Be respectful and inclusive
+- Focus on constructive feedback
+- Help others learn and grow
+
+## Release Process
+
+1. Version bump in pyproject.toml
+2. Update CHANGELOG.md
+3. Create a release PR
+4. Tag and release on GitHub
+
+## Project Structure
+
+```
+sofia/
+├── sofia_agent/     # Main package
+├── docs/           # Documentation
+├── examples/       # Example code
+├── tests/         # Test suite
+└── tools/         # Development tools
+```
+
+## Common Tasks
+
+### Adding New Tools
+
+1. Create tool function in appropriate module
+2. Add type hints and docstrings
+3. Write tests
+4. Update documentation
+5. Add example usage
+
+### Modifying Core Components
+
+1. Discuss in GitHub Issues first
+2. Write detailed tests
+3. Update all affected documentation
+4. Consider backward compatibility
+
+## Need Help?
+
+- Check existing issues and discussions
+- Join our Discord community
+- Read the documentation
+- Ask questions in GitHub Discussions
+
+<Cards>
+  <Card title="GitHub Repository" href="https://github.com/chandralegend/sofia" />
+  <Card title="Documentation" href="/docs" />
+</Cards>
