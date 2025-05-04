@@ -1,5 +1,3 @@
-
-
 <div align="center">
 <a href="https://github.com/chandralegend/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
 
@@ -95,8 +93,29 @@ See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a full-fe
 
 
 ## Example: Barista Agent
-A full example is provided in [`examples/barista.py`](examples/barista.py) and [`examples/config.barista.yaml`](examples/config.barista.yaml).
+A full example is provided in [`examples/barista/barista.py`](examples/barista.py) and [`examples/config.barista.yaml`](examples/config.barista.yaml).
 
+To run the Barista agent:
+```bash
+cd examples/barista
+export OPENAI_API_KEY=your-api-key-here
+python barista.py
+# or
+python barista_with_config.py
+```
+
+## Example: Financial Planning Assistant
+A production-ready example of a Financial Planning Assistant is available in [`examples/prod-ready/`](examples/prod-ready/). This example demonstrates:
+- Budget planning and expense tracking
+- Savings goal management
+- Financial health assessment
+- Docker containerization with optional Redis session management
+- Production-ready configuration
+
+To run the Financial Planning Assistant:
+```bash
+OPENAI_API_KEY=your-api-key-here docker compose up
+```
 
 ## Contributing
 Contributions are welcome! Please open issues or pull requests on GitHub.

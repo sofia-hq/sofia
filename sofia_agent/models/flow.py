@@ -86,13 +86,13 @@ def create_route_decision_model(
         + (["TOOL_CALL"] if tool_ids else [])
     )
 
-    Action_Enum = create_action_enum(action_ids)
+    ActionEnum = create_action_enum(action_ids)
     params = {
         "reasoning": {
             "type": List[str],
             "description": "Reasoning for the decision",
         },
-        "action": {"type": Action, "description": "Action to take"},
+        "action": {"type": ActionEnum, "description": "Action to take"},
         "input": {
             "type": Optional[str],
             "default": None,

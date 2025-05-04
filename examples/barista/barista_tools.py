@@ -1,15 +1,7 @@
-import os
 import uuid
 from typing import Literal, Optional
 
-# Enable Debugging
-os.environ["SOFIA_LOG_LEVEL"] = "DEBUG"
-os.environ["SOFIA_ENABLE_LOGGING"] = "true"
-
-from sofia_agent import *
-from sofia_agent.llms import OpenAIChatLLM as LLM
 from sofia_agent.utils.logging import log_info
-
 
 # Simulate Inventory
 coffee_cart = []
@@ -135,26 +127,15 @@ def finalize_order(
         f"Order finalized! Total price: ${total_price:.2f}. Thank you for your order!"
     )
 
-# Define the LLM and Barista
-llm = LLM()
-config = AgentConfig.from_yaml("config.barista.yaml")
-barista = Sofia.from_config(llm, config, tools=[get_available_coffee_options, add_to_cart, remove_item, clear_cart, get_order_summary, finalize_order])
 
-# Start the conversation
-sess = barista.create_session()
+tools = [
+    get_available_coffee_options,
+    add_to_cart,
+    get_total_price,
+    remove_item,
+    clear_cart,
+    get_order_summary,
+    finalize_order,
+]
 
-user_input = None
-while True:
-    decision, _ = sess.next(user_input)
-    if decision.action == Action.ASK or decision.action == Action.ANSWER:
-        user_input = input(f"Assistant: {decision.input}\nYou: ")
-    elif decision.action == Action.END:
-        print("Session ended.")
-        break
-    else:
-        print("Unknown action. Exiting.")
-        break
-
-_save = input("Do you want to save the session? (y/n): ")
-if _save.lower() == "y":
-    sess.save_session()
+__all__ = ["tools"]
