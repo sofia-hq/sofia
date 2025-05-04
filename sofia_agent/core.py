@@ -12,6 +12,7 @@ from .models.tool import Tool, InvalidArgumentsError, FallbackError
 from .models.flow import Action, Step, Message, create_route_decision_model
 from .llms import LLMBase
 from .config import AgentConfig
+from .constants import ACTION_ENUMS
 
 
 class FlowSession:
@@ -143,10 +144,11 @@ class FlowSession:
         decision = self._get_next_decision()
         self.history.append(self.current_step)
         log_debug(f"Action decided: {decision.action}")
-        if decision.action == Action.ASK or decision.action == Action.ANSWER:
+        action = decision.action.value
+        if action in [Action.ASK.value, Action.ANSWER.value]:
             self._add_message(self.name, decision.input)
             return decision, None
-        elif decision.action == Action.TOOL_CALL:
+        elif action == Action.TOOL_CALL.value:
             self._add_message("tool", f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}")
             _error = None
             try:
@@ -174,7 +176,7 @@ class FlowSession:
                     raise _error
                 return decision, tool_results
             return self.next(no_errors=no_errors + 1) if _error is not None else self.next()
-        elif decision.action == Action.MOVE:
+        elif action == Action.MOVE.value:
             _error = None
             if decision.next_step_id in self.current_step.get_available_routes():
                 self.current_step = self.steps[decision.next_step_id]
@@ -193,9 +195,16 @@ class FlowSession:
                     raise _error
                 return decision, None
             return self.next()
-        elif decision.action == Action.END:
+        elif action == Action.END.value:
             self._add_message("end", "Session ended.")
             return decision, None
+        else:
+            self._add_message(
+                "error",
+                f"Unknown action: {action}. Please check the action type.",
+            )
+            if self.method == "manual":
+                raise ValueError(f"Unknown action: {action}. Please check the action type.")
 
 
 class Sofia:

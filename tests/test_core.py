@@ -40,7 +40,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     )
     ask_response = expected_decision_model(
         reasoning=["Greeting"],
-        action = Action.ASK,
+        action = Action.ASK.value,
         input="How can I help?"
     )
     
@@ -60,12 +60,12 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert "Your Name: test_agent" in session.llm.messages_received[0].content
     assert "Test persona" in session.llm.messages_received[0].content
     assert session.llm.messages_received[1].role == "user"
-    assert decision.action == Action.ASK
+    assert decision.action.value == Action.ASK.value
     assert decision.input == "How can I help?"
 
     ask_response = expected_decision_model(
         reasoning=["User input"],
-        action = Action.ANSWER,
+        action = Action.ANSWER.value,
         input="I can help you with that."
     )
     session.llm.set_response(ask_response)
@@ -76,7 +76,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert "<Step> start" in session.llm.messages_received[1].content
     assert "How can I help?" in session.llm.messages_received[1].content
     assert "I need help" in session.llm.messages_received[1].content
-    assert decision.action == Action.ANSWER
+    assert decision.action.value == Action.ANSWER.value
     assert decision.input == "I can help you with that."
 
 
@@ -95,7 +95,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     # Set up mock responses
     tool_response = tool_model(
         reasoning=["Need to use test tool"],
-        action=Action.TOOL_CALL,
+        action=Action.TOOL_CALL.value,
         tool_name="test_tool",
         tool_kwargs={"arg0": "test_arg"}
     )
@@ -109,7 +109,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[1].role == "user"
     assert "Use the tool" in session.llm.messages_received[1].content
-    assert decision.action == Action.TOOL_CALL
+    assert decision.action.value == Action.TOOL_CALL.value
     assert decision.tool_name == "test_tool"
     assert tool_result == "Test tool 0 response: test_arg"
     
@@ -130,7 +130,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
     
     # Set up response with invalid args
     invalid_response = tool_model(
-        action=Action.TOOL_CALL,
+        action=Action.TOOL_CALL.value,
         reasoning=["Testing invalid args"],
         tool_name="test_tool",
         tool_kwargs={"arg1": "value"}  # Wrong argument name
