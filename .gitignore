@@ -1,3 +1,9 @@
+# Docs
+docs/.next/
+docs/.source/
+node_modules/
+docs/next-env.d.ts
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
