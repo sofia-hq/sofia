@@ -7,3 +7,11 @@ DEFAULT_SYSTEM_MESSAGE = (
 )
 
 DEFAULT_PERSONA = "You are a helpful assistant, kind and polite. Use human-like natural language when responding."
+
+ACTION_ENUMS = {
+    "MOVE": "move_to_next_step",
+    "ANSWER": "provide_answer",
+    "ASK": "ask_additional_info",
+    "TOOL_CALL": "call_tool",
+    "END": "end_flow",
+}

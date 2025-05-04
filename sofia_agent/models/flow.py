@@ -7,26 +7,14 @@ from typing import List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 
-from ..utils.utils import create_base_model
+from ..utils.utils import create_base_model, create_enum
+from ..constants import ACTION_ENUMS
 
 
-class Action(Enum):
-    """
-    Enum representing possible actions the agent can take in a step.
-
-    - MOVE: Move to the next step.
-    - ANSWER: Provide an answer to the user.
-    - ASK: Ask the user for additional information.
-    - TOOL_CALL: Call a tool function.
-    - END: End the flow (No further steps).
-    """
-
-    MOVE = "move_to_next_step"
-    ANSWER = "provide_answer"
-    ASK = "ask_additional_info"
-    TOOL_CALL = "call_tool"
-    END = "end_flow"
-
+Action = Enum(
+    "Action",
+    ACTION_ENUMS
+)
 
 class Route(BaseModel):
     """
@@ -92,6 +80,13 @@ def create_route_decision_model(
     :param tool_models: List of Pydantic models for tool arguments.
     :return: A dynamically created Pydantic BaseModel for the decision.
     """
+    action_ids = (
+        ["ASK", "ANSWER", "END"]
+        + (["MOVE"] if available_step_ids else [])
+        + (["TOOL_CALL"] if tool_ids else [])
+    )
+
+    Action_Enum = create_action_enum(action_ids)
     params = {
         "reasoning": {
             "type": List[str],
@@ -119,7 +114,11 @@ def create_route_decision_model(
             "description": "Tool name if action is TOOL_CALL (call_tool)",
         }
         params["tool_kwargs"] = {
-            "type": Optional[tool_models[0]] if len(tool_models) == 1 else Optional[Union[*tool_models]],
+            "type": (
+                Optional[tool_models[0]]
+                if len(tool_models) == 1
+                else Optional[Union[*tool_models]]
+            ),
             "default": None,
             "description": "Tool arguments if action is TOOL_CALL (call_tool).",
         }
@@ -128,6 +127,20 @@ def create_route_decision_model(
         "RouteDecision",
         params,
     )
+
+
+def create_action_enum(actions: list[str]) -> Action:
+    """
+    Dynamically create an Enum class for actions.
+
+    :param name: Name of the enum.
+    :param actions: Dictionary of action names to values.
+    :return: A dynamically created Enum class.
+    """
+    actions = {
+        action: ACTION_ENUMS[action] for action in actions if action in ACTION_ENUMS
+    }
+    return create_enum("Action", actions)
 
 
 __all__ = [

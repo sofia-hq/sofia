@@ -4,6 +4,7 @@ Utility functions and helpers for the SOFIA package.
 
 from typing import Dict, Any, Type
 from pydantic import BaseModel, Field, create_model, ConfigDict
+from enum import Enum
 
 def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[BaseModel]:
     """
@@ -31,7 +32,18 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
 
     return create_model(name, **fields, __config__= ConfigDict(extra="forbid"))
 
+def create_enum(name: str, values: Dict[str, Any]) -> Type[Enum]:
+    """
+    Dynamically create an Enum class with the given name and values.
+
+    :param name: Name of the enum.
+    :param values: Dictionary of enum member names to values.
+    :return: A dynamically created Enum class.
+    """
+    return Enum(name, values)
+
 
 __all__ = [
     "create_base_model",
+    "create_enum",
 ]
