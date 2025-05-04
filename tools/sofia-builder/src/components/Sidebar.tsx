@@ -58,11 +58,18 @@ export default function SofiaSidebar({
   return (
     <div className="w-[250px] h-full flex flex-col bg-sidebar text-sidebar-foreground border-r border-border z-5">
       <div className="flex items-center justify-between w-full p-2 border-b">
-        <img 
-          src="https://i.ibb.co/202j1W2v/sofia-logo.png" 
-          alt="SOFIA Builder Logo" 
-          className="h-8" 
-        />
+        <div className="flex items-center">
+          <img 
+        src="https://i.ibb.co/202j1W2v/sofia-logo.png" 
+        alt="SOFIA Builder Logo" 
+        className="h-8 dark:hidden" 
+          />
+          <img 
+        src="https://i.ibb.co/yFH80Dpg/sofia-logo-white.png" 
+        alt="SOFIA Builder Logo" 
+        className="h-8 hidden dark:block" 
+          />
+        </div>
         <ThemeToggle />
       </div>
       <div className="flex-1 overflow-y-auto p-2">

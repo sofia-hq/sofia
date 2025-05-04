@@ -487,9 +487,10 @@ export default function App() {
           onDragOver={(e) => e.preventDefault()}
           fitView
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+          colorMode="system"
         >
-          <Background />
           <MiniMap />
+          <Background/>
           <Controls />
           <Panel position="top-center">
             <h3>{config.name}</h3>

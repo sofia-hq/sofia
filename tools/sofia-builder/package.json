@@ -1,6 +1,6 @@
 {
-  "name": "vite-react-flow-template",
-  "version": "0.0.0",
+  "name": "sofia-agent-builder",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
