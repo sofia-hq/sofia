@@ -3,6 +3,7 @@
 from pydantic_settings import BaseSettings
 from typing import List, Dict, Optional, Literal
 
+from .llms import LLMConfig
 from .models.flow import Step
 
 class AgentConfig(BaseSettings):
@@ -29,6 +30,8 @@ class AgentConfig(BaseSettings):
     show_steps_desc: bool = False
     max_errors: int = 3
     method: Literal["auto", "manual"] = "auto" # Default to auto method
+
+    llm: Optional[LLMConfig] = None # Optional LLM configuration
 
     # Loading from YAML file
     @classmethod

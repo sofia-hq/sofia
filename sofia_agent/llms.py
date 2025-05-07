@@ -3,7 +3,7 @@ LLM base classes and OpenAI LLM integration for SOFIA.
 """
 
 import os
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Literal
 
 from pydantic import BaseModel
 
@@ -322,3 +322,31 @@ class GeminiLLM(LLMBase):
             )
         )
         return comp.parsed
+    
+class LLMConfig(BaseModel):
+    """
+    Configuration class for LLM integrations in SOFIA.
+
+    Attributes:
+        type (str): Type of LLM integration (e.g., "openai", "mistral", "gemini").
+        model (str): Model name to use.
+        kwargs (dict): Additional parameters for the LLM API.
+    """
+    provider: Literal["openai", "mistral", "gemini"]
+    model: str
+    kwargs: Dict[str, str] = {}
+
+    def get_llm(self) -> LLMBase:
+        """
+        Get the appropriate LLM instance based on the configuration.
+
+        :return: An instance of the specified LLM integration.
+        """
+        if self.provider == "openai":
+            return OpenAIChatLLM(model=self.model, **self.kwargs)
+        elif self.provider == "mistral":
+            return MistralAILLM(model=self.model, **self.kwargs)
+        elif self.provider == "gemini":
+            return GeminiLLM(model=self.model, **self.kwargs)
+        else:
+            raise ValueError(f"Unsupported LLM provider: {self.provider}")
