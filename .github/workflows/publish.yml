@@ -4,7 +4,7 @@ name: Release
 on:
   push:
     tags:
-      - '*.*.*'
+      - '[0-9]+.[0-9]+.[0-9]+' # Match tags like 1.0.0
 
 permissions:
   contents: read
@@ -45,4 +45,4 @@ jobs:
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-            
+
