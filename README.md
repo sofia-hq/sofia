@@ -1,5 +1,5 @@
 <div align="center">
-<a href="https://github.com/chandralegend/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
+<a href="https://github.com/sofia-hq/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
 
 ### **S***imple* **O***rchestrated* **F**low **I***ntelligence* **A***gent*
 ![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) [![Test](https://github.com/chandralegend/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/chandralegend/sofia/actions/workflows/test.yml) [![Release](https://github.com/chandralegend/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/chandralegend/sofia/actions/workflows/publish.yml) 
@@ -33,7 +33,7 @@ pip install sofia-agent[cli]
 
 ### From Source
 ```bash
-git clone https://github.com/chandralegend/sofia.git
+git clone https://github.com/sofia-hq/sofia.git
 cd sofia
 poetry install
 ```
