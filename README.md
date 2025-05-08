@@ -105,17 +105,45 @@ python barista_with_config.py
 ```
 
 ## Example: Financial Planning Assistant
-A production-ready example of a Financial Planning Assistant is available in [`examples/prod-ready/`](examples/prod-ready/). This example demonstrates:
+A production-ready example of a Financial Planning Assistant is available in [`examples/financial-advisor/`](examples/financial-advisor/). This example demonstrates:
 - Budget planning and expense tracking
 - Savings goal management
 - Financial health assessment
-- Docker containerization with optional Redis session management
+- Uses the sofia-base Docker image
 - Production-ready configuration
 
 To run the Financial Planning Assistant:
 ```bash
-OPENAI_API_KEY=your-api-key-here docker compose up
+docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 financial-advisor
 ```
+
+## Docker Base Image
+SOFIA provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/sofia-base`.
+
+To use the base image in your own agent:
+
+1. Create a Dockerfile:
+```dockerfile
+FROM chandralegend/sofia-base:latest
+
+# Copy your config file
+COPY config.agent.yaml /app/config.agent.yaml
+
+# Copy your tools
+COPY tools.py /app/tools/
+```
+
+2. Build and run your container:
+```bash
+docker build -t my-sofia-agent .
+docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-sofia-agent
+```
+
+The base image supports configuration via environment variables:
+- `CONFIG_URL`: URL to download the agent configuration from
+- `CONFIG_PATH`: Path to a mounted config file
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `REDIS_URL`: Optional Redis URL for session management
 
 ## Contributing
 Contributions are welcome! Please open issues or pull requests on GitHub.
