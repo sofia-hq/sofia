@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "---Introduction---",
+    "what-is-sofia",
+    "philosophy",
+    "quickstart",
+    "---Getting Started---",
+    "setup",
+    "---Core Library---",
+    "library",
+    "api",
+    "---Tools---",
+    "cli",
+    "builder",
+    "---Other---",
+    "contributing",
+    "[GitHub](https://github.com/chandralegend/sofia)"
+  ]
+}

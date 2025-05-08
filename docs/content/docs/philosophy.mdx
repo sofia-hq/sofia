@@ -1,0 +1,118 @@
+---
+title: Philosophy
+description: Core principles and design philosophy behind SOFIA
+---
+
+SOFIA is built on three fundamental principles that guide its design and implementation:
+
+## 1. Simplicity First
+
+We believe that powerful tools don't need to be complex. SOFIA emphasizes:
+
+### Clear Abstractions
+- Steps represent distinct conversation states
+- Tools are just Python functions
+- Routes are explicit transition rules
+
+### Minimal Boilerplate
+- Quick setup with sensible defaults
+- Declarative configuration options
+- Straightforward API design
+
+### Intuitive Concepts
+- Conversations flow through steps
+- Tools provide capabilities
+- Personas define behavior
+
+## 2. Flexibility By Design
+
+Different projects have different needs. SOFIA adapts to yours:
+
+### Multiple Configuration Styles
+- Use Python for programmatic control
+- Use YAML for declarative setup
+- Mix both approaches as needed
+
+### Extensible Architecture
+- Create custom tools
+- Implement your own LLM providers
+- Define specialized step types
+
+### Framework Agnostic
+- Works with any Python framework
+- Integrates with existing systems
+- No forced dependencies
+
+## 3. Structured Approach
+
+Organization and predictability are key to building reliable agents:
+
+### Step-Based Design
+- Clear conversation flow
+- Controlled tool access
+- Explicit state transitions
+
+### Context Management
+- Maintain conversation state
+- Track tool usage
+- Handle session persistence
+
+### Predictable Behavior
+- Consistent persona responses
+- Well-defined error handling
+- Reliable state transitions
+
+## Design Decisions
+
+### Why Steps?
+Steps provide:
+- Clear organization of complex flows
+- Controlled access to tools
+- Explicit state management
+- Easy debugging and monitoring
+
+### Why Tools as Functions?
+Function-based tools offer:
+- Simple implementation
+- Clear interfaces
+- Easy testing
+- Natural integration
+
+### Why Personas?
+Personas ensure:
+- Consistent agent behavior
+- Brand alignment
+- Context-aware responses
+- Natural interactions
+
+## Best Practices
+
+SOFIA encourages:
+
+1. **Keep Steps Focused**
+   - One main responsibility per step
+   - Clear transition conditions
+   - Limited tool access
+
+2. **Design Tools Carefully**
+   - Pure functions when possible
+   - Clear input/output contracts
+   - Proper error handling
+
+3. **Use Explicit Routing**
+   - Clear transition conditions
+   - Well-defined flow paths
+   - Proper error states
+
+4. **Maintain Context**
+   - Track important state
+   - Pass relevant information
+   - Handle persistence
+
+## Next Steps
+
+<Cards>
+  <Card title="Quick Start Guide" href="/docs/quickstart" />
+  <Card title="Core Concepts" href="/docs/library" />
+  <Card title="Setup Guide" href="/docs/setup" />
+</Cards>

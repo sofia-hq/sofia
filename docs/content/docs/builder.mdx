@@ -1,0 +1,158 @@
+---
+title: SOFIA Builder UI
+description: Visual interface for designing and testing SOFIA agents
+---
+
+The SOFIA Builder is a visual development environment for creating and managing SOFIA agents. It provides a drag-and-drop interface for designing agent flows, testing tools, and generating configurations.
+
+## Getting Started
+
+### Installation
+
+The Builder UI is included in the SOFIA CLI package:
+
+```bash
+pip install sofia-agent[cli]
+```
+
+### Launching the Builder
+
+Start the Builder interface using the CLI:
+
+```bash
+sofia builder
+```
+
+This will launch the web interface at `http://localhost:3000` by default.
+
+## Interface Overview
+
+### Main Components
+
+The Builder interface consists of:
+
+1. **Canvas**: The main workspace where you design your agent flow
+2. **Toolbox**: Contains available nodes and connections
+3. **Property Panel**: Configure selected elements
+4. **Preview Panel**: Test your agent in real-time
+
+## Building Flows
+
+### Adding Steps
+
+1. Drag a "Step" node from the toolbox onto the canvas
+2. Configure the step properties:
+   - Step ID
+   - Description
+   - Available tools
+   - Routing conditions
+
+### Connecting Steps
+
+1. Click the output port of a step
+2. Drag to connect to another step's input port
+3. Configure the route condition in the Property Panel
+
+### Tool Configuration
+
+1. Select "Tools" in the Property Panel
+2. Add tool references or implementations
+3. Configure tool parameters and validation
+
+## Testing and Debugging
+
+### Live Preview
+
+Test your agent in real-time:
+1. Click "Start Session" in the Preview Panel
+2. Enter test inputs
+3. See step transitions and tool executions
+
+### Flow Validation
+
+The Builder automatically validates:
+- Step connections
+- Tool availability
+- Route conditions
+- Configuration completeness
+
+### Debug Tools
+
+- **Step Inspector**: View step execution details
+- **Tool Logger**: Monitor tool calls and responses
+- **State Viewer**: Examine session state
+
+## Exporting
+
+### Configuration Export
+
+Export your flow as:
+- YAML configuration
+- Python code
+- Flow diagram
+
+### Deployment Package
+
+Generate a complete project:
+1. Click "Export Project"
+2. Choose export options:
+   - Include tools
+   - Add requirements
+   - Generate tests
+
+## Advanced Features
+
+### Custom Nodes
+
+Create custom node types:
+1. Define node template
+2. Implement behavior
+3. Add to toolbox
+
+### Flow Templates
+
+Save and load flow templates:
+- Common patterns
+- Best practices
+- Starting points
+
+### Integration
+
+The Builder supports:
+- Version control integration
+- Team collaboration
+- Custom tool repositories
+
+## Keyboard Shortcuts
+
+| Action | Shortcut |
+|--------|----------|
+| New Step | Ctrl/Cmd + N |
+| Connect Steps | Alt + Drag |
+| Delete Selected | Delete |
+| Undo | Ctrl/Cmd + Z |
+| Redo | Ctrl/Cmd + Shift + Z |
+| Save | Ctrl/Cmd + S |
+| Export | Ctrl/Cmd + E |
+
+## Best Practices
+
+### Flow Design
+
+- Keep flows modular
+- Use clear step names
+- Document conditions
+- Test edge cases
+
+### Performance
+
+- Group related steps
+- Optimize tool usage
+- Cache common operations
+
+### Collaboration
+
+- Use consistent naming
+- Document changes
+- Share templates
+- Version control

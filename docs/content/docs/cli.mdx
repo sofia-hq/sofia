@@ -1,0 +1,162 @@
+---
+title: CLI Usage
+description: Guide to using SOFIA's command-line interface tools
+---
+SOFIA provides a powerful CLI for creating and managing agents. To use the CLI features, make sure you install SOFIA with the CLI extras:
+
+```bash
+pip install sofia-agent[cli]
+```
+
+## Commands
+
+### Initialize a New Agent
+
+The `sofia init` command helps you bootstrap a new agent project:
+
+```bash
+sofia init my-agent
+```
+
+This interactive command will:
+1. Create a new project directory
+2. Generate a basic configuration file
+3. Set up a starter agent implementation
+4. Create a requirements.txt file
+
+### Project Structure
+
+After initialization, your project will have this structure:
+
+```
+my-agent/
+├── config.yaml
+├── main.py
+├── requirements.txt
+└── tools/
+    └── __init__.py
+```
+
+### Configuration Validation
+
+Validate your YAML configuration:
+
+```bash
+sofia validate config.yaml
+```
+
+This checks for:
+- Required fields
+- Valid step references
+- Tool availability
+- LLM configuration
+
+### Running an Agent
+
+Start your agent in interactive mode:
+
+```bash
+sofia run config.yaml
+```
+
+Or run it with a specific input:
+
+```bash
+sofia run config.yaml --input "Hello, agent!"
+```
+
+### Development Tools
+
+#### Watch Mode
+
+Run your agent with automatic reloading on file changes:
+
+```bash
+sofia run config.yaml --watch
+```
+
+#### Debug Mode
+
+Enable detailed logging:
+
+```bash
+sofia run config.yaml --debug
+```
+
+## Configuration Templates
+
+The CLI provides templates for common agent types:
+
+```bash
+sofia init --template customer-service
+sofia init --template data-analysis
+sofia init --template task-automation
+```
+
+## Environment Variables
+
+The CLI respects the following environment variables:
+- `SOFIA_CONFIG_PATH`: Default configuration file path
+- `SOFIA_LOG_LEVEL`: Logging verbosity
+- `SOFIA_API_KEY`: Default API key for LLM providers
+
+## Advanced CLI Features
+
+### Session Management
+
+Save and load conversation sessions:
+
+```bash
+# Save current session
+sofia session save session.json
+
+# Resume from saved session
+sofia run config.yaml --session session.json
+```
+
+### Tool Development
+
+Create a new tool template:
+
+```bash
+sofia tool create my-tool
+```
+
+This generates:
+- Tool implementation file
+- Test template
+- Documentation stub
+
+### Batch Processing
+
+Run your agent on multiple inputs:
+
+```bash
+sofia run config.yaml --input-file inputs.txt --output results.json
+```
+
+### Performance Profiling
+
+Profile your agent's performance:
+
+```bash
+sofia run config.yaml --profile
+```
+
+This provides metrics on:
+- Step transition times
+- Tool execution duration
+- LLM response latency
+
+## Integration with SOFIA Builder
+
+Launch the visual builder from CLI:
+
+```bash
+sofia builder
+```
+
+This opens the SOFIA Builder interface where you can:
+- Design flows visually
+- Test tools
+- Export configurations
