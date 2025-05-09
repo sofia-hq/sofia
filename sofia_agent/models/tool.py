@@ -32,13 +32,14 @@ class Tool(BaseModel):
         tool_arg_desc_doc_params = (
             parse(function.__doc__.strip()).params if function.__doc__ else []
         )
-        tool_arg_descs_doc = {
+        tool_arg_desc_doc = {
             param.arg_name: param.description
             for param in tool_arg_desc_doc_params
             if param.description
         }
         tool_arg_desc = tool_arg_descs.get(function.__name__, {})
-        tool_arg_desc.update(tool_arg_descs_doc)
+        tool_arg_desc_doc.update(tool_arg_desc)
+        tool_arg_desc = tool_arg_desc_doc.copy()
 
         params = {}
         for k, v in function.__annotations__.items():
