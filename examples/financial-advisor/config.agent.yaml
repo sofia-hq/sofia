@@ -112,3 +112,7 @@ tool_arg_descriptions:
     target_amount: Goal amount to save
     target_date: Target date in YYYY-MM-DD format
     description: Description of the savings goal
+
+llm:
+  provider: openai
+  model: gpt-4o-mini

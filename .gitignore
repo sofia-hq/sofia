@@ -4,6 +4,9 @@ docs/.source/
 node_modules/
 docs/next-env.d.ts
 
+# Project files
+*.dump.*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
