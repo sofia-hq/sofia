@@ -19,6 +19,7 @@ class FlowSession:
     """
     Manages a single agent session, including step transitions, tool calls, and history.
     """
+
     def __init__(
         self,
         name: str,
@@ -32,6 +33,9 @@ class FlowSession:
         max_errors: int = 3,
         method: Literal["auto", "manual"] = "auto",
         config: Optional[AgentConfig] = None,
+        history: List[Union[Message, Step]] = [],
+        current_step_id: Optional[Step] = None,
+        session_id: Optional[str] = None,
     ):
         """
         Initialize a FlowSession.
@@ -47,9 +51,12 @@ class FlowSession:
         :param max_errors: Maximum consecutive errors before stopping or fallback.
         :param method: Method of handling errors or steps or tool calls.
         :param config: Optional AgentConfig.
+        :param history: List of messages and steps in the session. (Optional)
+        :param current_step_id: Current step ID. (Defaults to start_step_id)
+        :param session_id: Unique session ID. (Defaults to a UUID)
         """
         ## Fixed
-        self.session_id = f"{name}_{str(uuid.uuid4())}"
+        self.session_id = f"{name}_{str(uuid.uuid4())}" if not session_id else session_id
         self.name = name
         self.llm = llm
         self.steps = steps
@@ -59,13 +66,19 @@ class FlowSession:
         self.max_errors = max_errors
         self.method = method
         self.config = config
-        tool_arg_descs = self.config.tool_arg_descriptions if self.config and self.config.tool_arg_descriptions else {}
+        tool_arg_descs = (
+            self.config.tool_arg_descriptions
+            if self.config and self.config.tool_arg_descriptions
+            else {}
+        )
         tools_list = [Tool.from_function(tool, tool_arg_descs) for tool in tools]
         self.tools = {tool.name: tool for tool in tools_list}
         ## Variable
-        self.history: List[Union[Message, Step]] = []
-        self.current_step = steps[start_step_id]
-        
+        self.history: List[Union[Message, Step]] = history
+        self.current_step: Step = (
+            steps[current_step_id] if current_step_id else steps[start_step_id]
+        )
+
     def save_session(self):
         """
         Save the current session to disk as a pickle file.
@@ -85,7 +98,19 @@ class FlowSession:
         with open(f"{session_id}.pkl", "rb") as f:
             log_debug(f"Session {session_id} loaded from disk.")
             return pickle.load(f)
-        
+
+    def to_dict(self) -> dict:
+        """
+        Convert the session to a dictionary representation.
+
+        :return: Dictionary representation of the session.
+        """
+        return {
+            "session_id": self.session_id,
+            "current_step_id": self.current_step.step_id,
+            "history": [msg.model_dump(mode="json") for msg in self.history],
+        }
+
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:
         tool = self.tools.get(tool_name)
         if not tool:
@@ -114,7 +139,7 @@ class FlowSession:
         route_decision_model = create_route_decision_model(
             available_step_ids=self.current_step.get_available_routes(),
             tool_ids=self.current_step.available_tools,
-            tool_models=self._get_tool_models()
+            tool_models=self._get_tool_models(),
         )
         decision = self.llm._get_output(
             name=self.name,
@@ -129,7 +154,9 @@ class FlowSession:
         log_debug(f"Model decision: {decision}")
         return decision
 
-    def next(self, user_input: Optional[str] = None, no_errors: int = 0) -> tuple[BaseModel, Any]:
+    def next(
+        self, user_input: Optional[str] = None, no_errors: int = 0
+    ) -> tuple[BaseModel, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
@@ -149,7 +176,10 @@ class FlowSession:
             self._add_message(self.name, decision.input)
             return decision, None
         elif action == Action.TOOL_CALL.value:
-            self._add_message("tool", f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}")
+            self._add_message(
+                "tool",
+                f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}",
+            )
             _error = None
             try:
                 tool_kwargs = (
@@ -175,7 +205,11 @@ class FlowSession:
                 if _error is not None:
                     raise _error
                 return decision, tool_results
-            return self.next(no_errors=no_errors + 1) if _error is not None else self.next()
+            return (
+                self.next(no_errors=no_errors + 1)
+                if _error is not None
+                else self.next()
+            )
         elif action == Action.MOVE.value:
             _error = None
             if decision.next_step_id in self.current_step.get_available_routes():
@@ -204,13 +238,16 @@ class FlowSession:
                 f"Unknown action: {action}. Please check the action type.",
             )
             if self.method == "manual":
-                raise ValueError(f"Unknown action: {action}. Please check the action type.")
+                raise ValueError(
+                    f"Unknown action: {action}. Please check the action type."
+                )
 
 
 class Sofia:
     """
     Main interface for creating and managing SOFIA agents.
     """
+
     def __init__(
         self,
         llm: LLMBase,
@@ -255,7 +292,9 @@ class Sofia:
         log_debug(f"FlowManager initialized with start step '{start_step_id}'")
 
     @classmethod
-    def from_config(cls, llm: LLMBase, config: AgentConfig, tools: list[Callable] = []) -> "Sofia":
+    def from_config(
+        cls, llm: LLMBase, config: AgentConfig, tools: list[Callable] = []
+    ) -> "Sofia":
         """
         Create a Sofia agent from an AgentConfig object.
 
@@ -308,6 +347,29 @@ class Sofia:
         """
         log_debug(f"Loading session {session_id}")
         return FlowSession.load_session(session_id)
+
+    def get_session_from_dict(self, session_data: dict) -> FlowSession:
+        """
+        Create a FlowSession from a dictionary.
+
+        :param session_data: Dictionary containing session data.
+        :return: FlowSession instance.
+        """
+        log_debug(f"Creating session from dict: {session_data}")
+        return FlowSession(
+            name=self.name,
+            llm=self.llm,
+            tools=self.tools,
+            config=self.config,
+            persona=self.persona,
+            steps=self.steps,
+            start_step_id=self.start,
+            system_message=self.system_message,
+            show_steps_desc=self.show_steps_desc,
+            max_errors=self.max_errors,
+            method=self.method,
+            **session_data,
+        )
 
 
 __all__ = ["FlowSession", "Sofia"]

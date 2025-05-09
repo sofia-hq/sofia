@@ -1,33 +1,43 @@
-from typing import Dict, Optional, TYPE_CHECKING
-import uuid
 import os
+from typing import Optional
+import uuid
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import redis.asyncio as redis
+from contextlib import asynccontextmanager
 
 from agent import agent
 
-from sofia_agent.types import FlowSession
 from sofia_agent.models.flow import Message as FlowMessage, Step
+from db import init_db
+from session_store import create_session_store
 
-app = FastAPI(title="Sofia Agent API", version="1.0.0")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
+session_store = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global session_store
+    # Initialize database
+    await init_db()
+    session_store = await create_session_store()
+    assert session_store is not None, "Session store initialization failed"
+    yield
+    # Cleanup
+    await session_store.close()
+
+
+app = FastAPI(title="Sofia Agent API", version="0.1.1", lifespan=lifespan)
 
 # CORS middleware configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure this appropriately in production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Session storage
-sessions: Dict[str, FlowSession] = {}
-
-# Initialize Redis client if URL is provided
-REDIS_URL = os.getenv("REDIS_URL")
-redis_client = redis.from_url(REDIS_URL) if REDIS_URL else None
 
 
 class Message(BaseModel):
@@ -39,31 +49,17 @@ class SessionResponse(BaseModel):
     message: dict
 
 
-async def get_session(session_id: str) -> Optional[FlowSession]:
-    """Retrieve session from storage"""
-    if redis_client:
-        # Try Redis first
-        session_data = await redis_client.get(f"session:{session_id}")
-        if session_data:
-            return sessions.get(session_id)
-    # Fallback to in-memory storage
-    return sessions.get(session_id)
-
-
 @app.post("/session", response_model=SessionResponse)
 async def create_session(initiate: Optional[bool] = False):
     """Create a new session"""
     session_id = str(uuid.uuid4())
     session = agent.create_session()
-    sessions[session_id] = session
-
-    # Store session in Redis if available
-    if redis_client:
-        await redis_client.setex(f"session:{session_id}", 24 * 60 * 60, "active")
+    await session_store.set(session_id, session)
 
     # Get initial message from agent
     if initiate:
         decision, _ = session.next(None)
+        await session_store.set(session_id, session)
     return SessionResponse(
         session_id=session_id,
         message=(
@@ -77,11 +73,12 @@ async def create_session(initiate: Optional[bool] = False):
 @app.post("/session/{session_id}/message", response_model=SessionResponse)
 async def send_message(session_id: str, message: Message):
     """Send a message to an existing session"""
-    session = await get_session(session_id)
+    session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     decision, _ = session.next(message.content)
+    await session_store.set(session_id, session)
     return SessionResponse(
         session_id=session_id, message=decision.model_dump(mode="json")
     )
@@ -93,13 +90,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     await websocket.accept()
 
     try:
-        session = await get_session(session_id)
+        session = await session_store.get(session_id)
         if not session:
             await websocket.close(code=1000, reason="Session not found")
             return
 
         # Send initial message
         decision, _ = session.next(None)
+        await session_store.set(session_id, session)
         await websocket.send_json({"message": decision.model_dump(mode="json")})
     except Exception as e:
         await websocket.close(code=1000, reason=str(e))
@@ -108,26 +106,24 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 @app.delete("/session/{session_id}")
 async def end_session(session_id: str):
     """End and cleanup a session"""
-    session = await get_session(session_id)
+    session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Clean up session
-    del sessions[session_id]
-    if redis_client:
-        await redis_client.delete(f"session:{session_id}")
+    await session_store.delete(session_id)
     return {"message": "Session ended successfully"}
 
 
 @app.get("/session/{session_id}/history")
 async def get_session_history(session_id: str):
     """Get the history of a session"""
-    session = await get_session(session_id)
+    session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Assuming session.history() returns a list of messages
-    history: list[FlowMessage | Step] = session.history()
+    history: list[FlowMessage | Step] = session.history
     history_json = [
         msg.model_dump(mode="json")
         for msg in history
@@ -140,4 +136,4 @@ async def get_session_history(session_id: str):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
