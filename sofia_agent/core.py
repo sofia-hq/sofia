@@ -28,7 +28,7 @@ class FlowSession:
         start_step_id: str,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
-        tools: List[Callable] = [],
+        tools: List[Callable | str] = [],
         show_steps_desc: bool = False,
         max_errors: int = 3,
         method: Literal["auto", "manual"] = "auto",
@@ -46,7 +46,7 @@ class FlowSession:
         :param start_step_id: ID of the starting step.
         :param system_message: Optional system message.
         :param persona: Optional persona string.
-        :param tools: List of tool callables.
+        :param tools:  List of tool callables or package identifiers (e.g., "math:
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback.
         :param method: Method of handling errors or steps or tool calls.
@@ -56,7 +56,9 @@ class FlowSession:
         :param session_id: Unique session ID. (Defaults to a UUID)
         """
         ## Fixed
-        self.session_id = f"{name}_{str(uuid.uuid4())}" if not session_id else session_id
+        self.session_id = (
+            f"{name}_{str(uuid.uuid4())}" if not session_id else session_id
+        )
         self.name = name
         self.llm = llm
         self.steps = steps
@@ -71,7 +73,14 @@ class FlowSession:
             if self.config and self.config.tool_arg_descriptions
             else {}
         )
-        tools_list = [Tool.from_function(tool, tool_arg_descs) for tool in tools]
+        tools_list = [
+            (
+                Tool.from_function(tool, tool_arg_descs)
+                if callable(tool)
+                else Tool.from_pkg(tool, tool_arg_descs)
+            )
+            for tool in tools
+        ]
         self.tools = {tool.name: tool for tool in tools_list}
         ## Variable
         self.history: List[Union[Message, Step]] = history

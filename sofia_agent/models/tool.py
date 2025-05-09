@@ -41,6 +41,22 @@ class Tool(BaseModel):
             function=function,
             parameters=params,
         )
+    
+    @classmethod
+    def from_pkg(cls, identifier: str, tool_arg_descs: Dict[str, Dict[str, str]] = {}) -> "Tool":
+        """
+        Create a Tool instance from a package identifier
+        :param identifier: The package identifier in the format "library_name:tool_name".
+        """
+        library_name, tool_name = identifier.split(":")
+        try:
+            module = __import__(library_name)
+            _tool_arg_descs = getattr(module, "tool_arg_descs", tool_arg_descs)
+            for submodule in tool_name.split("."):
+                module = getattr(module, submodule)
+            return cls.from_function(module, _tool_arg_descs)
+        except Exception as e:
+            raise ValueError(f"Could not load tool {identifier}: {e}")
 
     def get_args_model(self) -> Type[BaseModel]:
         if self._cached_args_model:
