@@ -43,14 +43,14 @@ const defaultConfig: SofiaConfig = {
 export default function App() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
-  
+
   const [nodes, setNodes] = useState<SofiaNode[]>([]);
   const [edges, setEdges] = useState<SofiaEdge[]>([]);
   const [config, setConfig] = useState<SofiaConfig>(defaultConfig);
-  
+
   const [selectedNode, setSelectedNode] = useState<SofiaNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<SofiaEdge | null>(null);
-  
+
   // Handle node selection
   const onNodeClick = useCallback((_event: React.MouseEvent, node: SofiaNode) => {
     setSelectedNode(node);
@@ -62,26 +62,26 @@ export default function App() {
     setSelectedEdge(edge);
     setSelectedNode(null);
   }, []);
-  
+
   // Handle pane click (deselect everything)
   const onPaneClick = useCallback(() => {
     setSelectedNode(null);
     setSelectedEdge(null);
   }, []);
-  
+
   // Handle edge double click (for editing route condition)
   const onEdgeDoubleClick = useCallback((_event: React.MouseEvent, edge: SofiaEdge) => {
     setSelectedEdge(edge);
     setSelectedNode(null);
   }, []);
-  
+
   // Determine connection type based on source and target
   const getConnectionType = (connection: Connection): SofiaConnectionType | null => {
     const sourceNode = nodes.find(node => node.id === connection.source);
     const targetNode = nodes.find(node => node.id === connection.target);
-    
+
     if (!sourceNode || !targetNode) return null;
-    
+
     if (sourceNode.type === SofiaNodeType.STEP && targetNode.type === SofiaNodeType.STEP) {
       // Check if connecting from source to target handles (both on left now)
       if (connection.sourceHandle === 'step-source' && connection.targetHandle === 'step-target') {
@@ -93,10 +93,10 @@ export default function App() {
         return SofiaConnectionType.STEP_TO_TOOL;
       }
     }
-    
+
     return null;
   };
-  
+
   // Handle node changes
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setNodes((nds) => applyNodeChanges(changes as NodeChange[], nds) as SofiaNode[]);
@@ -146,7 +146,7 @@ export default function App() {
         newEdge.animated = true;
         newEdge.className = 'tool-connection';
         setEdges((eds) => addEdge(newEdge, eds));
-        
+
         // Add toolNodeId to the step's available_tools
         setNodes((nds) => nds.map((node) => {
           if (node.id === connection.source && node.type === SofiaNodeType.STEP) {
@@ -194,7 +194,7 @@ export default function App() {
     },
     [setEdges, setNodes, edges]
   );
-  
+
   // Update node data from property panel
   const handleNodeDataChange = useCallback(
     (id: string, newData: StepNodeData | ToolNodeData) => {
@@ -205,12 +205,12 @@ export default function App() {
             if (node.type === SofiaNodeType.STEP) {
               const stepData = newData as StepNodeData;
               const isStartStep = config.start_step_id === id;
-              return { 
-                ...node, 
-                data: { 
+              return {
+                ...node,
+                data: {
                   ...newData,
                   label: `${isStartStep ? '🚀 ' : ''}${stepData.step_id}`,
-                } 
+                }
               };
             }
             return { ...node, data: { ...newData } };
@@ -221,7 +221,7 @@ export default function App() {
     },
     [setNodes, config]
   );
-  
+
   // Update edge data from property panel
   const handleEdgeDataChange = useCallback(
     (id: string, newData: RouteEdgeData | ToolUsageEdgeData) => {
@@ -236,7 +236,7 @@ export default function App() {
     },
     [setEdges]
   );
-  
+
   // Update agent configuration
   const handleAgentConfigChange = useCallback(
     (name: string, persona: string) => {
@@ -248,7 +248,7 @@ export default function App() {
     },
     [setConfig]
   );
-  
+
   // Delete a node and associated tool references
   const handleDeleteNode = useCallback(
     (id: string) => {
@@ -275,7 +275,7 @@ export default function App() {
     },
     [setNodes, setEdges]
   );
-  
+
   // Set a step as the start step
   const handleSetStartStep = useCallback(
     (id: string) => {
@@ -284,7 +284,7 @@ export default function App() {
         ...cfg,
         start_step_id: id,
       }));
-      
+
       // Update node labels to show which is the start step
       setNodes((nds) =>
         nds.map((node) => {
@@ -306,7 +306,7 @@ export default function App() {
     },
     [setConfig, setNodes]
   );
-  
+
   // Check if a step is the start step
   const isStartStep = useCallback(
     (id: string) => {
@@ -314,33 +314,33 @@ export default function App() {
     },
     [config]
   );
-  
+
   // Handle drag and drop
   const onDrop = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
-      
+
       const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
       const type = event.dataTransfer.getData('application/reactflow/type');
-      
+
       if (typeof type === 'undefined' || !type || !reactFlowBounds) {
         return;
       }
-      
+
       const position = reactFlowInstance.screenToFlowPosition({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      
+
       // Create a unique ID
       const id = `${type}_${Date.now()}`;
-      
+
       let newNode: SofiaNode = { id, position } as SofiaNode;
-      
+
       if (type === SofiaNodeType.STEP) {
         const isFirst = nodes.filter(n => n.type === SofiaNodeType.STEP).length === 0;
         const stepId = `step_${nodes.filter(n => n.type === SofiaNodeType.STEP).length + 1}`;
-        
+
         newNode = {
           id,
           type: SofiaNodeType.STEP,
@@ -353,7 +353,7 @@ export default function App() {
           } as StepNodeData,
           style: isFirst ? { borderColor: '#00ff00', borderWidth: 2 } : undefined,
         };
-        
+
         // If this is the first step, set it as start step
         if (isFirst) {
           setConfig((cfg) => ({
@@ -363,7 +363,7 @@ export default function App() {
         }
       } else if (type === SofiaNodeType.TOOL) {
         const toolName = `tool_${nodes.filter(n => n.type === SofiaNodeType.TOOL).length + 1}`;
-        
+
         newNode = {
           id,
           type: SofiaNodeType.TOOL,
@@ -375,19 +375,19 @@ export default function App() {
           } as ToolNodeData,
         };
       }
-      
+
       setNodes((nds) => nds.concat(newNode));
     },
     [reactFlowInstance, nodes, setNodes, setConfig]
   );
-  
+
   // Handle drag start from sidebar
   const onDragStart = (event: React.DragEvent<HTMLDivElement>, nodeType: string, name: string) => {
     event.dataTransfer.setData('application/reactflow/type', nodeType);
     event.dataTransfer.setData('application/reactflow/name', name);
     event.dataTransfer.effectAllowed = 'move';
   };
-  
+
   // Create a new empty config
   const handleNewConfig = useCallback(() => {
     setConfig(defaultConfig);
@@ -396,25 +396,25 @@ export default function App() {
     setSelectedNode(null);
     setSelectedEdge(null);
   }, [setNodes, setEdges]);
-  
+
   // Import config from YAML file
   const handleImportYaml = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const yamlString = e.target?.result as string;
           const importedConfig = parseYaml(yamlString);
           setConfig(importedConfig);
-          
+
           // Convert config to nodes and edges and cast to correct types
           const { nodes: importedNodes, edges: importedEdges } = configToFlow(importedConfig);
           setNodes(importedNodes as SofiaNode[]);
           setEdges(importedEdges as SofiaEdge[]);
-          
+
           // Reset selection
           setSelectedNode(null);
           setSelectedEdge(null);
@@ -424,22 +424,22 @@ export default function App() {
         }
       };
       reader.readAsText(file);
-      
+
       // Reset the input to allow re-importing the same file
       event.target.value = '';
     },
     [setConfig, setNodes, setEdges]
   );
-  
+
   // Export config to YAML file
   const handleExportYaml = useCallback(() => {
     try {
       // Convert current nodes and edges to config
       const currentConfig = flowToConfig(nodes, edges, config.name, config.persona, config.start_step_id);
-      
+
       // Generate YAML
       const yamlString = generateYaml(currentConfig);
-      
+
       // Create a download link
       const blob = new Blob([yamlString], { type: 'text/yaml;charset=utf-8' });
       const url = URL.createObjectURL(blob);
@@ -448,7 +448,7 @@ export default function App() {
       link.download = `${currentConfig.name.toLowerCase().replace(/\s+/g, '_')}.yaml`;
       document.body.appendChild(link);
       link.click();
-      
+
       // Clean up
       URL.revokeObjectURL(url);
       document.body.removeChild(link);
@@ -457,7 +457,7 @@ export default function App() {
       alert('Error exporting YAML. Please check the console for details.');
     }
   }, [nodes, edges, config]);
-  
+
   return (
     <div className="flex w-screen h-screen">
       {/* Sidebar */}

@@ -21,7 +21,7 @@ export function ToolUsageEdge({
   markerEnd,
 }: ToolUsageEdgeProps) {
   const curvature = 0.6;
-  
+
   const [edgePath] = getBezierPath({
     sourceX,
     sourceY,

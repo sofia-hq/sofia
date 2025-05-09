@@ -52,21 +52,21 @@ export function StepNode({ data, selected }: NodeProps<Node<StepNodeData>>) {
           </div>
         )}
       </div>
-      <Handle 
-        type="target" 
-        position={Position.Top} 
+      <Handle
+        type="target"
+        position={Position.Top}
         id="step-target"
         className="node-handle"
       />
-      <Handle 
-        type="source" 
-        position={Position.Bottom} 
+      <Handle
+        type="source"
+        position={Position.Bottom}
         id="step-source"
         className="node-handle"
       />
-      <Handle 
-        type="source" 
-        position={Position.Right} 
+      <Handle
+        type="source"
+        position={Position.Right}
         id="tool-source"
         className="node-handle tool-handle"
       />

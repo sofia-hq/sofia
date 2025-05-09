@@ -11,10 +11,8 @@ from ..utils.utils import create_base_model, create_enum
 from ..constants import ACTION_ENUMS
 
 
-Action = Enum(
-    "Action",
-    ACTION_ENUMS
-)
+Action = Enum("Action", ACTION_ENUMS)
+
 
 class Route(BaseModel):
     """

@@ -6,6 +6,7 @@ from typing import List, Dict, Optional, Literal
 from .llms import LLMConfig
 from .models.flow import Step
 
+
 class AgentConfig(BaseSettings):
     """
     Configuration for the agent, including model settings and flow steps.
@@ -21,31 +22,35 @@ class AgentConfig(BaseSettings):
         from_yaml(file_path: str) -> "AgentConfig": Load configuration from a YAML file.
         to_yaml(file_path: str) -> None: Save configuration to a YAML file.
     """
+
     name: str
-    persona: Optional[str] = None # Recommended to use a default persona
+    persona: Optional[str] = None  # Recommended to use a default persona
     steps: List[Step]
     start_step_id: str
     tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]]
-    system_message: Optional[str] = None # Default system message will be used if not provided
+    system_message: Optional[str] = (
+        None  # Default system message will be used if not provided
+    )
     show_steps_desc: bool = False
     max_errors: int = 3
-    method: Literal["auto", "manual"] = "auto" # Default to auto method
+    method: Literal["auto", "manual"] = "auto"  # Default to auto method
 
-    llm: Optional[LLMConfig] = None # Optional LLM configuration
+    llm: Optional[LLMConfig] = None  # Optional LLM configuration
 
     # Loading from YAML file
     @classmethod
     def from_yaml(cls, file_path: str) -> "AgentConfig":
         import yaml
-        with open(file_path, 'r') as file:
+
+        with open(file_path, "r") as file:
             data = yaml.safe_load(file)
         return cls(**data)
-    
+
     def to_yaml(self, file_path: str) -> None:
         import yaml
-        with open(file_path, 'w') as file:
+
+        with open(file_path, "w") as file:
             yaml.dump(self.model_dump(), file)
 
 
 __all__ = ["AgentConfig"]
-    

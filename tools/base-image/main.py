@@ -16,6 +16,7 @@ ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 session_store = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global session_store

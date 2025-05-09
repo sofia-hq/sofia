@@ -6,6 +6,7 @@ import inspect
 
 from pydantic import BaseModel, ValidationError
 from typing import Callable, Dict, Any, Type, Optional
+from docstring_parser import parse
 from ..utils.utils import create_base_model
 
 
@@ -17,10 +18,28 @@ class Tool(BaseModel):
     _cached_args_model: Optional[Type[BaseModel]] = None
 
     @classmethod
-    def from_function(cls, function: Callable, tool_arg_descs: Dict[str, Dict[str, str]] = {}) -> "Tool":
+    def from_function(
+        cls, function: Callable, tool_arg_descs: Dict[str, Dict[str, str]] = {}
+    ) -> "Tool":
         sig = inspect.signature(function)
-        description = function.__doc__.strip() if function.__doc__ else ""
+        description = (
+            parse(function.__doc__.strip()).short_description
+            if function.__doc__
+            else None
+        )
+        description = description or ""
+
+        tool_arg_desc_doc_params = (
+            parse(function.__doc__.strip()).params if function.__doc__ else []
+        )
+        tool_arg_descs_doc = {
+            param.arg_name: param.description
+            for param in tool_arg_desc_doc_params
+            if param.description
+        }
         tool_arg_desc = tool_arg_descs.get(function.__name__, {})
+        tool_arg_desc.update(tool_arg_descs_doc)
+
         params = {}
         for k, v in function.__annotations__.items():
             if k == "return":
@@ -41,9 +60,11 @@ class Tool(BaseModel):
             function=function,
             parameters=params,
         )
-    
+
     @classmethod
-    def from_pkg(cls, identifier: str, tool_arg_descs: Dict[str, Dict[str, str]] = {}) -> "Tool":
+    def from_pkg(
+        cls, identifier: str, tool_arg_descs: Dict[str, Dict[str, str]] = {}
+    ) -> "Tool":
         """
         Create a Tool instance from a package identifier
         :param identifier: The package identifier in the format "library_name:tool_name".
@@ -88,6 +109,7 @@ class FallbackError(Exception):
     Fallback Instruction if a tool fails.
     So the agent can continue the flow.
     """
+
     def __init__(self, error: str, fallback: str):
         """
         Agent fallback exception.
@@ -102,10 +124,12 @@ class FallbackError(Exception):
     def __str__(self):
         return f"Ran into an error: {self.error}. Follow this fallback instruction: {self.fallback}"
 
+
 class InvalidArgumentsError(Exception):
     """
     Exception raised when an invalid argument is passed to a tool.
     """
+
     def __init__(self, error: ValidationError):
         """
         Invalid argument exception.

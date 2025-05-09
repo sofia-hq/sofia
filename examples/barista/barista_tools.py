@@ -7,6 +7,7 @@ from sofia_agent.utils.logging import log_info
 coffee_cart = []
 sales = []
 
+
 # Tool Implementations
 def get_available_coffee_options() -> str:
     """

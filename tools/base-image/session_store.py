@@ -120,13 +120,12 @@ class SessionStore:
             else:
                 # Create new session
                 session_model = Session(
-                    session_id=session_id,
-                    session_data=session_data
+                    session_id=session_id, session_data=session_data
                 )
                 self.db.add(session_model)
 
             await self.db.commit()
-            
+
         except Exception as e:
             logger.warning(f"Database error: {e}. Using memory store only.")
             # Rollback the transaction on error

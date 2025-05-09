@@ -15,11 +15,11 @@ interface SidebarProps {
   onAgentConfigChange: (name: string, persona: string) => void;
 }
 
-export default function SofiaSidebar({ 
-  onImportYaml, 
-  onExportYaml, 
-  onNewConfig, 
-  config, 
+export default function SofiaSidebar({
+  onImportYaml,
+  onExportYaml,
+  onNewConfig,
+  config,
   onDragStart,
   onAgentConfigChange
 }: SidebarProps) {
@@ -59,15 +59,15 @@ export default function SofiaSidebar({
     <div className="w-[250px] h-full flex flex-col bg-sidebar text-sidebar-foreground border-r border-border z-5">
       <div className="flex items-center justify-between w-full p-2 border-b">
         <div className="flex items-center">
-          <img 
-        src="https://i.ibb.co/202j1W2v/sofia-logo.png" 
-        alt="SOFIA Builder Logo" 
-        className="h-8 dark:hidden" 
+          <img
+        src="https://i.ibb.co/202j1W2v/sofia-logo.png"
+        alt="SOFIA Builder Logo"
+        className="h-8 dark:hidden"
           />
-          <img 
-        src="https://i.ibb.co/yFH80Dpg/sofia-logo-white.png" 
-        alt="SOFIA Builder Logo" 
-        className="h-8 hidden dark:block" 
+          <img
+        src="https://i.ibb.co/yFH80Dpg/sofia-logo-white.png"
+        alt="SOFIA Builder Logo"
+        className="h-8 hidden dark:block"
           />
         </div>
         <ThemeToggle />
@@ -168,7 +168,7 @@ export default function SofiaSidebar({
           onChange={onImportYaml}
           style={{ display: 'none' }}
         />
-        <Button 
+        <Button
           variant="default"
           className="w-full"
           onClick={onExportYaml}

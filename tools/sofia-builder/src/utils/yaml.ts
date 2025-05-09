@@ -9,7 +9,7 @@ import { MarkerType } from '@xyflow/react';
 function calculateNodePositions(steps: Step[], centerX = 0, centerY = 0, radius = 300): Record<string, XYPosition> {
   const positions: Record<string, XYPosition> = {};
   const angleStep = (2 * Math.PI) / steps.length;
-  
+
   steps.forEach((step, index) => {
     const angle = index * angleStep;
     positions[step.step_id] = {
@@ -17,7 +17,7 @@ function calculateNodePositions(steps: Step[], centerX = 0, centerY = 0, radius 
       y: centerY + radius * Math.sin(angle),
     };
   });
-  
+
   return positions;
 }
 
@@ -79,15 +79,15 @@ export function configToFlow(
     });
     toolIndex++;
   });
-  
+
   // Create edges for routes between steps
   config.steps.forEach(step => {
     const sourceNodeId = nodeIdMap[step.step_id];
-    
+
     // Create step-to-step route edges
     (step.routes || []).forEach((route, routeIndex) => {
       const targetNodeId = nodeIdMap[route.target];
-      
+
       if (sourceNodeId && targetNodeId) {
         edges.push({
           id: `${sourceNodeId}-${targetNodeId}-${routeIndex}`,
@@ -108,11 +108,11 @@ export function configToFlow(
         });
       }
     });
-    
+
     // Create step-to-tool usage edges
     step.available_tools?.forEach((toolName, toolIndex) => {
       const targetNodeId = toolNodeIdMap[toolName];
-      
+
       if (sourceNodeId && targetNodeId) {
         edges.push({
           id: `${sourceNodeId}-${targetNodeId}-tool-${toolIndex}`,
@@ -130,7 +130,7 @@ export function configToFlow(
       }
     });
   });
-  
+
   return { nodes, edges };
 }
 
@@ -146,52 +146,52 @@ export function flowToConfig(
   const stepNodes = nodes.filter(node => node.type === SofiaNodeType.STEP);
   const toolNodes = nodes.filter(node => node.type === SofiaNodeType.TOOL);
   const toolUsageMap: Record<string, string[]> = {};
-  
+
   // Find all tool usage edges and build the mapping
   edges.forEach(edge => {
     if (edge.type === SofiaEdgeType.TOOL_USAGE) {
       const sourceId = edge.source;
       const targetId = edge.target;
       const targetNode = nodes.find(n => n.id === targetId);
-      
+
       if (targetNode && targetNode.type === SofiaNodeType.TOOL) {
         const toolName = (targetNode.data as Record<string, unknown>).name as string;
-        
+
         if (!toolUsageMap[sourceId]) {
           toolUsageMap[sourceId] = [];
         }
-        
+
         if (toolName && !toolUsageMap[sourceId].includes(toolName)) {
           toolUsageMap[sourceId].push(toolName);
         }
       }
     }
   });
-  
+
   stepNodes.forEach(node => {
     const stepData = node.data as Record<string, unknown>;
     const routes: Route[] = [];
-    
+
     // Find all step-to-step edges that have this node as a source
     const outgoingRouteEdges = edges.filter(
-      edge => edge.source === node.id && 
+      edge => edge.source === node.id &&
              edge.type === SofiaEdgeType.ROUTE
     );
-    
+
     outgoingRouteEdges.forEach(edge => {
       const routeData = edge.data as unknown as RouteEdgeData;
       const targetNode = nodes.find(n => n.id === edge.target);
-      
+
       if (targetNode && targetNode.type === SofiaNodeType.STEP) {
         const targetStepData = targetNode.data as unknown as StepNodeData;
-        
+
         routes.push({
           target: targetStepData.step_id,
           condition: routeData?.condition || 'True',
         });
       }
     });
-    
+
     // Get available tools for this step
     const availableTools = toolUsageMap[node.id] || (stepData.available_tools as string[]) || [];
     const stepObj: any = {
@@ -202,7 +202,7 @@ export function flowToConfig(
     if (availableTools.length > 0) stepObj.available_tools = availableTools;
     steps.push(stepObj);
   });
-  
+
   // Collect tool_arg_descriptions if any tool node has arguments
   const toolArgDescriptions: Record<string, Record<string, string>> = {};
   toolNodes.forEach(node => {
@@ -216,10 +216,10 @@ export function flowToConfig(
       toolArgDescriptions[toolData.name as string] = argObj;
     }
   });
-  
+
   // Find the start step ID
   let actualStartStepId = start_step_id || '';
-  
+
   if (!actualStartStepId && steps.length > 0) {
     // If no start step is specified, use the first step
     actualStartStepId = steps[0].step_id;
@@ -234,7 +234,7 @@ export function flowToConfig(
       actualStartStepId = steps.length > 0 ? steps[0].step_id : '';
     }
   }
-  
+
   const config: SofiaConfig = {
     name,
     persona,

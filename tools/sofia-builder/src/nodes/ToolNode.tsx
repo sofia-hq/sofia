@@ -50,9 +50,9 @@ export function ToolNode({ data, selected }: NodeProps<Node<ToolNodeData>>) {
           <div className="text-xs text-muted-foreground">No arguments</div>
         )}
       </div>
-      <Handle 
-        type="target" 
-        position={Position.Left} 
+      <Handle
+        type="target"
+        position={Position.Left}
         id="tool-target"
         className="node-handle tool-handle"
       />
