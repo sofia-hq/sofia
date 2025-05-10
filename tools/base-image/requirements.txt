@@ -1,4 +1,4 @@
-sofia-agent==0.1.9
+sofia-agent==0.1.10
 openai==1.76.0
 fastapi==0.115.12
 uvicorn==0.34.2
