@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofia HQ - Enterprise-Grade Agentic AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'glass-white': 'rgba(255, 255, 255, 0.7)',
+                        'glass-dark': 'rgba(17, 24, 39, 0.75)',
+                        'glass-card': 'rgba(255, 255, 255, 0.1)',
+                        'glass-card-dark': 'rgba(17, 24, 39, 0.6)',
+                    },
+                    backdropBlur: {
+                        'md': '12px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .gradient-bg {
+            background: linear-gradient(120deg, #6366f1, #8b5cf6, #d946ef);
+        }
+        .gradient-bg-dark {
+            background: linear-gradient(120deg, #4f46e5, #7e22ce, #c026d3);
+        }
+        .gradient-text {
+            background: linear-gradient(120deg, #6366f1, #8b5cf6, #d946ef);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dark .gradient-text {
+            background: linear-gradient(120deg, #818cf8, #a78bfa, #e879f9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .timeline-dot::before {
+            content: '';
+            position: absolute;
+            width: 2px;
+            background-color: #d1d5db;
+            top: 24px;
+            bottom: 0;
+            left: 11px;
+            z-index: -1;
+        }
+        .dark .timeline-dot::before {
+            background-color: #374151;
+        }
+        .timeline-dot:last-child::before {
+            display: none;
+        }
+        .glass-effect {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .glass-card {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .frosted-nav {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .frosted-nav {
+            background: rgba(17, 24, 39, 0.75);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .frosted-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .dark .frosted-card {
+            background: rgba(31, 41, 55, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .hero-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .dark .hero-pattern {
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234f46e5' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Navigation -->
+    <nav class="frosted-nav fixed w-full z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white">Sofia HQ</span>
+                    </div>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">Features</a>
+                    <a href="#roadmap" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">Roadmap</a>
+                    <a href="#documentation" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">Documentation</a>
+                    <a href="https://github.com/sofia-hq/sofia" target="_blank" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">GitHub</a>
+                    <a href="#contact" class="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-300">Contact Us</a>
+                    <button id="theme-toggle" class="p-2 rounded-full text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 focus:outline-none">
+                        <!-- Sun icon -->
+                        <svg id="sun-icon" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <!-- Moon icon -->
+                        <svg id="moon-icon" class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex md:hidden items-center space-x-4">
+                    <button id="theme-toggle-mobile" class="p-2 rounded-full text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 focus:outline-none">
+                        <!-- Sun icon -->
+                        <svg id="sun-icon-mobile" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                        </svg>
+                        <!-- Moon icon -->
+                        <svg id="moon-icon-mobile" class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                    <button id="mobile-menu-button" class="text-gray-500 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 focus:outline-none">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden frosted-nav absolute w-full">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#features" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">Features</a>
+                <a href="#roadmap" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">Roadmap</a>
+                <a href="#documentation" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">Documentation</a>
+                <a href="https://github.com/sofia-hq/sofia" target="_blank" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">GitHub</a>
+                <a href="#contact" class="block px-3 py-2 rounded-md text-base font-medium bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Contact Us</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 hero-pattern">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center">
+                <div class="md:w-1/2 md:pr-12">
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
+                        Enterprise-Grade <span class="gradient-text">Agentic AI</span> Made Simple
+                    </h1>
+                    <p class="mt-6 text-xl text-gray-600 dark:text-gray-300 max-w-3xl">
+                        Deploy reliable, scalable AI agents with near rule-based system reliability. 
+                        Open-source core with enterprise-ready platform.
+                    </p>
+                    <div class="mt-8 flex flex-col sm:flex-row gap-4">
+                        <a href="#contact" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 md:py-4 md:text-lg md:px-8 transition duration-150 ease-in-out">
+                            Get Started
+                        </a>
+                        <a href="https://github.com/sofia-hq/sofia" target="_blank" class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 md:py-4 md:text-lg md:px-8 transition duration-150 ease-in-out">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                            </svg>
+                            GitHub
+                        </a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 mt-12 md:mt-0">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-500 dark:from-indigo-600 dark:to-purple-700 rounded-lg transform rotate-3 scale-105 opacity-20 blur-xl"></div>
+                        <div class="relative frosted-card rounded-lg shadow-xl">
+                            <div class="flex items-center justify-between mb-4 p-6 pb-0">
+                                <div class="flex space-x-2">
+                                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                                </div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Sofia Agent Builder</div>
+                            </div>
+                            <div class="bg-gray-50 dark:bg-gray-800 m-6 p-4 rounded-md font-mono text-sm text-gray-800 dark:text-gray-200">
+                                <div class="flex items-center mb-3">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                                    <span class="text-green-600 dark:text-green-400 font-semibold">Agent deployed successfully</span>
+                                </div>
+                                <div class="text-gray-600 dark:text-gray-400">
+                                    <span class="text-purple-600 dark:text-purple-400">sofia</span> deploy --agent customer-support<br/>
+                                    <span class="text-gray-500 dark:text-gray-500">✓ Initializing agent...</span><br/>
+                                    <span class="text-gray-500 dark:text-gray-500">✓ Configuring tools...</span><br/>
+                                    <span class="text-gray-500 dark:text-gray-500">✓ Setting up knowledge base...</span><br/>
+                                    <span class="text-gray-500 dark:text-gray-500">✓ Deploying to production...</span><br/>
+                                    <span class="text-green-600 dark:text-green-400">Agent deployed at: https://api.sofiahq.com/agents/customer-support</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16 bg-white dark:bg-gray-900 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                    Enterprise-Ready AI Agents
+                </h2>
+                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
+                    Deploy reliable, scalable AI agents with the click of a button
+                </p>
+            </div>
+
+            <div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <!-- Feature 1 -->
+                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
+                    <div class="p-6">
+                        <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">High Reliability</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Sofia delivers agents with near rule-based system reliability, ensuring consistent performance for mission-critical applications.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
+                    <div class="p-6">
+                        <div class="w-12 h-12 rounded-md bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">No-Code Agent Builder</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Build sophisticated AI agents without writing a single line of code. Our visual builder makes agent creation accessible to everyone.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
+                    <div class="p-6">
+                        <div class="w-12 h-12 rounded-md bg-pink-100 dark:bg-pink-900 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Enterprise Scalability</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Serve thousands of users with our managed platform. We handle server management, observability, and versioning for you.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
+                    <div class="p-6">
+                        <div class="w-12 h-12 rounded-md bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Built-in Integrations</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Connect your agents to popular tools and services out of the box. No additional setup required.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
+                    <div class="p-6">
+                        <div class="w-12 h-12 rounded-md bg-green-100 dark:bg-green-900 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Managed API Keys</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            No need to manage LLM API keys. We handle the complexity of API management and optimization for you.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
+                    <div class="p-6">
+                        <div class="w-12 h-12 rounded-md bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-4">
+                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Open-Core Architecture</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Built on our open-source framework with enterprise features. Avoid vendor lock-in while getting the support you need.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="py-16 bg-gray-50 dark:bg-gray-800 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                    How Sofia Works
+                </h2>
+                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
+                    From idea to production in minutes, not months
+                </p>
+            </div>
+
+            <div class="mt-16 relative">
+                <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div class="w-full border-t border-gray-300 dark:border-gray-700"></div>
+                </div>
+                <div class="relative flex justify-center">
+                    <span class="px-3 bg-gray-50 dark:bg-gray-800 text-lg font-medium text-gray-900 dark:text-white">
+                        Simple Deployment Process
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-12 max-w-lg mx-auto grid gap-8 md:grid-cols-3 md:max-w-none">
+                <div class="flex flex-col rounded-lg overflow-hidden glass-card">
+                    <div class="p-6 flex-1">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 dark:bg-indigo-600 text-white mb-4">
+                            <span class="text-lg font-bold">1</span>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-900 dark:text-white">Design Your Agent</h3>
+                        <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
+                            Use our no-code builder to design your agent's behavior, knowledge, and capabilities.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col rounded-lg overflow-hidden glass-card">
+                    <div class="p-6 flex-1">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 dark:bg-indigo-600 text-white mb-4">
+                            <span class="text-lg font-bold">2</span>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-900 dark:text-white">Configure Integrations</h3>
+                        <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
+                            Connect your agent to your existing tools and data sources with our built-in integrations.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col rounded-lg overflow-hidden glass-card">
+                    <div class="p-6 flex-1">
+                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 dark:bg-indigo-600 text-white mb-4">
+                            <span class="text-lg font-bold">3</span>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-900 dark:text-white">Deploy & Scale</h3>
+                        <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
+                            One-click deployment to our managed platform. We handle scaling, monitoring, and maintenance.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap Section -->
+    <section id="roadmap" class="py-16 bg-white dark:bg-gray-900 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                    Product Roadmap
+                </h2>
+                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
+                    Our vision for the future of Sofia HQ
+                </p>
+            </div>
+
+            <div class="mt-16 max-w-3xl mx-auto">
+                <div class="space-y-8">
+                    <!-- Current -->
+                    <div class="relative pl-8 timeline-dot">
+                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-green-500 dark:bg-green-600 rounded-full">
+                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Current Release</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Open-source framework with core agentic capabilities, no-code agent builder, and basic integrations.
+                        </p>
+                        <div class="mt-3 flex items-center text-sm text-green-600 dark:text-green-400">
+                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            Available now
+                        </div>
+                    </div>
+
+                    <!-- Q2 2024 -->
+                    <div class="relative pl-8 timeline-dot">
+                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
+                            <span class="text-white text-xs font-bold">Q2</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Q2 2024</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Enterprise platform launch with managed deployments, observability tools, and expanded integration catalog.
+                        </p>
+                    </div>
+
+                    <!-- Q3 2024 -->
+                    <div class="relative pl-8 timeline-dot">
+                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
+                            <span class="text-white text-xs font-bold">Q3</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Q3 2024</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Advanced analytics dashboard, multi-agent orchestration, and custom LLM support.
+                        </p>
+                    </div>
+
+                    <!-- Q4 2024 -->
+                    <div class="relative pl-8 timeline-dot">
+                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
+                            <span class="text-white text-xs font-bold">Q4</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Q4 2024</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Enterprise security features, private cloud deployment options, and advanced agent collaboration tools.
+                        </p>
+                    </div>
+
+                    <!-- 2025 -->
+                    <div class="relative pl-8">
+                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
+                            <span class="text-white text-xs font-bold">25</span>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">2025</h3>
+                        <p class="mt-2 text-gray-600 dark:text-gray-300">
+                            Industry-specific agent templates, advanced reasoning capabilities, and autonomous agent networks.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Documentation Section -->
+    <section id="documentation" class="py-16 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 hero-pattern transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
+                    Documentation & Resources
+                </h2>
+                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
+                    Everything you need to get started with Sofia
+                </p>
+            </div>
+
+            <div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                <a href="#" class="group">
+                    <div class="h-full flex flex-col rounded-lg overflow-hidden glass-card group-hover:shadow-lg transition duration-300">
+                        <div class="p-6 flex-1">
+                            <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
+                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition duration-300">Documentation</h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
+                                Comprehensive guides, API references, and examples to help you build with Sofia.
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-3">
+                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">
+                                Read the docs →
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="https://github.com/sofia-hq/sofia" target="_blank" class="group">
+                    <div class="h-full flex flex-col rounded-lg overflow-hidden glass-card group-hover:shadow-lg transition duration-300">
+                        <div class="p-6 flex-1">
+                            <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
+                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition duration-300">GitHub Repository</h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
+                                Explore our open-source code, contribute to the project, and join our community.
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-3">
+                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">
+                                View on GitHub →
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="#" class="group">
+                    <div class="h-full flex flex-col rounded-lg overflow-hidden glass-card group-hover:shadow-lg transition duration-300">
+                        <div class="p-6 flex-1">
+                            <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
+                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition duration-300">Tutorials & Examples</h3>
+                            <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
+                                Step-by-step tutorials and example projects to help you build your first Sofia agent.
+                            </p>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-3">
+                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">
+                                View tutorials →
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="contact" class="py-16 bg-gradient-to-r from-indigo-700 to-purple-700 dark:from-indigo-900 dark:to-purple-900 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:flex lg:items-center lg:justify-between">
+                <div class="lg:w-1/2">
+                    <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+                        Ready to transform your business with AI?
+                    </h2>
+                    <p class="mt-4 text-lg text-indigo-100">
+                        Get in touch to learn how Sofia can help you build reliable, scalable AI agents for your enterprise.
+                    </p>
+                    <div class="mt-8">
+                        <h3 class="text-xl font-semibold text-white">We're looking for:</h3>
+                        <div class="mt-4 flex flex-col sm:flex-row gap-4">
+                            <div class="flex items-center">
+                                <svg class="h-6 w-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="ml-2 text-white">Early adopters</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="h-6 w-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="ml-2 text-white">Strategic partners</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="h-6 w-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="ml-2 text-white">Investors</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-10 lg:mt-0 lg:w-1/2 lg:pl-8">
+                    <div class="glass-card rounded-lg overflow-hidden">
+                        <form class="p-6 space-y-6">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-white">Name</label>
+                                <div class="mt-1">
+                                    <input type="text" name="name" id="name" class="block w-full rounded-md border-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-indigo-800/50 dark:bg-indigo-900/50 text-white placeholder-indigo-300" placeholder="Your name">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="email" class="block text-sm font-medium text-white">Email</label>
+                                <div class="mt-1">
+                                    <input type="email" name="email" id="email" class="block w-full rounded-md border-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-indigo-800/50 dark:bg-indigo-900/50 text-white placeholder-indigo-300" placeholder="you@example.com">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="message" class="block text-sm font-medium text-white">Message</label>
+                                <div class="mt-1">
+                                    <textarea id="message" name="message" rows="4" class="block w-full rounded-md border-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-indigo-800/50 dark:bg-indigo-900/50 text-white placeholder-indigo-300" placeholder="Tell us how we can help you"></textarea>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-700 dark:text-indigo-900 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-indigo-700 w-full justify-center transition-colors duration-300">
+                                    Contact Us
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 dark:bg-black transition-colors duration-300">
+        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <div class="flex items-center">
+                        <svg class="h-8 w-8 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
+                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="ml-2 text-xl font-bold text-white">Sofia HQ</span>
+                    </div>
+                    <p class="mt-4 text-base text-gray-400">
+                        Enterprise-grade agentic AI with the reliability of rule-based systems.
+                    </p>
+                    <div class="mt-6 flex space-x-6">
+                        <a href="#" class="text-gray-400 hover:text-gray-300">
+                            <span class="sr-only">Twitter</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
+                            </svg>
+                        </a>
+                        <a href="https://github.com/sofia-hq/sofia" target="_blank" class="text-gray-400 hover:text-gray-300">
+                            <span class="sr-only">GitHub</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
+                            </svg>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-gray-300">
+                            <span class="sr-only">LinkedIn</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" clip-rule="evenodd"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Resources</h3>
+                    <ul class="mt-4 space-y-4">
+                        <li>
+                            <a href="#" class="text-base text-gray-300 hover:text-white">Documentation</a>
+                        </li>
+                        <li>
+                            <a href="https://github.com/sofia-hq/sofia" target="_blank" class="text-base text-gray-300 hover:text-white">GitHub</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-300 hover:text-white">Tutorials</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-300 hover:text-white">Blog</a>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Company</h3>
+                    <ul class="mt-4 space-y-4">
+                        <li>
+                            <a href="#" class="text-base text-gray-300 hover:text-white">About</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-300 hover:text-white">Careers</a>
+                        </li>
+                        <li>
+                            <a href="#contact" class="text-base text-gray-300 hover:text-white">Contact</a>
+                        </li>
+                        <li>
+                            <a href="#" class="text-base text-gray-300 hover:text-white">Investors</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-12 border-t border-gray-800 pt-8">
+                <p class="text-base text-gray-400 text-center">
+                    &copy; 2024 Sofia HQ. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Theme toggle functionality
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleBtnMobile = document.getElementById('theme-toggle-mobile');
+        const html = document.documentElement;
+        
+        // Check for saved theme preference or use system preference
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            html.classList.add('dark');
+        } else {
+            html.classList.remove('dark');
+        }
+        
+        // Toggle theme function
+        function toggleTheme() {
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.theme = 'light';
+            } else {
+                html.classList.add('dark');
+                localStorage.theme = 'dark';
+            }
+        }
+        
+        // Add event listeners to theme toggle buttons
+        themeToggleBtn.addEventListener('click', toggleTheme);
+        themeToggleBtnMobile.addEventListener('click', toggleTheme);
+        
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Close mobile menu when clicking on a link
+        const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+        mobileMenuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Form submission
+        const contactForm = document.querySelector('form');
+        const contactButton = contactForm.querySelector('button');
+        
+        contactButton.addEventListener('click', () => {
+            const nameInput = document.getElementById('name');
+            const emailInput = document.getElementById('email');
+            const messageInput = document.getElementById('message');
+            
+            if (nameInput.value && emailInput.value && messageInput.value) {
+                contactButton.textContent = 'Message Sent!';
+                contactButton.classList.remove('bg-white', 'text-indigo-700', 'hover:bg-indigo-50');
+                contactButton.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
+                
+                // Reset form
+                setTimeout(() => {
+                    nameInput.value = '';
+                    emailInput.value = '';
+                    messageInput.value = '';
+                    
+                    setTimeout(() => {
+                        contactButton.textContent = 'Contact Us';
+                        contactButton.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600');
+                        contactButton.classList.add('bg-white', 'text-indigo-700', 'hover:bg-indigo-50');
+                    }, 2000);
+                }, 1000);
+            }
+        });
+
+        // Navbar scroll effect
+        const nav = document.querySelector('nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 10) {
+                nav.classList.add('shadow-md');
+            } else {
+                nav.classList.remove('shadow-md');
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93db026cd4ae5134',t:'MTc0Njg5NjYwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
