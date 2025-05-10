@@ -43,7 +43,13 @@ class Tool(BaseModel):
 
         params = {}
         for name, param in sig.parameters.items():
-            param_info = {"type": param.annotation if param.annotation is not inspect.Parameter.empty else Any}
+            param_info = {
+                "type": (
+                    param.annotation
+                    if param.annotation is not inspect.Parameter.empty
+                    else Any
+                )
+            }
             if tool_arg_desc.get(name):
                 param_info["description"] = tool_arg_desc[name]
             if param.default is not inspect.Parameter.empty:

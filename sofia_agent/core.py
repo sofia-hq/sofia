@@ -147,7 +147,7 @@ class FlowSession:
     def _get_next_decision(self) -> BaseModel:
         route_decision_model = create_route_decision_model(
             current_step=self.current_step,
-            current_step_tools=self._get_current_step_tools()
+            current_step_tools=self._get_current_step_tools(),
         )
         decision = self.llm._get_output(
             name=self.name,

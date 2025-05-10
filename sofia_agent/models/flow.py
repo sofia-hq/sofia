@@ -53,7 +53,7 @@ class Step(BaseModel):
         :return: List of target step IDs.
         """
         return [route.target for route in self.routes]
-    
+
     @property
     def tool_ids(self) -> List[str]:
         """
@@ -61,7 +61,11 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
-        return [Tool.from_pkg(tool).name if ":" in tool else tool for tool in self.available_tools]
+        return [
+            Tool.from_pkg(tool).name if ":" in tool else tool
+            for tool in self.available_tools
+        ]
+
 
 class Message(BaseModel):
     """
@@ -77,7 +81,8 @@ class Message(BaseModel):
 
 
 def create_route_decision_model(
-    current_step: Step, current_step_tools: list[Tool]) -> Type[BaseModel]:
+    current_step: Step, current_step_tools: list[Tool]
+) -> Type[BaseModel]:
     """
     Dynamically create a Pydantic model for route/tool decision output.
 
@@ -88,9 +93,7 @@ def create_route_decision_model(
     """
     available_step_ids = current_step.get_available_routes()
     tool_ids = [tool.name for tool in current_step_tools]
-    tool_models = [
-        tool.get_args_model() for tool in current_step_tools
-    ]
+    tool_models = [tool.get_args_model() for tool in current_step_tools]
     action_ids = (
         ["ASK", "ANSWER", "END"]
         + (["MOVE"] if available_step_ids else [])

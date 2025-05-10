@@ -57,7 +57,7 @@ from sofia_agent.llms import OpenAIChatLLM
 
 def get_time():
     """Get the current time.
-    
+
     Returns:
         str: The current time in string format.
     """

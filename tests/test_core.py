@@ -47,19 +47,23 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     session = basic_agent.create_session()
 
     expected_decision_model = create_route_decision_model(
-        current_step= session.current_step,
+        current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations")
-        ]
+            Tool.from_pkg("itertools:combinations"),
+        ],
     )
     ask_response = expected_decision_model(
         reasoning=["Greeting"], action=Action.ASK.value, input="How can I help?"
     )
 
     assert session.current_step.get_available_routes() == ["end"]
-    assert session.current_step.available_tools == ["test_tool", "another_test_tool", "itertools:combinations"]
+    assert session.current_step.available_tools == [
+        "test_tool",
+        "another_test_tool",
+        "itertools:combinations",
+    ]
 
     # Set up mock responses
     session.llm.set_response(ask_response)
@@ -129,6 +133,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     # Verify tool message in history
     messages = [msg for msg in session.history if isinstance(msg, Message)]
     assert any(msg.role == "tool" for msg in messages)
+
 
 def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     """Test that the agent can properly use tools."""
