@@ -13,6 +13,8 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Step-based agent flows**: Define agent behavior as a sequence of steps, each with its own tools and transitions.
 - **Persona-driven**: Easily set the agent's persona for consistent, branded responses.
 - **Tool integration**: Register Python functions as tools for the agent to call.
+- **Package-based tools**: Reference Python package functions directly using `package_name:function` syntax.
+- **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
 - **OpenAI and custom LLM support**
 - **Session management**: Save and resume conversations.
@@ -40,7 +42,7 @@ poetry install
 ```
 
 
-## Usage
+## Usage: From No-Code to Low-Code to Full Code
 
 ### CLI: Bootstrap a New Agent
 ```bash
@@ -54,14 +56,19 @@ from sofia_agent import *
 from sofia_agent.llms import OpenAIChatLLM
 
 def get_time():
+    """Get the current time.
+    
+    Returns:
+        str: The current time in string format.
+    """
     from datetime import datetime
     return f"Current time: {datetime.now()}"
 
 steps = [
     Step(
         step_id="start",
-        description="Greet and offer to tell the time.",
-        available_tools=["get_time"],
+        description="Greet and offer to tell the time or perform calculations.",
+        available_tools=["get_time", "math:sqrt"],  # Direct reference to the sqrt function from math package
         routes=[Route(target="end", condition="User is done")],
     ),
     Step(
@@ -76,21 +83,63 @@ agent = Sofia(
     llm=llm,
     steps=steps,
     start_step_id="start",
-    tools=[get_time],
-    persona="You are a friendly clock assistant.",
+    tools=[get_time, "math:sqrt"],  # Mix of custom functions and package references (Optional for package functions)
+    persona="You are a friendly assistant that can tell time and perform calculations.",
 )
 sess = agent.create_session()
 # ... interact with sess.next(user_input)
 ```
 
 ### YAML Config Example
-See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a full-featured barista agent.
+```yaml
+name: utility-bot
+persona: You are a helpful utility bot that can perform various calculations and data operations.
+steps:
+  - step_id: start
+    description: Handle user requests for mathematical operations or data processing.
+    available_tools:
+      - math:sqrt
+      - json:loads
+      - itertools:combinations
+    routes:
+      - target: end
+        condition: User is done with calculations
+  - step_id: end
+    description: Say goodbye to the user.
+start_step_id: start
+```
+
+See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a more full-featured example.
 
 
 ## Configuration
 - **Persona**: Set in YAML or Python for consistent agent style.
 - **Steps**: Each step defines available tools, description, and routes to other steps.
-- **Tools**: Python functions registered with the agent.
+- **Tools**: Python functions registered with the agent or package references.
+
+## Package Tool Integration
+
+SOFIA now allows you to reference Python package functions directly using the `package_name:function` syntax:
+
+```python
+# Reference a function from a standard library
+"math:sqrt"                      # Standard library function
+"json:loads"                     # Another standard library function
+"itertools:combinations"         # Complex functions work too!
+
+# Reference nested module functions
+"package_name:module.submodule.function"
+```
+
+Benefits of package tool integration:
+
+1. **No-code/low-code development**: Use existing Python functions without writing wrapper code
+2. **Automatic documentation**: Function docstrings are used to generate tool descriptions and parameter documentation
+3. **Simplified configuration**: Easily reference any Python function in your environment
+
+Tool parameter descriptions in configuration files take precedence over automatically extracted docstring descriptions.
+
+> **NOTE**: Make sure the package is installed in your environment and function returns an output that is string representable.
 
 
 ## Example: Barista Agent
@@ -149,6 +198,27 @@ The base image supports configuration via environment variables:
 ## Contributing
 Contributions are welcome! Please open issues or pull requests on GitHub.
 
+
+## From No-Code to Low-Code Evolution
+
+SOFIA is evolving to support a spectrum of implementation approaches:
+
+### No-Code
+- Configure agents entirely through YAML
+- Reference existing Python functions using `package_name:function` syntax
+- Auto-documentation from function docstrings
+
+### Low-Code
+- Minimal Python code for custom tools
+- Mix pre-existing package tools with custom tools
+- Configure complex behaviors with minimal coding
+
+### Full-Code
+- Complete control over agent implementation
+- Custom tool development
+- Advanced integrations and behaviors
+
+This flexibility allows both non-programmers and experienced developers to create sophisticated AI agents that suit their needs.
 
 ## License
 MIT License. See [LICENSE](LICENSE).
