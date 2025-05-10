@@ -130,15 +130,15 @@ class FlowSession:
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
         return tool.run(**kwargs)
 
-    def _get_tool_models(self) -> list[BaseModel]:
-        tool_models = []
-        for tool in self.current_step.available_tools:
+    def _get_current_step_tools(self) -> list[Tool]:
+        tools = []
+        for tool in self.current_step.tool_ids:
             _tool = self.tools.get(tool)
             if not _tool:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
-            tool_models.append(_tool.get_args_model())
-        return tool_models
+            tools.append(_tool)
+        return tools
 
     def _add_message(self, role: str, message: str):
         self.history.append(Message(role=role, content=message))
@@ -146,9 +146,8 @@ class FlowSession:
 
     def _get_next_decision(self) -> BaseModel:
         route_decision_model = create_route_decision_model(
-            available_step_ids=self.current_step.get_available_routes(),
-            tool_ids=self.current_step.available_tools,
-            tool_models=self._get_tool_models(),
+            current_step=self.current_step,
+            current_step_tools=self._get_current_step_tools()
         )
         decision = self.llm._get_output(
             name=self.name,
@@ -265,7 +264,7 @@ class Sofia:
         start_step_id: str,
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
-        tools: List[Callable] = [],
+        tools: List[Callable | str] = [],
         show_steps_desc: bool = False,
         max_errors: int = 3,
         method: Literal["auto", "manual"] = "auto",
@@ -293,16 +292,47 @@ class Sofia:
         self.show_steps_desc = show_steps_desc
         self.max_errors = max_errors
         self.method = method
-        self.tools = tools
+        tool_set = set(tools)
+        for step in self.steps.values():
+            _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
+            tool_set.update(_pkg_tools)
+        self.tools = list(tool_set)
         self.config = config
+
+        ## Validate start step ID
         if start_step_id not in self.steps:
             log_error(f"Start step ID {start_step_id} not found in steps")
             raise ValueError(f"Start step ID {start_step_id} not found in steps")
+        ## Validate step IDs in routes
+        for step in self.steps.values():
+            for route in step.routes:
+                if route.target not in self.steps:
+                    log_error(
+                        f"Route target {route.target} not found in steps for step {step.step_id}"
+                    )
+                    raise ValueError(
+                        f"Route target {route.target} not found in steps for step {step.step_id}"
+                    )
+        ## Validate tool names
+        for step in self.steps.values():
+            for step_tool in step.available_tools:
+                for tool in self.tools:
+                    if (callable(tool) and tool.__name__ == step_tool) or (
+                        isinstance(tool, str) and tool == step_tool
+                    ):
+                        break
+                else:
+                    log_error(
+                        f"Tool {step_tool} not found in tools for step {step.step_id}"
+                    )
+                    raise ValueError(
+                        f"Tool {step_tool} not found in tools for step {step.step_id}"
+                    )
         log_debug(f"FlowManager initialized with start step '{start_step_id}'")
 
     @classmethod
     def from_config(
-        cls, llm: LLMBase, config: AgentConfig, tools: list[Callable] = []
+        cls, llm: LLMBase, config: AgentConfig, tools: list[Callable | str] = []
     ) -> "Sofia":
         """
         Create a Sofia agent from an AgentConfig object.

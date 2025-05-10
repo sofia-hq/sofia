@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sofia_agent.models.flow import Message, Step, Route
 from sofia_agent.llms import LLMBase
 from sofia_agent.core import Sofia
+from sofia_agent.utils.logging import log_error
 
 
 class MockLLM(LLMBase):
@@ -19,6 +20,7 @@ class MockLLM(LLMBase):
 
     def set_response(self, response: BaseModel):
         """Set the responses that the mock LLM will return."""
+        log_error(f"Setting mock response: {response}")
         self.response = response
 
     def get_output(
@@ -49,7 +51,7 @@ def basic_steps():
         step_id="start",
         description="Start step",
         routes=[Route(target="end", condition="User is done")],
-        available_tools=["test_tool", "another_test_tool"],
+        available_tools=["test_tool", "another_test_tool", "itertools:combinations"],
     )
 
     end_step = Step(

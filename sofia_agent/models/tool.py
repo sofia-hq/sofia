@@ -42,18 +42,13 @@ class Tool(BaseModel):
         tool_arg_desc = tool_arg_desc_doc.copy()
 
         params = {}
-        for k, v in function.__annotations__.items():
-            if k == "return":
-                continue
-            param_info = {"type": v}
-            if tool_arg_desc.get(k):
-                param_info["description"] = tool_arg_desc[k]
-            if (
-                k in sig.parameters
-                and sig.parameters[k].default is not inspect.Parameter.empty
-            ):
-                param_info["default"] = sig.parameters[k].default
-            params[k] = param_info
+        for name, param in sig.parameters.items():
+            param_info = {"type": param.annotation if param.annotation is not inspect.Parameter.empty else Any}
+            if tool_arg_desc.get(name):
+                param_info["description"] = tool_arg_desc[name]
+            if param.default is not inspect.Parameter.empty:
+                param_info["default"] = param.default
+            params[name] = param_info
 
         return cls(
             name=function.__name__,

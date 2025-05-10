@@ -136,7 +136,7 @@ class LLMBase:
         )
         if len(current_step.available_tools) > 0:
             system_prompt += "\nAvailable Tools:\n" + self.get_tools_desc(
-                tools, current_step.available_tools
+                tools, current_step.tool_ids
             )
         messages.append(Message(role="system", content=system_prompt))
         messages.append(

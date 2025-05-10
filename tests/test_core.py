@@ -14,7 +14,7 @@ def test_agent_initialization(basic_agent):
     assert len(basic_agent.steps) == 2
     assert basic_agent.start == "start"
     assert basic_agent.persona == "Test persona"
-    assert len(basic_agent.tools) == 2
+    assert len(basic_agent.tools) == 3
 
 
 def test_session_creation(basic_agent):
@@ -28,30 +28,38 @@ def test_tool_registration(basic_agent, test_tool_0):
     """Test that tools are properly registered and converted to Tool objects."""
     tool_name = test_tool_0.__name__
     session = basic_agent.create_session()
-    assert len(session.tools) == 2
+    assert len(session.tools) == 3
     assert isinstance(session.tools[tool_name], Tool)
+
+
+def test_pkg_tool_registration(basic_agent):
+    """Test that package tools are properly registered."""
+    session = basic_agent.create_session()
+    assert len(session.tools) == 3
+    assert "combinations" in session.tools
+    assert session.tools["combinations"].name == "combinations"
 
 
 def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     """Test a basic conversation flow with the agent."""
 
+    # Set up session
+    session = basic_agent.create_session()
+
     expected_decision_model = create_route_decision_model(
-        available_step_ids=["end"],
-        tool_ids=["test_tool", "another_test_tool"],
-        tool_models=[
-            Tool.from_function(test_tool_0).get_args_model(),
-            Tool.from_function(test_tool_1).get_args_model(),
-        ],
+        current_step= session.current_step,
+        current_step_tools=[
+            Tool.from_function(test_tool_0),
+            Tool.from_function(test_tool_1),
+            Tool.from_pkg("itertools:combinations")
+        ]
     )
     ask_response = expected_decision_model(
         reasoning=["Greeting"], action=Action.ASK.value, input="How can I help?"
     )
 
-    # Set up session
-    session = basic_agent.create_session()
-
     assert session.current_step.get_available_routes() == ["end"]
-    assert session.current_step.available_tools == ["test_tool", "another_test_tool"]
+    assert session.current_step.available_tools == ["test_tool", "another_test_tool", "itertools:combinations"]
 
     # Set up mock responses
     session.llm.set_response(ask_response)
@@ -85,13 +93,17 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
 
 def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     """Test that the agent can properly use tools."""
+
+    # Start session and use tool
+    session = basic_agent.create_session()
+
     # Create response models with tool
     tool_model = create_route_decision_model(
-        available_step_ids=["end"],
-        tool_ids=["test_tool", "another_test_tool"],
-        tool_models=[
-            Tool.from_function(test_tool_0).get_args_model(),
-            Tool.from_function(test_tool_1).get_args_model(),
+        current_step=session.current_step,
+        current_step_tools=[
+            Tool.from_function(test_tool_0),
+            Tool.from_function(test_tool_1),
+            Tool.from_pkg("itertools:combinations"),
         ],
     )
 
@@ -103,8 +115,6 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
         tool_kwargs={"arg0": "test_arg"},
     )
 
-    # Start session and use tool
-    session = basic_agent.create_session()
     session.llm.set_response(tool_response)
 
     # Tool usage
@@ -120,15 +130,51 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     messages = [msg for msg in session.history if isinstance(msg, Message)]
     assert any(msg.role == "tool" for msg in messages)
 
+def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
+    """Test that the agent can properly use tools."""
+
+    # Start session and use tool
+    session = basic_agent.create_session()
+
+    # Create response models with tool
+    tool_model = create_route_decision_model(
+        current_step=session.current_step,
+        current_step_tools=[
+            Tool.from_function(test_tool_0),
+            Tool.from_function(test_tool_1),
+            Tool.from_pkg("itertools:combinations"),
+        ],
+    )
+
+    # Set up mock responses
+    tool_response = tool_model(
+        reasoning=["Need to use combinations tool"],
+        action=Action.TOOL_CALL.value,
+        tool_name="combinations",
+        tool_kwargs={"iterable": "abc", "r": 2},
+    )
+
+    session.llm.set_response(tool_response)
+
+    # Tool usage
+    decision, _ = session.next("Use the tool")
+
+    # Verify tool message in history
+    messages = [msg for msg in session.history if isinstance(msg, Message)]
+    assert any(msg.role == "tool" for msg in messages)
+
 
 def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
     """Test handling of invalid tool arguments."""
+
+    session = basic_agent.create_session()
+
     tool_model = create_route_decision_model(
-        available_step_ids=["end"],
-        tool_ids=["test_tool", "another_test_tool"],
-        tool_models=[
-            Tool.from_function(test_tool_0).get_args_model(),
-            Tool.from_function(test_tool_1).get_args_model(),
+        current_step=session.current_step,
+        current_step_tools=[
+            Tool.from_function(test_tool_0),
+            Tool.from_function(test_tool_1),
+            Tool.from_pkg("itertools:combinations"),
         ],
     )
 
@@ -140,7 +186,6 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
         tool_kwargs={"arg1": "value"},  # Wrong argument name
     )
 
-    session = basic_agent.create_session()
     session.llm.set_response(invalid_response)
 
     with pytest.raises(InvalidArgumentsError):
@@ -173,7 +218,7 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     assert agent.name == "config_test"
     assert agent.persona == "Config test persona"
     assert len(agent.steps) == 2
-    assert len(agent.tools) == 2
+    assert len(agent.tools) == 3
 
     session = agent.create_session()
 
