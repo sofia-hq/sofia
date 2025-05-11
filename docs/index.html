@@ -6,7 +6,7 @@
     <title>Sofia HQ - Enterprise-Grade Agentic AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -15,7 +15,7 @@
                     colors: {
                         'glass-white': 'rgba(255, 255, 255, 0.7)',
                         'glass-dark': 'rgba(17, 24, 39, 0.75)',
-                        'glass-card': 'rgba(255, 255, 255, 0.1)',
+                        'glass-card': 'rgba(255, 255, 255, 0.5)',
                         'glass-card-dark': 'rgba(17, 24, 39, 0.6)',
                     },
                     backdropBlur: {
@@ -29,6 +29,13 @@
         body {
             font-family: 'Inter', sans-serif;
             scroll-behavior: smooth;
+            position: relative;
+        }
+        
+        /* Main content container to ensure proper layering with lottie background */
+        main, section, footer {
+            position: relative;
+            z-index: 1;
         }
         .gradient-bg {
             background: linear-gradient(120deg, #6366f1, #8b5cf6, #d946ef);
@@ -72,33 +79,35 @@
             -webkit-backdrop-filter: blur(12px);
         }
         .glass-card {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.5);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         .dark .glass-card {
             background: rgba(17, 24, 39, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
         }
         .frosted-nav {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
         .dark .frosted-nav {
-            background: rgba(17, 24, 39, 0.75);
+            background: rgba(17, 24, 39, 0.65);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         .frosted-card {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.6);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .dark .frosted-card {
-            background: rgba(31, 41, 55, 0.7);
+            background: rgba(31, 41, 55, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
         .hero-pattern {
@@ -110,6 +119,11 @@
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Lottie Background -->
+    <div class="fixed inset-0 w-full h-full z-0 pointer-events-none overflow-hidden" style="min-width: 100vw; min-height: 100vh;" aria-hidden="true">
+        <dotlottie-player src="https://lottie.host/905cf397-e0b3-40cc-b49e-4175998c9511/BATO4r2SVK.lottie" background="transparent" speed="1" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -2; min-width: 100%; min-height: 100%;" loop autoplay></dotlottie-player>
+        <div class="fixed inset-0 bg-white/30 dark:bg-gray-900/40" style="z-index: -1;"></div>
+    </div>
     <!-- Navigation -->
     <nav class="frosted-nav fixed w-full z-50 transition-all duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -173,7 +187,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 hero-pattern">
+    <section class="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 dark:from-gray-800/80 dark:to-gray-900/80 hero-pattern">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row items-center">
                 <div class="md:w-1/2 md:pr-12">
@@ -480,7 +494,7 @@
     </section>
 
     <!-- Documentation Section -->
-    <section id="documentation" class="py-16 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 hero-pattern transition-colors duration-300">
+    <section id="documentation" class="py-16 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 dark:from-gray-800/80 dark:to-gray-900/80 hero-pattern transition-colors duration-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center">
                 <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
@@ -712,11 +726,12 @@
         const themeToggleBtnMobile = document.getElementById('theme-toggle-mobile');
         const html = document.documentElement;
         
-        // Check for saved theme preference or use system preference
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            html.classList.add('dark');
-        } else {
+        // Always set dark theme as default, override if user has explicitly set light theme
+        if (localStorage.theme === 'light') {
             html.classList.remove('dark');
+        } else {
+            html.classList.add('dark');
+            localStorage.theme = 'dark';
         }
         
         // Toggle theme function
