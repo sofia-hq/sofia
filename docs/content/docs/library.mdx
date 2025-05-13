@@ -1,0 +1,215 @@
+---
+title: Library Guide
+description: Core concepts and usage patterns of SOFIA
+---
+## Core Concepts
+
+### Agent Architecture
+
+A SOFIA agent consists of:
+
+1. **Steps**: Distinct states in your conversation flow
+2. **Tools**: Python functions the agent can use
+3. **Routes**: Transitions between steps
+4. **LLM**: Language model for generating responses
+5. **Persona**: Agent's personality and behavior guidelines
+
+### Flow Control
+
+SOFIA uses a step-based approach to manage conversation flow:
+
+```python
+steps = [
+    Step(
+        step_id="greet",
+        description="Welcome user and understand their need",
+        routes=[
+            Route(target="help", condition="User needs assistance"),
+            Route(target="end", condition="User wants to leave")
+        ]
+    )
+]
+```
+
+Each step can:
+- Access specific tools
+- Make decisions about next steps
+- Maintain its own context
+
+## Building Agents
+
+### Basic Structure
+
+```python
+from sofia_agent import Sofia, Step, Route
+from sofia_agent.llms import OpenAIChatLLM
+
+# Define tools
+@tool
+def get_weather(location: str) -> str:
+    """Get weather for a location"""
+    return f"Weather data for {location}"
+
+# Define steps
+steps = [
+    Step(
+        step_id="start",
+        description="Understand user's weather query",
+        available_tools=["get_weather"],
+        routes=[Route(target="end", condition="Query answered")]
+    ),
+    Step(step_id="end")
+]
+
+# Create agent
+agent = Sofia(
+    name="weather_bot",
+    llm=OpenAIChatLLM(),
+    steps=steps,
+    start_step_id="start",
+    tools=[get_weather],
+    persona="You are a helpful weather assistant"
+)
+```
+
+### Tools
+
+Tools are Python functions that your agent can use. Best practices:
+
+```python
+from pydantic import BaseModel
+from typing import Optional
+
+# Use Pydantic for input validation
+class LocationInput(BaseModel):
+    city: str
+    country: Optional[str] = None
+
+@tool
+def get_location_weather(params: LocationInput) -> str:
+    """
+    Get weather for a location
+    
+    Args:
+        params: Location details
+            - city: City name
+            - country: Optional country name
+    
+    Returns:
+        Weather information as string
+    """
+    return f"Weather in {params.city}"
+```
+
+### Session Management
+
+Handle conversations with session management:
+
+```python
+# Create new session
+session = agent.create_session()
+
+# Process messages
+response = session.next("What's the weather in London?")
+
+# Save session state
+state = session.save()
+
+# Resume later
+new_session = agent.load_session(state)
+```
+
+### Error Handling
+
+Implement robust error handling:
+
+```python
+try:
+    response = session.next(user_input)
+except ToolExecutionError as e:
+    print(f"Tool failed: {e}")
+    # Implement fallback logic
+except StepTransitionError as e:
+    print(f"Invalid transition: {e}")
+    # Handle invalid flow
+```
+
+## Configuration
+
+### YAML Configuration
+
+Define your agent in YAML:
+
+```yaml
+name: weather_bot
+llm:
+  type: openai
+  model: gpt-4
+  temperature: 0.7
+persona: You are a helpful weather assistant
+steps:
+  - id: start
+    description: Understand weather query
+    available_tools: [get_weather]
+    routes:
+      - target: end
+        condition: Query answered
+tools:
+  - path: weather.tools.get_weather
+start_step: start
+```
+
+### Advanced Settings
+
+Fine-tune your agent's behavior:
+
+```python
+agent = Sofia(
+    name="advanced_bot",
+    llm=OpenAIChatLLM(
+        model="gpt-4",
+        temperature=0.7,
+        max_tokens=150
+    ),
+    steps=steps,
+    start_step_id="start",
+    tools=tools,
+    persona="""You are a professional assistant.
+    Always be concise and accurate.""",
+    metadata={
+        "timeout": 30,
+        "retry_count": 3
+    }
+)
+```
+
+## Best Practices
+
+### Step Design
+
+1. Keep steps focused and single-purpose
+2. Use clear, descriptive step IDs
+3. Write detailed step descriptions
+4. Plan routes carefully
+
+### Tool Development
+
+1. Use type hints and docstrings
+2. Implement input validation
+3. Handle errors gracefully
+4. Keep tools pure and stateless
+
+### Performance
+
+1. Cache expensive operations
+2. Use async tools for I/O operations
+3. Implement timeouts
+4. Monitor tool usage
+
+## Next Steps
+
+<Cards>
+  <Card title="API Reference" href="/docs/api" />
+  <Card title="CLI Usage" href="/docs/cli" />
+  <Card title="Visual Builder" href="/docs/builder" />
+</Cards>

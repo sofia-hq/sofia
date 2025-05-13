@@ -1,0 +1,124 @@
+---
+title: Quick Start
+description: Get up and running with SOFIA in minutes
+---
+
+Get started with SOFIA in just a few minutes. We'll create a simple time-telling bot to demonstrate the basics.
+
+## Installation
+
+```bash
+# Basic installation
+pip install sofia-agent
+
+# With CLI support (recommended)
+pip install sofia-agent[cli]
+```
+
+## First Agent: Time Bot
+
+Let's create a simple agent that tells the time:
+
+```python
+from sofia_agent import *
+from sofia_agent.llms import OpenAIChatLLM
+
+# 1. Define a tool
+def get_time():
+    from datetime import datetime
+    return f"Current time: {datetime.now()}"
+
+# 2. Create steps
+steps = [
+    Step(
+        step_id="start",
+        description="Greet and offer to tell the time.",
+        available_tools=["get_time"],
+        routes=[Route(target="end", condition="User is done")],
+    ),
+    Step(
+        step_id="end",
+        description="Say goodbye.",
+    ),
+]
+
+# 3. Initialize the agent
+llm = OpenAIChatLLM()
+agent = Sofia(
+    name="clockbot",
+    llm=llm,
+    steps=steps,
+    start_step_id="start",
+    tools=[get_time],
+    persona="You are a friendly clock assistant.",
+)
+
+# 4. Create a session and interact
+session = agent.create_session()
+response = session.next("What time is it?")
+print(response)
+```
+
+## Using the CLI
+
+SOFIA's CLI helps you bootstrap new agents:
+
+```bash
+# Create a new agent project
+sofia init my-agent
+
+# Follow the interactive prompts
+# This will create:
+#  - config.yaml
+#  - main.py
+#  - tools/ directory
+```
+
+## YAML Configuration
+
+You can also define your agent in YAML:
+
+```yaml
+name: timebot
+llm:
+  type: openai
+  model: gpt-4
+persona: You are a friendly clock assistant.
+steps:
+  - id: start
+    description: Greet and offer to tell the time.
+    available_tools: [get_time]
+    routes:
+      - target: end
+        condition: User is done
+  - id: end
+    description: Say goodbye.
+tools:
+  - path: tools.time.get_time
+start_step: start
+```
+
+## Next Steps
+
+After mastering these basics, you can:
+
+1. **Add More Tools**
+   - Create custom functions
+   - Integrate external APIs
+   - Handle complex logic
+
+2. **Design Complex Flows**
+   - Multiple conversation paths
+   - Conditional routing
+   - State management
+
+3. **Customize Behavior**
+   - Define detailed personas
+   - Add error handling
+   - Implement persistence
+
+<Cards>
+  <Card title="Setup Guide" href="/docs/setup" />
+  <Card title="Library Guide" href="/docs/library" />
+  <Card title="CLI Usage" href="/docs/cli" />
+</Cards>
