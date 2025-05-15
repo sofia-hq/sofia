@@ -7,7 +7,7 @@ import uuid
 from typing import Dict, List, Optional, Union, Callable, Any, Literal
 from pydantic import BaseModel
 
-from .utils.logging import log_debug, log_error
+from .utils.logging import log_debug, log_error, log_info
 from .models.tool import Tool, InvalidArgumentsError, FallbackError
 from .models.flow import Action, Step, Message, create_route_decision_model
 from .llms import LLMBase
@@ -36,6 +36,7 @@ class FlowSession:
         history: List[Union[Message, Step]] = [],
         current_step_id: Optional[Step] = None,
         session_id: Optional[str] = None,
+        verbose: bool = False
     ):
         """
         Initialize a FlowSession.
@@ -67,6 +68,7 @@ class FlowSession:
         self.persona = persona
         self.max_errors = max_errors
         self.method = method
+        self.verbose = verbose
         self.config = config
         tool_arg_descs = (
             self.config.tool_arg_descriptions
@@ -177,6 +179,8 @@ class FlowSession:
             self._add_message("user", user_input)
         log_debug(f"Current step: {self.current_step.step_id}")
         decision = self._get_next_decision()
+        if self.verbose:
+            log_info(str(decision))
         self.history.append(self.current_step)
         log_debug(f"Action decided: {decision.action}")
         action = decision.action.value
@@ -199,6 +203,8 @@ class FlowSession:
                     f"Running tool: {decision.tool_name} with args: {tool_kwargs}"
                 )
                 tool_results = self._run_tool(decision.tool_name, tool_kwargs)
+                if self.verbose:
+                    log_info(f"Tool Results: {tool_results}")
                 self._add_message("tool", f"Tool result: {tool_results}")
             except InvalidArgumentsError as e:
                 _error = e
@@ -356,7 +362,7 @@ class Sofia:
             config=config,
         )
 
-    def create_session(self) -> FlowSession:
+    def create_session(self, verbose: bool = False) -> FlowSession:
         """
         Create a new FlowSession for this agent.
 
@@ -374,6 +380,7 @@ class Sofia:
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             method=self.method,
+            verbose=verbose,
             config=self.config,
         )
 

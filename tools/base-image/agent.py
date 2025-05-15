@@ -1,5 +1,21 @@
 import os
 
+from sofia_agent.utils.otel import initialize_tracing
+from opentelemetry.sdk.resources import Resource
+
+# Initialize Tracing
+if os.getenv("ENABLE_TRACING", "false").lower() == "true":
+    initialize_tracing(
+        tracer_provider_kwargs={
+            "resource": Resource(
+                {
+                    "service.name": os.getenv("SERVICE_NAME", "sofia-agent"),
+                    "service.version": os.getenv("SERVICE_VERSION", "1.0.0"),
+                }
+            )
+        }
+    )
+
 import sofia_agent as sa
 from sofia_agent.llms import OpenAIChatLLM as LLM
 
@@ -10,5 +26,14 @@ config = sa.AgentConfig.from_yaml(
 )
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else LLM()
 agent = sa.Sofia.from_config(llm, config, tool_list)
+
+if __name__ == "__main__":
+    session = agent.create_session(verbose=True)
+
+    user_input = input("User: ")
+    while user_input.lower() != "exit":
+        decision, _ = session.next(user_input)
+        print(f"Agent: {decision.input}")
+        user_input = input("User: ")
 
 __all__ = ["agent"]
