@@ -50,6 +50,11 @@ docker run -e OPENAI_API_KEY=your-key \
 | `PORT` | Server port (default: 8000) | No |
 | `DATABASE_URL` | PostgreSQL connection URL | No |
 | `REDIS_URL` | Redis connection URL | No |
+| `ENABLE_TRACING` | Enable OpenTelemetry tracing | No |
+| `ELASTIC_APM_SERVER_URL` | Elastic APM server URL | If `ENABLE_TRACING` is set to `true` |
+| `ELASTIC_APM_API_KEY` | Elastic APM API key | If `ENABLE_TRACING` is set to `true` |
+| `SERVICE_NAME` | Name of the service for tracing | No (default: `sofia-agent`) |
+| `SERVICE_VERSION` | Version of the service for tracing | No (default: `1.0.0`) |
 
 ## Storage Options
 
