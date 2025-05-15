@@ -5,7 +5,7 @@ os.environ["SOFIA_LOG_LEVEL"] = "DEBUG"
 os.environ["SOFIA_ENABLE_LOGGING"] = "true"
 
 from sofia_agent import *
-from sofia_agent.llms import OpenAIChatLLM
+from sofia_agent.llms import OpenAI
 from .barista_tools import tools
 
 # Step Definitions
@@ -87,7 +87,7 @@ end_step = Step(
 )
 
 # Initialize the LLM and Sofia agent
-llm = OpenAIChatLLM()
+llm = OpenAI()
 barista = Sofia(
     name="barista",
     llm=llm,

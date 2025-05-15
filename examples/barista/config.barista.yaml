@@ -73,3 +73,9 @@ tool_arg_descriptions:
   finalize_order:
     payment_method: Payment method (Card or Cash)
     payment: Payment amount (required if payment_method is Cash)
+
+
+# llm configuration
+llm:
+  provider: openai
+  model: gpt-4o-mini
