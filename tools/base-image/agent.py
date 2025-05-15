@@ -1,6 +1,6 @@
 import os
 
-from sofia_agent.utils.otel import initialize_tracing
+from sofia_agent.utils.tracing import initialize_tracing
 from opentelemetry.sdk.resources import Resource
 
 # Initialize Tracing
