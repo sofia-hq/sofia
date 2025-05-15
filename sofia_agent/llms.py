@@ -210,7 +210,12 @@ class OpenAIChatLLM(LLMBase):
         :param model: Model name to use (default: gpt-4o-mini).
         :param kwargs: Additional parameters for OpenAI API.
         """
-        from openai import OpenAI
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise ImportError(
+                "OpenAI package is not installed. Please install it using 'pip install sofia-agent[openai]."
+            )
 
         self.model = model
         self.client = OpenAI(**kwargs)
@@ -250,7 +255,12 @@ class MistralAILLM(LLMBase):
         :param model: Model name to use (default: ministral-8b-latest).
         :param kwargs: Additional parameters for Mistral API.
         """
-        from mistralai import Mistral
+        try:
+            from mistralai import Mistral
+        except ImportError:
+            raise ImportError(
+                "Mistral package is not installed. Please install it using 'pip install sofia-agent[mistral]."
+            )
 
         self.model = model
         api_key = os.environ["MISTRAL_API_KEY"]
@@ -309,7 +319,12 @@ class GeminiLLM(LLMBase):
         :param response_format: Pydantic model for the expected response.
         :return: Parsed response as a BaseModel.
         """
-        from google.genai import types
+        try:
+            from google.genai import types
+        except ImportError:
+            raise ImportError(
+                "Google GenAI package is not installed. Please install it using 'pip install sofia-agent[google]."
+            )
 
         system_message = next(msg.content for msg in messages if msg.role == "system")
         user_message = next(msg.content for msg in messages if msg.role == "user")
