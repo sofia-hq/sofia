@@ -1,10 +1,19 @@
+import os
+
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry import trace
 from opentelemetry.trace import SpanKind
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
 from ..core import Sofia, FlowSession
 
 class SofiaInstrumentor(BaseInstrumentor):
+    """
+    Instrumentor for the Sofia library to add OpenTelemetry tracing.
+    """
+
     def _instrument(self, **kwargs):
         tracer = trace.get_tracer(__name__)
 
@@ -85,3 +94,43 @@ class SofiaInstrumentor(BaseInstrumentor):
 
         # Unpatch FlowSession._run_tool
         FlowSession._run_tool = FlowSession._run_tool.__wrapped__
+
+
+def initialize_tracing(tracer_provider_kwargs: dict = {}, exporter_kwargs: dict = {}, span_processor_kwargs: dict = {}) -> None:
+    """
+    Initialize OpenTelemetry tracing with the specified configuration.
+
+    param tracer_provider_kwargs: Dictionary of arguments for the TracerProvider.
+    param exporter_kwargs: Dictionary of arguments for the OTLPSpanExporter.
+    param span_processor_kwargs: Dictionary of arguments for the BatchSpanProcessor.
+    """
+
+    # Set up OpenTelemetry tracing
+    trace.set_tracer_provider(TracerProvider(**tracer_provider_kwargs))
+    tracer_provider = trace.get_tracer_provider()
+
+    # Set up the OTLP exporter
+    otlp_exporter = OTLPSpanExporter(
+        endpoint=os.getenv("ELASTIC_APM_SERVER_URL", "http://localhost:8200"),
+        headers={
+            "Authorization": f"Bearer {os.getenv('ELASTIC_APM_API_KEY', '')}"
+        },
+        **exporter_kwargs
+    )
+
+    # Set up the span processor
+    span_processor = BatchSpanProcessor(otlp_exporter, **span_processor_kwargs)
+    tracer_provider.add_span_processor(span_processor)
+
+    # Initialize OpenTelemetry tracing
+    SofiaInstrumentor().instrument()
+
+def shutdown_tracing() -> None:
+    """
+    Shutdown OpenTelemetry tracing and flush any remaining spans.
+    """
+    # Shutdown OpenTelemetry tracing
+    del trace.get_tracer_provider()
+
+    # Uninstrument OpenTelemetry tracing
+    SofiaInstrumentor().uninstrument()

@@ -38,6 +38,7 @@ traces = [
     "opentelemetry-api (>=1.33.0,<2.0.0)",
     "opentelemetry-sdk (>=1.33.0,<2.0.0)",
     "opentelemetry-instrumentation (>=0.54b0,<0.55)",
+    "opentelemetry-exporter-otlp (>=1.33.0,<2.0.0)",
 ]
 
 [project.scripts]
