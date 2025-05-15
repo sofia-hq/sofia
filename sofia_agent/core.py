@@ -36,7 +36,7 @@ class FlowSession:
         history: List[Union[Message, Step]] = [],
         current_step_id: Optional[Step] = None,
         session_id: Optional[str] = None,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """
         Initialize a FlowSession.

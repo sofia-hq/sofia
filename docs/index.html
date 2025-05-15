@@ -31,7 +31,7 @@
             scroll-behavior: smooth;
             position: relative;
         }
-        
+
         /* Main content container to ensure proper layering with lottie background */
         main, section, footer {
             position: relative;
@@ -195,7 +195,7 @@
                         Enterprise-Grade <span class="gradient-text">Agentic AI</span> Made Simple
                     </h1>
                     <p class="mt-6 text-xl text-gray-600 dark:text-gray-300 max-w-3xl">
-                        Deploy reliable, scalable AI agents with near rule-based system reliability. 
+                        Deploy reliable, scalable AI agents with near rule-based system reliability.
                         Open-source core with enterprise-ready platform.
                     </p>
                     <div class="mt-8 flex flex-col sm:flex-row gap-4">
@@ -704,7 +704,7 @@
         const themeToggleBtn = document.getElementById('theme-toggle');
         const themeToggleBtnMobile = document.getElementById('theme-toggle-mobile');
         const html = document.documentElement;
-        
+
         // Always set dark theme as default, override if user has explicitly set light theme
         if (localStorage.theme === 'light') {
             html.classList.remove('dark');
@@ -712,7 +712,7 @@
             html.classList.add('dark');
             localStorage.theme = 'dark';
         }
-        
+
         // Toggle theme function
         function toggleTheme() {
             if (html.classList.contains('dark')) {
@@ -723,15 +723,15 @@
                 localStorage.theme = 'dark';
             }
         }
-        
+
         // Add event listeners to theme toggle buttons
         themeToggleBtn.addEventListener('click', toggleTheme);
         themeToggleBtnMobile.addEventListener('click', toggleTheme);
-        
+
         // Mobile menu toggle
         const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-        
+
         mobileMenuButton.addEventListener('click', () => {
             mobileMenu.classList.toggle('hidden');
         });
@@ -748,10 +748,10 @@
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
                 e.preventDefault();
-                
+
                 const targetId = this.getAttribute('href');
                 if (targetId === '#') return;
-                
+
                 const targetElement = document.querySelector(targetId);
                 if (targetElement) {
                     window.scrollTo({
@@ -765,23 +765,23 @@
         // Form submission
         const contactForm = document.querySelector('form');
         const contactButton = contactForm.querySelector('button');
-        
+
         contactButton.addEventListener('click', () => {
             const nameInput = document.getElementById('name');
             const emailInput = document.getElementById('email');
             const messageInput = document.getElementById('message');
-            
+
             if (nameInput.value && emailInput.value && messageInput.value) {
                 contactButton.textContent = 'Message Sent!';
                 contactButton.classList.remove('bg-white', 'text-indigo-700', 'hover:bg-indigo-50');
                 contactButton.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
-                
+
                 // Reset form
                 setTimeout(() => {
                     nameInput.value = '';
                     emailInput.value = '';
                     messageInput.value = '';
-                    
+
                     setTimeout(() => {
                         contactButton.textContent = 'Contact Us';
                         contactButton.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600');

@@ -27,13 +27,14 @@ config = sa.AgentConfig.from_yaml(
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
 agent = sa.Sofia.from_config(llm, config, tool_list)
 
-if __name__ == "__main__":
-    session = agent.create_session(verbose=True)
+# # Uncomment the following lines to run the agent in a standalone mode
+# if __name__ == "__main__":
+#     session = agent.create_session(verbose=True)
 
-    user_input = input("User: ")
-    while user_input.lower() != "exit":
-        decision, _ = session.next(user_input)
-        print(f"Agent: {decision.input}")
-        user_input = input("User: ")
+#     user_input = input("User: ")
+#     while user_input.lower() != "exit":
+#         decision, _ = session.next(user_input)
+#         print(f"Agent: {decision.input}")
+#         user_input = input("User: ")
 
 __all__ = ["agent"]
