@@ -50,9 +50,9 @@ docker run -e OPENAI_API_KEY=your-key \
 | `PORT` | Server port (default: 8000) | No |
 | `DATABASE_URL` | PostgreSQL connection URL | No |
 | `REDIS_URL` | Redis connection URL | No |
-| `ENABLE_TRACING` | Enable OpenTelemetry tracing | No |
-| `ELASTIC_APM_SERVER_URL` | Elastic APM server URL | If `ENABLE_TRACING` is set to `true` |
-| `ELASTIC_APM_API_KEY` | Elastic APM API key | If `ENABLE_TRACING` is set to `true` |
+| `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No |
+| `ELASTIC_APM_SERVER_URL` | Elastic APM server URL (e.g. `http://localhost:8200`) | If `ENABLE_TRACING` is set to `true` |
+| `ELASTIC_APM_TOKEN` | Elastic APM Token | If `ENABLE_TRACING` is set to `true` |
 | `SERVICE_NAME` | Name of the service for tracing | No (default: `sofia-agent`) |
 | `SERVICE_VERSION` | Version of the service for tracing | No (default: `1.0.0`) |
 
@@ -77,6 +77,30 @@ docker run -e DATABASE_URL=postgresql+asyncpg://user:pass@localhost/dbname ...
 - `WS /ws/{session_id}` - WebSocket connection for real-time interaction
 - `DELETE /session/{session_id}` - End a session
 - `GET /session/{session_id}/history` - Get session history
+
+## Tracing and Elastic APM
+
+SOFIA base image supports distributed tracing using OpenTelemetry and can export traces to Elastic APM.
+
+To enable tracing, set the following environment variables:
+
+- `ENABLE_TRACING=true`
+- `ELASTIC_APM_SERVER_URL=http://your-apm-server:8200`
+- `ELASTIC_APM_TOKEN=your-apm-token`
+- Optionally, set `SERVICE_NAME` and `SERVICE_VERSION` for trace metadata.
+
+When enabled, traces for agent sessions, tool calls, and LLM interactions will be sent to your Elastic APM instance.
+
+### Example
+
+```bash
+docker run \
+  -e ENABLE_TRACING=true \
+  -e ELASTIC_APM_SERVER_URL=http://localhost:8200 \
+  -e ELASTIC_APM_TOKEN=your-apm-token \
+  -e OPENAI_API_KEY=your-openai-key \
+  -p 8000:8000 your-image
+```
 
 ## Tags
 

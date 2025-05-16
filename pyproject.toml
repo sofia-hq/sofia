@@ -1,6 +1,6 @@
 [project]
 name = "sofia-agent"
-version = "0.1.10"
+version = "0.1.11"
 description = "SOFIA: Simple Orchestrated Flow Intelligence Agent"
 authors = [
     {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}

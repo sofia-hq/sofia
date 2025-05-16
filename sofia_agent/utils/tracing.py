@@ -190,7 +190,7 @@ def initialize_tracing(
     # Set up the OTLP exporter
     otlp_exporter = OTLPSpanExporter(
         endpoint=f"{os.getenv("ELASTIC_APM_SERVER_URL", "http://localhost:8200")}/v1/traces",
-        headers={"Authorization": f"Bearer {os.getenv('ELASTIC_APM_API_KEY', '')}"},
+        headers={"Authorization": f"Bearer {os.getenv('ELASTIC_APM_TOKEN', '')}"},
         **exporter_kwargs,
     )
 

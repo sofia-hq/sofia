@@ -1,15 +1,16 @@
 <div align="center">
 <a href="https://github.com/sofia-hq/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
 
-### **S***imple* **O***rchestrated* **F**low **I***ntelligence* **A***gent*
+### **S\***imple\* **O\***rchestrated\* **F**low **I\***ntelligence\* **A\***gent\*
+
 ![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) [![Test](https://github.com/sofia-hq/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/sofia-hq/sofia/actions/workflows/test.yml) [![Release](https://github.com/sofia-hq/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/sofia-hq/sofia/actions/workflows/publish.yml) [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) [![License](https://img.shields.io/github/license/sofia-hq/sofia)](LICENSE)
 
 </div>
 
 SOFIA is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. Define your agent's persona, tools, and step-by-step flows in Python or YAML—perfect for conversational, workflow, and automation use cases.
 
-
 ## Features
+
 - **Step-based agent flows**: Define agent behavior as a sequence of steps, each with its own tools and transitions.
 - **Persona-driven**: Easily set the agent's persona for consistent, branded responses.
 - **Tool integration**: Register Python functions as tools for the agent to call.
@@ -21,36 +22,40 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Extensible**: Build your own tools, steps, and integrations.
 - **Interactive CLI**: Bootstrap new agents with `sofia init` (install with `[cli]` extra).
 
-
 ## Installation
 
 ### From PyPI
+
 ```bash
 pip install sofia-agent
 ```
 
 ### With CLI support
+
 ```bash
 pip install sofia-agent[cli]
 ```
 
 ### From Source
+
 ```bash
 git clone https://github.com/sofia-hq/sofia.git
 cd sofia
 poetry install
 ```
 
-
 ## Usage: From No-Code to Low-Code to Full Code
 
 ### CLI: Bootstrap a New Agent
+
 ```bash
 sofia init
 ```
+
 This will interactively guide you to create a config YAML and starter Python file for your agent.
 
 ### Python API Example
+
 ```python
 from sofia_agent import *
 from sofia_agent.llms import OpenAIChatLLM
@@ -91,6 +96,7 @@ sess = agent.create_session()
 ```
 
 ### YAML Config Example
+
 ```yaml
 name: utility-bot
 persona: You are a helpful utility bot that can perform various calculations and data operations.
@@ -111,8 +117,8 @@ start_step_id: start
 
 See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a more full-featured example.
 
-
 ## Configuration
+
 - **Persona**: Set in YAML or Python for consistent agent style.
 - **Steps**: Each step defines available tools, description, and routes to other steps.
 - **Tools**: Python functions registered with the agent or package references.
@@ -141,11 +147,12 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 > **NOTE**: Make sure the package is installed in your environment and function returns an output that is string representable.
 
-
 ## Example: Barista Agent
+
 A full example is provided in [`examples/barista/barista.py`](examples/barista.py) and [`examples/config.barista.yaml`](examples/config.barista.yaml).
 
 To run the Barista agent:
+
 ```bash
 cd examples/barista
 export OPENAI_API_KEY=your-api-key-here
@@ -155,7 +162,9 @@ python barista_with_config.py
 ```
 
 ## Example: Financial Planning Assistant
+
 A production-ready example of a Financial Planning Assistant is available in [`examples/financial-advisor/`](examples/financial-advisor/). This example demonstrates:
+
 - Budget planning and expense tracking
 - Savings goal management
 - Financial health assessment
@@ -163,16 +172,19 @@ A production-ready example of a Financial Planning Assistant is available in [`e
 - Production-ready configuration
 
 To run the Financial Planning Assistant:
+
 ```bash
 docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 financial-advisor
 ```
 
 ## Docker Base Image
+
 SOFIA provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/sofia-base`.
 
 To use the base image in your own agent:
 
 1. Create a Dockerfile:
+
 ```dockerfile
 FROM chandralegend/sofia-base:latest
 
@@ -184,36 +196,74 @@ COPY tools.py /app/tools/
 ```
 
 2. Build and run your container:
+
 ```bash
 docker build -t my-sofia-agent .
 docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-sofia-agent
 ```
 
 The base image supports configuration via environment variables:
+
 - `CONFIG_URL`: URL to download the agent configuration from
 - `CONFIG_PATH`: Path to a mounted config file
 - `OPENAI_API_KEY`: Your OpenAI API key
 - `REDIS_URL`: Optional Redis URL for session management
 
-## Contributing
-Contributions are welcome! Please open issues or pull requests on GitHub.
+## Tracing and Elastic APM Integration
 
+SOFIA now supports distributed tracing using [OpenTelemetry](https://opentelemetry.io/) and can export traces to [Elastic APM](https://www.elastic.co/apm/).
+
+### Enabling Tracing
+
+To enable tracing, set the following environment variables:
+
+| Variable                  | Description                                      | Required                |
+|---------------------------|--------------------------------------------------|-------------------------|
+| `ENABLE_TRACING`          | Enable OpenTelemetry tracing (`true`/`false`)    | No (default: `false`)   |
+| `ELASTIC_APM_SERVER_URL`  | Elastic APM server URL (e.g. `http://localhost:8200`) | If tracing enabled      |
+| `ELASTIC_APM_TOKEN`       | Elastic APM Token                              | If tracing enabled      |
+| `SERVICE_NAME`            | Service name for tracing                         | No (default: `sofia-agent`) |
+| `SERVICE_VERSION`         | Service version for tracing                      | No (default: `1.0.0`)   |
+
+### Example: Running with Tracing Enabled
+
+```bash
+docker run \
+  -e ENABLE_TRACING=true \
+  -e ELASTIC_APM_SERVER_URL=http://your-apm-server:8200 \
+  -e ELASTIC_APM_TOKEN=your-apm-token \
+  -e SERVICE_NAME=my-sofia-agent \
+  -e SERVICE_VERSION=1.0.0 \
+  -e OPENAI_API_KEY=your-openai-key \
+  -p 8000:8000 my-sofia-agent
+```
+
+When tracing is enabled, SOFIA will automatically instrument agent sessions, tool calls, and LLM interactions, and send trace data to your Elastic APM instance.
+
+For more details, see the [base image README](tools/base-image/README.md).
+
+## Contributing
+
+Contributions are welcome! Please open issues or pull requests on GitHub.
 
 ## From No-Code to Low-Code Evolution
 
 SOFIA is evolving to support a spectrum of implementation approaches:
 
 ### No-Code
+
 - Configure agents entirely through YAML
 - Reference existing Python functions using `package_name:function` syntax
 - Auto-documentation from function docstrings
 
 ### Low-Code
+
 - Minimal Python code for custom tools
 - Mix pre-existing package tools with custom tools
 - Configure complex behaviors with minimal coding
 
 ### Full-Code
+
 - Complete control over agent implementation
 - Custom tool development
 - Advanced integrations and behaviors
@@ -221,9 +271,10 @@ SOFIA is evolving to support a spectrum of implementation approaches:
 This flexibility allows both non-programmers and experienced developers to create sophisticated AI agents that suit their needs.
 
 ## License
+
 MIT License. See [LICENSE](LICENSE).
 
-
 ## Acknowledgements
+
 - Inspired by the open-source LLM community.
 - Built with ❤️ by contributors.
