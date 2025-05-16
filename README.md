@@ -1,9 +1,27 @@
+<!-- Announcement Bar -->
+<div align="center" style="margin-bottom: 1.5em;">
+  <div style="
+    display: inline-block;
+    background: #222;
+    color: #fff;
+    font-weight: 500;
+    padding: 0.5em 2em;
+    font-size: 1em;
+    margin-bottom: 1em;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    border: 1px solid #222;
+  ">
+    🚀 <b>SOFIA v0.1.11 released!</b> &nbsp;|&nbsp; Now with Elastic APM tracing support. <a href="https://github.com/poly-eye/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+  </div>
+</div>
+
 <div align="center">
-<a href="https://github.com/sofia-hq/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
+<a href="https://github.com/poly-eye/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
 
 ### **S**imple **O**rchestrated **F**low **I**ntelligence **A**gent
 
-![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) [![Test](https://github.com/sofia-hq/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/sofia-hq/sofia/actions/workflows/test.yml) [![Release](https://github.com/sofia-hq/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/sofia-hq/sofia/actions/workflows/publish.yml) [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) [![License](https://img.shields.io/github/license/sofia-hq/sofia)](LICENSE)
+![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) [![Test](https://github.com/poly-eye/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/poly-eye/sofia/actions/workflows/test.yml) [![Release](https://github.com/poly-eye/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/poly-eye/sofia/actions/workflows/publish.yml) [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) [![License](https://img.shields.io/github/license/poly-eye/sofia)](LICENSE)
 
 </div>
 
