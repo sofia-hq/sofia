@@ -1,7 +1,7 @@
 <div align="center">
 <a href="https://github.com/sofia-hq/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
 
-### **S\***imple\* **O\***rchestrated\* **F**low **I\***ntelligence\* **A\***gent\*
+### **S**imple **O**rchestrated **F**low **I**ntelligence **A**gent
 
 ![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) [![Test](https://github.com/sofia-hq/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/sofia-hq/sofia/actions/workflows/test.yml) [![Release](https://github.com/sofia-hq/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/sofia-hq/sofia/actions/workflows/publish.yml) [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) [![License](https://img.shields.io/github/license/sofia-hq/sofia)](LICENSE)
 
