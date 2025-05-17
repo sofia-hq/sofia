@@ -1,10 +1,14 @@
-import { Button } from "@/components/ui/button"
+import { ChatProvider } from "@/context/ChatContext"
+import { WebSocketProvider } from "@/context/WebSocketContext"
+import { ChatContainer } from "@/components/ChatContainer"
 
 function App() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-svh">
-      <Button>Click me</Button>
-    </div>
+    <ChatProvider>
+      <WebSocketProvider>
+        <ChatContainer />
+      </WebSocketProvider>
+    </ChatProvider>
   )
 }
 

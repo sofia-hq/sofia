@@ -4,7 +4,7 @@ Core models and logic for the SOFIA package, including flow management, session 
 
 import pickle
 import uuid
-from typing import Dict, List, Optional, Union, Callable, Any, Literal
+from typing import Dict, List, Optional, Union, Callable, Any
 from pydantic import BaseModel
 
 from .utils.logging import log_debug, log_error, log_info
@@ -12,7 +12,6 @@ from .models.tool import Tool, InvalidArgumentsError, FallbackError
 from .models.flow import Action, Step, Message, create_route_decision_model
 from .llms import LLMBase
 from .config import AgentConfig
-from .constants import ACTION_ENUMS
 
 
 class FlowSession:
@@ -31,7 +30,6 @@ class FlowSession:
         tools: List[Callable | str] = [],
         show_steps_desc: bool = False,
         max_errors: int = 3,
-        method: Literal["auto", "manual"] = "auto",
         config: Optional[AgentConfig] = None,
         history: List[Union[Message, Step]] = [],
         current_step_id: Optional[Step] = None,
@@ -50,7 +48,6 @@ class FlowSession:
         :param tools:  List of tool callables or package identifiers (e.g., "math:
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback.
-        :param method: Method of handling errors or steps or tool calls.
         :param config: Optional AgentConfig.
         :param history: List of messages and steps in the session. (Optional)
         :param current_step_id: Current step ID. (Defaults to start_step_id)
@@ -67,7 +64,6 @@ class FlowSession:
         self.system_message = system_message
         self.persona = persona
         self.max_errors = max_errors
-        self.method = method
         self.verbose = verbose
         self.config = config
         tool_arg_descs = (
@@ -165,24 +161,31 @@ class FlowSession:
         return decision
 
     def next(
-        self, user_input: Optional[str] = None, no_errors: int = 0
+        self, user_input: Optional[str] = None, no_errors: int = 0, return_tool: bool = False, return_step_transition: bool = False
     ) -> tuple[BaseModel, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
         :param no_errors: Number of consecutive errors encountered.
+        :param return_tool: Whether to return tool results.
+        :param return_step_transition: Whether to return step transition.
         :return: A tuple containing the decision and any tool results.
         """
-        if user_input:
-            log_debug(f"User input received: {user_input}")
-            self._add_message("user", user_input)
+        if no_errors >= self.max_errors:
+            raise ValueError(
+                f"Maximum errors reached ({self.max_errors}). Stopping session."
+            )
+        
+        log_debug(f"User input received: {user_input}")
+        self._add_message("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
+
         decision = self._get_next_decision()
-        if self.verbose:
-            log_info(str(decision))
-        self.history.append(self.current_step)
+        log_info(str(decision)) if self.verbose else log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
+
+        self.history.append(self.current_step)
         action = decision.action.value
         if action in [Action.ASK.value, Action.ANSWER.value]:
             self._add_message(self.name, decision.input)
@@ -203,9 +206,8 @@ class FlowSession:
                     f"Running tool: {decision.tool_name} with args: {tool_kwargs}"
                 )
                 tool_results = self._run_tool(decision.tool_name, tool_kwargs)
-                if self.verbose:
-                    log_info(f"Tool Results: {tool_results}")
                 self._add_message("tool", f"Tool result: {tool_results}")
+                log_info(f"Tool Results: {tool_results}") if self.verbose else None
             except InvalidArgumentsError as e:
                 _error = e
                 self._add_message("error", str(e))
@@ -215,15 +217,11 @@ class FlowSession:
             except Exception as e:
                 _error = e
                 self._add_message("error", str(e))
-            if self.method == "manual":
-                if _error is not None:
-                    raise _error
+
+            if return_tool and _error is None:
                 return decision, tool_results
-            return (
-                self.next(no_errors=no_errors + 1)
-                if _error is not None
-                else self.next()
-            )
+            
+            return self.next(no_errors=no_errors + 1) if _error else self.next()
         elif action == Action.MOVE.value:
             _error = None
             if decision.next_step_id in self.current_step.get_available_routes():
@@ -238,11 +236,9 @@ class FlowSession:
                 _error = ValueError(
                     f"Invalid route: {decision.next_step_id} not in {self.current_step.get_available_routes()}"
                 )
-            if self.method == "manual":
-                if _error is not None:
-                    raise _error
+            if return_step_transition:
                 return decision, None
-            return self.next()
+            return self.next(no_errors=no_errors + 1) if _error else self.next()
         elif action == Action.END.value:
             self._add_message("end", "Session ended.")
             return decision, None
@@ -251,10 +247,7 @@ class FlowSession:
                 "error",
                 f"Unknown action: {action}. Please check the action type.",
             )
-            if self.method == "manual":
-                raise ValueError(
-                    f"Unknown action: {action}. Please check the action type."
-                )
+            return self.next(no_errors=no_errors + 1)
 
 
 class Sofia:
@@ -273,7 +266,6 @@ class Sofia:
         tools: List[Callable | str] = [],
         show_steps_desc: bool = False,
         max_errors: int = 3,
-        method: Literal["auto", "manual"] = "auto",
         config: Optional[AgentConfig] = None,
     ):
         """
@@ -297,7 +289,6 @@ class Sofia:
         self.persona = persona
         self.show_steps_desc = show_steps_desc
         self.max_errors = max_errors
-        self.method = method
         tool_set = set(tools)
         for step in self.steps.values():
             _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
@@ -358,7 +349,6 @@ class Sofia:
             tools=tools,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
-            method=config.method,
             config=config,
         )
 
@@ -379,7 +369,6 @@ class Sofia:
             tools=self.tools,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
-            method=self.method,
             verbose=verbose,
             config=self.config,
         )

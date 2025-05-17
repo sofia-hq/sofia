@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@radix-ui/react-collapsible": "^1.1.10",
+    "@radix-ui/react-dialog": "^1.1.13",
+    "@radix-ui/react-scroll-area": "^1.2.8",
     "@radix-ui/react-slot": "^1.2.2",
     "@tailwindcss/vite": "^4.1.7",
     "class-variance-authority": "^0.7.1",
