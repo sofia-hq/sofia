@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useEffect } from "react"
 import { motion } from "framer-motion"
 import { FileIcon, X } from "lucide-react"
