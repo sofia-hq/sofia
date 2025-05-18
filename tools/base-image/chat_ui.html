@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sofia Chat Interface</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Material Tailwind CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@material-tailwind/html@latest/styles/material-tailwind.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <style>
+        .chat-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0.2; }
+            50% { opacity: 1; }
+        }
+
+        /* Message animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-animation {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        /* Accordion animation */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .accordion-active .accordion-content {
+            max-height: 500px;
+        }
+
+        /* Scrollbar styling */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <header class="bg-blue-600 text-white py-3 px-6 shadow-md flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Sofia</h1>
+        <div id="connection-status" class="text-sm bg-yellow-500 px-2 py-1 rounded transition-colors duration-300">Connecting...</div>
+    </header>
+
+    <main class="flex-grow flex flex-col p-4 md:p-6 max-w-4xl mx-auto w-full">
+        <div id="chat-container" class="flex-grow bg-white rounded-lg shadow-sm p-4 mb-4 overflow-y-auto h-[75vh] flex flex-col">
+            <div id="messages" class="space-y-3 flex-grow"></div>
+            <div id="typing-indicator" class="typing-indicator text-gray-500 hidden py-2">
+                <div class="chat-bubble bg-gray-200 rounded-lg p-3 px-4 inline-block">
+                    <span>.</span><span>.</span><span>.</span>
+                </div>
+            </div>
+        </div>
+
+        <form id="message-form" class="flex gap-2">
+            <input
+                type="text"
+                id="user-input"
+                class="flex-grow border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                placeholder="Type your message..."
+                required
+            >
+            <button
+                type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex items-center gap-2"
+            >
+                <span>Send</span>
+                <i class="fas fa-paper-plane text-sm"></i>
+            </button>
+        </form>
+
+        <div class="mt-4 flex justify-between">
+            <button
+                id="new-chat-btn"
+                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition flex items-center gap-2"
+            >
+                <i class="fas fa-plus text-sm"></i>
+                <span>New Chat</span>
+            </button>
+            <button
+                id="clear-storage-btn"
+                class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition flex items-center gap-2"
+            >
+                <i class="fas fa-trash text-sm"></i>
+                <span>Clear History</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Material Tailwind JS -->
+    <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/script-name.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const messagesContainer = document.getElementById('messages');
+            const messageForm = document.getElementById('message-form');
+            const userInput = document.getElementById('user-input');
+            const newChatBtn = document.getElementById('new-chat-btn');
+            const clearStorageBtn = document.getElementById('clear-storage-btn');
+            const typingIndicator = document.getElementById('typing-indicator');
+            const connectionStatus = document.getElementById('connection-status');
+
+            let sessionData = null;
+            let isProcessingRequest = false;
+            let accordionCounter = 0;
+
+            // Helper function to escape HTML
+            function escapeHtml(unsafe) {
+                if (unsafe === undefined || unsafe === null) {
+                    return '';
+                }
+                return String(unsafe)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            // Function to format message with markdown-like syntax
+            function formatMessage(message) {
+                if (message === undefined || message === null) {
+                    return '';
+                }
+
+                // Basic markdown-like formatting
+                let formatted = escapeHtml(message);
+
+                // Convert code blocks
+                formatted = formatted.replace(/```([^`]+)```/g, '<pre class="bg-gray-800 text-white p-2 rounded my-2 overflow-x-auto">$1</pre>');
+
+                // Convert inline code
+                formatted = formatted.replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1 rounded">$1</code>');
+
+                // Convert bold text
+                formatted = formatted.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+                // Convert italic text
+                formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+                // Convert newlines to <br>
+                formatted = formatted.replace(/\n/g, '<br>');
+
+                return formatted;
+            }
+
+            // Simple console logger
+            function log(message) {
+                console.log(message);
+            }
+
+            // Function to create a Material Tailwind accordion
+            function createAccordion(headerText, headerClass, content) {
+                accordionCounter++;
+                const id = `accordion-${accordionCounter}`;
+                const contentId = `content-${accordionCounter}`;
+                const iconId = `icon-${accordionCounter}`;
+
+                const divElement = document.createElement('div');
+                divElement.className = 'border-b border-gray-200 mt-1';
+
+                divElement.innerHTML = `
+                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t flex justify-between items-center py-2 px-3">
+                        <span>${headerText}</span>
+                        <span id="${iconId}" class="transition-transform duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                                stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div id="${contentId}" class="accordion-content">
+                        <div class="p-3 text-sm">${content}</div>
+                    </div>
+                `;
+
+                return divElement;
+            }
+
+            // Add global function to toggle accordion
+            window.toggleAccordion = function(contentId, iconId) {
+                const content = document.getElementById(contentId);
+                const icon = document.getElementById(iconId);
+
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                }
+            };
+
+            // Function to add a message to the UI
+            function addMessageToUI(role, content, extras = {}) {
+                try {
+                    // Check if content is undefined or null
+                    if (content === undefined || content === null) {
+                        content = "Error: Received empty message content";
+                    }
+
+                    const messageElement = document.createElement('div');
+                    messageElement.className = 'message-animation';
+
+                    if (role === 'user') {
+                        messageElement.className += ' flex justify-end mb-3';
+                        messageElement.innerHTML = `
+                            <div class="chat-bubble bg-blue-500 text-white rounded-lg p-3 px-4 shadow-sm">
+                                ${escapeHtml(content)}
+                            </div>
+                        `;
+                    } else if (role === 'assistant') {
+                        messageElement.className += ' flex flex-col justify-start mb-3';
+                        const messageHtml = `
+                            <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
+                                ${formatMessage(content)}
+                            </div>
+                        `;
+
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = 'flex justify-start';
+                        messageDiv.innerHTML = messageHtml;
+                        messageElement.appendChild(messageDiv);
+
+                        // Add reasoning if available
+                        if (extras.reasoning && extras.reasoning.length > 0) {
+                            const reasoningContent = extras.reasoning.map(r => `<li>${escapeHtml(r)}</li>`).join('');
+                            const reasoningHtml = `<ul class="list-disc pl-5 text-sm">${reasoningContent}</ul>`;
+                            const accordion = createAccordion(
+                                'View reasoning',
+                                'text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 transition',
+                                reasoningHtml
+                            );
+                            messageElement.appendChild(accordion);
+                        }
+
+                        // Add step transition info if available
+                        if (extras.nextStepId) {
+                            const stepTransitionHtml = `<p class="text-sm">Transitioning to: <code class="bg-gray-100 px-1 rounded">${escapeHtml(extras.nextStepId)}</code></p>`;
+                            const accordion = createAccordion(
+                                'View step transition',
+                                'text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 transition',
+                                stepTransitionHtml
+                            );
+                            messageElement.appendChild(accordion);
+                        }
+                    } else if (role === 'tool') {
+                        messageElement.className += ' flex justify-start mb-3';
+                        messageElement.innerHTML = `
+                            <div class="chat-bubble bg-green-50 text-green-800 rounded-lg p-3 px-4 text-sm border border-green-200 shadow-sm">
+                                <strong><i class="fas fa-check-circle mr-1"></i> Tool Result:</strong> ${escapeHtml(content)}
+                            </div>
+                        `;
+                    } else if (role === 'tool_call') {
+                        messageElement.className += ' flex justify-start mb-3';
+                        messageElement.innerHTML = `
+                            <div class="chat-bubble bg-yellow-50 text-yellow-800 rounded-lg p-3 px-4 text-sm border border-yellow-200 shadow-sm">
+                                <strong><i class="fas fa-cog mr-1"></i> Tool Call:</strong> ${escapeHtml(content)}
+                            </div>
+                        `;
+                    } else if (role === 'system') {
+                        messageElement.className += ' flex justify-center mb-3';
+                        messageElement.innerHTML = `
+                            <div class="chat-bubble bg-red-50 text-red-800 rounded-lg p-3 px-4 text-sm border border-red-200 shadow-sm">
+                                <i class="fas fa-info-circle mr-1"></i> ${escapeHtml(content)}
+                            </div>
+                        `;
+                    }
+
+                    // Check if messagesContainer exists
+                    if (!messagesContainer) {
+                        return;
+                    }
+
+                    messagesContainer.appendChild(messageElement);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } catch (e) {
+                    console.error('Error adding message to UI:', e);
+                }
+            }
+
+            // Function to clear all chat data
+            function clearChatData() {
+                sessionData = null;
+                localStorage.removeItem('sofiaSessionData');
+                messagesContainer.innerHTML = '';
+            }
+
+            // Check connection and initialize
+            log('Checking server connection...');
+            checkServerAndInitialize();
+
+            function checkServerAndInitialize() {
+                connectionStatus.textContent = 'Connecting...';
+                connectionStatus.className = 'text-sm bg-yellow-500 px-2 py-1 rounded transition-colors duration-300';
+
+                // Set flag to prevent concurrent requests
+                if (isProcessingRequest) {
+                    return;
+                }
+
+                isProcessingRequest = true;
+
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_input: null,
+                        session_data: null
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    connectionStatus.textContent = 'Connected';
+                    connectionStatus.className = 'text-sm bg-green-500 px-2 py-1 rounded transition-colors duration-300';
+
+                    // Try to restore session or create a new one
+                    initializeChat();
+                })
+                .catch(error => {
+                    console.error('Connection error:', error);
+                    connectionStatus.textContent = 'Connection Failed';
+                    connectionStatus.className = 'text-sm bg-red-500 px-2 py-1 rounded transition-colors duration-300';
+                    addMessageToUI('system', `Server connection error: ${error.message}. Make sure the server is running at http://localhost:8000`);
+                })
+                .finally(() => {
+                    isProcessingRequest = false;
+                });
+            }
+
+            function initializeChat() {
+                // Only restore from localStorage or create new if we're not already processing
+                if (isProcessingRequest) {
+                    return;
+                }
+
+                // Check for existing session in localStorage
+                if (localStorage.getItem('sofiaSessionData')) {
+                    try {
+                        sessionData = JSON.parse(localStorage.getItem('sofiaSessionData'));
+
+                        // Render chat history only if history is present and not empty
+                        if (sessionData.history && sessionData.history.length > 0) {
+                            renderChatHistory(sessionData);
+                        } else {
+                            // If no history, create a new session
+                            createNewSession(true);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse session data:', e);
+                        localStorage.removeItem('sofiaSessionData');
+                        createNewSession(true);
+                    }
+                } else {
+                    // If no session data, create a new session
+                    createNewSession(true);
+                }
+            }
+
+            // Handle form submission
+            messageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const userMessage = userInput.value.trim();
+                if (!userMessage) return;
+
+                // Add user message to UI
+                addMessageToUI('user', userMessage);
+                userInput.value = '';
+
+                // Show typing indicator
+                typingIndicator.classList.remove('hidden');
+
+                try {
+                    // Send message to server
+                    await sendMessage(userMessage);
+                } catch (error) {
+                    console.error('Error sending message:', error);
+                    addMessageToUI('system', 'Error: Failed to send message. Please try again.');
+                }
+
+                // Hide typing indicator
+                typingIndicator.classList.add('hidden');
+            });
+
+            // Create a new session
+            newChatBtn.addEventListener('click', () => {
+                // Clear session data before creating a new session
+                sessionData = null;
+                localStorage.removeItem('sofiaSessionData');
+                messagesContainer.innerHTML = '';
+                createNewSession(true);
+            });
+
+            // Clear local storage
+            clearStorageBtn.addEventListener('click', () => {
+                if (confirm('Are you sure you want to clear all chat history?')) {
+                    clearChatData();
+                    createNewSession(true);
+                }
+            });
+
+            // Function to create a new session
+            async function createNewSession(initiate = false) {
+                // Prevent multiple session creation calls
+                if (isProcessingRequest) {
+                    return;
+                }
+
+                isProcessingRequest = true;
+                messagesContainer.innerHTML = '';
+                typingIndicator.classList.remove('hidden');
+                addMessageToUI('system', 'Starting new chat...');
+
+                try {
+                    // Explicitly set session_data to null to force a new session
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_input: null,
+                            session_data: null  // Always null to ensure a new session
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server responded with ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    // Set new session data, replacing any existing data
+                    sessionData = data.session_data;
+
+                    // Save to local storage
+                    localStorage.setItem('sofiaSessionData', JSON.stringify(sessionData));
+
+                    // Extract message directly from the input field
+                    if (data.response && data.response.input) {
+                        const message = data.response.input;
+
+                        // Force a small delay to ensure the UI updates properly
+                        setTimeout(() => {
+                            addMessageToUI('assistant', message);
+                            // Explicitly scroll to the bottom
+                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                        }, 100);
+                    } else {
+                        // Fall back to previous extraction logic
+                        let initialMessage = null;
+                        if (data.response) {
+                            if (data.response.message) {
+                                initialMessage = data.response.message;
+                            } else if (typeof data.response === 'string') {
+                                initialMessage = data.response;
+                            }
+                        }
+
+                        // If we found a message, display it
+                        if (initialMessage) {
+                            addMessageToUI('assistant', initialMessage);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error creating session:', error);
+                    addMessageToUI('system', 'Error: Failed to start a new chat. Please try again.');
+                } finally {
+                    typingIndicator.classList.add('hidden');
+                    isProcessingRequest = false;
+                }
+            }
+
+            // Function to send a message to the server
+            async function sendMessage(message) {
+                // Prevent sending multiple messages while one is being processed
+                if (isProcessingRequest) {
+                    return;
+                }
+
+                isProcessingRequest = true;
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_input: message,
+                            session_data: sessionData
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Server responded with ${response.status}`);
+                    }
+
+                    const data = await response.json();
+
+                    sessionData = data.session_data;
+
+                    // Save to local storage
+                    localStorage.setItem('sofiaSessionData', JSON.stringify(sessionData));
+
+                    // Extract reasoning if available
+                    let reasoning = [];
+                    if (data.response && data.response.reasoning) {
+                        reasoning = data.response.reasoning;
+                    }
+
+                    // Extract next step if available
+                    let nextStepId = null;
+                    if (data.response && data.response.next_step_id) {
+                        nextStepId = data.response.next_step_id;
+                    }
+
+                    // Extract message directly from the input field
+                    if (data.response && data.response.input) {
+                        addMessageToUI('assistant', data.response.input, { reasoning, nextStepId });
+
+                        // Process any tool outputs
+                        if (data.tool_output) {
+                            addMessageToUI('tool', data.tool_output);
+                        }
+
+                        // Check if there are any tool calls in the history
+                        const history = sessionData.history || [];
+                        const newMessages = [];
+
+                        // Find messages that weren't displayed yet (added after the last user message)
+                        let lastUserMessageIndex = -1;
+
+                        // Find the last user message in history
+                        for (let i = history.length - 1; i >= 0; i--) {
+                            if (history[i].role === 'user' && history[i].content === message) {
+                                lastUserMessageIndex = i;
+                                break;
+                            }
+                        }
+
+                        // Collect tool calls and results that came after the user message
+                        if (lastUserMessageIndex >= 0) {
+                            for (let i = lastUserMessageIndex + 1; i < history.length; i++) {
+                                if (history[i].role === 'tool') {
+                                    newMessages.push(history[i]);
+                                }
+                            }
+                        }
+
+                        // Display new tool messages
+                        for (const msg of newMessages) {
+                            if (msg.content.startsWith('Tool call:')) {
+                                addMessageToUI('tool_call', msg.content.substring(10).trim());
+                            } else if (msg.content.startsWith('Tool result:')) {
+                                addMessageToUI('tool', msg.content.substring(12).trim());
+                            }
+                        }
+                    } else {
+                        // Fall back to previous extraction logic
+                        let assistantMessage = null;
+                        if (data.response) {
+                            if (data.response.message) {
+                                assistantMessage = data.response.message;
+                            } else if (typeof data.response === 'string') {
+                                assistantMessage = data.response;
+                            }
+                        }
+
+                        // If we found a message, display it
+                        if (assistantMessage) {
+                            addMessageToUI('assistant', assistantMessage);
+                        } else {
+                            addMessageToUI('system', 'Received response with unexpected structure');
+                        }
+                    }
+                } catch (error) {
+                    throw error;
+                } finally {
+                    isProcessingRequest = false;
+                }
+            }
+
+            // Function to render chat history from session data
+            function renderChatHistory(sessionData) {
+                try {
+                    if (!sessionData || !sessionData.history) {
+                        return;
+                    }
+
+                    // Clear messages container
+                    messagesContainer.innerHTML = '';
+
+                    // Create a map to track steps
+                    const stepMap = new Map();
+
+                    // First pass: collect step transitions
+                    sessionData.history.forEach((item, index) => {
+                        if (item.step_id) {
+                            stepMap.set(index, item.step_id);
+                        }
+                    });
+
+                    // Process history items sequentially
+                    for (let i = 0; i < sessionData.history.length; i++) {
+                        const item = sessionData.history[i];
+
+                        // Skip step_id only items as they'll be shown as transitions
+                        if (item.step_id && !item.role && !item.content) {
+                            continue;
+                        }
+
+                        // Handle regular messages
+                        if (item.role && item.content) {
+                            if (item.role === 'user') {
+                                addMessageToUI('user', item.content);
+                            } else if (['assistant', 'system', 'financial_advisor'].includes(item.role)) {
+                                // Check if the next item is a step transition
+                                const nextStepId = stepMap.get(i + 1);
+                                addMessageToUI('assistant', item.content, { nextStepId });
+                            } else if (item.role === 'tool') {
+                                // Check if it's a tool call or result
+                                if (item.content.startsWith('Tool call:')) {
+                                    addMessageToUI('tool_call', item.content.substring(10).trim());
+                                } else if (item.content.startsWith('Tool result:')) {
+                                    addMessageToUI('tool', item.content.substring(12).trim());
+                                } else {
+                                    addMessageToUI('tool', item.content);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error rendering chat history:', e);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

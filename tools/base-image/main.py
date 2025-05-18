@@ -1,20 +1,28 @@
 import os
 from typing import Optional
 import uuid
+import asyncio
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
+from pydantic import BaseModel
+import pathlib
 
 from agent import agent
 
-from sofia_agent.models.flow import Message as FlowMessage, Step
+from sofia_agent.models.flow import Message as FlowMessage, Step, Action
 from db import init_db
 from session_store import create_session_store
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 session_store = None
+
+# Get the directory of the current file
+BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
 
 @asynccontextmanager
@@ -39,6 +47,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
+
+
+# Serve chat UI at root
+@app.get("/", response_class=HTMLResponse)
+async def get_chat_ui():
+    chat_ui_path = BASE_DIR / "chat_ui.html"
+    if not chat_ui_path.exists():
+        raise HTTPException(status_code=404, detail="Chat UI file not found")
+
+    with open(chat_ui_path, "r") as f:
+        return HTMLResponse(content=f.read())
 
 
 class Message(BaseModel):
@@ -85,25 +107,6 @@ async def send_message(session_id: str, message: Message):
     )
 
 
-@app.websocket("/ws/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str):
-    """WebSocket endpoint for real-time communication"""
-    await websocket.accept()
-
-    try:
-        session = await session_store.get(session_id)
-        if not session:
-            await websocket.close(code=1000, reason="Session not found")
-            return
-
-        # Send initial message
-        decision, _ = session.next(None)
-        await session_store.set(session_id, session)
-        await websocket.send_json({"message": decision.model_dump(mode="json")})
-    except Exception as e:
-        await websocket.close(code=1000, reason=str(e))
-
-
 @app.delete("/session/{session_id}")
 async def end_session(session_id: str):
     """End and cleanup a session"""
@@ -134,7 +137,114 @@ async def get_session_history(session_id: str):
     return {"session_id": session_id, "history": history_json}
 
 
+class SessionData(BaseModel):
+    session_id: str
+    current_step_id: str
+    history: list
+
+
+class ChatRequest(BaseModel):
+    user_input: Optional[str] = None
+    session_data: Optional[SessionData] = None
+
+
+class ChatResponse(BaseModel):
+    response: dict
+    tool_output: Optional[str] = None
+    session_data: SessionData
+
+
+@app.post("/chat")
+async def chat(request: ChatRequest, verbose: bool = False):
+    """Chat endpoint to get the next response from the agent based on the session data"""
+    decision, tool_output, session_data = agent.next(
+        **request.model_dump(), verbose=verbose
+    )
+    return ChatResponse(
+        response=decision.model_dump(mode="json"),
+        tool_output=tool_output,
+        session_data=session_data,
+    )
+
+
+@app.websocket("/ws/{session_id}")
+async def websocket_endpoint(
+    websocket: WebSocket, session_id: str, initiate: bool = False, verbose: bool = False
+):
+    """WebSocket endpoint for real-time communication"""
+    await websocket.accept()
+
+    try:
+        session = await session_store.get(session_id)
+        if not session:
+            await websocket.close(code=1000, reason="Session not found")
+            return
+
+        # Send initial greeting if requested
+        if initiate:
+            decision, _ = session.next(None)
+            await session_store.set(session_id, session)
+            await websocket.send_json(
+                {
+                    "message": decision.model_dump(mode="json"),
+                    "tool_output": None,
+                    "type": "answer",
+                }
+            )
+
+        while True:
+            try:
+                data = await websocket.receive_json()
+
+                if "message" in data and data["message"]:
+                    user_message = data["message"]
+                    decision, tool_output = session.next(
+                        user_message,
+                        return_tool=verbose,
+                        return_step_transition=verbose,
+                    )
+                    action_type_map = {
+                        Action.ANSWER.value: "answer",
+                        Action.ASK.value: "answer",
+                        Action.TOOL_CALL.value: "tool_call",
+                        Action.MOVE.value: "step_transition",
+                    }
+                    action_type = action_type_map.get(decision.action.value, "unknown")
+                    response_data = {
+                        "message": decision.model_dump(mode="json"),
+                        "tool_output": tool_output,
+                        "type": action_type,
+                    }
+                    await websocket.send_json(response_data)
+                    await session_store.set(session_id, session)
+
+                elif "close" in data and data["close"]:
+                    await websocket.close(code=1000, reason="Client requested close")
+                    break
+                else:
+                    raise ValueError("Invalid message format")
+            except Exception as e:
+                await websocket.send_json(
+                    {
+                        "message": f"Error processing message: {str(e)}",
+                        "tool_output": None,
+                        "type": "error",
+                    }
+                )
+                break
+    except Exception as e:
+        await websocket.send_json(
+            {
+                "message": f"Error: {str(e)}",
+                "tool_output": None,
+                "type": "error",
+            }
+        )
+    finally:
+        await websocket.close(code=1000, reason="Session ended")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

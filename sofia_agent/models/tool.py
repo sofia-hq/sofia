@@ -93,14 +93,14 @@ class Tool(BaseModel):
         self._cached_args_model = args_model
         return args_model
 
-    def run(self, **kwargs) -> Any:
+    def run(self, **kwargs) -> str:
         # Validate the arguments
         args_model = self.get_args_model()
         try:
             args_model(**kwargs)
         except ValidationError as e:
             raise InvalidArgumentsError(e)
-        return self.function(**kwargs)
+        return str(self.function(**kwargs))
 
     def __str__(self) -> str:
         return f"Tool(name={self.name}, description={self.description})"

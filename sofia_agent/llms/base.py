@@ -3,7 +3,7 @@ from typing import List, Optional, Union, Dict
 from pydantic import BaseModel
 
 from ..constants import DEFAULT_SYSTEM_MESSAGE, DEFAULT_PERSONA
-from ..models.flow import Step, Message
+from ..models.flow import Step, StepIdentifier, Message
 from ..models.tool import Tool
 from ..utils.logging import log_error
 
@@ -159,7 +159,7 @@ class LLMBase:
         steps: List[Step],
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, Step]],
+        history: List[Union[Message, StepIdentifier]],
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
@@ -177,6 +177,10 @@ class LLMBase:
         :param persona: Optional agent persona.
         :return: Parsed response as a BaseModel.
         """
+        history = [
+            steps[item.step_id] if isinstance(item, StepIdentifier) else item
+            for item in history
+        ]
         messages = self.get_messages(
             name=name,
             steps=steps,

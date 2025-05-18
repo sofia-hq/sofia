@@ -27,6 +27,17 @@ class Route(BaseModel):
     condition: str
 
 
+class StepIdentifier(BaseModel):
+    """
+    Represents a step identifier in the flow.
+
+    Attributes:
+        step_id (str): Unique identifier for the step.
+    """
+
+    step_id: str
+
+
 class Step(BaseModel):
     """
     Represents a step in the agent's flow.
@@ -65,6 +76,14 @@ class Step(BaseModel):
             Tool.from_pkg(tool).name if ":" in tool else tool
             for tool in self.available_tools
         ]
+
+    def get_step_identifier(self) -> StepIdentifier:
+        """
+        Get the step identifier for this step.
+
+        :return: StepIdentifier object.
+        """
+        return StepIdentifier(step_id=self.step_id)
 
 
 class Message(BaseModel):

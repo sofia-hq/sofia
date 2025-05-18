@@ -19,7 +19,7 @@ def test_agent_initialization(basic_agent):
 
 def test_session_creation(basic_agent):
     """Test that agent can create a new session."""
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
     assert session.current_step.step_id == "start"
     assert len(session.history) == 0
 
@@ -27,14 +27,14 @@ def test_session_creation(basic_agent):
 def test_tool_registration(basic_agent, test_tool_0):
     """Test that tools are properly registered and converted to Tool objects."""
     tool_name = test_tool_0.__name__
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
     assert len(session.tools) == 3
     assert isinstance(session.tools[tool_name], Tool)
 
 
 def test_pkg_tool_registration(basic_agent):
     """Test that package tools are properly registered."""
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
     assert len(session.tools) == 3
     assert "combinations" in session.tools
     assert session.tools["combinations"].name == "combinations"
@@ -44,7 +44,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     """Test a basic conversation flow with the agent."""
 
     # Set up session
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
 
     expected_decision_model = create_route_decision_model(
         current_step=session.current_step,
@@ -99,7 +99,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
 
     # Create response models with tool
     tool_model = create_route_decision_model(
@@ -122,7 +122,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     session.llm.set_response(tool_response)
 
     # Tool usage
-    decision, tool_result = session.next("Use the tool")
+    decision, tool_result = session.next("Use the tool", return_tool=True)
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[1].role == "user"
     assert "Use the tool" in session.llm.messages_received[1].content
@@ -139,7 +139,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
 
     # Create response models with tool
     tool_model = create_route_decision_model(
@@ -162,7 +162,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     session.llm.set_response(tool_response)
 
     # Tool usage
-    decision, _ = session.next("Use the tool")
+    decision, _ = session.next("Use the tool", return_tool=True)
 
     # Verify tool message in history
     messages = [msg for msg in session.history if isinstance(msg, Message)]
@@ -172,7 +172,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
 def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
     """Test handling of invalid tool arguments."""
 
-    session = basic_agent.create_session()
+    session = basic_agent.create_session(verbose=True)
 
     tool_model = create_route_decision_model(
         current_step=session.current_step,
@@ -193,8 +193,8 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
 
     session.llm.set_response(invalid_response)
 
-    with pytest.raises(InvalidArgumentsError):
-        decision, _ = session.next("Use tool with invalid args")
+    with pytest.raises(ValueError, match="Maximum errors reached"):
+        decision, _ = session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
     messages = [msg for msg in session.history if isinstance(msg, Message)]
@@ -225,7 +225,7 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     assert len(agent.steps) == 2
     assert len(agent.tools) == 3
 
-    session = agent.create_session()
+    session = agent.create_session(verbose=True)
 
     # Test that tool arg descriptions were properly loaded
     tool = session.tools["test_tool"]
