@@ -148,65 +148,32 @@ async def websocket_endpoint(
     websocket: WebSocket, session_id: str, initiate: bool = False, verbose: bool = False
 ):
     """WebSocket endpoint for real-time communication"""
-    print(f"WebSocket connection requested for session {session_id}")
     await websocket.accept()
-    print(f"WebSocket connection accepted for session {session_id}")
-
-    # Track if the connection is still open
-    connection_open = True
 
     try:
         session = await session_store.get(session_id)
         if not session:
-            print(f"Session {session_id} not found, closing WebSocket")
             await websocket.close(code=1000, reason="Session not found")
-            connection_open = False
             return
 
         # Send initial greeting if requested
         if initiate:
-            print(f"Sending initial greeting for session {session_id}")
-            decision, tool_output = session.next(
-                None, return_tool=verbose, return_step_transition=verbose
-            )
+            decision, _ = session.next(None)
             await session_store.set(session_id, session)
             await websocket.send_json(
                 {
                     "message": decision.model_dump(mode="json"),
-                    "tool_output": tool_output,
+                    "tool_output": None,
+                    "type": "answer",
                 }
             )
 
-        print(f"Entering message loop for session {session_id}")
-        # Wait for messages from the client
-        while connection_open:
+        while True:
             try:
-                # This is where we wait for messages
-                print(f"Waiting for message from client for session {session_id}")
                 data = await websocket.receive_json()
-                print(f"Received data for session {session_id}: {data}")
-
-                # Handle ping messages to keep connection alive
-                if "ping" in data:
-                    # Just send a pong response
-                    print(f"Received ping, sending pong for session {session_id}")
-                    if connection_open:
-                        try:
-                            await websocket.send_json({"pong": data.get("ping")})
-                            # Give a moment for pong to be processed
-                            await asyncio.sleep(0.1)
-                        except Exception as pong_error:
-                            print(
-                                f"Error sending pong: {type(pong_error).__name__} - {str(pong_error)}"
-                            )
-                            connection_open = False
-                    continue
 
                 if "message" in data and data["message"]:
                     user_message = data["message"]
-                    print(
-                        f"Processing user message for session {session_id}: {user_message}"
-                    )
                     decision, tool_output = session.next(
                         user_message,
                         return_tool=verbose,
@@ -219,106 +186,28 @@ async def websocket_endpoint(
                         Action.MOVE.value: "step_transition",
                     }
                     action_type = action_type_map.get(decision.action.value, "unknown")
-                    if connection_open:
-                        try:
-                            print(
-                                f"Sending response of type {action_type} for session {session_id}"
-                            )
+                    response_data = {
+                        "message": decision.model_dump(mode="json"),
+                        "tool_output": tool_output,
+                        "type": action_type,
+                    }
+                    await websocket.send_json(response_data)
+                    await session_store.set(session_id, session)
 
-                            # Convert model data to a simpler format to avoid serialization issues
-                            message_data = decision.model_dump(mode="json")
-
-                            # Create a more controlled response payload
-                            response_data = {
-                                "message": message_data,
-                                "type": action_type,
-                            }
-
-                            # Send the response
-                            await websocket.send_json(response_data)
-
-                            # Save session after successful send
-                            await session_store.set(session_id, session)
-                            print(
-                                f"Response sent successfully for session {session_id}"
-                            )
-
-                            # Give client a moment to process the response before waiting for next message
-                            # Increased delay to give more time for client to process and prevent race conditions
-                            await asyncio.sleep(0.5)
-                        except Exception as send_error:
-                            print(
-                                f"Error sending response: {type(send_error).__name__} - {str(send_error)}"
-                            )
-                            # Don't close the connection, try to recover
-                            if connection_open:
-                                try:
-                                    await websocket.send_json(
-                                        {
-                                            "error": f"Error sending response: {str(send_error)}",
-                                            "type": "error",
-                                        }
-                                    )
-                                except:
-                                    print(
-                                        f"Failed to send error message, connection may be broken"
-                                    )
+                elif "close" in data and data["close"]:
+                    await websocket.close(code=1000, reason="Client requested close")
+                    break
                 else:
-                    # If message is missing or empty, send back an error
-                    print(f"Received invalid message format for session {session_id}")
-                    if connection_open:
-                        await websocket.send_json(
-                            {
-                                "error": "Invalid message format. Expected 'message' field with non-empty content."
-                            }
-                        )
-            except starlette.websockets.WebSocketDisconnect as ws_disconnect:
-                # Client disconnected, exit gracefully
-                print(
-                    f"Client disconnected from WebSocket for session {session_id}. Code: {ws_disconnect.code}"
+                    raise ValueError("Invalid message format")
+            except Exception as e:
+                await websocket.send_json(
+                    {
+                        "message": f"Error processing message: {str(e)}",
+                        "tool_output": None,
+                        "type": "error",
+                    }
                 )
-                connection_open = False
                 break
-            except Exception as inner_e:
-                # Handle any errors within the message processing loop
-                print(
-                    f"Error processing message for session {session_id}: {type(inner_e).__name__} - {str(inner_e)}"
-                )
-                # Send an error message but don't close the connection from here
-                if connection_open:
-                    try:
-                        await websocket.send_json(
-                            {
-                                "error": f"Error processing message: {str(inner_e)}",
-                                "type": "error",
-                            }
-                        )
-                    except:
-                        # If sending fails, mark connection as closed
-                        print(
-                            f"Failed to send error message, closing connection for session {session_id}"
-                        )
-                        connection_open = False
-                        break
-    except starlette.websockets.WebSocketDisconnect as ws_disconnect:
-        # Handle websocket disconnection at the outer level
-        print(
-            f"WebSocket disconnected for session {session_id}. Code: {ws_disconnect.code}"
-        )
-        connection_open = False
-    except Exception as e:
-        print(
-            f"WebSocket endpoint error for session {session_id}: {type(e).__name__} - {str(e)}"
-        )
-        # Only try to close the connection if it's still open
-        if connection_open:
-            try:
-                await websocket.close(code=1011, reason=f"Error: {str(e)}")
-                connection_open = False
-            except:
-                # Connection might already be closed
-                print(f"Failed to close WebSocket connection for session {session_id}")
-                connection_open = False
 
 
 if __name__ == "__main__":
