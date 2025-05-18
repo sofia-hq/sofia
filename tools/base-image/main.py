@@ -4,10 +4,12 @@ import uuid
 import asyncio
 from fastapi import FastAPI, WebSocket, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-import starlette.websockets
 from pydantic import BaseModel
+import pathlib
 
 from agent import agent
 
@@ -18,6 +20,9 @@ from session_store import create_session_store
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 session_store = None
+
+# Get the directory of the current file
+BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
 
 @asynccontextmanager
@@ -42,6 +47,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files directory
+app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
+
+
+# Serve chat UI at root
+@app.get("/", response_class=HTMLResponse)
+async def get_chat_ui():
+    chat_ui_path = BASE_DIR / "chat_ui.html"
+    if not chat_ui_path.exists():
+        raise HTTPException(status_code=404, detail="Chat UI file not found")
+
+    with open(chat_ui_path, "r") as f:
+        return HTMLResponse(content=f.read())
 
 
 class Message(BaseModel):
@@ -228,4 +247,4 @@ async def websocket_endpoint(
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
