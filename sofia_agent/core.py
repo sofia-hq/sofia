@@ -32,7 +32,7 @@ class FlowSession:
         max_errors: int = 3,
         config: Optional[AgentConfig] = None,
         history: List[Union[Message, Step]] = [],
-        current_step_id: Optional[Step] = None,
+        current_step_id: Optional[str] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
     ):
@@ -161,7 +161,11 @@ class FlowSession:
         return decision
 
     def next(
-        self, user_input: Optional[str] = None, no_errors: int = 0, return_tool: bool = False, return_step_transition: bool = False
+        self,
+        user_input: Optional[str] = None,
+        no_errors: int = 0,
+        return_tool: bool = False,
+        return_step_transition: bool = False,
     ) -> tuple[BaseModel, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -176,7 +180,7 @@ class FlowSession:
             raise ValueError(
                 f"Maximum errors reached ({self.max_errors}). Stopping session."
             )
-        
+
         log_debug(f"User input received: {user_input}")
         self._add_message("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
@@ -220,7 +224,7 @@ class FlowSession:
 
             if return_tool and _error is None:
                 return decision, tool_results
-            
+
             return self.next(no_errors=no_errors + 1) if _error else self.next()
         elif action == Action.MOVE.value:
             _error = None
@@ -402,9 +406,27 @@ class Sofia:
             system_message=self.system_message,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
-            method=self.method,
             **session_data,
         )
+
+    def next(
+        self, user_input: Optional[str] = None, session_data: Optional[dict] = None
+    ) -> tuple[BaseModel, dict]:
+        """
+        Advance the session to the next step based on user input and LLM decision.
+
+        :param user_input: Optional user input string.
+        :param session_data: Optional session data dictionary.
+        :return: A tuple containing the decision and session data.
+        """
+
+        session = (
+            self.get_session_from_dict(session_data)
+            if session_data
+            else self.create_session()
+        )
+        decision, _ = session.next(user_input=user_input)
+        return decision, session.to_dict()
 
 
 __all__ = ["FlowSession", "Sofia"]
