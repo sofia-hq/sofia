@@ -93,5 +93,4 @@ def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1):
         start_step_id="start",
         tools=[test_tool_0, test_tool_1],
         persona="Test persona",
-        method="manual",
     )
