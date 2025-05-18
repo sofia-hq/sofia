@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sofia Chat Interface</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Material Tailwind CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/@material-tailwind/html@latest/styles/material-tailwind.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
         .chat-bubble {
             max-width: 80%;
@@ -35,14 +38,14 @@
             animation: fadeIn 0.3s ease-out forwards;
         }
         
-        /* Transitions */
-        .slide-enter {
+        /* Accordion animation */
+        .accordion-content {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.5s ease-out;
+            transition: max-height 0.3s ease-out;
         }
         
-        .slide-enter-active {
+        .accordion-active .accordion-content {
             max-height: 500px;
         }
         
@@ -92,28 +95,33 @@
             >
             <button 
                 type="submit" 
-                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex items-center gap-2"
             >
-                Send
+                <span>Send</span>
+                <i class="fas fa-paper-plane text-sm"></i>
             </button>
         </form>
         
         <div class="mt-4 flex justify-between">
             <button 
                 id="new-chat-btn" 
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
+                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition flex items-center gap-2"
             >
-                New Chat
+                <i class="fas fa-plus text-sm"></i>
+                <span>New Chat</span>
             </button>
             <button 
                 id="clear-storage-btn" 
-                class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition"
+                class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition flex items-center gap-2"
             >
-                Clear History
+                <i class="fas fa-trash text-sm"></i>
+                <span>Clear History</span>
             </button>
         </div>
     </main>
 
+    <!-- Material Tailwind JS -->
+    <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/script-name.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const messagesContainer = document.getElementById('messages');
@@ -126,6 +134,7 @@
             
             let sessionData = null;
             let isProcessingRequest = false;
+            let accordionCounter = 0;
             
             // Helper function to escape HTML
             function escapeHtml(unsafe) {
@@ -172,33 +181,47 @@
                 console.log(message);
             }
             
-            // Function to create Alpine.js collapsible section
-            function createCollapsible(headerText, headerClass, content) {
+            // Function to create a Material Tailwind accordion
+            function createAccordion(headerText, headerClass, content) {
+                accordionCounter++;
+                const id = `accordion-${accordionCounter}`;
+                const contentId = `content-${accordionCounter}`;
+                const iconId = `icon-${accordionCounter}`;
+                
                 const divElement = document.createElement('div');
-                divElement.setAttribute('x-data', '{open: false}');
-                divElement.className = 'mt-1 border border-gray-200 rounded';
+                divElement.className = 'border-b border-gray-200 mt-1';
                 
                 divElement.innerHTML = `
-                    <div @click="open = !open" class="cursor-pointer ${headerClass} p-2 rounded-t flex justify-between items-center">
+                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t flex justify-between items-center py-2 px-3">
                         <span>${headerText}</span>
-                        <svg :class="{'rotate-180': open}" class="transform transition-transform duration-200" 
-                            xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" 
-                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" 
-                            stroke-linejoin="round">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </div>
-                    <div x-show="open" 
-                        x-transition:enter="transition ease-out duration-200" 
-                        x-transition:enter-start="opacity-0 transform scale-95" 
-                        x-transition:enter-end="opacity-100 transform scale-100" 
-                        class="p-2 bg-white">
-                        ${content}
+                        <span id="${iconId}" class="transition-transform duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" 
+                                stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div id="${contentId}" class="accordion-content">
+                        <div class="p-3 text-sm">${content}</div>
                     </div>
                 `;
                 
                 return divElement;
             }
+            
+            // Add global function to toggle accordion 
+            window.toggleAccordion = function(contentId, iconId) {
+                const content = document.getElementById(contentId);
+                const icon = document.getElementById(iconId);
+                
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    icon.classList.remove('rotate-180');
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    icon.classList.add('rotate-180');
+                }
+            };
             
             // Function to add a message to the UI
             function addMessageToUI(role, content, extras = {}) {
@@ -235,43 +258,43 @@
                         if (extras.reasoning && extras.reasoning.length > 0) {
                             const reasoningContent = extras.reasoning.map(r => `<li>${escapeHtml(r)}</li>`).join('');
                             const reasoningHtml = `<ul class="list-disc pl-5 text-sm">${reasoningContent}</ul>`;
-                            const collapsible = createCollapsible(
+                            const accordion = createAccordion(
                                 'View reasoning', 
                                 'text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 transition', 
                                 reasoningHtml
                             );
-                            messageElement.appendChild(collapsible);
+                            messageElement.appendChild(accordion);
                         }
                         
                         // Add step transition info if available
                         if (extras.nextStepId) {
                             const stepTransitionHtml = `<p class="text-sm">Transitioning to: <code class="bg-gray-100 px-1 rounded">${escapeHtml(extras.nextStepId)}</code></p>`;
-                            const collapsible = createCollapsible(
+                            const accordion = createAccordion(
                                 'View step transition', 
                                 'text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 transition', 
                                 stepTransitionHtml
                             );
-                            messageElement.appendChild(collapsible);
+                            messageElement.appendChild(accordion);
                         }
                     } else if (role === 'tool') {
                         messageElement.className += ' flex justify-start mb-3';
                         messageElement.innerHTML = `
                             <div class="chat-bubble bg-green-50 text-green-800 rounded-lg p-3 px-4 text-sm border border-green-200 shadow-sm">
-                                <strong>Tool Result:</strong> ${escapeHtml(content)}
+                                <strong><i class="fas fa-check-circle mr-1"></i> Tool Result:</strong> ${escapeHtml(content)}
                             </div>
                         `;
                     } else if (role === 'tool_call') {
                         messageElement.className += ' flex justify-start mb-3';
                         messageElement.innerHTML = `
                             <div class="chat-bubble bg-yellow-50 text-yellow-800 rounded-lg p-3 px-4 text-sm border border-yellow-200 shadow-sm">
-                                <strong>Tool Call:</strong> ${escapeHtml(content)}
+                                <strong><i class="fas fa-cog mr-1"></i> Tool Call:</strong> ${escapeHtml(content)}
                             </div>
                         `;
                     } else if (role === 'system') {
                         messageElement.className += ' flex justify-center mb-3';
                         messageElement.innerHTML = `
                             <div class="chat-bubble bg-red-50 text-red-800 rounded-lg p-3 px-4 text-sm border border-red-200 shadow-sm">
-                                ${escapeHtml(content)}
+                                <i class="fas fa-info-circle mr-1"></i> ${escapeHtml(content)}
                             </div>
                         `;
                     }
