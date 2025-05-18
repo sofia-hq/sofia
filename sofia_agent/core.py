@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 from .utils.logging import log_debug, log_error, log_info
 from .models.tool import Tool, InvalidArgumentsError, FallbackError
-from .models.flow import Action, Step, Message, create_route_decision_model
+from .models.flow import Action, Step, StepIdentifier, Message, create_route_decision_model
 from .llms import LLMBase
 from .config import AgentConfig
 
@@ -31,7 +31,7 @@ class FlowSession:
         show_steps_desc: bool = False,
         max_errors: int = 3,
         config: Optional[AgentConfig] = None,
-        history: List[Union[Message, Step]] = [],
+        history: List[Union[Message, StepIdentifier]] = [],
         current_step_id: Optional[str] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
@@ -81,7 +81,7 @@ class FlowSession:
         ]
         self.tools = {tool.name: tool for tool in tools_list}
         ## Variable
-        self.history: List[Union[Message, Step]] = history
+        self.history: List[Union[Message, StepIdentifier]] = history
         self.current_step: Step = (
             steps[current_step_id] if current_step_id else steps[start_step_id]
         )
@@ -189,7 +189,7 @@ class FlowSession:
         log_info(str(decision)) if self.verbose else log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
-        self.history.append(self.current_step)
+        self.history.append(self.current_step.get_step_identifier())
         action = decision.action.value
         if action in [Action.ASK.value, Action.ANSWER.value]:
             self._add_message(self.name, decision.input)
@@ -231,7 +231,7 @@ class FlowSession:
             if decision.next_step_id in self.current_step.get_available_routes():
                 self.current_step = self.steps[decision.next_step_id]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
-                self.history.append(self.current_step)
+                self.history.append(self.current_step.get_step_identifier())
             else:
                 self._add_message(
                     "error",
@@ -395,6 +395,21 @@ class Sofia:
         :return: FlowSession instance.
         """
         log_debug(f"Creating session from dict: {session_data}")
+
+        # Convert the History items into list of Message or Step
+        new_session_data = session_data.copy()
+        new_session_data["history"] = []
+        for history_item in session_data.get("history", []):
+            if isinstance(history_item, dict):
+                if "role" in history_item:
+                    new_session_data["history"].append(
+                        Message(**history_item)
+                    )
+                elif "step_id" in history_item:
+                    new_session_data["history"].append(
+                        StepIdentifier(**history_item)
+                    )
+
         return FlowSession(
             name=self.name,
             llm=self.llm,
@@ -406,17 +421,18 @@ class Sofia:
             system_message=self.system_message,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
-            **session_data,
+            **new_session_data,
         )
 
     def next(
-        self, user_input: Optional[str] = None, session_data: Optional[dict] = None
-    ) -> tuple[BaseModel, dict]:
+        self, user_input: Optional[str] = None, session_data: Optional[dict] = None, verbose: bool = False
+    ) -> tuple[BaseModel, str, dict]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
         :param session_data: Optional session data dictionary.
+        :param verbose: Whether to return verbose output.
         :return: A tuple containing the decision and session data.
         """
 
@@ -425,8 +441,8 @@ class Sofia:
             if session_data
             else self.create_session()
         )
-        decision, _ = session.next(user_input=user_input)
-        return decision, session.to_dict()
+        decision, tool_output = session.next(user_input=user_input, return_tool=verbose, return_step_transition=verbose)
+        return decision, tool_output, session.to_dict()
 
 
 __all__ = ["FlowSession", "Sofia"]

@@ -131,15 +131,18 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: dict
+    tool_output: Optional[str] = None
     session_data: SessionData
 
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, verbose: bool = False):
     """Chat endpoint to get the next response from the agent based on the session data"""
-    decision, session_data = agent.next(**request.model_dump())
+    decision, tool_output, session_data = agent.next(**request.model_dump(), verbose=verbose)
     return ChatResponse(
-        response=decision.model_dump(mode="json"), session_data=session_data
+        response=decision.model_dump(mode="json"),
+        tool_output=tool_output,
+        session_data=session_data
     )
 
 
@@ -208,6 +211,16 @@ async def websocket_endpoint(
                     }
                 )
                 break
+    except Exception as e:
+        await websocket.send_json(
+            {
+                "message": f"Error: {str(e)}",
+                "tool_output": None,
+                "type": "error",
+            }
+        )
+    finally:
+        await websocket.close(code=1000, reason="Session ended")
 
 
 if __name__ == "__main__":
