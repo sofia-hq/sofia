@@ -177,7 +177,10 @@ class LLMBase:
         :param persona: Optional agent persona.
         :return: Parsed response as a BaseModel.
         """
-        history = [steps[item.step_id] if isinstance(item, StepIdentifier) else item for item in history]
+        history = [
+            steps[item.step_id] if isinstance(item, StepIdentifier) else item
+            for item in history
+        ]
         messages = self.get_messages(
             name=name,
             steps=steps,

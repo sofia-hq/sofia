@@ -138,11 +138,13 @@ class ChatResponse(BaseModel):
 @app.post("/chat")
 async def chat(request: ChatRequest, verbose: bool = False):
     """Chat endpoint to get the next response from the agent based on the session data"""
-    decision, tool_output, session_data = agent.next(**request.model_dump(), verbose=verbose)
+    decision, tool_output, session_data = agent.next(
+        **request.model_dump(), verbose=verbose
+    )
     return ChatResponse(
         response=decision.model_dump(mode="json"),
         tool_output=tool_output,
-        session_data=session_data
+        session_data=session_data,
     )
 
 

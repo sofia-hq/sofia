@@ -9,7 +9,13 @@ from pydantic import BaseModel
 
 from .utils.logging import log_debug, log_error, log_info
 from .models.tool import Tool, InvalidArgumentsError, FallbackError
-from .models.flow import Action, Step, StepIdentifier, Message, create_route_decision_model
+from .models.flow import (
+    Action,
+    Step,
+    StepIdentifier,
+    Message,
+    create_route_decision_model,
+)
 from .llms import LLMBase
 from .config import AgentConfig
 
@@ -402,13 +408,9 @@ class Sofia:
         for history_item in session_data.get("history", []):
             if isinstance(history_item, dict):
                 if "role" in history_item:
-                    new_session_data["history"].append(
-                        Message(**history_item)
-                    )
+                    new_session_data["history"].append(Message(**history_item))
                 elif "step_id" in history_item:
-                    new_session_data["history"].append(
-                        StepIdentifier(**history_item)
-                    )
+                    new_session_data["history"].append(StepIdentifier(**history_item))
 
         return FlowSession(
             name=self.name,
@@ -425,7 +427,10 @@ class Sofia:
         )
 
     def next(
-        self, user_input: Optional[str] = None, session_data: Optional[dict] = None, verbose: bool = False
+        self,
+        user_input: Optional[str] = None,
+        session_data: Optional[dict] = None,
+        verbose: bool = False,
     ) -> tuple[BaseModel, str, dict]:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -441,7 +446,9 @@ class Sofia:
             if session_data
             else self.create_session()
         )
-        decision, tool_output = session.next(user_input=user_input, return_tool=verbose, return_step_transition=verbose)
+        decision, tool_output = session.next(
+            user_input=user_input, return_tool=verbose, return_step_transition=verbose
+        )
         return decision, tool_output, session.to_dict()
 
 
