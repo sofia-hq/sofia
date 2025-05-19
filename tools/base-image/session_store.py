@@ -1,20 +1,32 @@
+"""Session store for managing session data in PostgreSQL and Redis."""
+
 import os
-from typing import Optional, Dict
 import pickle
-from sqlmodel import select, SQLModel, Field
-from sqlmodel.ext.asyncio.session import AsyncSession
-from redis.asyncio import Redis
-import logging
 from datetime import datetime, timezone
+from typing import Dict, Optional
+
+from agent import agent
+
+from loguru import logger
+
+from redis.asyncio import Redis
+
+from sofia_agent.types import FlowSession
+
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
 
-from sofia_agent.types import FlowSession
-from agent import agent
-from loguru import logger
+from sqlmodel import Field, SQLModel, select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 
 class Session(SQLModel, table=True):
+    """
+    SQLAlchemy model for storing session data in PostgreSQL.
+
+    This model is used to persist session data in a relational database.
+    """
+
     __tablename__ = "sessions"
 
     session_id: str = Field(primary_key=True)
@@ -33,28 +45,58 @@ class Session(SQLModel, table=True):
 
 
 class InMemoryStore:
-    def __init__(self):
+    """
+    In-memory store for session data.
+
+    This is a simple dictionary-based store that does not persist data.
+    It is used as a fallback when Redis or database connections are not available.
+    """
+
+    def __init__(self) -> None:
+        """
+        Initialize an in-memory store for session data.
+
+        This is a simple dictionary-based store that does not persist data.
+        """
         self._store: Dict[str, tuple[FlowSession, datetime]] = {}
 
     async def get(self, key: str) -> Optional[FlowSession]:
+        """Get session from in-memory store."""
         if key in self._store:
             return self._store[key][0]
         return None
 
     async def set(self, key: str, value: FlowSession, ttl: int = None) -> None:
+        """Set session in in-memory store."""
         self._store[key] = (value, datetime.now(timezone.utc))
 
     async def delete(self, key: str) -> None:
+        """Delete session from in-memory store."""
         self._store.pop(key, None)
 
 
 class SessionStore:
+    """
+    Session store for managing session data.
+
+    This class provides methods to get, set, and delete session data
+    from a PostgreSQL database and/or Redis cache.
+    It uses an in-memory store as a fallback when Redis or database connections are not available.
+    """
+
     def __init__(
         self,
         db: Optional[AsyncSession] = None,
         redis: Optional[Redis] = None,
         cache_ttl: int = 3600,
-    ):
+    ) -> None:
+        """
+        Initialize the session store with optional database and Redis connections.
+
+        :param db: Optional SQLAlchemy AsyncSession for database operations.
+        :param redis: Optional Redis client for caching.
+        :param cache_ttl: Time-to-live for cache entries in seconds.
+        """
         self.db = db
         self.redis = redis
         self.cache_ttl = cache_ttl
@@ -68,6 +110,7 @@ class SessionStore:
         )
 
     async def _get_from_cache(self, session_id: str) -> Optional[FlowSession]:
+        """Get session from cache (Redis or memory)."""
         if self.redis:
             try:
                 cached = await self.redis.get(f"session:{session_id}")
@@ -79,6 +122,7 @@ class SessionStore:
         return await self.memory_store.get(session_id)
 
     async def _set_to_cache(self, session_id: str, session: FlowSession) -> None:
+        """Set session in cache (Redis or memory)."""
         if self.redis:
             try:
                 await self.redis.setex(
@@ -91,6 +135,7 @@ class SessionStore:
         await self.memory_store.set(session_id, session)
 
     async def _delete_from_cache(self, session_id: str) -> None:
+        """Delete session from cache (Redis or memory)."""
         if self.redis:
             try:
                 await self.redis.delete(f"session:{session_id}")
@@ -101,7 +146,7 @@ class SessionStore:
         await self.memory_store.delete(session_id)
 
     async def _update_db(self, session_id: str, session: FlowSession) -> None:
-        """Update existing session in database or create new one"""
+        """Update existing session in database or create new one."""
         if not self.db:
             return
 
@@ -132,6 +177,7 @@ class SessionStore:
             await self.db.rollback()
 
     async def get(self, session_id: str) -> Optional[FlowSession]:
+        """Get session from cache or database."""
         # Try cache first
         session = await self._get_from_cache(session_id)
         if session:
@@ -154,7 +200,7 @@ class SessionStore:
         return None
 
     async def set(self, session_id: str, session: FlowSession) -> None:
-        """Set or update session in both database and cache"""
+        """Set or update session in both database and cache."""
         # Update database if available
         if self.db:
             await self._update_db(session_id, session)
@@ -163,6 +209,7 @@ class SessionStore:
         await self._set_to_cache(session_id, session)
 
     async def delete(self, session_id: str) -> None:
+        """Delete session from both database and cache."""
         # Delete from database if available
         if self.db:
             try:
@@ -180,6 +227,7 @@ class SessionStore:
         await self._delete_from_cache(session_id)
 
     async def close(self) -> None:
+        """Close database and Redis connections."""
         if self.db:
             await self.db.close()
         if self.redis:
@@ -188,6 +236,15 @@ class SessionStore:
 
 # Initialize session store based on environment
 async def create_session_store() -> SessionStore:
+    """
+    Create a session store based on the environment.
+
+    This function initializes the session store with a database connection,
+    a Redis connection, or an in-memory store based on the availability of
+    the respective services.
+
+    :return: An instance of SessionStore.
+    """
     db_session = None
     redis_client = None
 

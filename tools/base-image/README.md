@@ -72,11 +72,15 @@ docker run -e DATABASE_URL=postgresql+asyncpg://user:pass@localhost/dbname ...
 
 ## API Endpoints
 
+### Server-side Session Management
 - `POST /session` - Create a new session
 - `POST /session/{session_id}/message` - Send a message to a session
 - `WS /ws/{session_id}` - WebSocket connection for real-time interaction
 - `DELETE /session/{session_id}` - End a session
 - `GET /session/{session_id}/history` - Get session history
+
+### Client-side Session Management
+- `POST /chat` - Stateless chat endpoint where the client maintains session state
 
 ## Tracing and Elastic APM
 

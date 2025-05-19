@@ -12,7 +12,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
   ">
-    🚀 <b>SOFIA v0.1.11 released!</b> &nbsp;|&nbsp; Now with Elastic APM tracing support. <a href="https://github.com/poly-eye/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+    🚀 <b>SOFIA v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/poly-eye/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
 
@@ -35,8 +35,12 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Package-based tools**: Reference Python package functions directly using `package_name:function` syntax.
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
-- **OpenAI and custom LLM support**
-- **Session management**: Save and resume conversations.
+- **OpenAI, Mistral, and Gemini LLM support**
+- **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
+- **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
+- **API integration**: Ready-to-use FastAPI endpoints for web and WebSocket interaction.
+- **Elastic APM tracing**: Built-in support for distributed tracing and monitoring.
+- **Docker deployment**: Pre-built base image for rapid deployment.
 - **Extensible**: Build your own tools, steps, and integrations.
 - **Interactive CLI**: Bootstrap new agents with `sofia init` (install with `[cli]` extra).
 
@@ -54,12 +58,18 @@ pip install sofia-agent
 pip install sofia-agent[cli]
 ```
 
-### From Source
+### With LLM support
 
 ```bash
-git clone https://github.com/sofia-hq/sofia.git
-cd sofia
-poetry install
+pip install sofia-agent[openai]      # For OpenAI support
+pip install sofia-agent[mistralai]   # For Mistral AI support
+pip install sofia-agent[gemini]      # For Google Gemini support
+```
+
+### With tracing support
+
+```bash
+pip install sofia-agent[traces]
 ```
 
 ## Usage: From No-Code to Low-Code to Full Code
@@ -108,10 +118,33 @@ agent = Sofia(
     start_step_id="start",
     tools=[get_time, "math:sqrt"],  # Mix of custom functions and package references (Optional for package functions)
     persona="You are a friendly assistant that can tell time and perform calculations.",
+    max_errors=3  # Will retry up to 3 times before failing
 )
 sess = agent.create_session()
 # ... interact with sess.next(user_input)
 ```
+
+### Error Handling
+
+SOFIA provides a configurable error handling mechanism:
+
+```python
+# Configure the maximum number of consecutive errors before stopping
+agent = Sofia(
+    name="robust-agent",
+    # ... other parameters
+    max_errors=5  # Default is 3
+)
+
+# Handle tool errors gracefully
+try:
+    decision, result = session.next(user_input)
+except ValueError as e:
+    # Handle error (e.g., maximum errors reached)
+    print(f"Error: {e}")
+```
+
+The agent will automatically retry on errors and provides informative error messages in the session history.
 
 ### YAML Config Example
 
@@ -131,9 +164,57 @@ steps:
   - step_id: end
     description: Say goodbye to the user.
 start_step_id: start
+max_errors: 3  # Maximum consecutive errors before stopping
 ```
 
 See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a more full-featured example.
+
+## LLM Support
+
+SOFIA supports multiple LLM providers out of the box:
+
+### OpenAI
+
+```python
+from sofia_agent.llms import OpenAIChatLLM
+
+llm = OpenAIChatLLM(
+    model="gpt-4o",  # Optional, defaults to "gpt-4o-mini"
+    api_key="your-api-key"  # Optional, defaults to OPENAI_API_KEY env var
+)
+```
+
+### Mistral AI
+
+```python
+from sofia_agent.llms import MistralChatLLM
+
+llm = MistralChatLLM(
+    model="mistral-medium",  # Optional
+    api_key="your-api-key"  # Optional, defaults to MISTRAL_API_KEY env var
+)
+```
+
+### Google Gemini
+
+```python
+from sofia_agent.llms import GeminiLLM
+
+llm = GeminiLLM(
+    model="gemini-pro",  # Optional
+    api_key="your-api-key"  # Optional, defaults to GOOGLE_API_KEY env var
+)
+```
+
+You can also specify LLM configuration in your YAML config:
+
+```yaml
+name: my-agent
+llm:
+  provider: openai
+  model: gpt-4o
+# ...rest of config
+```
 
 ## Configuration
 
@@ -222,10 +303,19 @@ docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-sofia-agent
 
 The base image supports configuration via environment variables:
 
-- `CONFIG_URL`: URL to download the agent configuration from
-- `CONFIG_PATH`: Path to a mounted config file
-- `OPENAI_API_KEY`: Your OpenAI API key
-- `REDIS_URL`: Optional Redis URL for session management
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | OpenAI API key | Yes (if using OpenAI) |
+| `CONFIG_URL` | URL to download agent configuration | No |
+| `CONFIG_PATH` | Path to mounted configuration file | No |
+| `PORT` | Server port (default: 8000) | No |
+| `DATABASE_URL` | PostgreSQL connection URL | No |
+| `REDIS_URL` | Redis connection URL | No |
+| `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No |
+| `ELASTIC_APM_SERVER_URL` | Elastic APM server URL | If tracing enabled |
+| `ELASTIC_APM_TOKEN` | Elastic APM Token | If tracing enabled |
+| `SERVICE_NAME` | Service name for tracing | No (default: `sofia-agent`) |
+| `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 
 ## Tracing and Elastic APM Integration
 
@@ -257,6 +347,77 @@ docker run \
 ```
 
 When tracing is enabled, SOFIA will automatically instrument agent sessions, tool calls, and LLM interactions, and send trace data to your Elastic APM instance.
+
+## Persistent Storage and Session Management
+
+SOFIA base image supports multiple options for session storage:
+
+### In-Memory Storage
+
+The default storage mechanism is in-memory, which does not persist sessions between container restarts.
+
+### Redis Session Storage
+
+For caching and distributed deployments, you can use Redis as a session store:
+
+```bash
+docker run \
+  -e REDIS_URL=redis://redis:6379/0 \
+  -e OPENAI_API_KEY=your-openai-key \
+  -p 8000:8000 my-sofia-agent
+```
+
+### PostgreSQL Persistent Storage
+
+For fully persistent sessions that survive container restarts:
+
+```bash
+docker run \
+  -e DATABASE_URL=postgresql+asyncpg://user:pass@postgres/dbname \
+  -e OPENAI_API_KEY=your-openai-key \
+  -p 8000:8000 my-sofia-agent
+```
+
+## API Endpoints
+
+SOFIA base image provides the following REST and WebSocket endpoints:
+
+### Server-side Session Management
+
+- `POST /session` - Create a new session
+- `POST /session/{session_id}/message` - Send a message to a session
+- `WS /ws/{session_id}` - WebSocket connection for real-time interaction
+- `DELETE /session/{session_id}` - End a session
+- `GET /session/{session_id}/history` - Get session history
+
+### Client-side Session Management
+
+- `POST /chat` - Stateless chat endpoint where the client maintains session state
+  ```json
+  // Request format
+  {
+    "user_input": "Hello, how are you?",
+    "session_data": {
+      "session_id": "unique-id",
+      "current_step_id": "start",
+      "history": []
+    }
+  }
+  
+  // Response format
+  {
+    "response": {
+      "action": "answer",
+      "input": "I'm doing well, how can I help you today?"
+    },
+    "tool_output": null,
+    "session_data": {
+      "session_id": "unique-id",
+      "current_step_id": "start",
+      "history": [...]
+    }
+  }
+  ```
 
 For more details, see the [base image README](tools/base-image/README.md).
 

@@ -1,0 +1,4 @@
+[flake8]
+exclude = tests, examples
+ignore = ANN101, E501, W503
+max-line-length = 100

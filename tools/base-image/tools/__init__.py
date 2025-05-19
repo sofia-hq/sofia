@@ -1,3 +1,5 @@
+"""This module imports all tools from the tools directory and makes them available in a list."""
+
 import os
 from typing import Callable
 

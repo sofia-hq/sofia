@@ -1,21 +1,25 @@
+"""Sofia Agent API."""
+
 import os
-from typing import Optional
-import uuid
-import asyncio
-from fastapi import FastAPI, WebSocket, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel
-from contextlib import asynccontextmanager
-from pydantic import BaseModel
 import pathlib
+import uuid
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Optional
 
 from agent import agent
 
-from sofia_agent.models.flow import Message as FlowMessage, Step, Action
 from db import init_db
+
+from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+
+from pydantic import BaseModel
+
 from session_store import create_session_store
+
+from sofia_agent.models.flow import Action, Message as FlowMessage, Step
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
@@ -26,7 +30,8 @@ BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Lifespan context manager for FastAPI app."""
     global session_store
     # Initialize database
     await init_db()
@@ -54,7 +59,8 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
 
 # Serve chat UI at root
 @app.get("/", response_class=HTMLResponse)
-async def get_chat_ui():
+async def get_chat_ui() -> HTMLResponse:
+    """Serve the chat UI HTML file."""
     chat_ui_path = BASE_DIR / "chat_ui.html"
     if not chat_ui_path.exists():
         raise HTTPException(status_code=404, detail="Chat UI file not found")
@@ -64,17 +70,21 @@ async def get_chat_ui():
 
 
 class Message(BaseModel):
+    """Model for incoming messages."""
+
     content: str
 
 
 class SessionResponse(BaseModel):
+    """Response model for session creation."""
+
     session_id: str
     message: dict
 
 
 @app.post("/session", response_model=SessionResponse)
-async def create_session(initiate: Optional[bool] = False):
-    """Create a new session"""
+async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
+    """Create a new session."""
     session_id = str(uuid.uuid4())
     session = agent.create_session()
     await session_store.set(session_id, session)
@@ -94,8 +104,8 @@ async def create_session(initiate: Optional[bool] = False):
 
 
 @app.post("/session/{session_id}/message", response_model=SessionResponse)
-async def send_message(session_id: str, message: Message):
-    """Send a message to an existing session"""
+async def send_message(session_id: str, message: Message) -> SessionResponse:
+    """Send a message to an existing session."""
     session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -108,8 +118,8 @@ async def send_message(session_id: str, message: Message):
 
 
 @app.delete("/session/{session_id}")
-async def end_session(session_id: str):
-    """End and cleanup a session"""
+async def end_session(session_id: str) -> dict:
+    """End and cleanup a session."""
     session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -120,8 +130,8 @@ async def end_session(session_id: str):
 
 
 @app.get("/session/{session_id}/history")
-async def get_session_history(session_id: str):
-    """Get the history of a session"""
+async def get_session_history(session_id: str) -> dict:
+    """Get the history of a session."""
     session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -138,25 +148,31 @@ async def get_session_history(session_id: str):
 
 
 class SessionData(BaseModel):
+    """Model for session data."""
+
     session_id: str
     current_step_id: str
     history: list
 
 
 class ChatRequest(BaseModel):
+    """Request model for chat endpoint."""
+
     user_input: Optional[str] = None
     session_data: Optional[SessionData] = None
 
 
 class ChatResponse(BaseModel):
+    """Response model for chat endpoint."""
+
     response: dict
     tool_output: Optional[str] = None
     session_data: SessionData
 
 
 @app.post("/chat")
-async def chat(request: ChatRequest, verbose: bool = False):
-    """Chat endpoint to get the next response from the agent based on the session data"""
+async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
+    """Chat endpoint to get the next response from the agent based on the session data."""
     decision, tool_output, session_data = agent.next(
         **request.model_dump(), verbose=verbose
     )
@@ -170,8 +186,8 @@ async def chat(request: ChatRequest, verbose: bool = False):
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(
     websocket: WebSocket, session_id: str, initiate: bool = False, verbose: bool = False
-):
-    """WebSocket endpoint for real-time communication"""
+) -> None:
+    """Websocket endpoint for real-time communication."""
     await websocket.accept()
 
     try:
