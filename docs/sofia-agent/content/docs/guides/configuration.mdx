@@ -1,0 +1,461 @@
+---
+title: Configuration
+description: Learn how to configure SOFIA agents using YAML, Python, and environment variables
+---
+
+# Configuration
+
+SOFIA provides flexible configuration options to customize your agents. This guide covers different methods of configuring SOFIA, from simple YAML files to programmatic Python configuration, along with tips for managing configuration in different environments.
+
+## Configuration Methods
+
+SOFIA supports multiple configuration methods:
+
+<Tabs>
+  <Tab label="YAML">
+    ```yaml
+    # sofia_config.yaml
+    name: customer_service_agent
+    description: An agent that helps with customer service inquiries
+    
+    llm_provider: openai
+    llm_config:
+      model: gpt-4
+      temperature: 0.7
+    
+    steps:
+      - step_id: greeting
+        description: Initial greeting and problem identification
+        available_tools:
+          - lookup_customer
+          - check_order_status
+        routes:
+          - target: order_issues
+            condition: Customer has an issue with their order
+          - target: product_questions
+            condition: Customer has questions about products
+          - target: other_issues
+            condition: Customer has other issues
+    
+      - step_id: order_issues
+        description: Handle order-related issues
+        available_tools:
+          - lookup_order
+          - update_order
+          - cancel_order
+        routes:
+          - target: resolution
+            condition: Order issue has been resolved
+    
+      # More steps...
+    
+    tools:
+      - package_tools:
+          - datetime:datetime.now
+          - random:choice
+      - custom_tool_modules:
+          - customer_service.tools
+    ```
+  </Tab>
+  <Tab label="Python">
+    ```python
+    from sofia import Sofia, Step, Route
+    
+    # Define steps
+    greeting_step = Step(
+        step_id="greeting",
+        description="Initial greeting and problem identification",
+        available_tools=["lookup_customer", "check_order_status"],
+        routes=[
+            Route(target="order_issues", 
+                  condition="Customer has an issue with their order"),
+            Route(target="product_questions", 
+                  condition="Customer has questions about products"),
+            Route(target="other_issues", 
+                  condition="Customer has other issues")
+        ]
+    )
+    
+    order_issues_step = Step(
+        step_id="order_issues",
+        description="Handle order-related issues",
+        available_tools=["lookup_order", "update_order", "cancel_order"],
+        routes=[
+            Route(target="resolution", 
+                  condition="Order issue has been resolved")
+        ]
+    )
+    
+    # Create the Sofia agent
+    sofia = Sofia(
+        name="customer_service_agent",
+        description="An agent that helps with customer service inquiries",
+        llm_provider="openai",
+        llm_config={
+            "model": "gpt-4",
+            "temperature": 0.7
+        },
+        steps=[greeting_step, order_issues_step],
+        tools=["datetime:datetime.now", "random:choice"],
+        custom_tool_modules=["customer_service.tools"]
+    )
+    ```
+  </Tab>
+  <Tab label="Environment Variables">
+    ```bash
+    # .env file
+    SOFIA_LLM_PROVIDER=openai
+    SOFIA_LLM_MODEL=gpt-4
+    SOFIA_LLM_TEMPERATURE=0.7
+    SOFIA_LLM_API_KEY=sk-your-api-key
+    SOFIA_SESSION_STORE=redis
+    SOFIA_REDIS_URL=redis://localhost:6379/0
+    ```
+    
+    ```python
+    # Load from environment variables
+    from sofia import Sofia
+    from dotenv import load_dotenv
+    
+    # Load environment variables from .env file
+    load_dotenv()
+    
+    # Create agent with minimal configuration, rest from env vars
+    sofia = Sofia.from_yaml("sofia_config.yaml")
+    ```
+  </Tab>
+</Tabs>
+
+## Core Configuration Components
+
+### Agent Configuration
+
+Basic agent settings:
+
+```yaml
+name: my_assistant
+description: A helpful assistant for answering questions
+persona: You are a friendly and knowledgeable assistant.
+```
+
+### LLM Configuration
+
+Settings for the language model:
+
+```yaml
+llm_provider: openai
+llm_config:
+  model: gpt-4
+  api_key: ${OPENAI_API_KEY}  # Environment variable reference
+  temperature: 0.7
+  max_tokens: 1000
+  retry_count: 3
+  request_timeout: 30
+```
+
+### Steps Configuration
+
+Define the agent's workflow steps:
+
+```yaml
+steps:
+  - step_id: start
+    description: Initial greeting and understanding user needs
+    available_tools: []  # No tools available in this step
+    routes:
+      - target: answer
+        condition: User is asking a question
+      - target: task
+        condition: User wants help with a task
+  
+  - step_id: answer
+    description: Answer user questions
+    available_tools:
+      - search_knowledge_base
+      - lookup_definition
+    routes:
+      - target: start
+        condition: Answer is complete
+```
+
+### Tools Configuration
+
+Configure the tools available to the agent:
+
+```yaml
+tools:
+  # Package tools reference existing Python functions
+  - package_tools:
+      - json:dumps
+      - json:loads
+      - datetime:datetime.now
+  
+  # Custom tools from your modules
+  - custom_tool_modules:
+      - my_app.tools.search
+      - my_app.tools.data_processing
+  
+  # Custom tools defined inline
+  - custom_tools:
+      - name: get_current_time
+        function: my_app.utils.get_time
+```
+
+### Session Configuration
+
+Configure session management:
+
+```yaml
+session_store: redis
+session_config:
+  redis_url: redis://localhost:6379/0
+  session_timeout: 1800  # 30 minutes in seconds
+```
+
+## Configuration Inheritance and Overrides
+
+SOFIA supports configuration inheritance and overrides:
+
+```python
+# Base configuration
+base_config = Sofia.from_yaml("base_config.yaml")
+
+# Create agent with overrides
+agent = Sofia(
+    name="specialized_agent",
+    description="A specialized version of the base agent",
+    llm_config={"temperature": 0.5},  # Override temperature
+    base_config=base_config  # Inherit everything else
+)
+```
+
+## Environment-specific Configuration
+
+<Tabs>
+  <Tab label="Development">
+    ```yaml
+    # dev_config.yaml
+    name: dev_assistant
+    llm_provider: openai
+    llm_config:
+      model: gpt-3.5-turbo  # Use cheaper model for development
+      api_key: ${OPENAI_API_KEY}
+    
+    # Use in-memory session store for development
+    session_store: memory
+    ```
+  </Tab>
+  <Tab label="Production">
+    ```yaml
+    # prod_config.yaml
+    name: production_assistant
+    llm_provider: openai
+    llm_config:
+      model: gpt-4  # Use more capable model for production
+      api_key: ${OPENAI_API_KEY}
+    
+    # Use persistent session store for production
+    session_store: redis
+    session_config:
+      redis_url: ${REDIS_URL}
+      session_timeout: 3600
+    ```
+  </Tab>
+</Tabs>
+
+Load different configurations based on environment:
+
+```python
+import os
+from sofia import Sofia
+
+# Load configuration based on environment
+env = os.getenv("ENVIRONMENT", "development")
+config_file = f"{env}_config.yaml"
+
+sofia = Sofia.from_yaml(config_file)
+```
+
+## Dynamic Configuration
+
+Configure SOFIA programmatically based on runtime conditions:
+
+```python
+def create_agent(user_type):
+    """Create an agent customized for the user type."""
+    
+    # Base configuration
+    config = {
+        "name": "adaptive_agent",
+        "llm_provider": "openai",
+        "llm_config": {
+            "model": "gpt-4",
+            "api_key": os.getenv("OPENAI_API_KEY")
+        }
+    }
+    
+    # Customize based on user type
+    if user_type == "technical":
+        config["persona"] = "You are a technical assistant with deep expertise."
+        config["llm_config"]["temperature"] = 0.3  # More precise
+    elif user_type == "business":
+        config["persona"] = "You are a business consultant focusing on strategic advice."
+        config["llm_config"]["temperature"] = 0.6  # More creative
+    else:
+        config["persona"] = "You are a helpful general assistant."
+        config["llm_config"]["temperature"] = 0.7  # Balanced
+    
+    return Sofia(**config)
+
+# Usage
+user_agent = create_agent(user_profile.user_type)
+```
+
+## Advanced Configuration
+
+### Custom Prompt Templates
+
+Customize the prompts sent to the LLM:
+
+```yaml
+prompt_templates:
+  system: |
+    You are {name}, an AI assistant that helps with {description}.
+    {system_message}
+    
+    The user's input is: {input}
+  
+  tool_call: |
+    Use the {tool_name} tool with these parameters:
+    {tool_params}
+  
+  tool_result: |
+    The tool returned the following result:
+    {result}
+```
+
+### Custom Serializers
+
+Add custom serializers for complex objects:
+
+```python
+from sofia import Sofia
+from sofia.serialization import register_serializer
+
+# Define a custom serializer
+def serialize_custom_object(obj):
+    return {
+        "type": "CustomObject",
+        "id": obj.id,
+        "name": obj.name,
+        "data": obj.get_data()
+    }
+
+# Register the serializer
+register_serializer(CustomObject, serialize_custom_object)
+
+# Create Sofia agent
+sofia = Sofia(
+    name="custom_serialization_agent",
+    # Other configuration...
+)
+```
+
+### Logging Configuration
+
+Configure SOFIA's logging:
+
+```yaml
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  handlers:
+    - type: console
+    - type: file
+      filename: sofia.log
+      max_bytes: 10485760  # 10MB
+      backup_count: 5
+```
+
+## Configuration Validation
+
+SOFIA validates your configuration and provides helpful error messages:
+
+```python
+try:
+    sofia = Sofia.from_yaml("invalid_config.yaml")
+except ValueError as e:
+    print(f"Configuration error: {e}")
+    # Handle the error or exit
+```
+
+## Configuration Best Practices
+
+1. **Use environment variables for secrets**:
+   ```yaml
+   llm_config:
+     api_key: ${OPENAI_API_KEY}
+   ```
+
+2. **Create reusable configuration modules**:
+   ```python
+   # config_modules/llm.py
+   def get_llm_config(provider="openai"):
+       if provider == "openai":
+           return {
+               "provider": "openai",
+               "config": {
+                   "model": "gpt-4",
+                   "api_key": os.getenv("OPENAI_API_KEY")
+               }
+           }
+       # Other providers...
+   
+   # Usage
+   from config_modules.llm import get_llm_config
+   sofia = Sofia(
+       name="modular_config_agent",
+       **get_llm_config("openai")
+   )
+   ```
+
+3. **Document your configuration**:
+   ```yaml
+   # sofia_config.yaml
+   
+   # Customer Service Agent Configuration
+   # Last updated: 2023-06-15
+   # Author: Dev Team
+   #
+   # This configuration creates a customer service agent with three main steps:
+   # 1. greeting - Initial customer greeting
+   # 2. problem_solving - Address the customer's issue
+   # 3. resolution - Confirm the issue is resolved
+   
+   name: customer_service_agent
+   # Rest of configuration...
+   ```
+
+4. **Validate configuration in CI/CD**:
+   ```bash
+   # In your CI/CD pipeline
+   python -c "from sofia import Sofia; Sofia.validate_yaml('sofia_config.yaml')"
+   ```
+
+5. **Use feature flags**:
+   ```yaml
+   features:
+     enable_summarization: true
+     enable_sentiment_analysis: false
+     enable_multi_language: true
+   ```
+
+<Callout type="warning">
+  Never commit sensitive information like API keys directly in your configuration files. Always use environment variables or secure secret management.
+</Callout>
+
+## Next Steps
+
+- Learn about [Deployment](/guides/deployment) to understand how to deploy your configured agents
+- Explore [Monitoring and Debugging](/guides/monitoring) to monitor your agent's performance
+- Visit [Extending SOFIA](/guides/extending-sofia) to learn how to extend SOFIA with custom components

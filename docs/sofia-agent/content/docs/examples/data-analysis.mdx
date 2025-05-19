@@ -1,0 +1,1183 @@
+---
+title: Data Analysis Agent
+description: Example of building a data analysis assistant with SOFIA
+---
+
+# Data Analysis Agent Example
+
+This example demonstrates how to build a sophisticated data analysis agent using SOFIA. The agent can help users analyze data, generate visualizations, answer questions about datasets, and provide insights from multiple data sources.
+
+## Use Case Overview
+
+Data analysis often involves multiple steps:
+
+1. Understanding the data structure and content
+2. Cleaning and preprocessing the data
+3. Performing exploratory analysis and visualization
+4. Applying statistical methods and models
+5. Interpreting results and drawing conclusions
+
+A SOFIA-based data analysis agent can guide users through this process, automating routine tasks while providing insights and explanations in natural language.
+
+## Prerequisites
+
+Ensure you have:
+
+1. SOFIA installed (`pip install sofia-agent`)
+2. Common data science libraries:
+   ```bash
+   pip install pandas numpy matplotlib seaborn scikit-learn plotly
+   ```
+3. Access to an LLM provider (OpenAI, Anthropic, etc.)
+4. Basic understanding of Python and data analysis concepts
+
+## Agent Architecture
+
+Our data analysis agent follows this flow:
+
+1. **Data Loading** - Loading and understanding data sources
+2. **Data Understanding** - Exploring the structure and content of the data
+3. **Data Cleaning** - Identifying and handling missing values, outliers, etc.
+4. **Exploratory Analysis** - Generating descriptive statistics and visualizations
+5. **Statistical Analysis** - Performing statistical tests and modeling
+6. **Insight Generation** - Interpreting results and providing actionable insights
+
+## Implementation
+
+### 1. Define the Agent Flow
+
+```python
+from sofia_agent.models.flow import Flow, Nodes, Step
+
+# Define the data analysis flow
+flow = Flow(
+    name="data_analysis_agent",
+    entry_point="greeting",
+    nodes=Nodes(
+        greeting=Step(
+            name="Greeting",
+            system_prompt=(
+                "You are a helpful data analysis assistant. Greet the user warmly and ask them "
+                "what kind of data analysis they would like to perform today. Mention that you can "
+                "help with loading data, exploratory analysis, visualization, statistical analysis, "
+                "and generating insights."
+            ),
+            transitions={
+                "data_loading": "When the user wants to load or work with a dataset."
+            },
+        ),
+        data_loading=Step(
+            name="Data Loading",
+            system_prompt=(
+                "Help the user load their dataset. Ask for the file location or URL if not provided. "
+                "Use the data_loader tool to load the data. Handle CSV, Excel, JSON, and SQL sources. "
+                "Once loaded, provide a brief summary of the dataset including its dimensions and column types."
+            ),
+            transitions={
+                "data_understanding": "After successfully loading the dataset.",
+                "greeting": "If loading fails and the user wants to try again with a different dataset."
+            },
+        ),
+        data_understanding=Step(
+            name="Data Understanding",
+            system_prompt=(
+                "Help the user understand their dataset. Offer to show:\n"
+                "1. Basic statistics (count, mean, std, min/max, etc.)\n"
+                "2. Data types and missing values\n"
+                "3. Sample rows\n"
+                "4. Distribution of key variables\n"
+                "Explain the findings in clear, simple language. Identify potential data quality issues."
+            ),
+            transitions={
+                "data_cleaning": "When the user wants to clean the data.",
+                "exploratory_analysis": "When the user wants to perform exploratory analysis.",
+                "data_loading": "If the user wants to load additional or different data."
+            },
+        ),
+        data_cleaning=Step(
+            name="Data Cleaning",
+            system_prompt=(
+                "Help the user clean their dataset. Suggest and implement strategies for:\n"
+                "1. Handling missing values\n"
+                "2. Removing duplicates\n"
+                "3. Fixing data type issues\n"
+                "4. Addressing outliers\n"
+                "5. Normalizing or standardizing variables\n"
+                "Explain each step and its impact on the analysis."
+            ),
+            transitions={
+                "exploratory_analysis": "After cleaning the data.",
+                "data_understanding": "If the user wants to verify the cleaning results."
+            },
+        ),
+        exploratory_analysis=Step(
+            name="Exploratory Analysis",
+            system_prompt=(
+                "Help the user explore their dataset through descriptive statistics and visualizations. "
+                "Offer to create appropriate charts based on variable types:\n"
+                "1. Histograms, box plots for numerical variables\n"
+                "2. Bar charts, pie charts for categorical variables\n"
+                "3. Scatter plots, heatmaps for relationships\n"
+                "4. Time series plots for temporal data\n"
+                "Interpret the visualizations and highlight interesting patterns."
+            ),
+            transitions={
+                "statistical_analysis": "When the user wants to perform statistical analysis or modeling.",
+                "data_cleaning": "If exploratory analysis reveals data issues requiring cleaning.",
+                "insight_generation": "When the user wants insights based on exploratory analysis.",
+                "data_understanding": "If the user wants to explore different aspects of the data."
+            },
+        ),
+        statistical_analysis=Step(
+            name="Statistical Analysis",
+            system_prompt=(
+                "Help the user perform statistical analysis on their data. Recommend appropriate "
+                "statistical methods based on their questions:\n"
+                "1. Correlation analysis\n"
+                "2. Hypothesis testing (t-tests, chi-square, ANOVA, etc.)\n"
+                "3. Regression analysis\n"
+                "4. Clustering or classification\n"
+                "Implement the chosen methods and explain the results in both technical and plain language."
+            ),
+            transitions={
+                "insight_generation": "After completing statistical analysis.",
+                "exploratory_analysis": "If the user wants to visualize statistical results.",
+                "data_cleaning": "If statistical analysis suggests data issues."
+            },
+        ),
+        insight_generation=Step(
+            name="Insight Generation",
+            system_prompt=(
+                "Synthesize the analysis results into clear, actionable insights. Focus on:\n"
+                "1. Key findings and their implications\n"
+                "2. Surprising or counter-intuitive results\n"
+                "3. Practical recommendations based on the data\n"
+                "4. Limitations of the analysis\n"
+                "5. Suggestions for further analysis\n"
+                "Present insights in a structured, easy-to-understand format."
+            ),
+            transitions={
+                "exploratory_analysis": "If the user wants to explore the data further.",
+                "statistical_analysis": "If the user wants to perform additional statistical tests.",
+                "data_loading": "If the user wants to analyze a new dataset.",
+                "greeting": "If the user wants to start a new analysis."
+            },
+        ),
+    ),
+)
+```
+
+### 2. Create the Custom Tools
+
+```python
+from typing import Dict, Any, List, Optional, Union
+from sofia_agent.tools.base import Tool
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
+from sklearn import linear_model, cluster, metrics, preprocessing
+import json
+
+class DataLoaderTool(Tool):
+    """Tool for loading data from various sources."""
+    
+    def __init__(self):
+        self.current_data = None
+        self.dataset_info = {}
+    
+    def load_csv(self, file_path: str, **kwargs) -> Dict[str, Any]:
+        """
+        Load data from a CSV file.
+        
+        Args:
+            file_path: Path to the CSV file
+            **kwargs: Additional arguments for pd.read_csv()
+            
+        Returns:
+            Summary of the loaded dataset
+        """
+        try:
+            self.current_data = pd.read_csv(file_path, **kwargs)
+            return self._create_dataset_summary()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def load_excel(self, file_path: str, sheet_name: Optional[Union[str, int]] = 0, **kwargs) -> Dict[str, Any]:
+        """
+        Load data from an Excel file.
+        
+        Args:
+            file_path: Path to the Excel file
+            sheet_name: Name or index of the sheet to load
+            **kwargs: Additional arguments for pd.read_excel()
+            
+        Returns:
+            Summary of the loaded dataset
+        """
+        try:
+            self.current_data = pd.read_excel(file_path, sheet_name=sheet_name, **kwargs)
+            return self._create_dataset_summary()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def load_json(self, file_path: str, **kwargs) -> Dict[str, Any]:
+        """
+        Load data from a JSON file.
+        
+        Args:
+            file_path: Path to the JSON file
+            **kwargs: Additional arguments for pd.read_json()
+            
+        Returns:
+            Summary of the loaded dataset
+        """
+        try:
+            self.current_data = pd.read_json(file_path, **kwargs)
+            return self._create_dataset_summary()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def load_from_url(self, url: str, file_type: str = "csv", **kwargs) -> Dict[str, Any]:
+        """
+        Load data from a URL.
+        
+        Args:
+            url: URL to the data file
+            file_type: Type of file (csv, excel, json)
+            **kwargs: Additional arguments for pandas read functions
+            
+        Returns:
+            Summary of the loaded dataset
+        """
+        try:
+            if file_type.lower() == "csv":
+                self.current_data = pd.read_csv(url, **kwargs)
+            elif file_type.lower() in ["excel", "xls", "xlsx"]:
+                self.current_data = pd.read_excel(url, **kwargs)
+            elif file_type.lower() == "json":
+                self.current_data = pd.read_json(url, **kwargs)
+            else:
+                return {"success": False, "error": f"Unsupported file type: {file_type}"}
+            
+            return self._create_dataset_summary()
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def _create_dataset_summary(self) -> Dict[str, Any]:
+        """Create a summary of the current dataset."""
+        if self.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        self.dataset_info = {
+            "success": True,
+            "shape": self.current_data.shape,
+            "columns": list(self.current_data.columns),
+            "dtypes": {col: str(dtype) for col, dtype in self.current_data.dtypes.items()},
+            "missing_values": self.current_data.isna().sum().to_dict(),
+            "sample": self.current_data.head(5).to_dict(orient="records")
+        }
+        
+        return self.dataset_info
+
+class DataAnalysisTool(Tool):
+    """Tool for performing data analysis and visualization."""
+    
+    def __init__(self, data_loader: DataLoaderTool):
+        self.data_loader = data_loader
+    
+    def get_descriptive_stats(self, numerical_only: bool = True) -> Dict[str, Any]:
+        """
+        Generate descriptive statistics for the dataset.
+        
+        Args:
+            numerical_only: Whether to include only numerical columns
+            
+        Returns:
+            Descriptive statistics
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            if numerical_only:
+                stats = self.data_loader.current_data.describe().to_dict()
+            else:
+                stats = self.data_loader.current_data.describe(include='all').to_dict()
+            
+            return {"success": True, "stats": stats}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def generate_visualization(self, 
+                              plot_type: str, 
+                              x: Optional[str] = None, 
+                              y: Optional[str] = None, 
+                              hue: Optional[str] = None,
+                              title: Optional[str] = None,
+                              **kwargs) -> Dict[str, Any]:
+        """
+        Generate a visualization.
+        
+        Args:
+            plot_type: Type of plot (histogram, scatter, bar, box, heatmap, etc.)
+            x: Column for x-axis
+            y: Column for y-axis
+            hue: Column for color grouping
+            title: Plot title
+            **kwargs: Additional plotting parameters
+            
+        Returns:
+            Base64-encoded image of the plot
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            plt.figure(figsize=(10, 6))
+            
+            if plot_type == "histogram":
+                if x is None:
+                    return {"success": False, "error": "x parameter required for histogram"}
+                sns.histplot(data=self.data_loader.current_data, x=x, hue=hue, **kwargs)
+            
+            elif plot_type == "scatter":
+                if x is None or y is None:
+                    return {"success": False, "error": "x and y parameters required for scatter plot"}
+                sns.scatterplot(data=self.data_loader.current_data, x=x, y=y, hue=hue, **kwargs)
+            
+            elif plot_type == "bar":
+                if x is None:
+                    return {"success": False, "error": "x parameter required for bar plot"}
+                sns.barplot(data=self.data_loader.current_data, x=x, y=y, hue=hue, **kwargs)
+            
+            elif plot_type == "box":
+                if x is None:
+                    return {"success": False, "error": "x parameter required for box plot"}
+                sns.boxplot(data=self.data_loader.current_data, x=x, y=y, hue=hue, **kwargs)
+            
+            elif plot_type == "heatmap":
+                if kwargs.get("corr", False):
+                    correlation = self.data_loader.current_data.corr()
+                    sns.heatmap(correlation, annot=True, cmap="coolwarm", **kwargs)
+                else:
+                    return {"success": False, "error": "For heatmap, specify corr=True or provide a pivot table"}
+            
+            elif plot_type == "pair":
+                columns = kwargs.get("columns", self.data_loader.current_data.select_dtypes(include=np.number).columns[:5])
+                sns.pairplot(self.data_loader.current_data[columns], hue=hue)
+            
+            else:
+                return {"success": False, "error": f"Unsupported plot type: {plot_type}"}
+            
+            if title:
+                plt.title(title)
+            
+            # Save plot to a bytes buffer
+            buf = io.BytesIO()
+            plt.tight_layout()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+            
+            # Encode the image to base64
+            img_str = base64.b64encode(buf.read()).decode('utf-8')
+            plt.close()
+            
+            return {
+                "success": True,
+                "plot_type": plot_type,
+                "image": img_str,
+                "title": title
+            }
+            
+        except Exception as e:
+            plt.close()
+            return {"success": False, "error": str(e)}
+
+class DataCleaningTool(Tool):
+    """Tool for cleaning and preprocessing data."""
+    
+    def __init__(self, data_loader: DataLoaderTool):
+        self.data_loader = data_loader
+    
+    def handle_missing_values(self, strategy: str = "drop", columns: Optional[List[str]] = None, fill_value: Any = None) -> Dict[str, Any]:
+        """
+        Handle missing values in the dataset.
+        
+        Args:
+            strategy: Strategy for handling missing values (drop, fill)
+            columns: List of columns to process (None = all columns)
+            fill_value: Value to use for filling (if strategy is 'fill')
+            
+        Returns:
+            Summary of the cleaning operation
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            before_count = data.shape[0]
+            before_missing = data.isna().sum().sum()
+            
+            if columns is None:
+                columns = data.columns
+            
+            if strategy == "drop":
+                if len(columns) == len(data.columns):
+                    self.data_loader.current_data = data.dropna()
+                else:
+                    self.data_loader.current_data = data.dropna(subset=columns)
+            
+            elif strategy == "fill":
+                for col in columns:
+                    if col in data.columns:
+                        if fill_value is None:
+                            # Automatic filling based on data type
+                            if pd.api.types.is_numeric_dtype(data[col]):
+                                self.data_loader.current_data[col] = data[col].fillna(data[col].mean())
+                            else:
+                                self.data_loader.current_data[col] = data[col].fillna(data[col].mode()[0] if not data[col].mode().empty else "")
+                        else:
+                            self.data_loader.current_data[col] = data[col].fillna(fill_value)
+            
+            after_count = self.data_loader.current_data.shape[0]
+            after_missing = self.data_loader.current_data.isna().sum().sum()
+            
+            return {
+                "success": True,
+                "strategy": strategy,
+                "columns": columns,
+                "rows_before": before_count,
+                "rows_after": after_count,
+                "missing_before": int(before_missing),
+                "missing_after": int(after_missing),
+                "rows_removed": before_count - after_count if strategy == "drop" else 0,
+                "cells_filled": before_missing - after_missing if strategy == "fill" else 0
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def remove_duplicates(self, subset: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Remove duplicate rows from the dataset.
+        
+        Args:
+            subset: Columns to consider for identifying duplicates (None = all columns)
+            
+        Returns:
+            Summary of the deduplication
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            before_count = data.shape[0]
+            
+            self.data_loader.current_data = data.drop_duplicates(subset=subset)
+            
+            after_count = self.data_loader.current_data.shape[0]
+            
+            return {
+                "success": True,
+                "rows_before": before_count,
+                "rows_after": after_count,
+                "duplicates_removed": before_count - after_count,
+                "columns_checked": subset if subset else "all columns"
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def handle_outliers(self, method: str = "iqr", columns: Optional[List[str]] = None, threshold: float = 1.5) -> Dict[str, Any]:
+        """
+        Detect and handle outliers in numerical columns.
+        
+        Args:
+            method: Method for outlier detection (iqr, zscore)
+            columns: List of columns to process (None = all numerical columns)
+            threshold: Threshold for outlier detection
+            
+        Returns:
+            Summary of outlier handling
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            
+            if columns is None:
+                columns = data.select_dtypes(include=np.number).columns.tolist()
+            
+            outliers_count = {}
+            
+            for col in columns:
+                if col not in data.columns or not pd.api.types.is_numeric_dtype(data[col]):
+                    continue
+                
+                if method == "iqr":
+                    Q1 = data[col].quantile(0.25)
+                    Q3 = data[col].quantile(0.75)
+                    IQR = Q3 - Q1
+                    lower_bound = Q1 - threshold * IQR
+                    upper_bound = Q3 + threshold * IQR
+                    outliers = data[(data[col] < lower_bound) | (data[col] > upper_bound)].shape[0]
+                    outliers_count[col] = outliers
+                    # Replace outliers with bounds
+                    self.data_loader.current_data.loc[data[col] < lower_bound, col] = lower_bound
+                    self.data_loader.current_data.loc[data[col] > upper_bound, col] = upper_bound
+                
+                elif method == "zscore":
+                    z_scores = (data[col] - data[col].mean()) / data[col].std()
+                    outliers = data[abs(z_scores) > threshold].shape[0]
+                    outliers_count[col] = outliers
+                    # Replace outliers with NaN
+                    self.data_loader.current_data.loc[abs(z_scores) > threshold, col] = np.nan
+            
+            return {
+                "success": True,
+                "method": method,
+                "threshold": threshold,
+                "columns_processed": columns,
+                "outliers_detected": outliers_count,
+                "total_outliers": sum(outliers_count.values())
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+class StatisticalAnalysisTool(Tool):
+    """Tool for performing statistical analysis and modeling."""
+    
+    def __init__(self, data_loader: DataLoaderTool):
+        self.data_loader = data_loader
+    
+    def correlation_analysis(self, method: str = "pearson", columns: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Perform correlation analysis on numerical columns.
+        
+        Args:
+            method: Correlation method (pearson, spearman, kendall)
+            columns: List of columns to include (None = all numerical columns)
+            
+        Returns:
+            Correlation matrix and insights
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            
+            if columns is None:
+                columns = data.select_dtypes(include=np.number).columns.tolist()
+            
+            correlation = data[columns].corr(method=method)
+            
+            # Find strong correlations
+            strong_correlations = []
+            for i in range(len(columns)):
+                for j in range(i+1, len(columns)):
+                    if abs(correlation.iloc[i, j]) > 0.7:
+                        strong_correlations.append({
+                            "variables": [columns[i], columns[j]],
+                            "correlation": correlation.iloc[i, j],
+                            "strength": "strong positive" if correlation.iloc[i, j] > 0 else "strong negative"
+                        })
+            
+            return {
+                "success": True,
+                "method": method,
+                "correlation_matrix": correlation.to_dict(),
+                "strong_correlations": strong_correlations
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def regression_analysis(self, target: str, features: List[str], regression_type: str = "linear") -> Dict[str, Any]:
+        """
+        Perform regression analysis.
+        
+        Args:
+            target: Target variable
+            features: List of feature variables
+            regression_type: Type of regression (linear, ridge, lasso)
+            
+        Returns:
+            Regression results
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            
+            # Check if all columns exist
+            for col in [target] + features:
+                if col not in data.columns:
+                    return {"success": False, "error": f"Column not found: {col}"}
+            
+            X = data[features]
+            y = data[target]
+            
+            # Handle missing values
+            X = X.fillna(X.mean())
+            y = y.fillna(y.mean())
+            
+            # Create and fit model
+            if regression_type == "linear":
+                model = linear_model.LinearRegression()
+            elif regression_type == "ridge":
+                model = linear_model.Ridge()
+            elif regression_type == "lasso":
+                model = linear_model.Lasso()
+            else:
+                return {"success": False, "error": f"Unsupported regression type: {regression_type}"}
+            
+            model.fit(X, y)
+            
+            # Generate predictions and metrics
+            y_pred = model.predict(X)
+            mse = metrics.mean_squared_error(y, y_pred)
+            r2 = metrics.r2_score(y, y_pred)
+            
+            # Create coefficients dictionary
+            coefficients = {}
+            for i, feature in enumerate(features):
+                coefficients[feature] = float(model.coef_[i]) if hasattr(model, 'coef_') and len(model.coef_) > i else None
+            
+            # Get intercept
+            intercept = float(model.intercept_) if hasattr(model, 'intercept_') else None
+            
+            return {
+                "success": True,
+                "regression_type": regression_type,
+                "target": target,
+                "features": features,
+                "coefficients": coefficients,
+                "intercept": intercept,
+                "mse": float(mse),
+                "r2": float(r2),
+                "sample_predictions": [float(pred) for pred in y_pred[:5]]
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def clustering_analysis(self, features: List[str], n_clusters: int = 3, algorithm: str = "kmeans") -> Dict[str, Any]:
+        """
+        Perform clustering analysis.
+        
+        Args:
+            features: List of features to use for clustering
+            n_clusters: Number of clusters
+            algorithm: Clustering algorithm (kmeans, hierarchical)
+            
+        Returns:
+            Clustering results
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            
+            # Check if all columns exist
+            for col in features:
+                if col not in data.columns:
+                    return {"success": False, "error": f"Column not found: {col}"}
+            
+            X = data[features]
+            
+            # Handle missing values
+            X = X.fillna(X.mean())
+            
+            # Standardize features
+            scaler = preprocessing.StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            
+            # Create and fit model
+            if algorithm == "kmeans":
+                model = cluster.KMeans(n_clusters=n_clusters, random_state=42)
+            elif algorithm == "hierarchical":
+                model = cluster.AgglomerativeClustering(n_clusters=n_clusters)
+            else:
+                return {"success": False, "error": f"Unsupported clustering algorithm: {algorithm}"}
+            
+            clusters = model.fit_predict(X_scaled)
+            
+            # Add cluster labels to data
+            self.data_loader.current_data["cluster"] = clusters
+            
+            # Get cluster statistics
+            cluster_stats = {}
+            for i in range(n_clusters):
+                cluster_data = data[data["cluster"] == i]
+                cluster_stats[f"cluster_{i}"] = {
+                    "size": len(cluster_data),
+                    "percentage": len(cluster_data) / len(data) * 100,
+                    "feature_means": {feat: float(cluster_data[feat].mean()) for feat in features}
+                }
+            
+            return {
+                "success": True,
+                "algorithm": algorithm,
+                "n_clusters": n_clusters,
+                "features_used": features,
+                "cluster_counts": {f"cluster_{i}": int(sum(clusters == i)) for i in range(n_clusters)},
+                "cluster_statistics": cluster_stats,
+                "silhouette_score": float(metrics.silhouette_score(X_scaled, clusters)) if algorithm == "kmeans" else None
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+```
+
+### 3. Initialize the Agent
+
+```python
+from sofia_agent import Agent
+from sofia_agent.llm import OpenAILLM
+from typing import Dict, Any
+
+# Initialize LLM
+llm = OpenAILLM(
+    model="gpt-4",
+    api_key="your-openai-api-key"
+)
+
+# Initialize tools
+data_loader = DataLoaderTool()
+data_analysis = DataAnalysisTool(data_loader)
+data_cleaning = DataCleaningTool(data_loader)
+statistical_analysis = StatisticalAnalysisTool(data_loader)
+
+# Create the agent with the defined flow and tools
+data_analysis_agent = Agent(
+    flow=flow,
+    llm=llm,
+    tools={
+        "data_loader": data_loader,
+        "data_analysis": data_analysis,
+        "data_cleaning": data_cleaning,
+        "statistical_analysis": statistical_analysis
+    }
+)
+
+# Create a session
+session = data_analysis_agent.create_session()
+```
+
+### 4. Sample Conversation
+
+```python
+# Get the initial greeting
+decision, _ = session.next(None)
+print(f"Agent: {decision.input}")
+
+# User wants to load a dataset
+user_message = "I'd like to analyze a CSV file containing customer data."
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+
+# User provides file path
+user_message = "The file is at '/data/customer_data.csv'"
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+
+# User wants to explore the data
+user_message = "Show me the basic statistics for all numerical columns."
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+
+# User wants to clean the data
+user_message = "I notice there are missing values. Can you help me clean them?"
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+
+# User wants a visualization
+user_message = "Generate a scatter plot of age vs. income."
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+
+# User wants statistical analysis
+user_message = "Can you run a regression analysis to predict income based on age, education, and experience?"
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+
+# User wants insights
+user_message = "Based on the analysis, what insights can you provide about the factors affecting income?"
+decision, _ = session.next(user_message)
+print(f"User: {user_message}")
+print(f"Agent: {decision.input}")
+```
+
+## Integration with Jupyter Notebooks
+
+The data analysis agent can be integrated with Jupyter notebooks for an enhanced interactive experience:
+
+```python
+from IPython.display import display, HTML, Image
+import matplotlib.pyplot as plt
+import base64
+import io
+
+class NotebookDataAnalysisAgent:
+    """Wrapper for using SOFIA data analysis agent in Jupyter notebooks."""
+    
+    def __init__(self, agent):
+        self.agent = agent
+        self.session = agent.create_session()
+        self.decision = None
+        self.tool_output = None
+    
+    def process_message(self, message):
+        """Process a user message and handle tool outputs."""
+        self.decision, self.tool_output = self.session.next(message)
+        
+        # Handle image outputs
+        if self.tool_output and isinstance(self.tool_output, dict) and "image" in self.tool_output:
+            img_data = base64.b64decode(self.tool_output["image"])
+            display(Image(data=img_data))
+        
+        return self.decision.input
+    
+    def start(self):
+        """Start the agent with an initial greeting."""
+        self.decision, _ = self.session.next(None)
+        return self.decision.input
+
+# Usage in Jupyter notebook
+notebook_agent = NotebookDataAnalysisAgent(data_analysis_agent)
+print(notebook_agent.start())
+print(notebook_agent.process_message("I'd like to analyze the Iris dataset."))
+```
+
+## Advanced Features
+
+### Custom Data Connectors
+
+Extend the data loader tool to connect to databases or APIs:
+
+```python
+def load_from_sql(self, query: str, connection_string: str) -> Dict[str, Any]:
+    """
+    Load data from a SQL database.
+    
+    Args:
+        query: SQL query to execute
+        connection_string: Database connection string
+        
+    Returns:
+        Summary of the loaded dataset
+    """
+    try:
+        import sqlalchemy
+        engine = sqlalchemy.create_engine(connection_string)
+        self.current_data = pd.read_sql(query, engine)
+        return self._create_dataset_summary()
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def load_from_api(self, api_url: str, parameters: Dict[str, Any] = None, 
+                 response_format: str = "json", response_path: str = None) -> Dict[str, Any]:
+    """
+    Load data from a REST API.
+    
+    Args:
+        api_url: URL of the API endpoint
+        parameters: Query parameters
+        response_format: Format of the response (json, csv)
+        response_path: Path to the data in the response (for JSON)
+        
+    Returns:
+        Summary of the loaded dataset
+    """
+    try:
+        import requests
+        response = requests.get(api_url, params=parameters)
+        response.raise_for_status()
+        
+        if response_format == "json":
+            data = response.json()
+            if response_path:
+                for key in response_path.split('.'):
+                    data = data[key]
+            self.current_data = pd.DataFrame(data)
+        elif response_format == "csv":
+            import io
+            self.current_data = pd.read_csv(io.StringIO(response.text))
+        else:
+            return {"success": False, "error": f"Unsupported response format: {response_format}"}
+        
+        return self._create_dataset_summary()
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+```
+
+### Automated Data Profiling
+
+Create a tool for comprehensive data profiling:
+
+```python
+class DataProfilerTool(Tool):
+    """Tool for comprehensive data profiling."""
+    
+    def __init__(self, data_loader: DataLoaderTool):
+        self.data_loader = data_loader
+    
+    def generate_profile_report(self, minimal: bool = False) -> Dict[str, Any]:
+        """
+        Generate a comprehensive profile report for the dataset.
+        
+        Args:
+            minimal: Whether to generate a minimal report
+            
+        Returns:
+            Profile report
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            
+            # Basic dataset info
+            report = {
+                "success": True,
+                "dataset_info": {
+                    "rows": data.shape[0],
+                    "columns": data.shape[1],
+                    "memory_usage": data.memory_usage(deep=True).sum() / (1024 * 1024),  # MB
+                    "duplicate_rows": data.duplicated().sum()
+                },
+                "column_profiles": {}
+            }
+            
+            # Generate profile for each column
+            for column in data.columns:
+                col_data = data[column]
+                col_type = str(col_data.dtype)
+                
+                profile = {
+                    "type": col_type,
+                    "missing_count": col_data.isna().sum(),
+                    "missing_percentage": col_data.isna().mean() * 100,
+                    "unique_count": col_data.nunique()
+                }
+                
+                # Add type-specific statistics
+                if pd.api.types.is_numeric_dtype(col_data):
+                    profile.update({
+                        "min": float(col_data.min()) if not pd.isna(col_data.min()) else None,
+                        "max": float(col_data.max()) if not pd.isna(col_data.max()) else None,
+                        "mean": float(col_data.mean()) if not pd.isna(col_data.mean()) else None,
+                        "median": float(col_data.median()) if not pd.isna(col_data.median()) else None,
+                        "std": float(col_data.std()) if not pd.isna(col_data.std()) else None,
+                        "skewness": float(col_data.skew()) if not pd.isna(col_data.skew()) else None,
+                        "kurtosis": float(col_data.kurtosis()) if not pd.isna(col_data.kurtosis()) else None,
+                        "zeros_count": int((col_data == 0).sum()),
+                        "zeros_percentage": float((col_data == 0).mean() * 100)
+                    })
+                    
+                    # Check for outliers using IQR method
+                    q1 = col_data.quantile(0.25)
+                    q3 = col_data.quantile(0.75)
+                    iqr = q3 - q1
+                    lower_bound = q1 - 1.5 * iqr
+                    upper_bound = q3 + 1.5 * iqr
+                    outliers = col_data[(col_data < lower_bound) | (col_data > upper_bound)]
+                    profile["outliers_count"] = len(outliers)
+                    profile["outliers_percentage"] = len(outliers) / len(col_data) * 100
+                
+                elif pd.api.types.is_string_dtype(col_data):
+                    # For text columns
+                    profile.update({
+                        "min_length": min(col_data.str.len().min(), 0),
+                        "max_length": col_data.str.len().max(),
+                        "mean_length": col_data.str.len().mean(),
+                        "empty_count": (col_data == "").sum()
+                    })
+                    
+                    # Most common values (if not minimal report)
+                    if not minimal:
+                        value_counts = col_data.value_counts()
+                        profile["most_common"] = value_counts.head(5).to_dict()
+                
+                elif pd.api.types.is_datetime64_any_dtype(col_data):
+                    # For datetime columns
+                    profile.update({
+                        "min": str(col_data.min()),
+                        "max": str(col_data.max()),
+                        "range_days": (col_data.max() - col_data.min()).days
+                    })
+                
+                report["column_profiles"][column] = profile
+            
+            return report
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+```
+
+### Time Series Analysis
+
+Add specialized time series analysis capabilities:
+
+```python
+class TimeSeriesAnalysisTool(Tool):
+    """Tool for time series analysis and forecasting."""
+    
+    def __init__(self, data_loader: DataLoaderTool):
+        self.data_loader = data_loader
+    
+    def analyze_time_series(self, date_column: str, value_column: str, freq: str = None) -> Dict[str, Any]:
+        """
+        Analyze a time series.
+        
+        Args:
+            date_column: Column containing dates
+            value_column: Column containing values to analyze
+            freq: Frequency for resampling (D, M, Y, etc.)
+            
+        Returns:
+            Time series analysis results
+        """
+        if self.data_loader.current_data is None:
+            return {"success": False, "error": "No data loaded"}
+        
+        try:
+            data = self.data_loader.current_data
+            
+            # Ensure date column is properly formatted
+            if not pd.api.types.is_datetime64_any_dtype(data[date_column]):
+                data[date_column] = pd.to_datetime(data[date_column])
+            
+            # Sort by date
+            data = data.sort_values(date_column)
+            
+            # Create time series
+            ts = data.set_index(date_column)[value_column]
+            
+            # Resample if frequency is provided
+            if freq:
+                ts = ts.resample(freq).mean()
+            
+            # Basic statistics
+            stats = {
+                "start_date": str(ts.index.min()),
+                "end_date": str(ts.index.max()),
+                "duration_days": (ts.index.max() - ts.index.min()).days,
+                "count": len(ts),
+                "mean": float(ts.mean()),
+                "min": float(ts.min()),
+                "max": float(ts.max()),
+                "std": float(ts.std())
+            }
+            
+            # Trend analysis
+            from scipy import stats as sc_stats
+            trend_result = sc_stats.linregress(range(len(ts)), ts.values)
+            trend = {
+                "slope": float(trend_result.slope),
+                "direction": "increasing" if trend_result.slope > 0 else "decreasing",
+                "significant": trend_result.pvalue < 0.05,
+                "p_value": float(trend_result.pvalue)
+            }
+            
+            # Seasonality detection
+            from statsmodels.tsa.seasonal import seasonal_decompose
+            if len(ts) >= 4:  # Need at least 2 periods for seasonality
+                try:
+                    decomposition = seasonal_decompose(ts, model='additive', extrapolate_trend='freq')
+                    seasonality = {
+                        "detected": decomposition.seasonal.std() > 0.1 * ts.std(),
+                        "strength": float(decomposition.seasonal.std() / ts.std()),
+                        "period_estimate": int(ts.index.freq.n) if ts.index.freq else "unknown"
+                    }
+                except:
+                    seasonality = {"detected": False, "error": "Could not perform seasonal decomposition"}
+            else:
+                seasonality = {"detected": False, "error": "Insufficient data for seasonality analysis"}
+            
+            # Plot time series
+            plt.figure(figsize=(12, 6))
+            plt.plot(ts.index, ts.values)
+            plt.title(f"Time Series: {value_column} over time")
+            plt.xlabel(date_column)
+            plt.ylabel(value_column)
+            plt.grid(True)
+            
+            # Save plot to a bytes buffer
+            buf = io.BytesIO()
+            plt.tight_layout()
+            plt.savefig(buf, format='png')
+            buf.seek(0)
+            
+            # Encode the image to base64
+            img_str = base64.b64encode(buf.read()).decode('utf-8')
+            plt.close()
+            
+            return {
+                "success": True,
+                "statistics": stats,
+                "trend": trend,
+                "seasonality": seasonality,
+                "plot": img_str
+            }
+            
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+    
+    def forecast_time_series(self, date_column: str, value_column: str, 
+                            periods: int = 10, method: str = "auto") -> Dict[str, Any]:
+        """
+        Forecast future values for a time series.
+        
+        Args:
+            date_column: Column containing dates
+            value_column: Column containing values to forecast
+            periods: Number of periods to forecast
+            method: Forecasting method (auto, arima, exponential)
+            
+        Returns:
+            Forecast results
+        """
+        # Implementation would use statsmodels or prophet for forecasting
+        pass
+```
+
+## Performance Considerations
+
+For optimal performance when working with large datasets:
+
+1. **Data Chunking**: For large datasets, implement data chunking in the data loader tool to process data in manageable pieces
+2. **Asynchronous Processing**: Make tools asynchronous to prevent blocking the conversation flow
+3. **Result Caching**: Cache tool results to avoid redundant computations
+4. **Resource Monitoring**: Add resource monitoring to track memory and CPU usage
+
+## Conclusion
+
+The SOFIA Data Analysis Agent provides a powerful interface for interactive data analysis. By combining natural language understanding with specialized data analysis tools, it makes data exploration and analysis more accessible to users regardless of their technical expertise.
+
+This example demonstrates how to structure a data analysis workflow using SOFIA's flow mechanism, implement the necessary tools, and create an interactive experience for users. The modular design allows for easy extension with additional capabilities such as machine learning, natural language processing, or domain-specific analytics.
+
+For production use cases, consider extending the agent with:
+
+1. **Data Security Features**: Implement access control and data privacy protections
+2. **Persistent Storage**: Add capabilities to save and load analysis sessions
+3. **Collaboration Tools**: Enable sharing of analyses and results between users
+4. **Domain-Specific Analysis**: Add specialized tools for finance, healthcare, marketing, etc.
+5. **Explainable AI**: Provide detailed explanations of statistical methods and model predictions

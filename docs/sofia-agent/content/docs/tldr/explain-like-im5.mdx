@@ -1,0 +1,86 @@
+---
+title: "Explain Like I'm 5"
+description: "Simple, non-technical explanation of SOFIA using analogies anyone can understand"
+---
+
+# Explain SOFIA Like I'm 5
+
+## What is SOFIA?
+
+Imagine you have a helpful robot friend. This robot friend is very smart, but it needs you to give it clear instructions about what to do.
+
+SOFIA is like a special toolbox that helps you build and program your robot friend. With SOFIA, you can tell your robot exactly what steps to follow when it talks to people or does tasks.
+
+## SOFIA is Like a Recipe Book
+
+Think of SOFIA as a recipe book for your robot friend:
+
+- **Recipes (Flows)**: These are step-by-step instructions that tell your robot what to do
+- **Ingredients (Tools)**: These are special abilities your robot can use, like searching for information or sending messages
+- **Cookbook (Configuration)**: This is where you write down all the recipes and ingredients for your robot
+
+<Callout type="info">
+  Just like a chef follows a recipe, your SOFIA agent follows the steps you give it!
+</Callout>
+
+## SOFIA is Like a Train Track
+
+Another way to think about SOFIA is like building train tracks:
+
+- You lay down different tracks (steps) that the train (your agent) will follow
+- You add switches (decisions) that let the train choose different paths
+- You build stations (tools) where the train can stop to do special tasks
+- The train always knows which track to follow next
+
+<div className="flex justify-center">
+  <img 
+    src="/images/train-track-analogy.png" 
+    alt="SOFIA flow as a train track with decision points and tool stations" 
+    className="rounded-lg border border-gray-200 dark:border-gray-800 my-4"
+    width="600"
+  />
+</div>
+
+## Why Use SOFIA?
+
+SOFIA makes it easy to create smart robot assistants that:
+
+1. **Remember things**: Your robot remembers what people tell it
+2. **Follow a plan**: Your robot follows the steps you've designed
+3. **Use special abilities**: Your robot can use tools to do helpful things
+4. **Make decisions**: Your robot can choose what to do next based on the situation
+
+## Simple Example
+
+Here's how simple it is to create a robot friend with SOFIA:
+
+```yaml
+name: Friendly Helper Bot
+steps:
+  - id: greeting
+    prompt: Say hello and ask how you can help
+    next: listen
+  
+  - id: listen
+    prompt: Listen to what the user needs
+    routes:
+      - when: User needs weather
+        goto: weather_tool
+      - when: User wants a joke
+        goto: joke_tool
+      - default: help_response
+  
+  - id: weather_tool
+    tool: get_weather
+    next: respond_with_weather
+  
+  - id: respond_with_weather
+    prompt: Tell the user the weather information you found
+    next: ask_anything_else
+```
+
+In this example, we've created a simple robot that can greet people, listen to what they need, and either tell them the weather or help with something else.
+
+## That's It!
+
+Now you understand what SOFIA is - a special toolbox that helps you build smart robot friends that can follow steps, use tools, and help people!

@@ -1,0 +1,416 @@
+---
+title: LLM Integration
+description: How SOFIA integrates with large language models and how to extend with new LLM providers
+---
+
+# LLM Integration
+
+Large Language Models (LLMs) are at the core of SOFIA's intelligence. They power decision-making, natural language understanding, and response generation. This page explains how SOFIA integrates with different LLM providers and how you can extend SOFIA with custom LLM integrations.
+
+## LLM Architecture in SOFIA
+
+SOFIA uses a provider-based architecture to support multiple LLM backends:
+
+<div className="flex justify-center my-8">
+```mermaid
+flowchart TB
+    Sofia[Sofia Agent] --> LLMFactory[LLM Factory]
+    LLMFactory --> OpenAI[OpenAI Provider]
+    LLMFactory --> Mistral[Mistral Provider]
+    LLMFactory --> Gemini[Gemini Provider]
+    LLMFactory --> Custom[Custom Provider]
+    OpenAI --> GPT4[GPT-4]
+    OpenAI --> GPT35[GPT-3.5]
+    Mistral --> MistralLarge[Mistral Large]
+    Mistral --> MistralSmall[Mistral Small]
+    Gemini --> GeminiPro[Gemini Pro]
+    Custom --> YourLLM[Your LLM]
+```
+</div>
+
+## Supported LLM Providers
+
+SOFIA supports several LLM providers out of the box:
+
+### OpenAI
+
+```python
+from sofia import Sofia
+
+sofia = Sofia(
+    name="openai_agent",
+    llm_provider="openai",
+    llm_config={
+        "model": "gpt-4",
+        "api_key": "your-openai-api-key",
+        "temperature": 0.7
+    },
+    # Other configuration...
+)
+```
+
+### Mistral
+
+```python
+sofia = Sofia(
+    name="mistral_agent",
+    llm_provider="mistral",
+    llm_config={
+        "model": "mistral-large-latest",
+        "api_key": "your-mistral-api-key",
+        "temperature": 0.5
+    },
+    # Other configuration...
+)
+```
+
+### Gemini
+
+```python
+sofia = Sofia(
+    name="gemini_agent",
+    llm_provider="gemini",
+    llm_config={
+        "model": "gemini-pro",
+        "api_key": "your-gemini-api-key",
+        "temperature": 0.3
+    },
+    # Other configuration...
+)
+```
+
+## How SOFIA Uses LLMs
+
+SOFIA uses LLMs for several critical functions:
+
+### 1. Decision Making
+
+The LLM determines what the agent should do next:
+- Respond to the user
+- Call a tool
+- Follow a route to a new step
+
+```python
+# Simplified internal SOFIA code
+decision = llm.get_decision(
+    current_step=session.current_step,
+    history=session.history,
+    available_tools=current_step.available_tools
+)
+```
+
+### 2. Tool Selection
+
+The LLM decides which tool to use and what parameters to pass:
+
+```python
+# Simplified internal SOFIA code
+tool_call = llm.get_tool_call(
+    tool_name=decision.tool_name,
+    tool_params=decision.tool_params
+)
+```
+
+### 3. Response Generation
+
+The LLM generates natural language responses to the user:
+
+```python
+# Simplified internal SOFIA code
+response = llm.generate_response(
+    prompt=decision.prompt,
+    context=session.history
+)
+```
+
+### 4. Route Selection
+
+The LLM determines when to transition to a new step:
+
+```python
+# Simplified internal SOFIA code
+route = llm.select_route(
+    current_step=session.current_step,
+    available_routes=current_step.routes,
+    history=session.history
+)
+```
+
+## LLM Configuration Options
+
+SOFIA provides flexible configuration options for LLMs:
+
+<Tabs>
+  <Tab label="Basic Config">
+    ```python
+    sofia = Sofia(
+        name="simple_agent",
+        llm_provider="openai",
+        llm_config={
+            "model": "gpt-4",
+            "api_key": "your-openai-api-key",
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+    )
+    ```
+  </Tab>
+  <Tab label="Advanced Config">
+    ```python
+    sofia = Sofia(
+        name="advanced_agent",
+        llm_provider="openai",
+        llm_config={
+            "model": "gpt-4",
+            "api_key": "your-openai-api-key",
+            "temperature": 0.7,
+            "max_tokens": 1000,
+            "top_p": 0.95,
+            "frequency_penalty": 0.2,
+            "presence_penalty": 0.2,
+            "request_timeout": 60,
+            "retry_count": 3,
+            "fallback_providers": ["mistral", "gemini"]
+        }
+    )
+    ```
+  </Tab>
+</Tabs>
+
+## Common Configuration Parameters
+
+| Parameter | Description | Default | Example Values |
+|-----------|-------------|---------|---------------|
+| `model` | The specific model to use | Varies by provider | `"gpt-4"`, `"mistral-large-latest"` |
+| `api_key` | Authentication key for the LLM API | None (required) | `"sk-abc123..."` |
+| `temperature` | Controls randomness (higher = more random) | 0.7 | 0.0 - 1.0 |
+| `max_tokens` | Maximum tokens in generated response | 1000 | 100 - 4000 |
+| `retry_count` | Number of retry attempts if API call fails | 3 | 1 - 5 |
+| `request_timeout` | Timeout for API requests in seconds | 30 | 10 - 120 |
+
+## Provider-specific Parameters
+
+Each provider may have additional specific parameters:
+
+### OpenAI Specific
+
+```python
+llm_config={
+    "model": "gpt-4",
+    "api_key": "your-openai-api-key",
+    "api_base": "https://api.openai.com/v1",  # Custom API endpoint
+    "organization_id": "your-org-id",         # OpenAI organization ID
+    "seed": 42,                               # For deterministic results
+}
+```
+
+### Mistral Specific
+
+```python
+llm_config={
+    "model": "mistral-large-latest",
+    "api_key": "your-mistral-api-key",
+    "safe_mode": True,                       # Enable content safety filtering
+    "random_seed": 12345,                    # For deterministic results
+}
+```
+
+### Gemini Specific
+
+```python
+llm_config={
+    "model": "gemini-pro",
+    "api_key": "your-gemini-api-key",
+    "safety_settings": {                     # Content safety thresholds
+        "harassment": "block_medium_and_above",
+        "hate_speech": "block_medium_and_above"
+    }
+}
+```
+
+## Prompt Templates
+
+SOFIA uses prompt templates to structure communication with the LLM. These can be customized:
+
+```python
+sofia = Sofia(
+    name="custom_prompt_agent",
+    llm_provider="openai",
+    llm_config={"model": "gpt-4", "api_key": "your-api-key"},
+    prompt_templates={
+        "system": "You are {name}, a helpful assistant. {system_message}",
+        "tool_response": "The tool returned the following result: {result}",
+        "route_selection": "Based on the conversation, choose the most appropriate next step."
+    }
+)
+```
+
+## Creating Custom LLM Providers
+
+You can extend SOFIA with custom LLM providers:
+
+```python
+from sofia.llm.base import LLMBase
+
+class MyCustomLLM(LLMBase):
+    def __init__(self, config):
+        super().__init__(config)
+        # Initialize your custom LLM here
+        self.client = YourLLMClient(config.get("api_key"))
+        self.model = config.get("model", "default-model")
+    
+    def _get_output(self, name, steps, current_step, tools, history, 
+                   response_format, system_message, persona):
+        # Implement the core LLM interaction logic
+        # Format the prompt, call your LLM, and parse the response
+        
+        # Example implementation:
+        prompt = self._format_prompt(
+            name=name,
+            system_message=system_message,
+            steps=steps,
+            current_step=current_step,
+            tools=tools,
+            history=history,
+            persona=persona
+        )
+        
+        response = self.client.generate(
+            model=self.model,
+            prompt=prompt,
+            max_tokens=self.config.get("max_tokens", 1000),
+            temperature=self.config.get("temperature", 0.7)
+        )
+        
+        # Parse the response according to response_format
+        parsed_response = self._parse_response(response, response_format)
+        
+        return parsed_response
+
+# Register your custom LLM provider
+from sofia.llm.factory import LLMFactory
+LLMFactory.register("my_custom_llm", MyCustomLLM)
+
+# Use your custom LLM provider
+sofia = Sofia(
+    name="custom_llm_agent",
+    llm_provider="my_custom_llm",
+    llm_config={
+        "api_key": "your-custom-api-key",
+        "model": "your-model-name"
+    }
+)
+```
+
+## Working with Local LLMs
+
+SOFIA can work with local LLMs:
+
+```python
+sofia = Sofia(
+    name="local_llm_agent",
+    llm_provider="custom",
+    llm_config={
+        "api_base": "http://localhost:5000/v1",
+        "model": "local-model-name"
+    }
+)
+```
+
+Common local LLM setups include:
+- [llama.cpp](https://github.com/ggerganov/llama.cpp) server
+- [LocalAI](https://github.com/localai/localai)
+- [Ollama](https://ollama.com/)
+- [Text Generation WebUI](https://github.com/oobabooga/text-generation-webui)
+
+## LLM Performance Optimization
+
+### Token Usage Optimization
+
+```python
+sofia = Sofia(
+    name="optimized_agent",
+    llm_provider="openai",
+    llm_config={
+        "model": "gpt-4",
+        "api_key": "your-openai-api-key",
+        "history_token_limit": 4000,  # Limit token usage for history
+        "history_summarization": True,  # Summarize long histories
+    }
+)
+```
+
+### Cost Management
+
+```python
+from sofia.llm.policy import TokenUsagePolicy
+
+# Create a token usage policy
+token_policy = TokenUsagePolicy(
+    max_tokens_per_session=10000,  # Maximum tokens per session
+    max_tokens_per_day=100000,     # Maximum tokens per day
+    max_cost_per_session=0.50,     # Maximum cost per session in USD
+    max_cost_per_day=10.00         # Maximum cost per day in USD
+)
+
+sofia = Sofia(
+    name="cost_managed_agent",
+    llm_provider="openai",
+    llm_config={
+        "model": "gpt-4",
+        "api_key": "your-openai-api-key"
+    },
+    token_usage_policy=token_policy
+)
+```
+
+### LLM Fallbacks
+
+Configure fallback providers in case the primary provider fails:
+
+```python
+sofia = Sofia(
+    name="resilient_agent",
+    llm_provider="openai",
+    llm_config={
+        "model": "gpt-4",
+        "api_key": "your-openai-api-key",
+        "fallback_providers": [
+            {
+                "provider": "mistral",
+                "config": {
+                    "model": "mistral-large-latest",
+                    "api_key": "your-mistral-api-key"
+                }
+            },
+            {
+                "provider": "gemini",
+                "config": {
+                    "model": "gemini-pro",
+                    "api_key": "your-gemini-api-key"
+                }
+            }
+        ]
+    }
+)
+```
+
+## Best Practices
+
+1. **Choose the right model**: Match model capabilities to your agent's requirements
+2. **Optimize prompts**: Clear, concise prompts reduce token usage and improve results
+3. **Use appropriate temperature**: Lower for factual tasks, higher for creative tasks
+4. **Implement retry logic**: Handle API failures gracefully
+5. **Monitor token usage**: Track and manage your LLM costs
+6. **Test with multiple providers**: Ensure your agent works with different LLMs
+7. **Cache responses**: For repeatable queries to reduce API calls
+
+<Callout type="info">
+  For production deployments, consider implementing a caching layer to reduce redundant LLM calls and minimize costs.
+</Callout>
+
+## Next Steps
+
+- Learn about [Configuration](/guides/configuration) to understand how to configure LLM settings
+- Explore [Tool Development](/api/tool-development) to create tools that work effectively with LLMs
+- Visit [API Reference](/api/llm-providers) for detailed LLM provider API documentation

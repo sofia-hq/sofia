@@ -1,0 +1,256 @@
+---
+title: "Business Process Automation"
+description: "Using SOFIA for automating business workflows and processes"
+---
+
+# Business Process Automation with SOFIA
+
+SOFIA excels at automating complex business processes that require multi-step workflows, decision-making, and integration with existing systems. This page showcases real-world examples of how SOFIA can be used for business process automation.
+
+## Order Processing Agent
+
+Order processing often involves multiple steps, systems, and decision points. SOFIA can streamline this process by orchestrating the entire workflow.
+
+### Example Implementation
+
+```yaml
+name: Order Processing Agent
+description: Handles customer orders from validation to fulfillment
+steps:
+  - id: receive_order
+    prompt: Receive and validate the order details
+    next: check_inventory
+    
+  - id: check_inventory
+    tool: inventory_check
+    routes:
+      - when: All items in stock
+        goto: process_payment
+      - when: Some items out of stock
+        goto: handle_backorder
+      - when: All items out of stock
+        goto: notify_out_of_stock
+        
+  - id: process_payment
+    tool: payment_processor
+    routes:
+      - when: Payment successful
+        goto: create_shipment
+      - when: Payment failed
+        goto: notify_payment_issue
+        
+  - id: create_shipment
+    tool: shipping_system
+    next: send_confirmation
+    
+  - id: send_confirmation
+    tool: email_sender
+    prompt: Send a detailed order confirmation with tracking information
+    next: complete
+    
+  - id: handle_backorder
+    prompt: Inform the customer about partial fulfillment options
+    tool: backorder_manager
+    next: process_payment
+    
+  - id: notify_out_of_stock
+    prompt: Apologize to the customer and suggest alternatives
+    tool: email_sender
+    next: complete
+    
+  - id: notify_payment_issue
+    prompt: Inform the customer about the payment issue
+    tool: email_sender
+    next: complete
+    
+  - id: complete
+    prompt: Thank the customer and offer additional assistance
+```
+
+### Key Benefits
+
+- **End-to-end automation**: Handles the entire order process without manual intervention
+- **Exception handling**: Built-in support for inventory issues and payment failures
+- **System integration**: Connects to inventory, payment, shipping, and notification systems
+- **Consistent communication**: Maintains professional customer communication
+
+<div className="flex justify-center">
+  <img 
+    src="/images/order-processing-flow.png" 
+    alt="Order processing flow diagram" 
+    className="rounded-lg border border-gray-200 dark:border-gray-800 my-4"
+    width="600"
+  />
+</div>
+
+## HR Onboarding Assistant
+
+Employee onboarding involves multiple departments, paperwork, and system provisioning. SOFIA can coordinate this process while providing a friendly interface for new employees.
+
+### Example Implementation
+
+```python
+from sofia_agent import Sofia, Step, Tool, Route
+
+# Define tools
+email_tool = Tool(name="send_email", function=send_email_function)
+doc_tool = Tool(name="document_processor", function=process_documents)
+access_tool = Tool(name="system_access", function=provision_access)
+calendar_tool = Tool(name="calendar", function=schedule_meetings)
+
+# Create onboarding agent
+onboarding_agent = Sofia(
+    name="HR Onboarding Assistant",
+    description="Guides new employees through the onboarding process",
+    steps=[
+        Step(
+            id="welcome",
+            prompt="Welcome the new employee, introduce yourself as the onboarding assistant, and explain the onboarding process.",
+            next="collect_info"
+        ),
+        Step(
+            id="collect_info",
+            prompt="Collect basic information needed for onboarding (legal name, address, emergency contacts, etc.).",
+            next="process_documents"
+        ),
+        Step(
+            id="process_documents",
+            prompt="Guide the employee through required documentation.",
+            tool=doc_tool,
+            next="system_access"
+        ),
+        Step(
+            id="system_access",
+            prompt="Set up system access for the new employee.",
+            tool=access_tool,
+            next="schedule_training"
+        ),
+        Step(
+            id="schedule_training",
+            prompt="Schedule required training sessions and meetings.",
+            tool=calendar_tool,
+            next="welcome_email"
+        ),
+        Step(
+            id="welcome_email",
+            prompt="Send welcome email to the team introducing the new employee.",
+            tool=email_tool,
+            next="check_progress"
+        ),
+        Step(
+            id="check_progress",
+            prompt="Check onboarding progress and offer assistance with any incomplete items.",
+            routes=[
+                Route(when="Onboarding complete", goto="completion"),
+                Route(when="Items pending", goto="follow_up")
+            ]
+        ),
+        Step(
+            id="follow_up",
+            prompt="Follow up on pending items and provide assistance.",
+            next="check_progress"
+        ),
+        Step(
+            id="completion",
+            prompt="Congratulate the employee on completing onboarding and provide resources for getting started."
+        )
+    ]
+)
+```
+
+### Measured Results
+
+A mid-sized technology company implemented this SOFIA onboarding agent and achieved:
+
+- **70% reduction** in HR administrative time spent on onboarding
+- **95% completion rate** of onboarding tasks within the first week
+- **Improved employee satisfaction** with the onboarding process
+- **Consistent documentation** across all departments
+
+## Data Entry Automation
+
+Data entry tasks are often repetitive but require attention to detail and validation. SOFIA can automate these processes while handling exceptions intelligently.
+
+### Example Implementation
+
+```yaml
+name: Invoice Processing Agent
+description: Extracts data from invoices and enters it into accounting systems
+steps:
+  - id: receive_invoice
+    prompt: Process an incoming invoice document
+    next: extract_data
+    
+  - id: extract_data
+    tool: document_extraction
+    routes:
+      - when: Data extraction successful
+        goto: validate_data
+      - when: Extraction failed
+        goto: manual_review
+        
+  - id: validate_data
+    prompt: Validate the extracted invoice data
+    tool: data_validator
+    routes:
+      - when: Data valid
+        goto: categorize_invoice
+      - when: Data invalid
+        goto: manual_review
+        
+  - id: categorize_invoice
+    prompt: Categorize the invoice according to accounting rules
+    next: enter_data
+    
+  - id: enter_data
+    tool: accounting_system
+    routes:
+      - when: Data entry successful
+        goto: notify_completion
+      - when: Data entry failed
+        goto: manual_review
+        
+  - id: manual_review
+    prompt: Flag for manual review with explanation of the issue
+    tool: ticket_creator
+    next: complete
+    
+  - id: notify_completion
+    prompt: Notify the accounting team of successful processing
+    tool: notification_system
+    next: complete
+    
+  - id: complete
+    prompt: Summarize the invoice processing results
+```
+
+### ROI Analysis
+
+For a company processing 1,000 invoices monthly:
+
+| Metric | Before SOFIA | With SOFIA | Improvement |
+|--------|--------------|------------|-------------|
+| Processing Time | 15 min/invoice | 2 min/invoice | 87% reduction |
+| Error Rate | 5% | 0.8% | 84% reduction |
+| Manual Review | 30% | 10% | 67% reduction |
+| Monthly Cost | $12,500 | $2,800 | 78% savings |
+| Annual Savings | - | $116,400 | - |
+
+## Implementation Guidance
+
+When implementing SOFIA for business process automation:
+
+1. **Start with process mapping**: Document your current process steps, decision points, and systems
+2. **Identify integration points**: Determine which systems need to be connected via tools
+3. **Design exception handling**: Plan how to handle common exceptions and edge cases
+4. **Implement incrementally**: Start with a core flow and expand functionality over time
+5. **Monitor and refine**: Use SOFIA's tracing capabilities to identify and improve bottlenecks
+
+## Getting Started
+
+To start automating your business processes with SOFIA:
+
+1. Follow the [installation guide](/docs/getting-started/installation)
+2. Review the [tool integration documentation](/docs/concepts/tools-integration)
+3. Study the [configuration guide](/docs/guides/configuration) for YAML or Python setup
+4. Use this page's examples as templates for your own implementations

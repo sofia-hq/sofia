@@ -1,0 +1,65 @@
+---
+title: Introduction
+description: Getting started with SOFIA and understanding its basic concepts
+---
+
+# Introduction to SOFIA
+
+Welcome to SOFIA (Simple Orchestrated Flow Intelligence Agent), an open-source framework designed to make building advanced LLM-powered assistants easy and intuitive.
+
+## What is SOFIA?
+
+SOFIA is a framework that allows you to build intelligent agents with step-based flows, tool integration, and consistent personas. It simplifies the process of creating complex AI assistants that can:
+
+- Hold multi-turn conversations with context awareness
+- Call tools and functions to perform actions
+- Follow predefined conversation flows
+- Maintain a consistent persona
+- Handle errors gracefully
+
+<Callout type="info">
+  The name SOFIA stands for **S**imple **O**rchestrated **F**low **I**ntelligence **A**gent, reflecting its core design principles.
+</Callout>
+
+## Core Concepts
+
+SOFIA is built around a few fundamental concepts:
+
+### Steps and Flows
+
+A SOFIA agent progresses through a series of **steps**, each with a defined purpose and available tools. Steps are connected through **routes** that define the conditions for transitioning between steps.
+
+### Tools
+
+**Tools** are Python functions that the agent can call to perform actions or retrieve information. SOFIA provides a flexible tool integration system, allowing you to use:
+
+- Custom Python functions
+- Standard library functions via `package_name:function` syntax
+- External API integrations
+
+### Sessions
+
+A **session** represents an ongoing conversation with an agent. Sessions maintain history, track the current step, and handle the agent's state.
+
+### LLM Integration
+
+SOFIA leverages Large Language Models (LLMs) like OpenAI's GPT, Mistral AI, or Google's Gemini to power the agent's understanding and responses. The framework provides a consistent interface across different LLM providers.
+
+## Use Cases
+
+SOFIA is designed to be flexible and can be used for a variety of applications:
+
+- Customer service chatbots
+- Workflow automation agents
+- Personal assistants
+- Data analysis assistants
+- Multi-step decision-making systems
+
+## Getting Started
+
+In the following sections, we'll guide you through:
+
+1. [Installation](/docs/getting-started/installation) - Setting up SOFIA in your environment
+2. [Quick Start](/docs/getting-started/quick-start) - Creating your first SOFIA agent
+
+Whether you prefer a no-code approach with YAML configuration or a full-code approach with Python, SOFIA provides the flexibility to build agents your way.

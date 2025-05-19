@@ -1,0 +1,399 @@
+---
+title: "API Playground"
+description: "Test SOFIA API endpoints directly in the docs and generate code samples"
+---
+
+# SOFIA API Playground
+
+Interact with the SOFIA API directly from your browser. Test endpoints, generate code samples, and visualize responses without setting up a local environment.
+
+## API Explorer
+
+Select an endpoint, configure parameters, and send requests to see responses in real-time:
+
+<div className="my-8">
+  <APIExplorer />
+</div>
+
+## Available Endpoints
+
+The playground provides access to the following API endpoints:
+
+### Agent Management
+
+- **Create Agent**: Create a new SOFIA agent with configuration
+- **List Agents**: Get a list of available agents
+- **Get Agent**: Retrieve agent details and configuration
+- **Update Agent**: Modify an existing agent
+- **Delete Agent**: Remove an agent
+
+### Session Operations
+
+- **Create Session**: Start a new conversation session
+- **Get Session**: Retrieve session details and history
+- **Send Message**: Send a user message and get agent response
+- **End Session**: Terminate an active session
+
+### Tool Integration
+
+- **List Available Tools**: Get all available tools
+- **Register Custom Tool**: Add a new tool to the system
+- **Invoke Tool Directly**: Call a tool with specified parameters
+
+## Code Generation
+
+As you interact with the API, see code samples generated in your preferred language:
+
+<div className="my-6">
+  <Tabs items={["Python", "JavaScript", "cURL", "Go", "Java"]}>
+    <Tab>
+      ```python
+      import requests
+
+      # Create a new SOFIA agent
+      response = requests.post(
+          "https://api.example.com/agents",
+          headers={"Authorization": "Bearer YOUR_API_KEY"},
+          json={
+              "name": "Customer Support Agent",
+              "description": "Handles customer inquiries and issues",
+              "steps": [
+                  {
+                      "id": "greeting",
+                      "prompt": "Greet the customer and ask how you can help",
+                      "next": "listen"
+                  },
+                  {
+                      "id": "listen",
+                      "prompt": "Listen to the customer's issue",
+                      "routes": [
+                          {"when": "Customer has billing issue", "goto": "billing_issue"},
+                          {"when": "Customer has technical issue", "goto": "technical_issue"},
+                          {"default": "general_help"}
+                      ]
+                  }
+                  # Additional steps omitted for brevity
+              ]
+          }
+      )
+
+      print(response.json())
+      ```
+    </Tab>
+    <Tab>
+      ```javascript
+      fetch('https://api.example.com/agents', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer YOUR_API_KEY',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: 'Customer Support Agent',
+          description: 'Handles customer inquiries and issues',
+          steps: [
+            {
+              id: 'greeting',
+              prompt: 'Greet the customer and ask how you can help',
+              next: 'listen'
+            },
+            {
+              id: 'listen',
+              prompt: 'Listen to the customer\'s issue',
+              routes: [
+                {when: 'Customer has billing issue', goto: 'billing_issue'},
+                {when: 'Customer has technical issue', goto: 'technical_issue'},
+                {default: 'general_help'}
+              ]
+            }
+            // Additional steps omitted for brevity
+          ]
+        })
+      })
+      .then(response => response.json())
+      .then(data => console.log(data));
+      ```
+    </Tab>
+    <Tab>
+      ```bash
+      curl -X POST "https://api.example.com/agents" \
+        -H "Authorization: Bearer YOUR_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d '{
+          "name": "Customer Support Agent",
+          "description": "Handles customer inquiries and issues",
+          "steps": [
+            {
+              "id": "greeting",
+              "prompt": "Greet the customer and ask how you can help",
+              "next": "listen"
+            },
+            {
+              "id": "listen",
+              "prompt": "Listen to the customer'\''s issue",
+              "routes": [
+                {"when": "Customer has billing issue", "goto": "billing_issue"},
+                {"when": "Customer has technical issue", "goto": "technical_issue"},
+                {"default": "general_help"}
+              ]
+            }
+          ]
+        }'
+      ```
+    </Tab>
+    <Tab>
+      ```go
+      package main
+
+      import (
+        "bytes"
+        "encoding/json"
+        "fmt"
+        "net/http"
+      )
+
+      func main() {
+        // Create agent configuration
+        type Route struct {
+          When   string `json:"when,omitempty"`
+          Goto   string `json:"goto,omitempty"`
+          Default string `json:"default,omitempty"`
+        }
+
+        type Step struct {
+          ID     string  `json:"id"`
+          Prompt string  `json:"prompt"`
+          Next   string  `json:"next,omitempty"`
+          Routes []Route `json:"routes,omitempty"`
+        }
+
+        type AgentConfig struct {
+          Name        string `json:"name"`
+          Description string `json:"description"`
+          Steps       []Step `json:"steps"`
+        }
+
+        agent := AgentConfig{
+          Name:        "Customer Support Agent",
+          Description: "Handles customer inquiries and issues",
+          Steps: []Step{
+            {
+              ID:     "greeting",
+              Prompt: "Greet the customer and ask how you can help",
+              Next:   "listen",
+            },
+            {
+              ID:     "listen",
+              Prompt: "Listen to the customer's issue",
+              Routes: []Route{
+                {When: "Customer has billing issue", Goto: "billing_issue"},
+                {When: "Customer has technical issue", Goto: "technical_issue"},
+                {Default: "general_help"},
+              },
+            },
+            // Additional steps omitted for brevity
+          },
+        }
+
+        // Convert to JSON
+        jsonData, err := json.Marshal(agent)
+        if err != nil {
+          fmt.Println("Error:", err)
+          return
+        }
+
+        // Create request
+        req, err := http.NewRequest("POST", "https://api.example.com/agents", bytes.NewBuffer(jsonData))
+        if err != nil {
+          fmt.Println("Error:", err)
+          return
+        }
+
+        // Add headers
+        req.Header.Set("Authorization", "Bearer YOUR_API_KEY")
+        req.Header.Set("Content-Type", "application/json")
+
+        // Send request
+        client := &http.Client{}
+        resp, err := client.Do(req)
+        if err != nil {
+          fmt.Println("Error:", err)
+          return
+        }
+        defer resp.Body.Close()
+
+        // Process response
+        var result map[string]interface{}
+        json.NewDecoder(resp.Body).Decode(&result)
+        fmt.Println(result)
+      }
+      ```
+    </Tab>
+    <Tab>
+      ```java
+      import java.net.URI;
+      import java.net.http.HttpClient;
+      import java.net.http.HttpRequest;
+      import java.net.http.HttpResponse;
+      import java.net.http.HttpResponse.BodyHandlers;
+      import org.json.JSONArray;
+      import org.json.JSONObject;
+
+      public class SofiaApiExample {
+          public static void main(String[] args) {
+              try {
+                  // Create the request body
+                  JSONObject agentConfig = new JSONObject();
+                  agentConfig.put("name", "Customer Support Agent");
+                  agentConfig.put("description", "Handles customer inquiries and issues");
+                  
+                  JSONArray steps = new JSONArray();
+                  
+                  // Greeting step
+                  JSONObject greeting = new JSONObject();
+                  greeting.put("id", "greeting");
+                  greeting.put("prompt", "Greet the customer and ask how you can help");
+                  greeting.put("next", "listen");
+                  steps.put(greeting);
+                  
+                  // Listen step
+                  JSONObject listen = new JSONObject();
+                  listen.put("id", "listen");
+                  listen.put("prompt", "Listen to the customer's issue");
+                  
+                  JSONArray routes = new JSONArray();
+                  
+                  JSONObject billingRoute = new JSONObject();
+                  billingRoute.put("when", "Customer has billing issue");
+                  billingRoute.put("goto", "billing_issue");
+                  routes.put(billingRoute);
+                  
+                  JSONObject technicalRoute = new JSONObject();
+                  technicalRoute.put("when", "Customer has technical issue");
+                  technicalRoute.put("goto", "technical_issue");
+                  routes.put(technicalRoute);
+                  
+                  JSONObject defaultRoute = new JSONObject();
+                  defaultRoute.put("default", "general_help");
+                  routes.put(defaultRoute);
+                  
+                  listen.put("routes", routes);
+                  steps.put(listen);
+                  
+                  // Add steps to config
+                  agentConfig.put("steps", steps);
+                  
+                  // Create HTTP client
+                  HttpClient client = HttpClient.newHttpClient();
+                  
+                  // Create request
+                  HttpRequest request = HttpRequest.newBuilder()
+                      .uri(URI.create("https://api.example.com/agents"))
+                      .header("Authorization", "Bearer YOUR_API_KEY")
+                      .header("Content-Type", "application/json")
+                      .POST(HttpRequest.BodyPublishers.ofString(agentConfig.toString()))
+                      .build();
+                  
+                  // Send request
+                  HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+                  
+                  // Print response
+                  System.out.println(response.statusCode());
+                  System.out.println(response.body());
+                  
+              } catch (Exception e) {
+                  e.printStackTrace();
+              }
+          }
+      }
+      ```
+    </Tab>
+  </Tabs>
+</div>
+
+## Response Visualization
+
+Visualize API responses to better understand the data structure:
+
+<div className="my-6">
+  <ResponseVisualizer />
+</div>
+
+Visualizations include:
+- **JSON tree view**: Navigate complex nested structures
+- **Schema diagram**: Understand data relationships
+- **Timeline view**: Track multi-step operations
+- **Error highlighting**: Easily identify issues
+
+## Authentication
+
+To use the API playground, you need to authenticate:
+
+<div className="my-6 p-4 border border-gray-200 dark:border-gray-800 rounded-lg">
+  <AuthForm />
+</div>
+
+We support:
+- **API Key**: Simple key-based authentication
+- **OAuth**: Secure token-based authentication
+- **Demo Mode**: Limited functionality with no authentication
+
+<Callout type="warning">
+  API calls made from the playground use your actual authentication credentials and can affect your real data. Use with caution.
+</Callout>
+
+## WebSocket Testing
+
+Test WebSocket connections for real-time agent interactions:
+
+<div className="my-6">
+  <WebSocketTester />
+</div>
+
+The WebSocket connection allows:
+- **Streaming responses**: Get partial results as they're generated
+- **Bi-directional communication**: Send and receive messages in real-time
+- **Session maintenance**: Keep a conversation active over time
+
+## Sample Requests
+
+Not sure where to start? Try one of these sample requests:
+
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-6">
+  <RequestCard
+    title="Create Simple Chatbot"
+    endpoint="POST /agents"
+    description="Create a basic conversational agent"
+    onClick={() => loadSampleRequest('create-chatbot')}
+  />
+  
+  <RequestCard
+    title="Start Session & Send Message"
+    endpoint="POST /sessions, POST /sessions/{id}/messages"
+    description="Start a session and send an initial message"
+    onClick={() => loadSampleRequest('start-session')}
+  />
+  
+  <RequestCard
+    title="Use Custom Tools"
+    endpoint="POST /tools, POST /sessions/{id}/messages"
+    description="Register and use a custom tool"
+    onClick={() => loadSampleRequest('custom-tools')}
+  />
+  
+  <RequestCard
+    title="Multi-step Workflow"
+    endpoint="Multiple endpoints"
+    description="Create and use a multi-step agent"
+    onClick={() => loadSampleRequest('multi-step')}
+  />
+</div>
+
+## Next Steps
+
+After exploring the API in the playground:
+
+1. Review the [complete API reference](/docs/api/server-api) for details on all endpoints
+2. Learn about [authentication options](/docs/guides/deployment#authentication)
+3. Explore [server deployment](/docs/guides/deployment) to host your own SOFIA API
+4. Join our [community forum](https://github.com/sofia-ai/sofia/discussions) to share your API usage patterns

@@ -1,0 +1,142 @@
+---
+title: Quick Start
+description: Create your first SOFIA agent in minutes
+---
+
+# Quick Start
+
+This guide will walk you through creating your first SOFIA agent. We'll create a simple assistant that can tell the time and perform basic calculations.
+
+## Using the CLI (Recommended)
+
+The easiest way to get started is with the SOFIA CLI:
+
+```bash
+# Ensure you have the CLI extras installed
+pip install sofia-agent[cli]
+
+# Initialize a new SOFIA agent
+sofia init
+```
+
+The CLI will guide you through creating a config file and a starter Python file for your agent.
+
+## Python API Example
+
+For more control, you can create an agent directly using the Python API:
+
+```python
+from sofia_agent import *
+from sofia_agent.llms import OpenAIChatLLM
+
+# Define a simple tool
+def get_time():
+    """Get the current time.
+
+    Returns:
+        str: The current time in string format.
+    """
+    from datetime import datetime
+    return f"Current time: {datetime.now()}"
+
+# Define the agent steps
+steps = [
+    Step(
+        step_id="start",
+        description="Greet and offer to tell the time or perform calculations.",
+        available_tools=["get_time", "math:sqrt"],  # Direct reference to a math package function
+        routes=[Route(target="end", condition="User is done")],
+    ),
+    Step(
+        step_id="end",
+        description="Say goodbye.",
+    ),
+]
+
+# Create the agent
+llm = OpenAIChatLLM()  # Requires OPENAI_API_KEY environment variable
+agent = Sofia(
+    name="clockbot",
+    llm=llm,
+    steps=steps,
+    start_step_id="start",
+    tools=[get_time, "math:sqrt"],  # Mix of custom functions and package references
+    persona="You are a friendly assistant that can tell time and perform calculations.",
+    max_errors=3  # Will retry up to 3 times before failing
+)
+
+# Create a session and interact with the agent
+sess = agent.create_session()
+decision, _ = sess.next("What time is it?")
+print(f"Agent: {decision.input}")
+```
+
+<Callout type="info">
+  The agent will use the `get_time` function to retrieve the current time when asked, and can call the standard library `math.sqrt` function for square root calculations.
+</Callout>
+
+## YAML Configuration Example
+
+SOFIA also supports declarative configuration using YAML:
+
+```yaml
+name: utility-bot
+persona: You are a helpful utility bot that can perform various calculations and data operations.
+steps:
+  - step_id: start
+    description: Handle user requests for mathematical operations or data processing.
+    available_tools:
+      - math:sqrt
+      - json:loads
+      - itertools:combinations
+    routes:
+      - target: end
+        condition: User is done with calculations
+  - step_id: end
+    description: Say goodbye to the user.
+start_step_id: start
+max_errors: 3  # Maximum consecutive errors before stopping
+```
+
+To use this configuration:
+
+```python
+import os
+from sofia_agent import *
+from sofia_agent.llms import OpenAIChatLLM
+
+# Load config from YAML
+config = AgentConfig.from_yaml("config.utility-bot.yaml")
+
+# Initialize LLM
+llm = OpenAIChatLLM()
+
+# Create agent from config
+agent = Sofia.from_config(llm, config)
+
+# Create session and interact
+sess = agent.create_session()
+decision, _ = sess.next("Can you calculate the square root of 16?")
+print(f"Agent: {decision.input}")
+```
+
+## Next Steps
+
+Now that you've created your first agent, you can:
+
+1. Learn about [Agent Flows](/docs/concepts/agent-flows) and how steps and routes work
+2. Explore [Tool Integration](/docs/concepts/tools-integration) to add more capabilities
+3. Check out the [Barista Example](/docs/examples/barista) for a more complex agent
+4. Learn about [LLM Integration](/docs/concepts/llm-integration) to use different language models
+
+<Cards>
+  <Card title="Agent Flows" href="/docs/concepts/agent-flows">
+    Learn how SOFIA's step-based flows work
+  </Card>
+  <Card title="Tool Integration" href="/docs/concepts/tools-integration">
+    Add more capabilities to your agent
+  </Card>
+  <Card title="Examples" href="/docs/examples/barista">
+    See SOFIA in action with real examples
+  </Card>
+</Cards>
