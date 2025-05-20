@@ -276,20 +276,52 @@
                             );
                             messageElement.appendChild(accordion);
                         }
-                    } else if (role === 'tool') {
-                        messageElement.className += ' flex justify-start mb-3';
-                        messageElement.innerHTML = `
-                            <div class="chat-bubble bg-green-50 text-green-800 rounded-lg p-3 px-4 text-sm border border-green-200 shadow-sm">
-                                <strong><i class="fas fa-check-circle mr-1"></i> Tool Result:</strong> ${escapeHtml(content)}
-                            </div>
-                        `;
+
+                        // Add suggestions if available
+                        if (extras.suggestions && Array.isArray(extras.suggestions) && extras.suggestions.length > 0) {
+                            const suggestionsDiv = document.createElement('div');
+                            suggestionsDiv.className = 'flex flex-wrap gap-2 mt-2';
+                            extras.suggestions.forEach(suggestion => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 transition text-sm';
+                                btn.textContent = suggestion;
+                                btn.onclick = () => {
+                                    userInput.value = suggestion;
+                                    messageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                                };
+                                suggestionsDiv.appendChild(btn);
+                            });
+                            messageElement.appendChild(suggestionsDiv);
+                        }
                     } else if (role === 'tool_call') {
                         messageElement.className += ' flex justify-start mb-3';
-                        messageElement.innerHTML = `
-                            <div class="chat-bubble bg-yellow-50 text-yellow-800 rounded-lg p-3 px-4 text-sm border border-yellow-200 shadow-sm">
-                                <strong><i class="fas fa-cog mr-1"></i> Tool Call:</strong> ${escapeHtml(content)}
-                            </div>
-                        `;
+                        // Make tool call collapsible (default collapsed)
+                        const accordion = createAccordion(
+                            'Tool Call',
+                            'text-xs text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition',
+                            `<div>${escapeHtml(content)}</div>`
+                        );
+                        // Collapse by default
+                        setTimeout(() => {
+                            const contentDiv = accordion.querySelector('.accordion-content');
+                            if (contentDiv) contentDiv.style.maxHeight = null;
+                        }, 0);
+                        messageElement.appendChild(accordion);
+                    } else if (role === 'tool') {
+                        messageElement.className += ' flex justify-start mb-3';
+                        // Make tool result collapsible (default collapsed)
+                        const accordion = createAccordion(
+                            'Tool Result',
+                            'text-xs text-green-700 bg-green-50 hover:bg-green-100 transition',
+                            `<div>${escapeHtml(content)}</div>`
+                        );
+                        // Collapse by default
+                        setTimeout(() => {
+                            const contentDiv = accordion.querySelector('.accordion-content');
+                            if (contentDiv) contentDiv.style.maxHeight = null;
+                        }, 0);
+                        messageElement.appendChild(accordion);
                     } else if (role === 'system') {
                         messageElement.className += ' flex justify-center mb-3';
                         messageElement.innerHTML = `
@@ -557,9 +589,12 @@
 
                     // Extract message directly from the input field
                     if (data.response && data.response.input) {
-                        addMessageToUI('assistant', data.response.input, { reasoning, nextStepId });
-
-                        // Process any tool outputs
+                        addMessageToUI('assistant', data.response.input, {
+                            reasoning,
+                            nextStepId,
+                            suggestions: (data.response.suggestions && Array.isArray(data.response.suggestions)) ? data.response.suggestions : []
+                        });
+                        // Display any tool outputs after the assistant message
                         if (data.tool_output) {
                             addMessageToUI('tool', data.tool_output);
                         }

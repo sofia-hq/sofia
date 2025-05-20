@@ -67,9 +67,9 @@ class Step(BaseModel):
             raise ValueError(
                 f"Step '{self.step_id}': When auto_flow is True, at least one tool or route must be available"
             )
-        if self.auto_flow and self.provide_suggestions:
+        if self.auto_flow and self.quick_suggestions:
             raise ValueError(
-                f"Step '{self.step_id}': When auto_flow is True, provide_suggestions cannot be True"
+                f"Step '{self.step_id}': When auto_flow is True, quick_suggestions cannot be True"
             )
 
     def get_available_routes(self) -> List[str]:
@@ -152,7 +152,7 @@ def create_route_decision_model(
         if current_step.quick_suggestions:
             params["suggestions"] = {
                 "type": List[str],
-                "description": "Quick Suggestions for the user if action is ASK (ask) or ANSWER (provide_answer) - Minimum 2 suggestions",
+                "description": "Quick Suggestions for the user to answer with if action is ASK (ask) or ANSWER (provide_answer) - Minimum 2 suggestions",
             }
 
     if len(available_step_ids) > 0:
