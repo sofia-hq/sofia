@@ -33,7 +33,6 @@ class AgentConfig(BaseSettings):
     )
     show_steps_desc: bool = False
     max_errors: int = 3
-    method: Literal["auto", "manual"] = "auto"  # Default to auto method
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
 
