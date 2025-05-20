@@ -403,7 +403,7 @@ SOFIA base image provides the following REST and WebSocket endpoints:
       "history": []
     }
   }
-  
+
   // Response format
   {
     "response": {

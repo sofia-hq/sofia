@@ -11,7 +11,7 @@ from sofia_agent.llms.openai import OpenAI
 # Define the LLM and Barista
 config = AgentConfig.from_yaml("config.barista.yaml")
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
-barista = Sofia.from_config(llm, config, tools)
+barista = Sofia.from_config(config, llm, tools)
 
 # Start the conversation
 sess = barista.create_session()

@@ -25,7 +25,7 @@ config = sa.AgentConfig.from_yaml(
     os.path.join(os.path.dirname(__file__), "config.agent.yaml")
 )
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
-agent = sa.Sofia.from_config(llm, config, tool_list)
+agent = sa.Sofia.from_config(config, llm, tool_list)
 
 # # Uncomment the following lines to run the agent in a standalone mode
 # if __name__ == "__main__":

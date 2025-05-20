@@ -48,6 +48,7 @@ class Step(BaseModel):
         routes (List[Route]): List of possible routes from this step.
         available_tools (List[str]): List of tool names available in this step.
         tools (List[Tool]): List of Tool objects available in this step.
+        auto_flow (bool): Flag indicating if the step should automatically flow without additonal inputs or answering.
     Methods:
         get_available_routes() -> List[str]: Get the list of available route targets.
     """
@@ -56,6 +57,14 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
+    auto_flow: bool = False
+
+    def model_post_init(self, __context):
+        """Validate that auto_flow steps have at least one tool or route."""
+        if self.auto_flow and not (self.routes or self.available_tools):
+            raise ValueError(
+                f"Step '{self.step_id}': When auto_flow is True, at least one tool or route must be available"
+            )
 
     def get_available_routes(self) -> List[str]:
         """
@@ -114,7 +123,7 @@ def create_route_decision_model(
     tool_ids = [tool.name for tool in current_step_tools]
     tool_models = [tool.get_args_model() for tool in current_step_tools]
     action_ids = (
-        ["ASK", "ANSWER", "END"]
+        (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
         + (["MOVE"] if available_step_ids else [])
         + (["TOOL_CALL"] if tool_ids else [])
     )
@@ -126,12 +135,14 @@ def create_route_decision_model(
             "description": "Reasoning for the decision",
         },
         "action": {"type": ActionEnum, "description": "Action to take"},
-        "input": {
+    }
+
+    if not current_step.auto_flow:
+        params["input"] = {
             "type": Optional[str],
             "default": None,
-            "description": "Input (either a question or answer) if action is ASK (ask_) or ANSWER (provide_answer) - Make sure to use natural language.",
-        },
-    }
+            "description": "Input (either a question or answer) if action is ASK (ask) or ANSWER (provide_answer)",
+        }
 
     if len(available_step_ids) > 0:
         params["next_step_id"] = {
