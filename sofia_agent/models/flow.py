@@ -59,7 +59,7 @@ class Step(BaseModel):
     routes: List[Route] = []
     available_tools: List[str] = []
     auto_flow: bool = False
-    provide_suggestions: bool = False
+    quick_suggestions: bool = False
 
     def model_post_init(self, __context):
         """Validate that auto_flow steps have at least one tool or route."""
@@ -149,10 +149,10 @@ def create_route_decision_model(
             "default": None,
             "description": "Input (either a question or answer) if action is ASK (ask) or ANSWER (provide_answer)",
         }
-        if current_step.provide_suggestions:
+        if current_step.quick_suggestions:
             params["suggestions"] = {
                 "type": List[str],
-                "description": "Suggestions for the user if action is ASK (ask) or ANSWER (provide_answer) - Minimum 2 suggestions",
+                "description": "Quick Suggestions for the user if action is ASK (ask) or ANSWER (provide_answer) - Minimum 2 suggestions",
             }
 
     if len(available_step_ids) > 0:
