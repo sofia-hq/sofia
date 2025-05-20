@@ -1,0 +1,73 @@
+---
+title: Tools
+description: Understanding how to create and integrate tools in SOFIA
+---
+
+Tools are the primary way for SOFIA agents to interact with external systems, access data, and perform actions. This guide covers tool development in depth, including creating custom tools, integrating with packages, handling errors, and best practices.
+
+SOFIA's tool architecture is designed for flexibility and simplicity. Tools are Python functions or classes, and are referenced by name in the `available_tools` field of each step.
+
+### Function-based Tools
+
+```python
+def get_weather(location: str, units: str = "metric") -> str:
+    """Get the current weather for a location."""
+    # Implementation code
+    if units == "metric":
+        temp = "22°C"
+    else:
+        temp = "72°F"
+    return f"The weather in {location} is sunny with a high of {temp}"
+```
+
+Register the tool with your agent:
+
+```python
+agent = Sofia(
+    name="weather_agent",
+    llm=llm,
+    steps=steps,
+    start_step_id="start",
+    tools=[get_weather],
+)
+```
+
+### Package-based Tools
+
+You can reference functions from installed Python packages using the `package:function` string syntax in `tools` and `available_tools`.
+
+```python
+agent = Sofia(
+    name="utility_agent",
+    llm=llm,
+    steps=steps,
+    start_step_id="start",
+    tools=["math:sqrt", "json:loads"],
+)
+```
+
+### Tool Documentation
+
+- Use type annotations and docstrings for all tool functions.
+- SOFIA will auto-generate tool parameter schemas and descriptions from your code.
+
+### Error Handling
+
+#### Fallbacks
+
+If a tool fails, SOFIA can use the fallback instructions provided by the tool to handle the situation gracefully. This is especially useful for tools that may fail due to network issues or other external factors.
+
+```python
+from sofia_agent.models.tool import FallbackError
+
+def get_weather(location: str) -> str:
+    """Get the current weather for a location."""
+    try:
+        # Implementation code here
+        return f"The weather in {location} is sunny with a high of 75°F"
+    except Exception as e:
+        raise FallbackError(
+            error="Unable to fetch weather data",
+            fallback="Tell the user that the weather service is currently unavailable."
+        )
+```

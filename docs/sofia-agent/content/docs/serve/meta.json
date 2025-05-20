@@ -1,0 +1,9 @@
+{
+  "title": "Buid and Deploy",
+  "description": "Serve SOFIA agents to the world",
+  "icon": "RocketLaunch",
+  "root": true,
+  "pages": [
+    "index"
+  ]
+}

@@ -1,9 +1,0 @@
-{
-  "title": "Guides",
-  "pages": [
-    "configuration",
-    "deployment",
-    "monitoring",
-    "extending-sofia"
-  ]
-}

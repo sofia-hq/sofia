@@ -1,0 +1,34 @@
+---
+title: WebSocket
+description: Documentation for SOFIA's WebSocket API endpoints
+---
+
+SOFIA provides a WebSocket API for real-time bidirectional communication with agents. This allows for interactive sessions where the client can send messages and receive responses in real time.
+
+Make sure to create a session before using the Rest API's `POST /session` endpoint.
+
+### WebSocket Endpoint
+
+#### WebSocket Connection
+
+`WS /ws/{session_id}`
+
+##### Query Parameters
+| Parameter | Type    | Description                                      |
+|-----------|---------|--------------------------------------------------|
+| initiate  | boolean | Whether to get an initial greeting from the agent |
+| verbose   | boolean | Whether to include detailed output information    |
+
+##### Message Format (Client to Server)
+```json
+{
+  "message": "User message text"
+}
+```
+
+or
+```json
+{
+  "close": true
+}
+```

@@ -1,9 +1,16 @@
 {
-  "title": "API Reference",
+  "title": "API",
+  "description": "SOFIA API Documentation",
+  "icon": "Code",
+  "root": true,
   "pages": [
-    "core-api",
-    "llm-providers",
-    "tool-development",
-    "server-api"
+    "---Core API---",
+    "building-blocks",
+    "llm",
+    "tools",
+    "---Server API---",
+    "rest-api",
+    "websocket",
+    "example"
   ]
 }

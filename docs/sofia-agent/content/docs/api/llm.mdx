@@ -1,0 +1,80 @@
+---
+title: LLM
+description: Brain of the SOFIA agent, integrating with various LLM providers
+---
+
+SOFIA supports multiple Large Language Model (LLM) providers through a flexible provider architecture. This page documents the available LLM providers, their configuration options, and usage examples.
+
+SOFIA's LLM integration uses a base class and provider-specific subclasses:
+
+<Mermaid
+  chart="classDiagram
+      class LLMBase {
+          <<abstract>>
+          +get_routes_desc()
+          +get_tools_desc()
+          +format_history()
+      }
+      class OpenAI {
+          +__init__()
+            +get_output()
+      }
+      class Mistral {
+          +__init__()
+        +get_output()
+      }
+      class Gemini {
+          +__init__()
+          +get_output()
+      }
+      LLMBase <|-- OpenAI
+      LLMBase <|-- Mistral
+      LLMBase <|-- Gemini
+  "
+/>
+
+### Example: OpenAI Provider
+
+```python
+from sofia_agent.llms import OpenAI
+llm = OpenAI()
+```
+
+#### Usage in Agent
+
+```python
+agent = Sofia(
+    name="my_agent",
+    llm=llm,
+    steps=steps,
+    start_step_id="start",
+    tools=[...],
+)
+```
+
+## Custom LLM Providers
+You can create custom LLM providers by subclassing `LLMBase` and implementing the required methods. This allows you to integrate any LLM API into SOFIA.
+
+### Example: Custom LLM Provider
+
+```python
+from sofia_agent.llms import LLMBase
+from sofia_agent.models.flow import Message
+from typing import List
+from pydantic import BaseModel
+
+# Import your custom LLM library here
+
+class CustomLLM(LLMBase):
+    def __init__(self, **kwargs):
+        # Initialize the custom LLM provider
+
+    def get_output(
+        self, 
+        messages: List[Message], 
+        response_format: BaseModel
+    ) -> BaseModel:
+        # Implement the logic to get output from the custom LLM
+```
+
+Make sure that your custom LLM provider supports structured outputs.

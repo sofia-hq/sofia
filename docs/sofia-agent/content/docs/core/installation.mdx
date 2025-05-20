@@ -1,0 +1,33 @@
+---
+title: Installation
+description: How to install SOFIA and its dependencies
+---
+
+You can install SOFIA using pip. Choose the extras you need for your use case:
+
+**Basic installation:**
+```bash
+pip install sofia-agent
+```
+
+**With CLI support:**
+```bash
+pip install sofia-agent[cli]
+```
+
+**With LLM support:**
+```bash
+pip install sofia-agent[openai]      # For OpenAI support
+pip install sofia-agent[mistralai]   # For Mistral AI support
+pip install sofia-agent[gemini]      # For Google Gemini support
+```
+
+**With tracing support:**
+```bash
+pip install sofia-agent[traces]
+```
+
+**Docker:**
+A pre-built Docker image is available: `chandralegend/sofia-base`.
+
+See the [README](https://github.com/poly-eye/sofia) for more details and advanced options.
