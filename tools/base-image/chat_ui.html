@@ -10,6 +10,108 @@
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <style>
+        :root {
+            --color-bg: #f9fafb;
+            --color-bg-chat: #fff;
+            --color-header: #2563eb;
+            --color-header-text: #fff;
+            --color-bubble-user: #2563eb;
+            --color-bubble-user-text: #fff;
+            --color-bubble-assistant: #f3f4f6;
+            --color-bubble-assistant-text: #111827;
+            --color-bubble-tool: #ecfdf5;
+            --color-bubble-tool-text: #065f46;
+            --color-bubble-system: #fef2f2;
+            --color-bubble-system-text: #991b1b;
+            --color-scrollbar: #ccc;
+            --color-scrollbar-hover: #aaa;
+        }
+        .dark-mode {
+            --color-bg: #18181b;
+            --color-bg-chat: #23272f;
+            --color-header: #1e293b;
+            --color-header-text: #f1f5f9;
+            --color-bubble-user: #2563eb;
+            --color-bubble-user-text: #fff;
+            --color-bubble-assistant: #334155;
+            --color-bubble-assistant-text: #f1f5f9;
+            --color-bubble-tool: #14532d;
+            --color-bubble-tool-text: #bbf7d0;
+            --color-bubble-system: #7f1d1d;
+            --color-bubble-system-text: #fee2e2;
+            --color-scrollbar: #334155;
+            --color-scrollbar-hover: #64748b;
+        }
+        body {
+            background: var(--color-bg);
+            color: var(--color-bubble-assistant-text);
+            transition: background 0.3s, color 0.3s;
+        }
+        header {
+            background: var(--color-header);
+            color: var(--color-header-text);
+            transition: background 0.3s, color 0.3s;
+        }
+        #chat-container {
+            background: var(--color-bg-chat);
+            transition: background 0.3s;
+        }
+
+        /* Accordion (collapsible) dark mode support */
+        .border-b.border-gray-200 {
+            border-color: #e5e7eb !important;
+        }
+        .dark-mode .border-b.border-gray-200 {
+            border-color: #334155 !important;
+        }
+
+        .accordion-content {
+            background: var(--color-bg-chat);
+            color: var(--color-bubble-assistant-text);
+            transition: background 0.3s, color 0.3s, max-height 0.3s;
+        }
+
+        /* Fix for overall background in light mode */
+        body:not(.dark-mode) {
+            background: #f9fafb !important;
+        }
+
+        .chat-bubble.bg-blue-500 {
+            background: var(--color-bubble-user) !important;
+            color: var(--color-bubble-user-text) !important;
+        }
+        .chat-bubble.bg-gray-100 {
+            background: var(--color-bubble-assistant) !important;
+            color: var(--color-bubble-assistant-text) !important;
+        }
+        .chat-bubble.bg-green-50 {
+            background: var(--color-bubble-tool) !important;
+            color: var(--color-bubble-tool-text) !important;
+        }
+        .chat-bubble.bg-red-50 {
+            background: var(--color-bubble-system) !important;
+            color: var(--color-bubble-system-text) !important;
+        }
+        .chat-bubble.bg-yellow-50 {
+            background: #fef9c3 !important;
+            color: #92400e !important;
+        }
+        /* Scrollbar styling */
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-container::-webkit-scrollbar-track {
+            background: var(--color-bg-chat);
+            border-radius: 10px;
+        }
+        #chat-container::-webkit-scrollbar-thumb {
+            background: var(--color-scrollbar);
+            border-radius: 10px;
+        }
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: var(--color-scrollbar-hover);
+        }
+
         .chat-bubble {
             max-width: 80%;
             word-wrap: break-word;
@@ -49,53 +151,91 @@
             max-height: 500px;
         }
 
-        /* Scrollbar styling */
-        #chat-container::-webkit-scrollbar {
-            width: 8px;
+        /* Tailwind dark mode for buttons, input, and collapsibles */
+        button, .dark-mode button {
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
         }
-
-        #chat-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
+        button.bg-blue-600 {
+            background: #2563eb;
+            color: #fff;
         }
-
-        #chat-container::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 10px;
+        .dark-mode button.bg-blue-600, .dark-mode button.dark\:bg-blue-700 {
+            background: #1d4ed8 !important;
+            color: #fff !important;
         }
-
-        #chat-container::-webkit-scrollbar-thumb:hover {
-            background: #aaa;
+        button.bg-gray-200 {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .dark-mode button.bg-gray-200, .dark-mode button.dark\:bg-gray-700 {
+            background: #374151 !important;
+            color: #f1f5f9 !important;
+        }
+        button.bg-red-100 {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        .dark-mode button.bg-red-100, .dark-mode button.dark\:bg-red-800 {
+            background: #7f1d1d !important;
+            color: #fee2e2 !important;
+        }
+        /* Collapsible/Accordion header dark mode */
+        .accordion-header, .dark-mode .accordion-header {
+            transition: background 0.3s, color 0.3s;
+        }
+        .bg-blue-50 { background: #eff6ff !important; color: #1e40af !important; }
+        .dark-mode .bg-blue-50 { background: #1e293b !important; color: #60a5fa !important; }
+        .bg-purple-50 { background: #f5f3ff !important; color: #6d28d9 !important; }
+        .dark-mode .bg-purple-50 { background: #312e81 !important; color: #c7d2fe !important; }
+        .bg-yellow-50 { background: #fef9c3 !important; color: #92400e !important; }
+        .dark-mode .bg-yellow-50 { background: #78350f !important; color: #fde68a !important; }
+        .bg-green-50 { background: #ecfdf5 !important; color: #065f46 !important; }
+        .dark-mode .bg-green-50 { background: #14532d !important; color: #bbf7d0 !important; }
+        .bg-red-50 { background: #fef2f2 !important; color: #991b1b !important; }
+        .dark-mode .bg-red-50 { background: #7f1d1d !important; color: #fee2e2 !important; }
+        /* Textarea auto-expand */
+        textarea {
+            resize: none;
+            overflow: hidden;
+            min-height: 44px;
+            max-height: 200px;
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
         }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex flex-col">
-    <header class="bg-blue-600 text-white py-3 px-6 shadow-md flex justify-between items-center">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-300" id="body-root">
+    <header class="bg-blue-600 dark:bg-gray-800 text-white dark:text-gray-100 py-3 px-6 shadow-md flex justify-between items-center transition-colors duration-300">
         <h1 class="text-2xl font-bold">Sofia</h1>
-        <div id="connection-status" class="text-sm bg-yellow-500 px-2 py-1 rounded transition-colors duration-300">Connecting...</div>
+        <div class="flex items-center gap-3">
+            <div id="connection-status" class="text-sm bg-yellow-500 dark:bg-yellow-700 px-2 py-1 rounded transition-colors duration-300">Connecting...</div>
+            <button id="dark-mode-toggle" class="ml-4 px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300" title="Toggle dark mode">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
     </header>
 
-    <main class="flex-grow flex flex-col p-4 md:p-6 max-w-4xl mx-auto w-full">
-        <div id="chat-container" class="flex-grow bg-white rounded-lg shadow-sm p-4 mb-4 overflow-y-auto h-[75vh] flex flex-col">
+    <main class="flex-grow flex flex-col p-4 md:p-6 max-w-4xl mx-auto w-full transition-colors duration-300">
+        <div id="chat-container" class="flex-grow bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4 overflow-y-auto h-[75vh] flex flex-col transition-colors duration-300">
             <div id="messages" class="space-y-3 flex-grow"></div>
-            <div id="typing-indicator" class="typing-indicator text-gray-500 hidden py-2">
-                <div class="chat-bubble bg-gray-200 rounded-lg p-3 px-4 inline-block">
+            <div id="typing-indicator" class="typing-indicator text-gray-500 dark:text-gray-300 hidden py-2">
+                <div class="chat-bubble bg-gray-200 dark:bg-gray-700 rounded-lg p-3 px-4 inline-block">
                     <span>.</span><span>.</span><span>.</span>
                 </div>
             </div>
         </div>
 
         <form id="message-form" class="flex gap-2">
-            <input
-                type="text"
+            <textarea
                 id="user-input"
-                class="flex-grow border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                class="flex-grow border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300"
                 placeholder="Type your message..."
                 required
-            >
+                rows="1"
+                style="resize: none; min-height: 44px; max-height: 200px;"
+            ></textarea>
             <button
                 type="submit"
-                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex items-center gap-2"
+                class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-300 flex items-center gap-2"
             >
                 <span>Send</span>
                 <i class="fas fa-paper-plane text-sm"></i>
@@ -105,14 +245,14 @@
         <div class="mt-4 flex justify-between">
             <button
                 id="new-chat-btn"
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition flex items-center gap-2"
+                class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 transition-colors duration-300 flex items-center gap-2"
             >
                 <i class="fas fa-plus text-sm"></i>
                 <span>New Chat</span>
             </button>
             <button
                 id="clear-storage-btn"
-                class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 transition flex items-center gap-2"
+                class="bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 px-4 py-2 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors duration-300 flex items-center gap-2"
             >
                 <i class="fas fa-trash text-sm"></i>
                 <span>Clear History</span>
@@ -131,6 +271,8 @@
             const clearStorageBtn = document.getElementById('clear-storage-btn');
             const typingIndicator = document.getElementById('typing-indicator');
             const connectionStatus = document.getElementById('connection-status');
+            const bodyRoot = document.getElementById('body-root');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
 
             let sessionData = null;
             let isProcessingRequest = false;
@@ -276,20 +418,52 @@
                             );
                             messageElement.appendChild(accordion);
                         }
-                    } else if (role === 'tool') {
-                        messageElement.className += ' flex justify-start mb-3';
-                        messageElement.innerHTML = `
-                            <div class="chat-bubble bg-green-50 text-green-800 rounded-lg p-3 px-4 text-sm border border-green-200 shadow-sm">
-                                <strong><i class="fas fa-check-circle mr-1"></i> Tool Result:</strong> ${escapeHtml(content)}
-                            </div>
-                        `;
+
+                        // Add suggestions if available
+                        if (extras.suggestions && Array.isArray(extras.suggestions) && extras.suggestions.length > 0) {
+                            const suggestionsDiv = document.createElement('div');
+                            suggestionsDiv.className = 'flex flex-wrap gap-2 mt-2';
+                            extras.suggestions.forEach(suggestion => {
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 transition text-sm';
+                                btn.textContent = suggestion;
+                                btn.onclick = () => {
+                                    userInput.value = suggestion;
+                                    messageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                                };
+                                suggestionsDiv.appendChild(btn);
+                            });
+                            messageElement.appendChild(suggestionsDiv);
+                        }
                     } else if (role === 'tool_call') {
                         messageElement.className += ' flex justify-start mb-3';
-                        messageElement.innerHTML = `
-                            <div class="chat-bubble bg-yellow-50 text-yellow-800 rounded-lg p-3 px-4 text-sm border border-yellow-200 shadow-sm">
-                                <strong><i class="fas fa-cog mr-1"></i> Tool Call:</strong> ${escapeHtml(content)}
-                            </div>
-                        `;
+                        // Make tool call collapsible (default collapsed)
+                        const accordion = createAccordion(
+                            'Tool Call',
+                            'text-xs text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition',
+                            `<div>${escapeHtml(content)}</div>`
+                        );
+                        // Collapse by default
+                        setTimeout(() => {
+                            const contentDiv = accordion.querySelector('.accordion-content');
+                            if (contentDiv) contentDiv.style.maxHeight = null;
+                        }, 0);
+                        messageElement.appendChild(accordion);
+                    } else if (role === 'tool') {
+                        messageElement.className += ' flex justify-start mb-3';
+                        // Make tool result collapsible (default collapsed)
+                        const accordion = createAccordion(
+                            'Tool Result',
+                            'text-xs text-green-700 bg-green-50 hover:bg-green-100 transition',
+                            `<div>${escapeHtml(content)}</div>`
+                        );
+                        // Collapse by default
+                        setTimeout(() => {
+                            const contentDiv = accordion.querySelector('.accordion-content');
+                            if (contentDiv) contentDiv.style.maxHeight = null;
+                        }, 0);
+                        messageElement.appendChild(accordion);
                     } else if (role === 'system') {
                         messageElement.className += ' flex justify-center mb-3';
                         messageElement.innerHTML = `
@@ -557,9 +731,12 @@
 
                     // Extract message directly from the input field
                     if (data.response && data.response.input) {
-                        addMessageToUI('assistant', data.response.input, { reasoning, nextStepId });
-
-                        // Process any tool outputs
+                        addMessageToUI('assistant', data.response.input, {
+                            reasoning,
+                            nextStepId,
+                            suggestions: (data.response.suggestions && Array.isArray(data.response.suggestions)) ? data.response.suggestions : []
+                        });
+                        // Display any tool outputs after the assistant message
                         if (data.tool_output) {
                             addMessageToUI('tool', data.tool_output);
                         }
@@ -674,6 +851,32 @@
                     console.error('Error rendering chat history:', e);
                 }
             }
+
+            // Dark mode logic
+            function setDarkMode(enabled) {
+                if (enabled) {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('sofiaDarkMode', '1');
+                    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    darkModeToggle.title = 'Switch to light mode';
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('sofiaDarkMode', '0');
+                    darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                    darkModeToggle.title = 'Switch to dark mode';
+                }
+            }
+            // On load, set mode from localStorage or system preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedDark = localStorage.getItem('sofiaDarkMode');
+            if (savedDark === '1' || (savedDark === null && prefersDark)) {
+                setDarkMode(true);
+            } else {
+                setDarkMode(false);
+            }
+            darkModeToggle.addEventListener('click', () => {
+                setDarkMode(!document.body.classList.contains('dark-mode'));
+            });
         });
     </script>
 </body>

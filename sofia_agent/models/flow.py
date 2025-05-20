@@ -49,6 +49,7 @@ class Step(BaseModel):
         available_tools (List[str]): List of tool names available in this step.
         tools (List[Tool]): List of Tool objects available in this step.
         auto_flow (bool): Flag indicating if the step should automatically flow without additonal inputs or answering.
+        provide_suggestions (bool): Flag indicating if the step should provide suggestions to the user.
     Methods:
         get_available_routes() -> List[str]: Get the list of available route targets.
     """
@@ -58,12 +59,17 @@ class Step(BaseModel):
     routes: List[Route] = []
     available_tools: List[str] = []
     auto_flow: bool = False
+    quick_suggestions: bool = False
 
     def model_post_init(self, __context):
         """Validate that auto_flow steps have at least one tool or route."""
         if self.auto_flow and not (self.routes or self.available_tools):
             raise ValueError(
                 f"Step '{self.step_id}': When auto_flow is True, at least one tool or route must be available"
+            )
+        if self.auto_flow and self.quick_suggestions:
+            raise ValueError(
+                f"Step '{self.step_id}': When auto_flow is True, quick_suggestions cannot be True"
             )
 
     def get_available_routes(self) -> List[str]:
@@ -143,6 +149,11 @@ def create_route_decision_model(
             "default": None,
             "description": "Input (either a question or answer) if action is ASK (ask) or ANSWER (provide_answer)",
         }
+        if current_step.quick_suggestions:
+            params["suggestions"] = {
+                "type": List[str],
+                "description": "Quick Suggestions for the user to answer with if action is ASK (ask) or ANSWER (provide_answer) - Minimum 2 suggestions",
+            }
 
     if len(available_step_ids) > 0:
         params["next_step_id"] = {
