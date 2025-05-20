@@ -12,7 +12,9 @@ Agent flows are at the heart of SOFIA's approach to building structured, predict
 Agent flows define the conversational path an agent can take. They provide structure to AI interactions, making them more predictable and easier to design.
 
 <Callout type="info">
-  Unlike simple chatbots that respond to each message independently, SOFIA agents follow defined paths, making them ideal for guided conversations and multi-step processes.
+  Unlike simple chatbots that respond to each message independently, SOFIA
+  agents follow defined paths, making them ideal for guided conversations and
+  multi-step processes.
 </Callout>
 
 ## Steps
@@ -35,12 +37,12 @@ Step(
 )
 ```
 
-| Property | Description |
-|----------|-------------|
-| `step_id` | A unique identifier for the step |
-| `description` | Explains the purpose of the step to the LLM |
+| Property          | Description                                  |
+| ----------------- | -------------------------------------------- |
+| `step_id`         | A unique identifier for the step             |
+| `description`     | Explains the purpose of the step to the LLM  |
 | `available_tools` | List of tools the agent can use in this step |
-| `routes` | Possible transitions to other steps |
+| `routes`          | Possible transitions to other steps          |
 
 ### Step Behavior
 
@@ -65,9 +67,9 @@ Route(
 )
 ```
 
-| Property | Description |
-|----------|-------------|
-| `target` | The `step_id` of the destination step |
+| Property    | Description                                      |
+| ----------- | ------------------------------------------------ |
+| `target`    | The `step_id` of the destination step            |
 | `condition` | A description of when this route should be taken |
 
 ### Route Decision-Making
@@ -88,12 +90,11 @@ Here are some common patterns for designing effective agent flows:
 
 A simple sequence of steps, useful for guided processes:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart LR
-    Start --> StepA --> StepB --> StepC --> End
-```
-</div>
+<Mermaid
+  chart="
+    flowchart LR
+      Start --> StepA --> StepB --> StepC --> End"
+/>
 
 ```python
 steps = [
@@ -128,16 +129,15 @@ steps = [
 
 Allows different paths based on user choices:
 
-<div className="flex justify-center my-8">
-```mermaid
+<Mermaid
+  chart="
 flowchart TD
     Start --> Decision
     Decision -->|Option A| PathA
     Decision -->|Option B| PathB
     PathA --> End
-    PathB --> End
-```
-</div>
+    PathB --> End"
+/>
 
 ```python
 steps = [
@@ -175,8 +175,8 @@ steps = [
 
 A central hub with multiple possible steps that return to the hub:
 
-<div className="flex justify-center my-8">
-```mermaid
+<Mermaid
+  chart="
 flowchart TD
     Start --> Hub
     Hub -->|Option 1| Spoke1
@@ -185,9 +185,8 @@ flowchart TD
     Spoke1 --> Hub
     Spoke2 --> Hub
     Spoke3 --> Hub
-    Hub -->|Done| End
-```
-</div>
+    Hub -->|Done| End"
+/>
 
 ```python
 steps = [
@@ -233,6 +232,7 @@ steps = [
 ### Clear Step Descriptions
 
 Write clear, detailed step descriptions that explain:
+
 - The purpose of the step
 - What information to collect or provide
 - How to respond to different user inputs
@@ -240,12 +240,14 @@ Write clear, detailed step descriptions that explain:
 ### Meaningful Route Conditions
 
 Make route conditions specific and unambiguous:
+
 - Bad: `"User is ready"`
 - Good: `"User has provided their name, email, and confirmed the information is correct"`
 
 ### Appropriate Tool Availability
 
 Only include tools that are relevant to the current step:
+
 - It focuses the agent on the current task
 - Reduces the chance of inappropriate tool use
 - Makes debugging easier
@@ -253,6 +255,7 @@ Only include tools that are relevant to the current step:
 ### Graceful Error Handling
 
 Include routes for handling errors:
+
 - Routes for incomplete information
 - Steps for handling unexpected inputs
 - Paths back to previous steps when needed

@@ -11,18 +11,17 @@ SOFIA is designed with extensibility in mind. This guide covers how to extend SO
 
 SOFIA provides several key extension points:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TB
-    SOFIA[Sofia Core] --> Tools[Custom Tools]
-    SOFIA --> LLMs[LLM Providers]
-    SOFIA --> Steps[Custom Steps]
-    SOFIA --> Sessions[Session Stores]
-    SOFIA --> Events[Event Handlers]
-    SOFIA --> Middleware[Middleware]
-    SOFIA --> Metrics[Metrics Providers]
-```
-</div>
+<Mermaid
+  chart="
+    flowchart TB
+      SOFIA[Sofia Core] --> Tools[Custom Tools]
+      SOFIA --> LLMs[LLM Providers]
+      SOFIA --> Steps[Custom Steps]
+      SOFIA --> Sessions[Session Stores]
+      SOFIA --> Events[Event Handlers]
+      SOFIA --> Middleware[Middleware]
+      SOFIA --> Metrics[Metrics Providers]"
+/>
 
 ## Creating Custom Tools
 
@@ -35,11 +34,11 @@ The simplest way to create a tool is with a Python function:
 ```python
 def get_weather(location: str, units: str = "metric") -> str:
     """Get the current weather for a location.
-    
+
     Args:
         location: The city and state or country
         units: The units to use, either "metric" or "imperial"
-        
+
     Returns:
         A string describing the current weather
     """
@@ -48,7 +47,7 @@ def get_weather(location: str, units: str = "metric") -> str:
         temp = "22°C"
     else:
         temp = "72°F"
-    
+
     return f"The weather in {location} is sunny with a high of {temp}"
 
 # Register with SOFIA
@@ -69,46 +68,46 @@ For more complex tools with state, use classes:
 class Calculator:
     def __init__(self):
         self.memory = 0
-    
+
     def add(self, value: float) -> float:
         """Add a value to the calculator's memory.
-        
+
         Args:
             value: Number to add
-            
+
         Returns:
             New memory value
         """
         self.memory += value
         return self.memory
-    
+
     def subtract(self, value: float) -> float:
         """Subtract a value from the calculator's memory.
-        
+
         Args:
             value: Number to subtract
-            
+
         Returns:
             New memory value
         """
         self.memory -= value
         return self.memory
-    
+
     def multiply(self, value: float) -> float:
         """Multiply the calculator's memory by a value.
-        
+
         Args:
             value: Number to multiply by
-            
+
         Returns:
             New memory value
         """
         self.memory *= value
         return self.memory
-    
+
     def clear(self) -> float:
         """Reset the calculator's memory to zero.
-        
+
         Returns:
             New memory value (0)
         """
@@ -142,26 +141,26 @@ from typing import Dict, Any, Optional
 class DatabaseSearchTool(Tool):
     def __init__(self, db_connection_string: str):
         """Create a new database search tool.
-        
+
         Args:
             db_connection_string: Connection string for the database
         """
         self.name = "search_database"
         self.description = "Search the database for records matching the query"
         self.db = self._connect_to_db(db_connection_string)
-    
+
     def _connect_to_db(self, connection_string: str):
         # Connect to database
         # This is a placeholder
         return {"connected": True}
-    
+
     def execute(self, query: str, limit: int = 10) -> Dict[str, Any]:
         """Search the database for records matching the query.
-        
+
         Args:
             query: The search query string
             limit: Maximum number of results to return
-            
+
         Returns:
             A dictionary with search results
         """
@@ -171,13 +170,13 @@ class DatabaseSearchTool(Tool):
             {"id": 1, "name": "Product A", "price": 19.99},
             {"id": 2, "name": "Product B", "price": 29.99}
         ]
-        
+
         return {
             "results": results[:limit],
             "count": len(results),
             "query": query
         }
-    
+
     def get_parameter_schema(self) -> Dict[str, Dict[str, Any]]:
         """Get the parameter schema for this tool."""
         return {
@@ -210,10 +209,10 @@ You can organize related tools in modules:
 # File: crm_tools.py
 def get_customer(customer_id: str) -> dict:
     """Get customer information by ID.
-    
+
     Args:
         customer_id: The customer's unique ID
-        
+
     Returns:
         Customer information as a dictionary
     """
@@ -222,11 +221,11 @@ def get_customer(customer_id: str) -> dict:
 
 def update_customer(customer_id: str, data: dict) -> dict:
     """Update customer information.
-    
+
     Args:
         customer_id: The customer's unique ID
         data: Dictionary with fields to update
-        
+
     Returns:
         Updated customer information
     """
@@ -235,11 +234,11 @@ def update_customer(customer_id: str, data: dict) -> dict:
 
 def list_orders(customer_id: str, limit: int = 5) -> list:
     """List orders for a customer.
-    
+
     Args:
         customer_id: The customer's unique ID
         limit: Maximum number of orders to return
-        
+
     Returns:
         List of orders
     """
@@ -283,11 +282,11 @@ import aiohttp
 
 async def fetch_api_data(url: str, timeout: int = 10) -> dict:
     """Fetch data from an API endpoint.
-    
+
     Args:
         url: The API endpoint URL
         timeout: Request timeout in seconds
-        
+
     Returns:
         API response data
     """
@@ -324,7 +323,7 @@ class CustomLLM(LLMBase):
         self.api_key = config.get("api_key")
         self.model = config.get("model", "default-model")
         self.client = YourLLMClient(self.api_key)  # Replace with actual client
-    
+
     def _get_output(
         self,
         name: str,
@@ -337,7 +336,7 @@ class CustomLLM(LLMBase):
         persona: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get the next decision from the LLM.
-        
+
         Args:
             name: Agent name
             steps: List of step definitions
@@ -347,7 +346,7 @@ class CustomLLM(LLMBase):
             response_format: Expected response format
             system_message: Optional system message
             persona: Optional persona description
-            
+
         Returns:
             LLM response according to response_format
         """
@@ -361,7 +360,7 @@ class CustomLLM(LLMBase):
             system_message=system_message,
             persona=persona
         )
-        
+
         # Call your LLM
         response = self.client.generate(
             model=self.model,
@@ -369,10 +368,10 @@ class CustomLLM(LLMBase):
             max_tokens=self.config.get("max_tokens", 1000),
             temperature=self.config.get("temperature", 0.7)
         )
-        
+
         # Parse the response according to response_format
         parsed_response = self._parse_response(response, response_format)
-        
+
         return parsed_response
 
 # Register your custom LLM
@@ -397,14 +396,14 @@ sofia = Sofia(
 
 The most challenging part of creating a custom LLM provider is parsing responses. Here's a more detailed example:
 
-```python
+````python
 def _parse_response(self, response: str, response_format: Dict[str, Any]) -> Dict[str, Any]:
     """Parse the LLM response into the expected format.
-    
+
     Args:
         response: Raw response from the LLM
         response_format: Expected response format
-        
+
     Returns:
         Parsed response matching response_format
     """
@@ -416,12 +415,12 @@ def _parse_response(self, response: str, response_format: Dict[str, Any]) -> Dic
                 prompt=prompt,
                 schema=response_format.get("schema")
             )
-        
+
         # Option 2: Parse JSON from text response
         if response_format.get("type") == "json":
             import json
             import re
-            
+
             # Extract JSON from response
             json_match = re.search(r'```json\s*(.*?)\s*```', response, re.DOTALL)
             if json_match:
@@ -433,26 +432,26 @@ def _parse_response(self, response: str, response_format: Dict[str, Any]) -> Dic
                     json_str = json_match.group(1)
                 else:
                     json_str = response
-            
+
             # Parse JSON
             parsed = json.loads(json_str)
-            
+
             # Validate against schema
             self._validate_against_schema(parsed, response_format.get("schema", {}))
-            
+
             return parsed
-        
+
         # Option 3: Handle plain text response
         if response_format.get("type") == "text":
             return {"text": response}
-        
+
         # Default fallback
         return {"raw_response": response}
-    
+
     except Exception as e:
         logging.error(f"Failed to parse LLM response: {str(e)}")
         return {"error": str(e), "raw_response": response}
-```
+````
 
 ## Custom Session Stores
 
@@ -465,25 +464,25 @@ from typing import Dict, Any, Optional
 class CustomSessionStore(SessionStoreBase):
     def __init__(self, connection_string: str):
         """Initialize custom session store.
-        
+
         Args:
             connection_string: Connection string for the storage backend
         """
         self.connection_string = connection_string
         self.db = self._connect()
-    
+
     def _connect(self):
         # Connect to your storage backend
         # This is a placeholder
         return {"connected": True}
-    
+
     def save_session(self, session_id: str, session_data: Dict[str, Any]) -> bool:
         """Save session data.
-        
+
         Args:
             session_id: Unique session identifier
             session_data: Session data to save
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -495,13 +494,13 @@ class CustomSessionStore(SessionStoreBase):
         except Exception as e:
             logging.error(f"Failed to save session: {str(e)}")
             return False
-    
+
     def load_session(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Load session data.
-        
+
         Args:
             session_id: Unique session identifier
-            
+
         Returns:
             Session data if found, None otherwise
         """
@@ -518,13 +517,13 @@ class CustomSessionStore(SessionStoreBase):
         except Exception as e:
             logging.error(f"Failed to load session: {str(e)}")
             return None
-    
+
     def delete_session(self, session_id: str) -> bool:
         """Delete a session.
-        
+
         Args:
             session_id: Unique session identifier
-            
+
         Returns:
             True if successful, False otherwise
         """
@@ -536,10 +535,10 @@ class CustomSessionStore(SessionStoreBase):
         except Exception as e:
             logging.error(f"Failed to delete session: {str(e)}")
             return False
-    
+
     def list_sessions(self) -> List[str]:
         """List all session IDs.
-        
+
         Returns:
             List of session IDs
         """
@@ -569,7 +568,7 @@ from typing import List, Optional, Dict, Any
 
 class FormStep(Step):
     """A step that collects form data from the user."""
-    
+
     def __init__(
         self,
         step_id: str,
@@ -580,7 +579,7 @@ class FormStep(Step):
         validation_tool: Optional[str] = None
     ):
         """Initialize a form step.
-        
+
         Args:
             step_id: Unique step identifier
             description: Step description
@@ -593,7 +592,7 @@ class FormStep(Step):
         self.fields = fields
         self.validation_tool = validation_tool
         self.step_type = "form"
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert step to dictionary."""
         step_dict = super().to_dict()
@@ -699,47 +698,47 @@ from typing import Dict, Any, Callable
 class RateLimitMiddleware(Middleware):
     def __init__(self, requests_per_minute: int = 60):
         """Initialize rate limit middleware.
-        
+
         Args:
             requests_per_minute: Maximum requests per minute per session
         """
         self.requests_per_minute = requests_per_minute
         self.session_timestamps = {}
-    
+
     async def process_request(self, session_id: str, message: str, context: Dict[str, Any], next_handler: Callable):
         """Process an incoming request.
-        
+
         Args:
             session_id: Session identifier
             message: User message
             context: Request context
             next_handler: Next handler in the chain
-            
+
         Returns:
             Response from the next handler or rate limit error
         """
         import time
-        
+
         # Get current time
         now = time.time()
-        
+
         # Get timestamps for this session
         timestamps = self.session_timestamps.get(session_id, [])
-        
+
         # Remove timestamps older than 1 minute
         timestamps = [ts for ts in timestamps if now - ts < 60]
-        
+
         # Check rate limit
         if len(timestamps) >= self.requests_per_minute:
             return {
                 "error": "Rate limit exceeded",
                 "message": "Too many requests. Please try again later."
             }
-        
+
         # Add current timestamp
         timestamps.append(now)
         self.session_timestamps[session_id] = timestamps
-        
+
         # Proceed to next handler
         return await next_handler(session_id, message, context)
 
@@ -765,7 +764,7 @@ from typing import Dict, Any
 class AnalyticsPlugin(SofiaPlugin):
     def __init__(self, api_key: str, tracking_id: str):
         """Initialize analytics plugin.
-        
+
         Args:
             api_key: API key for analytics service
             tracking_id: Tracking ID for analytics service
@@ -773,15 +772,15 @@ class AnalyticsPlugin(SofiaPlugin):
         self.api_key = api_key
         self.tracking_id = tracking_id
         self.client = self._initialize_client()
-    
+
     def _initialize_client(self):
         # Initialize analytics client
         # This is a placeholder
         return {"initialized": True}
-    
+
     def on_initialize(self, sofia: Sofia):
         """Called when the plugin is initialized.
-        
+
         Args:
             sofia: The SOFIA instance
         """
@@ -789,28 +788,28 @@ class AnalyticsPlugin(SofiaPlugin):
         sofia.on("message_received", self.track_message)
         sofia.on("tool_called", self.track_tool_call)
         sofia.on("step_changed", self.track_step_change)
-    
+
     def track_message(self, event: Dict[str, Any]):
         """Track a message event.
-        
+
         Args:
             event: Event data
         """
         # Track message in analytics
         print(f"Tracking message: {event}")
-    
+
     def track_tool_call(self, event: Dict[str, Any]):
         """Track a tool call event.
-        
+
         Args:
             event: Event data
         """
         # Track tool call in analytics
         print(f"Tracking tool call: {event}")
-    
+
     def track_step_change(self, event: Dict[str, Any]):
         """Track a step change event.
-        
+
         Args:
             event: Event data
         """
@@ -842,18 +841,18 @@ from typing import Any, Dict, List
 class DatabaseIntegration:
     def __init__(self, db_path: str):
         """Initialize database integration.
-        
+
         Args:
             db_path: Path to SQLite database file
         """
         self.db_path = db_path
         self._initialize_db()
-    
+
     def _initialize_db(self):
         """Initialize the database schema."""
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Create tables
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS products (
@@ -864,7 +863,7 @@ class DatabaseIntegration:
                     category TEXT
                 )
             ''')
-            
+
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS customers (
                     id INTEGER PRIMARY KEY,
@@ -873,9 +872,9 @@ class DatabaseIntegration:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
-            
+
             conn.commit()
-    
+
     @contextmanager
     def _get_connection(self):
         """Get a database connection."""
@@ -885,71 +884,71 @@ class DatabaseIntegration:
             yield conn
         finally:
             conn.close()
-    
+
     def search_products(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """Search products by name or description.
-        
+
         Args:
             query: Search query
             limit: Maximum number of results
-            
+
         Returns:
             List of matching products
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            
+
             cursor.execute('''
                 SELECT * FROM products
                 WHERE name LIKE ? OR description LIKE ?
                 LIMIT ?
             ''', (f'%{query}%', f'%{query}%', limit))
-            
+
             results = [dict(row) for row in cursor.fetchall()]
             return results
-    
+
     def get_customer(self, email: str) -> Dict[str, Any]:
         """Get customer by email.
-        
+
         Args:
             email: Customer email
-            
+
         Returns:
             Customer data if found, empty dict otherwise
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            
+
             cursor.execute('''
                 SELECT * FROM customers
                 WHERE email = ?
             ''', (email,))
-            
+
             row = cursor.fetchone()
             if row:
                 return dict(row)
             return {}
-    
+
     def add_customer(self, name: str, email: str) -> Dict[str, Any]:
         """Add a new customer.
-        
+
         Args:
             name: Customer name
             email: Customer email
-            
+
         Returns:
             New customer data
         """
         with self._get_connection() as conn:
             cursor = conn.cursor()
-            
+
             cursor.execute('''
                 INSERT INTO customers (name, email)
                 VALUES (?, ?)
             ''', (name, email))
-            
+
             conn.commit()
-            
+
             return {
                 "id": cursor.lastrowid,
                 "name": name,
@@ -962,11 +961,11 @@ db = DatabaseIntegration("sofia_data.db")
 # Create tools using the database integration
 def search_products(query: str, limit: int = 10) -> list:
     """Search products by name or description.
-    
+
     Args:
         query: Search query
         limit: Maximum number of results
-        
+
     Returns:
         List of matching products
     """
@@ -974,10 +973,10 @@ def search_products(query: str, limit: int = 10) -> list:
 
 def get_customer_by_email(email: str) -> dict:
     """Get customer information by email.
-    
+
     Args:
         email: Customer email address
-        
+
     Returns:
         Customer information or empty dict if not found
     """
@@ -985,11 +984,11 @@ def get_customer_by_email(email: str) -> dict:
 
 def add_new_customer(name: str, email: str) -> dict:
     """Add a new customer to the database.
-    
+
     Args:
         name: Customer name
         email: Customer email address
-        
+
     Returns:
         New customer information
     """
@@ -1012,7 +1011,7 @@ from typing import Dict, Any, List, Optional
 class APIIntegration:
     def __init__(self, base_url: str, api_key: str):
         """Initialize API integration.
-        
+
         Args:
             base_url: Base URL for the API
             api_key: API key for authentication
@@ -1025,16 +1024,16 @@ class APIIntegration:
             "Content-Type": "application/json",
             "Accept": "application/json"
         })
-    
+
     def _handle_response(self, response: requests.Response) -> Dict[str, Any]:
         """Handle API response.
-        
+
         Args:
             response: Response object
-            
+
         Returns:
             Parsed response data
-            
+
         Raises:
             Exception: If the request failed
         """
@@ -1052,45 +1051,45 @@ class APIIntegration:
             raise Exception(error_message)
         except Exception as e:
             raise Exception(f"Request failed: {str(e)}")
-    
+
     def get_products(self, category: Optional[str] = None, limit: int = 10) -> List[Dict[str, Any]]:
         """Get products from the API.
-        
+
         Args:
             category: Optional category filter
             limit: Maximum number of products to return
-            
+
         Returns:
             List of products
         """
         params = {"limit": limit}
         if category:
             params["category"] = category
-        
+
         response = self.session.get(f"{self.base_url}/products", params=params)
         data = self._handle_response(response)
-        
+
         return data.get("products", [])
-    
+
     def get_product(self, product_id: str) -> Dict[str, Any]:
         """Get a product by ID.
-        
+
         Args:
             product_id: Product ID
-            
+
         Returns:
             Product data
         """
         response = self.session.get(f"{self.base_url}/products/{product_id}")
         return self._handle_response(response)
-    
+
     def create_order(self, customer_id: str, products: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Create a new order.
-        
+
         Args:
             customer_id: Customer ID
             products: List of products to order
-            
+
         Returns:
             Order data
         """
@@ -1098,7 +1097,7 @@ class APIIntegration:
             "customer_id": customer_id,
             "products": products
         }
-        
+
         response = self.session.post(f"{self.base_url}/orders", json=data)
         return self._handle_response(response)
 
@@ -1111,11 +1110,11 @@ api = APIIntegration(
 # Create tools using the API integration
 def get_products(category: Optional[str] = None, limit: int = 10) -> list:
     """Get products from the catalog.
-    
+
     Args:
         category: Optional category filter
         limit: Maximum number of products to return
-        
+
     Returns:
         List of products
     """
@@ -1123,10 +1122,10 @@ def get_products(category: Optional[str] = None, limit: int = 10) -> list:
 
 def get_product_details(product_id: str) -> dict:
     """Get detailed information about a product.
-    
+
     Args:
         product_id: Product ID
-        
+
     Returns:
         Product details
     """
@@ -1134,11 +1133,11 @@ def get_product_details(product_id: str) -> dict:
 
 def place_order(customer_id: str, products: list) -> dict:
     """Place a new order.
-    
+
     Args:
         customer_id: Customer ID
         products: List of products to order, each with product_id and quantity
-        
+
     Returns:
         Order details
     """
@@ -1163,7 +1162,8 @@ sofia = Sofia(
 7. **Monitor Performance**: Track and optimize extension performance
 
 <Callout type="info">
-  When creating extensions, structure your code to be easily testable and maintainable. Consider creating a separate package for complex extensions.
+  When creating extensions, structure your code to be easily testable and
+  maintainable. Consider creating a separate package for complex extensions.
 </Callout>
 
 ## Next Steps

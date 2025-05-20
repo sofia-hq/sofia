@@ -16,8 +16,8 @@ Tools in SOFIA are functions that:
 - Are registered with the agent at initialization
 - Can perform any action a Python function can perform
 
-<div className="flex justify-center my-8">
-```mermaid
+<Mermaid
+  chart="
 graph TD
     A[Sofia Agent] --> B[Tool Registry]
     B --> C[Custom Tools]
@@ -29,9 +29,8 @@ graph TD
     F --> H
     G --> H
     H --> I[Tool Result]
-    I --> A
-```
-</div>
+    I --> A"
+/>
 
 ## Types of Tools
 
@@ -44,10 +43,10 @@ Custom tools are Python functions that you create and register with your SOFIA a
 ```python
 def get_weather(location: str) -> str:
     """Get the current weather for a location.
-    
+
     Args:
         location: The city and state or country
-        
+
     Returns:
         A string describing the current weather
     """
@@ -91,7 +90,8 @@ SOFIA will use type annotations and docstrings to generate documentation for the
 When creating custom tools, follow these best practices:
 
 <Callout type="info">
-  Type annotations are important for SOFIA to understand your tools' interfaces and generate proper documentation.
+  Type annotations are important for SOFIA to understand your tools' interfaces
+  and generate proper documentation.
 </Callout>
 
 ### Basic Tool Example
@@ -99,11 +99,11 @@ When creating custom tools, follow these best practices:
 ```python
 def search_database(query: str, limit: int = 10) -> list:
     """Search the database for records matching the query.
-    
+
     Args:
         query: The search query string
         limit: Maximum number of results to return (default: 10)
-        
+
     Returns:
         A list of matching database records
     """
@@ -119,14 +119,14 @@ Tools should handle errors gracefully and return informative error messages:
 ```python
 def divide_numbers(a: float, b: float) -> float:
     """Divide the first number by the second.
-    
+
     Args:
         a: The dividend
         b: The divisor
-        
+
     Returns:
         The result of a divided by b
-        
+
     Raises:
         ValueError: If b is zero
     """
@@ -206,11 +206,11 @@ from typing import List, Dict, Any
 
 def batch_process(items: List[Dict[str, Any]], operation: str) -> List[Dict[str, Any]]:
     """Process a batch of items with the specified operation.
-    
+
     Args:
         items: List of items to process, each as a dictionary
         operation: Operation to perform on each item
-        
+
     Returns:
         List of processed items
     """
@@ -226,22 +226,22 @@ Tools can maintain state between calls by using class methods:
 class Calculator:
     def __init__(self):
         self.memory = 0
-    
+
     def add(self, value: float) -> float:
         """Add a value to the calculator's memory.
-        
+
         Args:
             value: Number to add
-            
+
         Returns:
             New memory value
         """
         self.memory += value
         return self.memory
-    
+
     def clear(self) -> float:
         """Reset the calculator's memory to zero.
-        
+
         Returns:
             New memory value (0)
         """
@@ -286,7 +286,7 @@ External packages can also be integrated:
 sofia = Sofia(
     name="data_agent",
     tools=[
-        "pandas:read_csv", 
+        "pandas:read_csv",
         "numpy:mean",
         "requests:get"
     ],
@@ -305,7 +305,8 @@ When creating and using tools:
 5. **Test tools independently**: Verify tools work correctly before integrating them
 
 <Callout type="warning">
-  Avoid creating tools with side effects that can't be undone, especially for destructive operations.
+  Avoid creating tools with side effects that can't be undone, especially for
+  destructive operations.
 </Callout>
 
 ## Next Steps

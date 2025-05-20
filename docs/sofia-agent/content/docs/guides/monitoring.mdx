@@ -11,27 +11,26 @@ Effective monitoring and debugging are essential for maintaining reliable SOFIA 
 
 A comprehensive monitoring setup for SOFIA includes:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TB
-    SOFIA[SOFIA Agent] --> Logging[Logging System]
-    SOFIA --> Metrics[Metrics Collection]
-    SOFIA --> Tracing[Distributed Tracing]
-    SOFIA --> Events[Event Streams]
-    
-    Logging --> LogAgg[Log Aggregator]
-    Metrics --> Prometheus[Prometheus]
-    Tracing --> Jaeger[Jaeger/Zipkin]
-    Events --> Kafka[Kafka/Event Bus]
-    
-    LogAgg --> Dashboard[Dashboards]
-    Prometheus --> Dashboard
-    Jaeger --> Dashboard
-    Kafka --> Dashboard
-    
-    Dashboard --> Alerts[Alerts & Notifications]
-```
-</div>
+<Mermaid
+  chart="
+    flowchart TB
+      SOFIA[SOFIA Agent] --> Logging[Logging System]
+      SOFIA --> Metrics[Metrics Collection]
+      SOFIA --> Tracing[Distributed Tracing]
+      SOFIA --> Events[Event Streams]
+      
+      Logging --> LogAgg[Log Aggregator]
+      Metrics --> Prometheus[Prometheus]
+      Tracing --> Jaeger[Jaeger/Zipkin]
+      Events --> Kafka[Kafka/Event Bus]
+      
+      LogAgg --> Dashboard[Dashboards]
+      Prometheus --> Dashboard
+      Jaeger --> Dashboard
+      Kafka --> Dashboard
+      
+      Dashboard --> Alerts[Alerts & Notifications]"
+/>
 
 ## Logging Configuration
 
@@ -62,12 +61,12 @@ sofia = Sofia(
 
 SOFIA uses the following log levels:
 
-| Level | When to Use |
-|-------|-------------|
-| DEBUG | Detailed information for debugging |
-| INFO | Confirmation that things are working as expected |
-| WARNING | Indication that something unexpected happened |
-| ERROR | Errors that prevent a function from working |
+| Level    | When to Use                                                     |
+| -------- | --------------------------------------------------------------- |
+| DEBUG    | Detailed information for debugging                              |
+| INFO     | Confirmation that things are working as expected                |
+| WARNING  | Indication that something unexpected happened                   |
+| ERROR    | Errors that prevent a function from working                     |
 | CRITICAL | Serious errors that may prevent the application from continuing |
 
 ### Structured Logging
@@ -87,6 +86,7 @@ configure_json_logging(
 ```
 
 Example output:
+
 ```json
 {
   "timestamp": "2023-06-15T12:34:56.789Z",
@@ -126,22 +126,26 @@ sofia = Sofia(
 SOFIA exposes these key metrics:
 
 1. **Request Metrics**:
+
    - Request count
    - Request duration
    - Request errors
 
 2. **LLM Metrics**:
+
    - LLM call count
    - LLM token usage
    - LLM response time
    - LLM errors
 
 3. **Tool Metrics**:
+
    - Tool call count
    - Tool execution time
    - Tool error rate
 
 4. **Session Metrics**:
+
    - Active sessions
    - Session duration
    - Messages per session
@@ -159,10 +163,10 @@ Example Prometheus configuration for scraping SOFIA metrics:
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'sofia'
+  - job_name: "sofia"
     scrape_interval: 15s
     static_configs:
-      - targets: ['sofia-service:8001']
+      - targets: ["sofia-service:8001"]
 ```
 
 ## Distributed Tracing
@@ -197,33 +201,33 @@ def process_customer_request(customer_id, request_type):
 
 A typical trace for a SOFIA agent includes:
 
-<div className="flex justify-center my-8">
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API as API Server
-    participant Session as Flow Session
-    participant LLM as LLM Provider
-    participant Tool as Tool Execution
-    
-    Client->>+API: POST /chat
-    API->>+Session: send_message()
-    Session->>+LLM: get_decision()
-    LLM-->>-Session: decision
-    
-    alt Tool Call
-        Session->>+Tool: execute_tool()
-        Tool-->>-Session: result
-        Session->>+LLM: get_next_decision()
-        LLM-->>-Session: next_decision
-    end
-    
-    Session-->>-API: response
-    API-->>-Client: 200 OK with response
-```
-</div>
+<Mermaid
+  chart="
+    sequenceDiagram
+      participant Client
+      participant API as API Server
+      participant Session as Flow Session
+      participant LLM as LLM Provider
+      participant Tool as Tool Execution
+      
+      Client->>+API: POST /chat
+      API->>+Session: send_message()
+      Session->>+LLM: get_decision()
+      LLM-->>-Session: decision
+      
+      alt Tool Call
+          Session->>+Tool: execute_tool()
+          Tool-->>-Session: result
+          Session->>+LLM: get_next_decision()
+          LLM-->>-Session: next_decision
+      end
+      
+      Session-->>-API: response
+      API-->>-Client: 200 OK with response"
+/>
 
 Each of these operations creates a span in the trace, allowing you to see:
+
 - How long each step takes
 - Where bottlenecks occur
 - Error locations and contexts
@@ -255,6 +259,7 @@ sofia = Sofia(
 ### APM Dashboard
 
 The Elastic APM dashboard provides insights into:
+
 - Transaction durations
 - Error rates and details
 - Throughput
@@ -340,6 +345,7 @@ sofia = Sofia(
 ```
 
 The LLM debugger will save:
+
 - All prompts sent to the LLM
 - All responses received
 - Token counts and costs
@@ -394,6 +400,7 @@ if __name__ == "__main__":
 ```
 
 This creates a dashboard at `/debug` that shows:
+
 - Active sessions
 - Recent requests
 - Tool calls
@@ -505,19 +512,19 @@ This creates a dashboard at `/debug` that shows:
         def wrapper(*args, **kwargs):
             # Create a cache key from args and kwargs
             key = str(args) + str(sorted(kwargs.items()))
-            
+
             # Check if result is in cache
             if key in cache:
                 return cache[key]
-            
+
             # Execute function with timeout
             start_time = time.time()
             result = func(*args, **kwargs)
             duration = time.time() - start_time
-            
+
             # Log execution time
             logging.info(f"Tool {func.__name__} executed in {duration:.2f}s")
-            
+
             # Cache the result
             cache[key] = result
             return result
@@ -528,22 +535,22 @@ This creates a dashboard at `/debug` that shows:
         # Implementation
         pass
     ```
-    
+
     **Issue: Tool Not Being Used**
     - **Symptoms**: LLM doesn't use available tools
     - **Solution**: Improve tool documentation, use example invocations
-    
+
     ```python
     def format_date(date_string: str, output_format: str = "YYYY-MM-DD") -> str:
         """Format a date string to the specified format.
-        
+
         Args:
             date_string: The input date string (e.g., "January 1, 2023", "01/01/2023")
             output_format: The desired output format (e.g., "YYYY-MM-DD", "MM/DD/YYYY")
-            
+
         Returns:
             The formatted date string
-            
+
         Example:
             Input: format_date("January 1, 2023", "MM/DD/YYYY")
             Output: "01/01/2023"
@@ -551,6 +558,7 @@ This creates a dashboard at `/debug` that shows:
         # Implementation
         pass
     ```
+
   </Tab>
   <Tab label="Session Issues">
     ### Common Session Problems
@@ -632,7 +640,7 @@ sofia = Sofia(
 async def generic_exception_handler(request: Request, exc: Exception):
     # Log the error
     logging.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    
+
     # Return a friendly response
     return JSONResponse(
         status_code=500,
@@ -650,7 +658,7 @@ async def chat(request: Request, chat_request: dict):
         # Process the chat request
         session_id = chat_request.get("session_id")
         message = chat_request.get("message")
-        
+
         # Get or create session
         if session_id:
             session = sofia.get_session(session_id)
@@ -661,10 +669,10 @@ async def chat(request: Request, chat_request: dict):
                 )
         else:
             session = sofia.new_session()
-        
+
         # Send message and get response
         response = session.send_message(message)
-        
+
         # Return response
         return {
             "session_id": session.session_id,
@@ -674,7 +682,7 @@ async def chat(request: Request, chat_request: dict):
     except Exception as e:
         # Log the error
         logging.error(f"Chat error: {str(e)}", exc_info=True)
-        
+
         # Return error response
         return JSONResponse(
             status_code=500,
@@ -696,43 +704,42 @@ For production monitoring, set up a dashboard with:
 4. **System health**: CPU, memory, disk, network usage
 5. **Alerts**: Configured for key metrics and errors
 
-<div className="flex justify-center my-8">
-```mermaid
-graph TD
-    A[Data Sources] --> B[Monitoring Stack]
-    B --> C[Dashboards]
-    B --> D[Alerts]
-    
-    subgraph "Data Sources"
-    A1[SOFIA Logs]
-    A2[SOFIA Metrics]
-    A3[SOFIA Traces]
-    A4[System Metrics]
-    end
-    
-    subgraph "Monitoring Stack"
-    B1[Elasticsearch]
-    B2[Prometheus]
-    B3[Grafana]
-    B4[Alertmanager]
-    end
-    
-    subgraph "Dashboards"
-    C1[Overview]
-    C2[LLM Performance]
-    C3[Tool Performance]
-    C4[Sessions]
-    C5[Errors]
-    end
-    
-    subgraph "Alerts"
-    D1[Error Rate]
-    D2[Latency]
-    D3[Resource Usage]
-    D4[Cost Thresholds]
-    end
-```
-</div>
+<Mermaid
+  chart='
+    graph TD
+      A[Data Sources] --> B[Monitoring Stack]
+      B --> C[Dashboards]
+      B --> D[Alerts]
+      
+      subgraph "Data Sources"
+      A1[SOFIA Logs]
+      A2[SOFIA Metrics]
+      A3[SOFIA Traces]
+      A4[System Metrics]
+      end
+      
+      subgraph "Monitoring Stack"
+      B1[Elasticsearch]
+      B2[Prometheus]
+      B3[Grafana]
+      B4[Alertmanager]
+      end
+      
+      subgraph "Dashboards"
+      C1[Overview]
+      C2[LLM Performance]
+      C3[Tool Performance]
+      C4[Sessions]
+      C5[Errors]
+      end
+      
+      subgraph "Alerts"
+      D1[Error Rate]
+      D2[Latency]
+      D3[Resource Usage]
+      D4[Cost Thresholds]
+      end'
+/>
 
 ## Scheduled Health Checks
 
@@ -774,7 +781,8 @@ scheduler.start()
 8. **Use canary deployments**: Test changes with a subset of traffic
 
 <Callout type="info">
-  For production debugging, create a special debug mode that can be enabled for specific sessions without affecting all users.
+  For production debugging, create a special debug mode that can be enabled for
+  specific sessions without affecting all users.
 </Callout>
 
 ## Monitoring Checklist

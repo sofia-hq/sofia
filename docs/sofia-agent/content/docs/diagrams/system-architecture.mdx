@@ -11,8 +11,8 @@ This page provides a comprehensive view of SOFIA's system architecture, illustra
 
 The diagram below shows the high-level architecture of the SOFIA framework:
 
-<div className="my-8">
-  <Mermaid chart={`
+<Mermaid
+  chart='
     graph TD
       User[User] <--> WebUI[Web Interface]
       User <--> CLI[Command Line]
@@ -52,9 +52,8 @@ The diagram below shows the high-level architecture of the SOFIA framework:
       style FlowEngine fill:#bbf,stroke:#333,stroke-width:2px
       style ToolRegistry fill:#bfb,stroke:#333,stroke-width:2px
       style LLMProvider fill:#fbb,stroke:#333,stroke-width:2px
-      style SessionManager fill:#fbf,stroke:#333,stroke-width:2px
-  `} />
-</div>
+      style SessionManager fill:#fbf,stroke:#333,stroke-width:2px'
+/>
 
 ## Component Descriptions
 
@@ -82,8 +81,8 @@ The diagram below shows the high-level architecture of the SOFIA framework:
 
 The following diagram illustrates how data flows through the SOFIA system during a typical interaction:
 
-<div className="my-8">
-  <Mermaid chart={`
+<Mermaid
+  chart="
     sequenceDiagram
       participant User
       participant Agent as Sofia Agent
@@ -109,16 +108,15 @@ The following diagram illustrates how data flows through the SOFIA system during
       
       Flow->>Agent: Return final response
       Agent->>Session: Update session state
-      Agent->>User: Send response
-  `} />
-</div>
+      Agent->>User: Send response"
+/>
 
 ## Extension Points
 
 SOFIA is designed to be extensible at multiple levels. The diagram below highlights the key extension points:
 
-<div className="my-8">
-  <Mermaid chart={`
+<Mermaid
+  chart='
     graph TD
       subgraph "Extension Points"
         Tools[Custom Tools]
@@ -135,9 +133,8 @@ SOFIA is designed to be extensible at multiple levels. The diagram below highlig
       Steps -->|Extends| FlowEngine[Flow Engine]
       
       classDef extension fill:#ffd,stroke:#d90,stroke-width:2px
-      class Tools,LLMs,Storage,UI,Steps extension
-  `} />
-</div>
+      class Tools,LLMs,Storage,UI,Steps extension'
+/>
 
 ## Architecture Considerations
 

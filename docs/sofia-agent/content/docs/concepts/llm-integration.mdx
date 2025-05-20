@@ -11,8 +11,8 @@ Large Language Models (LLMs) are at the core of SOFIA's intelligence. They power
 
 SOFIA uses a provider-based architecture to support multiple LLM backends:
 
-<div className="flex justify-center my-8">
-```mermaid
+<Mermaid
+  chart="
 flowchart TB
     Sofia[Sofia Agent] --> LLMFactory[LLM Factory]
     LLMFactory --> OpenAI[OpenAI Provider]
@@ -24,9 +24,8 @@ flowchart TB
     Mistral --> MistralLarge[Mistral Large]
     Mistral --> MistralSmall[Mistral Small]
     Gemini --> GeminiPro[Gemini Pro]
-    Custom --> YourLLM[Your LLM]
-```
-</div>
+    Custom --> YourLLM[Your LLM]"
+/>
 
 ## Supported LLM Providers
 
@@ -86,6 +85,7 @@ SOFIA uses LLMs for several critical functions:
 ### 1. Decision Making
 
 The LLM determines what the agent should do next:
+
 - Respond to the user
 - Call a tool
 - Follow a route to a new step
@@ -179,14 +179,14 @@ SOFIA provides flexible configuration options for LLMs:
 
 ## Common Configuration Parameters
 
-| Parameter | Description | Default | Example Values |
-|-----------|-------------|---------|---------------|
-| `model` | The specific model to use | Varies by provider | `"gpt-4"`, `"mistral-large-latest"` |
-| `api_key` | Authentication key for the LLM API | None (required) | `"sk-abc123..."` |
-| `temperature` | Controls randomness (higher = more random) | 0.7 | 0.0 - 1.0 |
-| `max_tokens` | Maximum tokens in generated response | 1000 | 100 - 4000 |
-| `retry_count` | Number of retry attempts if API call fails | 3 | 1 - 5 |
-| `request_timeout` | Timeout for API requests in seconds | 30 | 10 - 120 |
+| Parameter         | Description                                | Default            | Example Values                      |
+| ----------------- | ------------------------------------------ | ------------------ | ----------------------------------- |
+| `model`           | The specific model to use                  | Varies by provider | `"gpt-4"`, `"mistral-large-latest"` |
+| `api_key`         | Authentication key for the LLM API         | None (required)    | `"sk-abc123..."`                    |
+| `temperature`     | Controls randomness (higher = more random) | 0.7                | 0.0 - 1.0                           |
+| `max_tokens`      | Maximum tokens in generated response       | 1000               | 100 - 4000                          |
+| `retry_count`     | Number of retry attempts if API call fails | 3                  | 1 - 5                               |
+| `request_timeout` | Timeout for API requests in seconds        | 30                 | 10 - 120                            |
 
 ## Provider-specific Parameters
 
@@ -258,12 +258,12 @@ class MyCustomLLM(LLMBase):
         # Initialize your custom LLM here
         self.client = YourLLMClient(config.get("api_key"))
         self.model = config.get("model", "default-model")
-    
-    def _get_output(self, name, steps, current_step, tools, history, 
+
+    def _get_output(self, name, steps, current_step, tools, history,
                    response_format, system_message, persona):
         # Implement the core LLM interaction logic
         # Format the prompt, call your LLM, and parse the response
-        
+
         # Example implementation:
         prompt = self._format_prompt(
             name=name,
@@ -274,17 +274,17 @@ class MyCustomLLM(LLMBase):
             history=history,
             persona=persona
         )
-        
+
         response = self.client.generate(
             model=self.model,
             prompt=prompt,
             max_tokens=self.config.get("max_tokens", 1000),
             temperature=self.config.get("temperature", 0.7)
         )
-        
+
         # Parse the response according to response_format
         parsed_response = self._parse_response(response, response_format)
-        
+
         return parsed_response
 
 # Register your custom LLM provider
@@ -318,6 +318,7 @@ sofia = Sofia(
 ```
 
 Common local LLM setups include:
+
 - [llama.cpp](https://github.com/ggerganov/llama.cpp) server
 - [LocalAI](https://github.com/localai/localai)
 - [Ollama](https://ollama.com/)
@@ -406,7 +407,8 @@ sofia = Sofia(
 7. **Cache responses**: For repeatable queries to reduce API calls
 
 <Callout type="info">
-  For production deployments, consider implementing a caching layer to reduce redundant LLM calls and minimize costs.
+  For production deployments, consider implementing a caching layer to reduce
+  redundant LLM calls and minimize costs.
 </Callout>
 
 ## Next Steps

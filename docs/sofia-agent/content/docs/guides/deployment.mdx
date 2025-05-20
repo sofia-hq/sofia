@@ -11,17 +11,16 @@ This guide covers the different ways you can deploy SOFIA agents, from simple lo
 
 A typical SOFIA deployment includes these components:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TB
-    Client(Client Applications) <--> API[SOFIA API Server]
-    API <--> Sofia[Sofia Agent]
-    Sofia <--> LLM[LLM Provider]
-    Sofia <--> Redis[(Redis Cache/Session Store)]
-    Sofia <--> Tools[External Tools/APIs]
-    API <--> Monitoring[Monitoring/Logging]
-```
-</div>
+<Mermaid
+  chart="
+    flowchart TB
+      Client(Client Applications) <--> API[SOFIA API Server]
+      API <--> Sofia[Sofia Agent]
+      Sofia <--> LLM[LLM Provider]
+      Sofia <--> Redis[(Redis Cache/Session Store)]
+      Sofia <--> Tools[External Tools/APIs]
+      API <--> Monitoring[Monitoring/Logging]"
+/>
 
 ## Local Development Deployment
 
@@ -87,7 +86,7 @@ For a complete development environment:
 
 ```yaml
 # docker-compose.yml
-version: '3'
+version: "3"
 
 services:
   sofia-api:
@@ -104,7 +103,7 @@ services:
     volumes:
       - ./config:/app/config
     restart: unless-stopped
-    
+
   redis:
     image: redis:7-alpine
     ports:
@@ -129,16 +128,15 @@ SOFIA can be deployed on various cloud platforms:
 
 <Tabs>
   <Tab label="AWS">
-    <div className="flex justify-center my-6">
-    ```mermaid
-    flowchart TB
-        ALB[AWS Load Balancer] --> ECS[ECS Fargate]
-        ECS --> ECR[ECR Container Registry]
-        ECS --> ElastiCache[ElastiCache Redis]
-        ECS --> Secrets[Secrets Manager]
-        ECS --> CloudWatch[CloudWatch Logs]
-    ```
-    </div>
+    <Mermaid
+      chart="
+      flowchart TB
+          ALB[AWS Load Balancer] --> ECS[ECS Fargate]
+          ECS --> ECR[ECR Container Registry]
+          ECS --> ElastiCache[ElastiCache Redis]
+          ECS --> Secrets[Secrets Manager]
+          ECS --> CloudWatch[CloudWatch Logs]"
+    />
     
     ### AWS ECS Fargate
 
@@ -147,16 +145,16 @@ SOFIA can be deployed on various cloud platforms:
     3. Set up an ECS cluster and service using Fargate
     4. Configure a load balancer and target group
     5. Deploy the service with appropriate environment variables
-    
+
     ### Example CloudFormation Template (excerpt)
-    
+
     ```yaml
     Resources:
       SofiaEcsCluster:
         Type: AWS::ECS::Cluster
         Properties:
           ClusterName: sofia-cluster
-      
+
       SofiaTaskDefinition:
         Type: AWS::ECS::TaskDefinition
         Properties:
@@ -188,45 +186,45 @@ SOFIA can be deployed on various cloud platforms:
                   awslogs-region: !Ref AWS::Region
                   awslogs-stream-prefix: sofia
     ```
+
   </Tab>
   <Tab label="Azure">
-    <div className="flex justify-center my-6">
-    ```mermaid
-    flowchart TB
-        FD[Azure Front Door] --> ACA[Azure Container Apps]
-        ACA --> ACR[Azure Container Registry]
-        ACA --> Redis[Azure Cache for Redis]
-        ACA --> KeyVault[Azure Key Vault]
-        ACA --> AppInsights[Application Insights]
-    ```
-    </div>
-    
+    <Mermaid
+      chart="
+      flowchart TB
+          FD[Azure Front Door] --> ACA[Azure Container Apps]
+          ACA --> ACR[Azure Container Registry]
+          ACA --> Redis[Azure Cache for Redis]
+          ACA --> KeyVault[Azure Key Vault]
+          ACA --> AppInsights[Application Insights]"
+    />
+
     ### Azure Container Apps
-    
+
     1. Create an Azure Container Registry
     2. Push your Docker image to ACR
     3. Deploy to Azure Container Apps
     4. Configure scaling rules based on HTTP traffic
     5. Set up Azure Cache for Redis for session storage
-    
+
     ### Example Azure CLI Commands
-    
+
     ```bash
     # Create a resource group
     az group create --name sofia-group --location eastus
-    
+
     # Create Azure Container Registry
     az acr create --resource-group sofia-group --name sofiaregistry --sku Basic
-    
+
     # Build and push to ACR
     az acr build --registry sofiaregistry --image sofia:latest .
-    
+
     # Create Azure Container App Environment
     az containerapp env create \
       --name sofia-env \
       --resource-group sofia-group \
       --location eastus
-    
+
     # Create the Container App
     az containerapp create \
       --name sofia-app \
@@ -239,18 +237,18 @@ SOFIA can be deployed on various cloud platforms:
       --max-replicas 10 \
       --env-vars "SOFIA_LLM_PROVIDER=openai" "SOFIA_SESSION_STORE=redis"
     ```
+
   </Tab>
   <Tab label="GCP">
-    <div className="flex justify-center my-6">
-    ```mermaid
-    flowchart TB
-        LB[Cloud Load Balancing] --> CR[Cloud Run]
-        CR --> AR[Artifact Registry]
-        CR --> MR[Memorystore Redis]
-        CR --> SM[Secret Manager]
-        CR --> Log[Cloud Logging]
-    ```
-    </div>
+    <Mermaid
+      chart="
+      flowchart TB
+          LB[Cloud Load Balancing] --> CR[Cloud Run]
+          CR --> AR[Artifact Registry]
+          CR --> MR[Memorystore Redis]
+          CR --> SM[Secret Manager]
+          CR --> Log[Cloud Logging]"
+    />
     
     ### Google Cloud Run
     
@@ -310,41 +308,41 @@ spec:
         app: sofia
     spec:
       containers:
-      - name: sofia
-        image: your-registry/sofia:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: SOFIA_LLM_PROVIDER
-          value: "openai"
-        - name: SOFIA_LLM_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: sofia-secrets
-              key: openai-api-key
-        - name: SOFIA_SESSION_STORE
-          value: "redis"
-        - name: SOFIA_REDIS_URL
-          value: "redis://redis-service:6379/0"
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
-            memory: "1Gi"
-            cpu: "500m"
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 15
-          periodSeconds: 10
+        - name: sofia
+          image: your-registry/sofia:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SOFIA_LLM_PROVIDER
+              value: "openai"
+            - name: SOFIA_LLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sofia-secrets
+                  key: openai-api-key
+            - name: SOFIA_SESSION_STORE
+              value: "redis"
+            - name: SOFIA_REDIS_URL
+              value: "redis://redis-service:6379/0"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
 ```
 
 ### Service Manifest
@@ -359,8 +357,8 @@ spec:
   selector:
     app: sofia
   ports:
-  - port: 80
-    targetPort: 8000
+    - port: 80
+      targetPort: 8000
   type: ClusterIP
 ```
 
@@ -376,20 +374,20 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - host: sofia.yourdomain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: sofia-service
-            port:
-              number: 80
+    - host: sofia.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: sofia-service
+                port:
+                  number: 80
   tls:
-  - hosts:
-    - sofia.yourdomain.com
-    secretName: sofia-tls-secret
+    - hosts:
+        - sofia.yourdomain.com
+      secretName: sofia-tls-secret
 ```
 
 Apply with:
@@ -426,18 +424,18 @@ spec:
   minReplicas: 2
   maxReplicas: 10
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 75
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 75
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 300
@@ -535,34 +533,34 @@ spec:
     matchLabels:
       app: sofia
   policyTypes:
-  - Ingress
-  - Egress
+    - Ingress
+    - Egress
   ingress:
-  - from:
-    - podSelector:
-        matchLabels:
-          app: frontend
-    ports:
-    - protocol: TCP
-      port: 8000
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
   egress:
-  - to:
-    - podSelector:
-        matchLabels:
-          app: redis
-    ports:
-    - protocol: TCP
-      port: 6379
-  - to:
-    - ipBlock:
-        cidr: 0.0.0.0/0
-        except:
-        - 10.0.0.0/8
-        - 172.16.0.0/12
-        - 192.168.0.0/16
-    ports:
-    - protocol: TCP
-      port: 443
+    - to:
+        - podSelector:
+            matchLabels:
+              app: redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
 ```
 
 ## Monitoring and Observability
@@ -607,10 +605,10 @@ app = FastAPI()
 async def health_check():
     # Check Redis connection
     redis_status = check_redis_connection()
-    
+
     # Check LLM provider connection
     llm_status = check_llm_connection()
-    
+
     if redis_status and llm_status:
         return {"status": "healthy"}
     else:
@@ -639,11 +637,11 @@ start_http_server(8001)
 @app.post("/chat")
 async def chat(request: ChatRequest):
     request_count.inc()
-    
+
     start_time = time.time()
     response = await process_chat(request)
     duration = time.time() - start_time
-    
+
     response_time.observe(duration)
     return response
 ```
@@ -652,16 +650,15 @@ async def chat(request: ChatRequest):
 
 Implement a CI/CD pipeline for automated deployment:
 
-<div className="flex justify-center my-8">
-```mermaid
-graph LR
-    Code[Code Repository] --> Build[Build & Test]
-    Build --> Publish[Publish Image]
-    Publish --> Deploy[Deploy to Staging]
-    Deploy --> Test[Integration Tests]
-    Test --> Prod[Deploy to Production]
-```
-</div>
+<Mermaid
+  chart="
+    graph LR
+      Code[Code Repository] --> Build[Build & Test]
+      Build --> Publish[Publish Image]
+      Publish --> Deploy[Deploy to Staging]
+      Deploy --> Test[Integration Tests]
+      Test --> Prod[Deploy to Production]"
+/>
 
 Example GitHub Actions workflow:
 
@@ -671,55 +668,55 @@ name: Deploy SOFIA
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest
-    
-    - name: Test
-      run: |
-        pytest
-    
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        push: true
-        tags: your-registry/sofia:latest
-    
-    - name: Deploy to Kubernetes
-      uses: Azure/k8s-deploy@v1
-      with:
-        manifests: |
-          k8s/sofia-deployment.yaml
-          k8s/sofia-service.yaml
-          k8s/sofia-ingress.yaml
-        images: your-registry/sofia:latest
-        namespace: default
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Test
+        run: |
+          pytest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: your-registry/sofia:latest
+
+      - name: Deploy to Kubernetes
+        uses: Azure/k8s-deploy@v1
+        with:
+          manifests: |
+            k8s/sofia-deployment.yaml
+            k8s/sofia-service.yaml
+            k8s/sofia-ingress.yaml
+          images: your-registry/sofia:latest
+          namespace: default
 ```
 
 ## Multi-region Deployment
 
 For global applications, consider multi-region deployment:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TB
+<Mermaid
+  chart='
+  flowchart TB
     GlobalLB[Global Load Balancer] --> RegionA[Region A]
     GlobalLB --> RegionB[Region B]
     GlobalLB --> RegionC[Region C]
@@ -737,16 +734,17 @@ flowchart TB
     subgraph "Region C"
     LoadBalancerC[Load Balancer] --> DeploymentC[SOFIA Deployment]
     DeploymentC --> RedisC[Redis]
-    end
-```
-</div>
+    end'
+/>
 
 Benefits:
+
 - Lower latency for users worldwide
 - Greater resilience to regional outages
 - Compliance with data residency requirements
 
 Challenges:
+
 - Session consistency across regions
 - Increased operational complexity
 - Higher costs
@@ -762,7 +760,8 @@ Challenges:
 7. **Load Testing**: Test your deployment under expected load conditions
 
 <Callout type="info">
-  For large-scale deployments, consider implementing circuit breakers and fallback strategies for LLM API calls to prevent cascading failures.
+  For large-scale deployments, consider implementing circuit breakers and
+  fallback strategies for LLM API calls to prevent cascading failures.
 </Callout>
 
 ## Next Steps

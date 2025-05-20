@@ -11,8 +11,8 @@ Tools are the primary way for SOFIA agents to interact with external systems, ac
 
 SOFIA's tool architecture is designed for flexibility and simplicity:
 
-<div className="flex justify-center my-8">
-```mermaid
+<Mermaid
+  chart="
 classDiagram
     class Tool {
         +name: str
@@ -47,9 +47,8 @@ classDiagram
     
     Tool <|-- FunctionTool
     Tool <|-- PackageTool
-    Tool <|-- CustomTool
-```
-</div>
+    Tool <|-- CustomTool"
+/>
 
 ## Tool Types
 
@@ -62,11 +61,11 @@ The simplest way to create tools is by defining Python functions:
 ```python
 def get_weather(location: str, units: str = "metric") -> str:
     """Get the current weather for a location.
-    
+
     Args:
         location: The city and state/country
         units: Units system, either "metric" or "imperial"
-        
+
     Returns:
         A string with the current weather
     """
@@ -75,7 +74,7 @@ def get_weather(location: str, units: str = "metric") -> str:
         temp = "22°C"
     else:
         temp = "72°F"
-    
+
     return f"The weather in {location} is sunny with a high of {temp}"
 
 # Register with SOFIA
@@ -96,22 +95,22 @@ For tools that need to maintain state:
 class Calculator:
     def __init__(self):
         self.memory = 0
-    
+
     def add(self, value: float) -> float:
         """Add a value to the calculator's memory.
-        
+
         Args:
             value: Number to add
-            
+
         Returns:
             New memory value
         """
         self.memory += value
         return self.memory
-    
+
     def clear(self) -> float:
         """Reset the calculator's memory to zero.
-        
+
         Returns:
             New memory value (0)
         """
@@ -158,26 +157,26 @@ from typing import Dict, Any, Optional
 class DatabaseSearchTool(Tool):
     def __init__(self, db_connection_string: str):
         """Create a new database search tool.
-        
+
         Args:
             db_connection_string: Connection string for the database
         """
         self.name = "search_database"
         self.description = "Search the database for records matching the query"
         self.db = self._connect_to_db(db_connection_string)
-    
+
     def _connect_to_db(self, connection_string: str):
         # Connect to database
         # This is a placeholder
         return {"connected": True}
-    
+
     def execute(self, query: str, limit: int = 10) -> Dict[str, Any]:
         """Search the database for records matching the query.
-        
+
         Args:
             query: The search query string
             limit: Maximum number of results to return
-            
+
         Returns:
             A dictionary with search results
         """
@@ -187,13 +186,13 @@ class DatabaseSearchTool(Tool):
             {"id": 1, "name": "Product A", "price": 19.99},
             {"id": 2, "name": "Product B", "price": 29.99}
         ]
-        
+
         return {
             "results": results[:limit],
             "count": len(results),
             "query": query
         }
-    
+
     def get_parameter_schema(self) -> Dict[str, Dict[str, Any]]:
         """Get the parameter schema for this tool."""
         return {
@@ -238,7 +237,7 @@ def search_products(
     limit: int = 10
 ) -> List[Dict[str, Any]]:
     """Search for products matching the criteria.
-    
+
     Args:
         query: Search query string
         category: Optional product category filter
@@ -246,7 +245,7 @@ def search_products(
         max_price: Maximum price filter
         sort_by: Sort order, one of "relevance", "price_asc", "price_desc", "newest"
         limit: Maximum number of results to return
-        
+
     Returns:
         List of matching products
     """
@@ -257,6 +256,7 @@ def search_products(
 ### Docstrings
 
 Comprehensive docstrings detail:
+
 - What the tool does
 - Parameter descriptions
 - Return value description
@@ -266,10 +266,10 @@ Comprehensive docstrings detail:
 ```python
 def format_date(date_string: str, output_format: str = "YYYY-MM-DD") -> str:
     """Format a date string to the specified format.
-    
+
     This tool takes a date string in various formats and converts it to
     the specified output format.
-    
+
     Args:
         date_string: The input date string (e.g., "January 1, 2023", "01/01/2023")
         output_format: The desired output format. Supported format codes:
@@ -278,14 +278,14 @@ def format_date(date_string: str, output_format: str = "YYYY-MM-DD") -> str:
             - DD: 2-digit day (01-31)
             - MMMM: Full month name
             - MMM: 3-letter month abbreviation
-            
+
     Returns:
         The formatted date string
-        
+
     Example:
         format_date("January 1, 2023", "MM/DD/YYYY") -> "01/01/2023"
         format_date("2023-01-01", "MMMM DD, YYYY") -> "January 01, 2023"
-        
+
     Raises:
         ValueError: If the date_string cannot be parsed or the output_format is invalid
     """
@@ -326,17 +326,17 @@ def get_parameter_schema() -> Dict[str, Dict[str, Any]]:
 
 SOFIA uses JSON Schema for parameter validation:
 
-| Python Type | JSON Schema Type | Example |
-|-------------|------------------|---------|
-| `str` | `"string"` | `{"type": "string"}` |
-| `int` | `"integer"` | `{"type": "integer"}` |
-| `float` | `"number"` | `{"type": "number"}` |
-| `bool` | `"boolean"` | `{"type": "boolean"}` |
-| `List[T]` | `"array"` | `{"type": "array", "items": {"type": "string"}}` |
-| `Dict[str, T]` | `"object"` | `{"type": "object"}` |
-| `Union[T, U]` | `"anyOf"` | `{"anyOf": [{"type": "string"}, {"type": "integer"}]}` |
-| `Optional[T]` | `type` + `"required": false` | `{"type": "string", "required": false}` |
-| `Literal` | `"enum"` | `{"type": "string", "enum": ["option1", "option2"]}` |
+| Python Type    | JSON Schema Type             | Example                                                |
+| -------------- | ---------------------------- | ------------------------------------------------------ |
+| `str`          | `"string"`                   | `{"type": "string"}`                                   |
+| `int`          | `"integer"`                  | `{"type": "integer"}`                                  |
+| `float`        | `"number"`                   | `{"type": "number"}`                                   |
+| `bool`         | `"boolean"`                  | `{"type": "boolean"}`                                  |
+| `List[T]`      | `"array"`                    | `{"type": "array", "items": {"type": "string"}}`       |
+| `Dict[str, T]` | `"object"`                   | `{"type": "object"}`                                   |
+| `Union[T, U]`  | `"anyOf"`                    | `{"anyOf": [{"type": "string"}, {"type": "integer"}]}` |
+| `Optional[T]`  | `type` + `"required": false` | `{"type": "string", "required": false}`                |
+| `Literal`      | `"enum"`                     | `{"type": "string", "enum": ["option1", "option2"]}`   |
 
 ## Error Handling
 
@@ -345,21 +345,21 @@ Proper error handling is essential for robust tools:
 ```python
 def divide_numbers(a: float, b: float) -> Dict[str, Any]:
     """Divide the first number by the second.
-    
+
     Args:
         a: The dividend
         b: The divisor
-        
+
     Returns:
         A dictionary with the result or error message
-        
+
     Raises:
         ValueError: If b is zero
     """
     try:
         if b == 0:
             raise ValueError("Cannot divide by zero")
-        
+
         result = a / b
         return {
             "success": True,
@@ -391,11 +391,11 @@ from typing import Dict, Any
 
 async def fetch_api_data(url: str, timeout: int = 10) -> Dict[str, Any]:
     """Fetch data from an API endpoint asynchronously.
-    
+
     Args:
         url: The API endpoint URL
         timeout: Request timeout in seconds
-        
+
     Returns:
         API response data
     """
@@ -408,7 +408,7 @@ async def fetch_api_data(url: str, timeout: int = 10) -> Dict[str, Any]:
                         "status_code": response.status,
                         "error": f"API returned status code {response.status}"
                     }
-                
+
                 data = await response.json()
                 return {
                     "success": True,
@@ -436,6 +436,7 @@ sofia = Sofia(
 ```
 
 SOFIA automatically handles async tool execution:
+
 - For synchronous workflows, it will await the result
 - For asynchronous workflows, it will integrate with the async flow
 
@@ -447,10 +448,10 @@ Group related tools in modules for better organization:
 # File: crm_tools.py
 def get_customer(customer_id: str) -> dict:
     """Get customer information by ID.
-    
+
     Args:
         customer_id: The customer's unique ID
-        
+
     Returns:
         Customer information as a dictionary
     """
@@ -459,11 +460,11 @@ def get_customer(customer_id: str) -> dict:
 
 def update_customer(customer_id: str, data: dict) -> dict:
     """Update customer information.
-    
+
     Args:
         customer_id: The customer's unique ID
         data: Dictionary with fields to update
-        
+
     Returns:
         Updated customer information
     """
@@ -472,11 +473,11 @@ def update_customer(customer_id: str, data: dict) -> dict:
 
 def list_orders(customer_id: str, limit: int = 5) -> list:
     """List orders for a customer.
-    
+
     Args:
         customer_id: The customer's unique ID
         limit: Maximum number of orders to return
-        
+
     Returns:
         List of orders
     """
@@ -572,7 +573,7 @@ class SharedResources:
         self.api_key = api_key
         self.base_url = base_url
         self.client = self._create_client()
-    
+
     def _create_client(self):
         # Initialize API client
         return {"initialized": True, "api_key": self.api_key}
@@ -586,11 +587,11 @@ resources = SharedResources(
 # Create tools that share resources
 def get_user_profile(resources: SharedResources, user_id: str) -> Dict[str, Any]:
     """Get a user's profile information.
-    
+
     Args:
         resources: Shared API resources
         user_id: User's unique ID
-        
+
     Returns:
         User profile information
     """
@@ -600,12 +601,12 @@ def get_user_profile(resources: SharedResources, user_id: str) -> Dict[str, Any]
 
 def update_user_profile(resources: SharedResources, user_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
     """Update a user's profile information.
-    
+
     Args:
         resources: Shared API resources
         user_id: User's unique ID
         data: Profile data to update
-        
+
     Returns:
         Updated user profile
     """
@@ -647,7 +648,7 @@ class Product:
     name: str
     price: float
     category: str
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
@@ -658,11 +659,11 @@ class Product:
 
 def search_products(query: str, limit: int = 5) -> List[Product]:
     """Search for products matching the query.
-    
+
     Args:
         query: Search query
         limit: Maximum number of results
-        
+
     Returns:
         List of matching products
     """
@@ -672,10 +673,10 @@ def search_products(query: str, limit: int = 5) -> List[Product]:
         Product(id="p2", name="Headphones", price=89.99, category="electronics"),
         Product(id="p3", name="T-shirt", price=19.99, category="clothing")
     ]
-    
+
     # Filter products by query
     results = [p for p in products if query.lower() in p.name.lower()]
-    
+
     return results[:limit]
 
 # SOFIA will automatically convert the Product objects to dictionaries
@@ -704,7 +705,7 @@ def require_permission(permission: str):
                     "error": "Session not found",
                     "authorized": False
                 }
-            
+
             # Check if the user has the required permission
             user_permissions = session.get_variable("permissions", [])
             if permission not in user_permissions:
@@ -712,10 +713,10 @@ def require_permission(permission: str):
                     "error": f"Permission denied: {permission} required",
                     "authorized": False
                 }
-            
+
             # Execute the function if authorized
             return func(*args, **kwargs)
-        
+
         # Store the required permission
         wrapper.required_permission = permission
         return wrapper
@@ -724,10 +725,10 @@ def require_permission(permission: str):
 @require_permission("admin")
 def delete_user(user_id: str) -> Dict[str, Any]:
     """Delete a user account.
-    
+
     Args:
         user_id: User's unique ID
-        
+
     Returns:
         Status of the deletion operation
     """
@@ -775,10 +776,10 @@ Handle tool versioning for backward compatibility:
 ```python
 def get_weather_v1(location: str) -> str:
     """Get the current weather for a location (v1).
-    
+
     Args:
         location: The city and state/country
-        
+
     Returns:
         A string with the current weather
     """
@@ -786,11 +787,11 @@ def get_weather_v1(location: str) -> str:
 
 def get_weather_v2(location: str, units: str = "metric") -> Dict[str, Any]:
     """Get the current weather for a location (v2).
-    
+
     Args:
         location: The city and state/country
         units: Units system, either "metric" or "imperial"
-        
+
     Returns:
         Weather information including temperature, conditions, and forecast
     """
@@ -798,7 +799,7 @@ def get_weather_v2(location: str, units: str = "metric") -> Dict[str, Any]:
         temp = "22°C"
     else:
         temp = "72°F"
-    
+
     return {
         "location": location,
         "temperature": temp,
@@ -826,11 +827,11 @@ from typing import Dict, Any, List
 
 def fetch_news(topic: str, limit: int = 5) -> List[Dict[str, Any]]:
     """Fetch news articles about a topic.
-    
+
     Args:
         topic: News topic
         limit: Maximum number of articles
-        
+
     Returns:
         List of news articles
     """
@@ -842,11 +843,11 @@ def fetch_news(topic: str, limit: int = 5) -> List[Dict[str, Any]]:
 
 def summarize_text(text: str, max_length: int = 100) -> str:
     """Summarize a text to the specified maximum length.
-    
+
     Args:
         text: Text to summarize
         max_length: Maximum length of the summary
-        
+
     Returns:
         Summarized text
     """
@@ -857,22 +858,22 @@ def summarize_text(text: str, max_length: int = 100) -> str:
 
 def news_summary(topic: str, limit: int = 3, summary_length: int = 50) -> List[Dict[str, Any]]:
     """Fetch and summarize news about a topic.
-    
+
     Args:
         topic: News topic
         limit: Maximum number of articles
         summary_length: Maximum length of each summary
-        
+
     Returns:
         List of summarized news articles
     """
     # Fetch news
     articles = fetch_news(topic, limit)
-    
+
     # Summarize each article
     for article in articles:
         article["summary"] = summarize_text(article["summary"], summary_length)
-    
+
     return articles
 
 # Register the composite tool
@@ -894,11 +895,11 @@ from unittest.mock import patch, MagicMock
 # Tool to test
 def get_exchange_rate(from_currency: str, to_currency: str) -> float:
     """Get the exchange rate from one currency to another.
-    
+
     Args:
         from_currency: Source currency code (e.g., "USD")
         to_currency: Target currency code (e.g., "EUR")
-        
+
     Returns:
         Exchange rate as a float
     """
@@ -919,16 +920,16 @@ def test_get_exchange_rate():
         mock_response = MagicMock()
         mock_response.json.return_value = {"rate": 0.85}
         mock_get.return_value = mock_response
-        
+
         # Call the function
         rate = get_exchange_rate("USD", "EUR")
-        
+
         # Verify the function called the API correctly
         mock_get.assert_called_once_with(
             "https://api.example.com/exchange-rate",
             params={"from": "USD", "to": "EUR"}
         )
-        
+
         # Verify the result
         assert rate == 0.85
 ```
@@ -947,31 +948,31 @@ T = TypeVar('T')
 def memoize(func: Callable[..., T]) -> Callable[..., T]:
     """Memoize a function to cache its results."""
     cache: Dict[str, Any] = {}
-    
+
     @functools.wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> T:
         # Create a cache key from the arguments
         key = str(args) + str(sorted(kwargs.items()))
-        
+
         # Return cached result if available
         if key in cache:
             return cast(T, cache[key])
-        
+
         # Call the function and cache the result
         result = func(*args, **kwargs)
         cache[key] = result
         return result
-    
+
     return wrapper
 
 @memoize
 def expensive_calculation(a: int, b: int) -> int:
     """Perform an expensive calculation.
-    
+
     Args:
         a: First number
         b: Second number
-        
+
     Returns:
         Calculation result
     """
@@ -1005,7 +1006,7 @@ def monitor_tool(func: Callable[..., T]) -> Callable[..., T]:
     def wrapper(*args: Any, **kwargs: Any) -> T:
         # Record start time
         start_time = time.time()
-        
+
         try:
             # Execute the function
             result = func(*args, **kwargs)
@@ -1019,27 +1020,27 @@ def monitor_tool(func: Callable[..., T]) -> Callable[..., T]:
             # Record end time
             end_time = time.time()
             duration = end_time - start_time
-            
+
             # Log execution metrics
             logging.info(
                 f"Tool {func.__name__} executed in {duration:.4f}s "
                 f"(success: {success})"
             )
-            
+
             # Here you could also send metrics to a monitoring system
             # such as Prometheus, StatsD, etc.
-        
+
         return result
-    
+
     return wrapper
 
 @monitor_tool
 def fetch_data(url: str) -> Dict[str, Any]:
     """Fetch data from a URL.
-    
+
     Args:
         url: URL to fetch data from
-        
+
     Returns:
         Fetched data
     """
@@ -1070,7 +1071,9 @@ sofia = Sofia(
 10. **Keep Tools Focused**: Avoid creating overly complex or general-purpose tools
 
 <Callout type="info">
-  Remember that the LLM will select and use tools based on their names and documentation. Clear, specific documentation helps the LLM choose the right tool for each task.
+  Remember that the LLM will select and use tools based on their names and
+  documentation. Clear, specific documentation helps the LLM choose the right
+  tool for each task.
 </Callout>
 
 ## Next Steps

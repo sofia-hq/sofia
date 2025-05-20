@@ -17,24 +17,23 @@ A session in SOFIA represents a single conversation between a user and an agent.
 - Manages tool calls and results
 - Provides context for LLM decisions
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TB
+<Mermaid
+  chart="
+  flowchart TB
     User([User]) <--> Session[Flow Session]
     Session --> History[(Conversation History)]
     Session --> State[(Current State)]
     Session --> Step[Current Step]
     Session <--> Agent[Sofia Agent]
     Agent <--> LLM[LLM Provider]
-    Agent <--> Tools[Tools]
-```
-</div>
+    Agent <--> Tools[Tools]"
+/>
 
 ## Session Lifecycle
 
-<div className="flex justify-center my-8">
-```mermaid
-stateDiagram-v2
+<Mermaid
+  chart="
+  stateDiagram-v2
     [*] --> Created: new_session()
     Created --> Active: First message
     Active --> Active: User message/Agent response
@@ -43,9 +42,8 @@ stateDiagram-v2
     Active --> Transition: Move to new step
     Transition --> Active: In new step
     Active --> Ended: End session
-    Ended --> [*]
-```
-</div>
+    Ended --> [*]"
+/>
 
 1. **Creation**: A session is created when a user starts a conversation
 2. **Activation**: The session becomes active when the first message is sent

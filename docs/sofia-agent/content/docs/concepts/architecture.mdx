@@ -11,17 +11,16 @@ SOFIA is designed with a modular architecture that separates concerns and allows
 
 SOFIA consists of several core components:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TB
+<Mermaid
+  chart="
+  flowchart TB
     Agent[Sofia Agent] --> LLM[LLM Provider]
     Agent --> Steps[Steps & Routes]
     Agent --> Tools[Tools]
     Session[Flow Session] --> Agent
     Session --> History[Session History]
-    Client[User/Client] --> Session
-```
-</div>
+    Client[User/Client] --> Session"
+/>
 
 ### Sofia Agent
 
@@ -76,9 +75,9 @@ Sessions manage the state of an agent conversation:
 
 ## Execution Flow
 
-<div className="flex justify-center my-8">
-```mermaid
-sequenceDiagram
+<Mermaid
+  chart="
+  sequenceDiagram
     participant User
     participant Session as FlowSession
     participant LLM
@@ -102,9 +101,8 @@ sequenceDiagram
         Session->>LLM: Request next decision in new step
         LLM->>Session: Return decision
         Session->>User: Return agent message
-    end
-```
-</div>
+    end"
+/>
 
 1. **User Input**: The user sends a message to the agent's session
 2. **Decision Making**: The LLM evaluates the user input and current step to decide what to do
@@ -152,7 +150,7 @@ class Tool:
     description: str
     parameters: Dict[str, Any]
     function: Callable
-    
+
     def run(self, **kwargs):
         """Run the tool with the provided parameters."""
         pass

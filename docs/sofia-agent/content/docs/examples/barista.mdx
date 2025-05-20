@@ -8,7 +8,8 @@ description: A coffee ordering agent example built with SOFIA
 This example demonstrates how to build a coffee ordering agent using SOFIA. The Barista agent helps users order coffee, validates their orders, and guides them through the ordering process.
 
 <Callout type="info">
-  The full example code is available in the [SOFIA GitHub repository](https://github.com/poly-eye/sofia/tree/main/examples/barista).
+  The full example code is available in the [SOFIA GitHub
+  repository](https://github.com/poly-eye/sofia/tree/main/examples/barista).
 </Callout>
 
 ## Features
@@ -23,24 +24,23 @@ This example demonstrates how to build a coffee ordering agent using SOFIA. The 
 
 The Barista agent follows a hub-and-spoke flow pattern:
 
-<div className="flex justify-center my-8">
-```mermaid
-flowchart TD
-    Start[Start] --> Welcome
-    Welcome[Welcome] --> MainHub[Order Hub]
-    MainHub -->|Browse Menu| Menu[Menu]
-    MainHub -->|Get Recommendation| Recommend[Recommend]
-    MainHub -->|Place Order| Order[Order]
-    Menu --> MainHub
-    Recommend --> MainHub
-    Order --> Validate[Validate Order]
-    Validate -->|Invalid Order| MainHub
-    Validate -->|Valid Order| Confirm[Confirm]
-    Confirm -->|Modify Order| MainHub
-    Confirm -->|Confirm Order| Checkout[Checkout]
-    Checkout --> End[End]
-```
-</div>
+<Mermaid
+  chart="
+    flowchart TD
+      Start[Start] --> Welcome
+      Welcome[Welcome] --> MainHub[Order Hub]
+      MainHub -->|Browse Menu| Menu[Menu]
+      MainHub -->|Get Recommendation| Recommend[Recommend]
+      MainHub -->|Place Order| Order[Order]
+      Menu --> MainHub
+      Recommend --> MainHub
+      Order --> Validate[Validate Order]
+      Validate -->|Invalid Order| MainHub
+      Validate -->|Valid Order| Confirm[Confirm]
+      Confirm -->|Modify Order| MainHub
+      Confirm -->|Confirm Order| Checkout[Checkout]
+      Checkout --> End[End]"
+/>
 
 ## Implementation
 
@@ -67,42 +67,42 @@ def validate_order(coffee_type, size, milk=None, flavors=None):
     sizes = ["small", "medium", "large"]
     milks = [None, "whole", "skim", "oat", "almond", "soy"]
     valid_flavors = [None, "vanilla", "caramel", "hazelnut", "chocolate"]
-    
+
     if coffee_type not in menu:
         return f"Invalid coffee type. Available types: {', '.join(menu.keys())}"
-    
+
     if size not in sizes:
         return f"Invalid size. Available sizes: {', '.join(sizes)}"
-    
+
     if milk not in milks:
         return f"Invalid milk. Available options: {', '.join([m for m in milks if m])}"
-    
+
     if flavors:
         if not isinstance(flavors, list):
             flavors = [flavors]
         for flavor in flavors:
             if flavor not in valid_flavors:
                 return f"Invalid flavor: {flavor}. Available flavors: {', '.join([f for f in valid_flavors if f])}"
-    
+
     return "Order is valid"
 
 def get_total_price(coffee_type, size, flavors=None):
     """Calculate the total price of a coffee order."""
     menu = get_menu()
     base_price = menu[coffee_type]["price"]
-    
+
     # Size adjustments
     if size == "small":
         base_price -= 0.50
     elif size == "large":
         base_price += 0.75
-    
+
     # Flavor additions
     if flavors:
         if not isinstance(flavors, list):
             flavors = [flavors]
         base_price += len(flavors) * 0.50
-    
+
     return f"${base_price:.2f}"
 ```
 
@@ -213,15 +213,15 @@ steps:
     routes:
       - target: welcome
         condition: Always route to welcome
-  
+
   - step_id: welcome
     description: Welcome the user and explain what this bot can do...
     routes:
       - target: order_hub
         condition: After welcoming the user
-  
+
   # ... more steps
-  
+
 start_step_id: start
 ```
 
@@ -265,7 +265,7 @@ Would you like a recommendation, or are you ready to place an order?
 
 **User**: I'd like a latte please
 
-**Barista**: Great choice! I'll help you customize your latte. 
+**Barista**: Great choice! I'll help you customize your latte.
 
 What size would you like? We have small, medium, and large.
 
@@ -276,6 +276,7 @@ What size would you like? We have small, medium, and large.
 **User**: Vanilla please
 
 **Barista**: Perfect! Let me confirm your order:
+
 - Medium vanilla latte with oat milk
 - Total price: $4.50
 
@@ -284,6 +285,7 @@ Is that correct, or would you like to make any changes?
 **User**: That's correct
 
 **Barista**: Thank you for your order! Your order number is #A237. Your medium vanilla latte with oat milk will be ready shortly. Enjoy your coffee!
+
 </div>
 
 ## Key Takeaways

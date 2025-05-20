@@ -11,51 +11,50 @@ SOFIA supports multiple Large Language Model (LLM) providers through a flexible 
 
 SOFIA's LLM integration follows a provider pattern:
 
-<div className="flex justify-center my-8">
-```mermaid
-classDiagram
-    class LLMBase {
-        <<abstract>>
-        +__init__(config)
-        +_get_output(name, steps, current_step, tools, history, response_format, system_message, persona)
-        +_format_prompt()
-        +_parse_response()
-    }
-    
-    class OpenAILLM {
-        +__init__(config)
-        +_get_output()
-        +_format_prompt()
-        +_parse_response()
-    }
-    
-    class MistralLLM {
-        +__init__(config)
-        +_get_output()
-        +_format_prompt()
-        +_parse_response()
-    }
-    
-    class GeminiLLM {
-        +__init__(config)
-        +_get_output()
-        +_format_prompt()
-        +_parse_response()
-    }
-    
-    class CustomLLM {
-        +__init__(config)
-        +_get_output()
-        +_format_prompt()
-        +_parse_response()
-    }
-    
-    LLMBase <|-- OpenAILLM
-    LLMBase <|-- MistralLLM
-    LLMBase <|-- GeminiLLM
-    LLMBase <|-- CustomLLM
-```
-</div>
+<Mermaid
+  chart="
+    classDiagram
+      class LLMBase {
+          <<abstract>>
+          +__init__(config)
+          +_get_output(name, steps, current_step, tools, history, response_format, system_message, persona)
+          +_format_prompt()
+          +_parse_response()
+      }
+      
+      class OpenAILLM {
+          +__init__(config)
+          +_get_output()
+          +_format_prompt()
+          +_parse_response()
+      }
+      
+      class MistralLLM {
+          +__init__(config)
+          +_get_output()
+          +_format_prompt()
+          +_parse_response()
+      }
+      
+      class GeminiLLM {
+          +__init__(config)
+          +_get_output()
+          +_format_prompt()
+          +_parse_response()
+      }
+      
+      class CustomLLM {
+          +__init__(config)
+          +_get_output()
+          +_format_prompt()
+          +_parse_response()
+      }
+      
+      LLMBase <|-- OpenAILLM
+      LLMBase <|-- MistralLLM
+      LLMBase <|-- GeminiLLM
+      LLMBase <|-- CustomLLM"
+/>
 
 The factory pattern selects and instantiates the appropriate LLM provider:
 
@@ -76,17 +75,17 @@ llm = LLMFactory.create(
 
 All LLM providers support these common parameters:
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `api_key` | `str` | Authentication key for the API | Required |
-| `model` | `str` | Model name to use | Varies by provider |
-| `temperature` | `float` | Controls response randomness (0.0 to 1.0) | `0.7` |
-| `max_tokens` | `int` | Maximum tokens in generated responses | `1000` |
-| `timeout` | `int` | Request timeout in seconds | `30` |
-| `retry_count` | `int` | Number of retry attempts for failed requests | `3` |
-| `retry_delay` | `float` | Delay between retry attempts in seconds | `1.0` |
-| `api_type` | `str` | API type (azure, openai, etc.) | `None` |
-| `api_base` | `str` | Base URL for API requests | Provider default |
+| Parameter     | Type    | Description                                  | Default            |
+| ------------- | ------- | -------------------------------------------- | ------------------ |
+| `api_key`     | `str`   | Authentication key for the API               | Required           |
+| `model`       | `str`   | Model name to use                            | Varies by provider |
+| `temperature` | `float` | Controls response randomness (0.0 to 1.0)    | `0.7`              |
+| `max_tokens`  | `int`   | Maximum tokens in generated responses        | `1000`             |
+| `timeout`     | `int`   | Request timeout in seconds                   | `30`               |
+| `retry_count` | `int`   | Number of retry attempts for failed requests | `3`                |
+| `retry_delay` | `float` | Delay between retry attempts in seconds      | `1.0`              |
+| `api_type`    | `str`   | API type (azure, openai, etc.)               | `None`             |
+| `api_base`    | `str`   | Base URL for API requests                    | Provider default   |
 
 ## OpenAI Provider
 
@@ -118,14 +117,14 @@ sofia = Sofia(
 
 ### Provider-Specific Parameters
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `top_p` | `float` | Nucleus sampling parameter | `1.0` |
-| `frequency_penalty` | `float` | Penalizes repeated tokens | `0.0` |
-| `presence_penalty` | `float` | Penalizes repeated topics | `0.0` |
-| `organization_id` | `str` | OpenAI organization ID | `None` |
-| `api_version` | `str` | API version (required for Azure) | `None` |
-| `seed` | `int` | Random seed for deterministic outputs | `None` |
+| Parameter           | Type    | Description                           | Default |
+| ------------------- | ------- | ------------------------------------- | ------- |
+| `top_p`             | `float` | Nucleus sampling parameter            | `1.0`   |
+| `frequency_penalty` | `float` | Penalizes repeated tokens             | `0.0`   |
+| `presence_penalty`  | `float` | Penalizes repeated topics             | `0.0`   |
+| `organization_id`   | `str`   | OpenAI organization ID                | `None`  |
+| `api_version`       | `str`   | API version (required for Azure)      | `None`  |
+| `seed`              | `int`   | Random seed for deterministic outputs | `None`  |
 
 ### Supported Models
 
@@ -181,11 +180,11 @@ sofia = Sofia(
 
 ### Provider-Specific Parameters
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `top_p` | `float` | Nucleus sampling parameter | `1.0` |
-| `safe_mode` | `bool` | Enable content safety filtering | `False` |
-| `random_seed` | `int` | Random seed for deterministic outputs | `None` |
+| Parameter     | Type    | Description                           | Default |
+| ------------- | ------- | ------------------------------------- | ------- |
+| `top_p`       | `float` | Nucleus sampling parameter            | `1.0`   |
+| `safe_mode`   | `bool`  | Enable content safety filtering       | `False` |
+| `random_seed` | `int`   | Random seed for deterministic outputs | `None`  |
 
 ### Supported Models
 
@@ -226,11 +225,11 @@ sofia = Sofia(
 
 ### Provider-Specific Parameters
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `top_p` | `float` | Nucleus sampling parameter | `0.95` |
-| `top_k` | `int` | Top-k sampling parameter | `40` |
-| `safety_settings` | `Dict[str, str]` | Content safety thresholds | `None` |
+| Parameter         | Type             | Description                | Default |
+| ----------------- | ---------------- | -------------------------- | ------- |
+| `top_p`           | `float`          | Nucleus sampling parameter | `0.95`  |
+| `top_k`           | `int`            | Top-k sampling parameter   | `40`    |
+| `safety_settings` | `Dict[str, str]` | Content safety thresholds  | `None`  |
 
 ### Supported Models
 
@@ -248,7 +247,7 @@ safety_settings = {
     "hate_speech": threshold,
     "sexually_explicit": threshold,
     "dangerous_content": threshold,
-    
+
     # Thresholds (from least to most restrictive)
     # "block_none" - No blocking
     # "block_only_high" - Block only high severity
@@ -275,7 +274,7 @@ class CustomLLM(LLMBase):
         self.api_key = config.get("api_key")
         self.model = config.get("model", "default-model")
         self.client = YourLLMClient(self.api_key)  # Replace with actual client
-    
+
     def _get_output(
         self,
         name: str,
@@ -288,7 +287,7 @@ class CustomLLM(LLMBase):
         persona: Optional[str] = None
     ) -> Dict[str, Any]:
         """Get the next decision from the LLM.
-        
+
         Args:
             name: Agent name
             steps: List of step definitions
@@ -298,7 +297,7 @@ class CustomLLM(LLMBase):
             response_format: Expected response format
             system_message: Optional system message
             persona: Optional persona description
-            
+
         Returns:
             LLM response according to response_format
         """
@@ -312,7 +311,7 @@ class CustomLLM(LLMBase):
             system_message=system_message,
             persona=persona
         )
-        
+
         # Call your LLM
         response = self.client.generate(
             model=self.model,
@@ -320,10 +319,10 @@ class CustomLLM(LLMBase):
             max_tokens=self.config.get("max_tokens", 1000),
             temperature=self.config.get("temperature", 0.7)
         )
-        
+
         # Parse the response according to response_format
         parsed_response = self._parse_response(response, response_format)
-        
+
         return parsed_response
 ```
 
@@ -537,15 +536,15 @@ sofia = Sofia(
     },
     prompt_templates={
         "system": """You are {name}, a helpful assistant. {system_message}
-        
+
 The user's input is: {input}""",
-        
+
         "tool_call": """Use the {tool_name} tool with these parameters:
 {tool_params}""",
-        
+
         "tool_result": """The tool returned the following result:
 {result}""",
-        
+
         "route_selection": """Based on the conversation, choose the most appropriate next step:
 
 Current step: {current_step}
@@ -666,7 +665,8 @@ redis_cache = ResponseCache(
 8. **Optimize prompts**: Clear, concise prompts reduce token usage
 
 <Callout type="info">
-  When working with multiple LLM providers, be aware of differences in their response formats, capabilities, and pricing models.
+  When working with multiple LLM providers, be aware of differences in their
+  response formats, capabilities, and pricing models.
 </Callout>
 
 ## Next Steps
