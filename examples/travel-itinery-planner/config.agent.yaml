@@ -43,6 +43,7 @@ steps:
         condition: User approves basic outline with minor changes or without changes
       - target: plan_basic_itinerary
         condition: User wants substantial revisions to the basic plan
+    provide_suggestions: true
 
   - step_id: plan_day_details
     description: |
