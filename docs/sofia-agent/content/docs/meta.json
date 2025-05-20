@@ -1,6 +1,6 @@
 {
   "title": "SOFIA Documentation",
   "icon": "Home",
-  "pages": ["getting-started", "concepts", "guides", "api", "examples", "tutorials", "interactive", "diagrams", "tldr"],
+  "pages": ["getting-started", "concepts", "guides", "api", "examples", "tutorials", "diagrams", "tldr"],
   "defaultOpen": true
 }
