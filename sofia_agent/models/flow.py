@@ -134,7 +134,7 @@ def create_route_decision_model(
             "type": List[str],
             "description": "Reasoning for the decision",
         },
-        "action": {"type": ActionEnum, "description": "Action to take"}
+        "action": {"type": ActionEnum, "description": "Action to take"},
     }
 
     if not current_step.auto_flow:

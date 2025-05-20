@@ -339,7 +339,10 @@ class Sofia:
 
     @classmethod
     def from_config(
-        cls, config: AgentConfig, llm: Optional[LLMBase] = None, tools: list[Callable | str] = []
+        cls,
+        config: AgentConfig,
+        llm: Optional[LLMBase] = None,
+        tools: list[Callable | str] = [],
     ) -> "Sofia":
         """
         Create a Sofia agent from an AgentConfig object.
@@ -355,7 +358,7 @@ class Sofia:
                     "No LLM provided. Please provide an LLM or a config with an LLM."
                 )
             llm = config.llm.get_llm()
-        
+
         return cls(
             llm=llm,
             name=config.name,
