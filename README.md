@@ -15,9 +15,8 @@
     🚀 <b>SOFIA v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/poly-eye/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
-
 <div align="center">
-<a href="https://github.com/poly-eye/sofia"><img src="https://i.ibb.co/202j1W2v/sofia-logo.png" alt="sofia"  width="400"></a>
+<a href="https://github.com/dowhiledev/sofia"><img src="https://i.ibb.co/WWczLZMd/SOFIA-logo.png" alt="sofia"  width="400"></a>
 
 ### **S**imple **O**rchestrated **F**low **I**ntelligence **A**gent
 
