@@ -2,7 +2,7 @@
 Utility functions and helpers for the SOFIA package.
 """
 
-from typing import Dict, Any, Type
+from typing import Any, Dict, Optional, Type, Union, List
 from pydantic import BaseModel, Field, create_model, ConfigDict
 from enum import Enum
 
@@ -23,6 +23,28 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
         field_type = config["type"]
         default_val = config.get("default", ...)
         description = config.get("description")
+        is_optional = config.get("optional", False)
+        is_list = config.get("is_list", False)
+
+        if isinstance(field_type, dict):
+            field_type = create_base_model(
+                name = field_type.get("name", "DynamicModel"),
+                params = field_type.get("params", {}),
+            )
+        elif isinstance(field_type, list):
+            field_types = []
+            for i, item in enumerate(field_type):
+                nested_field_type = create_base_model(
+                    name = item.get("name", "DynamicModel"),
+                    params = item.get("params", {}),
+                )
+                field_types.append(nested_field_type)
+            field_type = Union[*field_types]
+
+        if is_list:
+            field_type = List[field_type]
+        if is_optional:
+            field_type = Optional[field_type]
 
         if description is not None or description != "":
             field_info = Field(default=default_val, description=description)
@@ -32,7 +54,6 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
         fields[field_name] = (field_type, field_info)
 
     return create_model(name, **fields, __config__=ConfigDict(extra="forbid"))
-
 
 def create_enum(name: str, values: Dict[str, Any]) -> Type[Enum]:
     """
