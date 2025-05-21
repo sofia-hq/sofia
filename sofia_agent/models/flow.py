@@ -59,7 +59,7 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
-    answer_model: Optional[Dict[str, Dict[str, Any]]] = None
+    answer_model: Optional[Dict[str, Dict[str, Any]] | BaseModel] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
 
@@ -72,6 +72,21 @@ class Step(BaseModel):
         if self.auto_flow and self.quick_suggestions:
             raise ValueError(
                 f"Step '{self.step_id}': When auto_flow is True, quick_suggestions cannot be True"
+            )
+
+    def get_answer_model(self) -> BaseModel:
+        """
+        Get the Pydantic model for the agent's answer structure.
+
+        :return: Pydantic model for the answer structure.
+        """
+        if isinstance(self.answer_model, dict):
+            return create_base_model("AnswerModel", self.answer_model)
+        elif isinstance(self.answer_model, BaseModel):
+            return self.answer_model
+        else:
+            raise ValueError(
+                f"Step '{self.step_id}': answer_model must be a dictionary or a Pydantic model"
             )
 
     def get_available_routes(self) -> List[str]:
@@ -154,9 +169,7 @@ def create_route_decision_model(
             description += (
                 "If AnswerModel is provided, use the model for providing the answer."
             )
-            input_type = Optional[
-                str | create_base_model("AnswerModel", current_step.answer_model)
-            ]
+            input_type = Optional[str | current_step.get_answer_model()]
         params["input"] = {
             "type": input_type,
             "default": None,
