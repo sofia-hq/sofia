@@ -16,6 +16,8 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
         - 'type': The type of the field.
         - 'default' (optional): The default value for the field.
         - 'description' (optional): The field description.
+        - 'optional' (optional): Whether the field is optional (default: False).
+        - 'is_list' (optional): Whether the field is a list (default: False).
     :return: A dynamically created Pydantic BaseModel subclass.
     """
     fields = {}

@@ -150,49 +150,46 @@ def create_route_decision_model(
         + (["MOVE"] if available_step_ids else [])
         + (["TOOL_CALL"] if tool_ids else [])
     )
-
     ActionEnum = create_action_enum(action_ids)
+
     params = {
         "reasoning": {
             "type": List[str],
-            "description": "Reasoning for the decision",
+            "description": "Step by Step Reasoning to Decide",
         },
-        "action": {"type": ActionEnum, "description": "Action to take"},
+        "action": {"type": ActionEnum, "description": "Next Action"},
     }
 
     if not current_step.auto_flow:
-        description = (
-            "Input to the user if action is ASK (ask) or ANSWER (provide_answer)."
-        )
-        input_type = Optional[str]
+        description = "Response if ASK or ANSWER."
+        response_type = Optional[str]
         if current_step.answer_model:
-            description += (
-                "If AnswerModel is provided, use the model for providing the answer."
-            )
-            input_type = Optional[str | current_step.get_answer_model()]
-        params["input"] = {
-            "type": input_type,
+            answer_model = current_step.get_answer_model()
+            description += f" Use {answer_model.__name__} to ANSWER."
+            response_type = Optional[str | answer_model]
+        params["response"] = {
+            "type": response_type,
             "default": None,
             "description": description,
         }
         if current_step.quick_suggestions:
             params["suggestions"] = {
                 "type": List[str],
-                "description": "Quick Suggestions for the user to answer with if action is ASK (ask) or ANSWER (provide_answer) - Minimum 2 suggestions",
+                "description": "Quick User Input Suggestions for the User to Choose",
             }
 
     if len(available_step_ids) > 0:
         params["next_step_id"] = {
             "type": Optional[Literal[*available_step_ids]],
             "default": None,
-            "description": "Next step ID if action is MOVE (move to next step)",
+            "description": "Next step ID for MOVE.",
         }
 
     if len(tool_ids) > 0 and len(tool_models) > 0:
         params["tool_name"] = {
             "type": Optional[Literal[*tool_ids]],
             "default": None,
-            "description": "Tool name if action is TOOL_CALL (call_tool)",
+            "description": "Tool name for TOOL_CALL.",
         }
         params["tool_kwargs"] = {
             "type": (
@@ -201,7 +198,7 @@ def create_route_decision_model(
                 else Optional[Union[*tool_models]]
             ),
             "default": None,
-            "description": "Tool arguments if action is TOOL_CALL (call_tool).",
+            "description": "Corresponding Tool arguments for TOOL_CALL.",
         }
 
     return create_base_model(

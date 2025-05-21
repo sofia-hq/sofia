@@ -331,10 +331,11 @@
                 const iconId = `icon-${accordionCounter}`;
 
                 const divElement = document.createElement('div');
-                divElement.className = 'border-b border-gray-200 mt-1';
+                // Add mb-3 for margin-bottom and rounded-lg for rounded corners
+                divElement.className = 'border-b border-gray-200 mt-1 mb-3 rounded-lg overflow-hidden';
 
                 divElement.innerHTML = `
-                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t flex justify-between items-center py-2 px-3">
+                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t-lg flex justify-between items-center py-2 px-4">
                         <span>${headerText}</span>
                         <span id="${iconId}" class="transition-transform duration-300">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -343,8 +344,8 @@
                             </svg>
                         </span>
                     </button>
-                    <div id="${contentId}" class="accordion-content">
-                        <div class="p-3 text-sm">${content}</div>
+                    <div id="${contentId}" class="accordion-content bg-white dark:bg-gray-800 px-4 pb-3 pt-2">
+                        <div class="text-sm">${content}</div>
                     </div>
                 `;
 
@@ -403,11 +404,60 @@
                         `;
                     } else if (role === 'assistant') {
                         messageElement.className += ' flex flex-col justify-start mb-3';
+
+                        // 1. Reasoning
+                        if (extras.reasoning && extras.reasoning.length > 0) {
+                            const reasoningContent = extras.reasoning.map(r => `<li>${escapeHtml(r)}</li>`).join('');
+                            const reasoningHtml = `<ul class="list-disc pl-5 text-sm">${reasoningContent}</ul>`;
+                            const accordion = createAccordion(
+                                'View reasoning',
+                                'text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 transition',
+                                reasoningHtml
+                            );
+                            messageElement.appendChild(accordion);
+                        }
+
+                        // 2. Step transition
+                        if (extras.nextStepId) {
+                            const stepTransitionHtml = `<p class="text-sm">Transitioning to: <code class="bg-gray-100 px-1 rounded">${escapeHtml(extras.nextStepId)}</code></p>`;
+                            const accordion = createAccordion(
+                                'View step transition',
+                                'text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 transition',
+                                stepTransitionHtml
+                            );
+                            messageElement.appendChild(accordion);
+                        }
+
+                        // 3. Tool calls (if any)
+                        if (extras.toolCalls && Array.isArray(extras.toolCalls)) {
+                            extras.toolCalls.forEach(toolCall => {
+                                const accordion = createAccordion(
+                                    'Tool Call',
+                                    'text-xs text-yellow-700 bg-yellow-50 hover:bg-yellow-100 transition',
+                                    `<div>${escapeHtml(toolCall)}</div>`
+                                );
+                                messageElement.appendChild(accordion);
+                            });
+                        }
+
+                        // 4. Tool outputs (if any)
+                        if (extras.toolOutputs && Array.isArray(extras.toolOutputs)) {
+                            extras.toolOutputs.forEach(toolOutput => {
+                                const accordion = createAccordion(
+                                    'Tool Result',
+                                    'text-xs text-green-700 bg-green-50 hover:bg-green-100 transition',
+                                    `<div>${escapeHtml(toolOutput)}</div>`
+                                );
+                                messageElement.appendChild(accordion);
+                            });
+                        }
+
+                        // 5. Response (main message)
                         let messageHtml = '';
-                        if (isJson) {
+                        if (typeof content === 'object' && content !== null) {
                             messageHtml = `
                                 <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
-                                    <pre class="whitespace-pre-wrap text-xs">${escapeHtml(JSON.stringify(jsonContent, null, 2))}</pre>
+                                    <pre class="whitespace-pre-wrap text-xs">${escapeHtml(JSON.stringify(content, null, 2))}</pre>
                                 </div>
                             `;
                         } else {
@@ -422,30 +472,7 @@
                         messageDiv.innerHTML = messageHtml;
                         messageElement.appendChild(messageDiv);
 
-                        // Add reasoning if available
-                        if (extras.reasoning && extras.reasoning.length > 0) {
-                            const reasoningContent = extras.reasoning.map(r => `<li>${escapeHtml(r)}</li>`).join('');
-                            const reasoningHtml = `<ul class="list-disc pl-5 text-sm">${reasoningContent}</ul>`;
-                            const accordion = createAccordion(
-                                'View reasoning',
-                                'text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 transition',
-                                reasoningHtml
-                            );
-                            messageElement.appendChild(accordion);
-                        }
-
-                        // Add step transition info if available
-                        if (extras.nextStepId) {
-                            const stepTransitionHtml = `<p class="text-sm">Transitioning to: <code class="bg-gray-100 px-1 rounded">${escapeHtml(extras.nextStepId)}</code></p>`;
-                            const accordion = createAccordion(
-                                'View step transition',
-                                'text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 transition',
-                                stepTransitionHtml
-                            );
-                            messageElement.appendChild(accordion);
-                        }
-
-                        // Add suggestions if available
+                        // 6. Suggestions
                         if (extras.suggestions && Array.isArray(extras.suggestions) && extras.suggestions.length > 0) {
                             const suggestionsDiv = document.createElement('div');
                             suggestionsDiv.className = 'flex flex-wrap gap-2 mt-2';
@@ -677,8 +704,8 @@
                     localStorage.setItem('sofiaSessionData', JSON.stringify(sessionData));
 
                     // Extract message directly from the input field
-                    if (data.response && data.response.input) {
-                        const message = data.response.input;
+                    if (data.response && data.response.response) {
+                        const message = data.response.response;
 
                         // Force a small delay to ensure the UI updates properly
                         setTimeout(() => {
@@ -755,50 +782,43 @@
                         nextStepId = data.response.next_step_id;
                     }
 
-                    // Extract message directly from the input field
-                    if (data.response && data.response.input) {
-                        addMessageToUI('assistant', data.response.input, {
-                            reasoning,
-                            nextStepId,
-                            suggestions: (data.response.suggestions && Array.isArray(data.response.suggestions)) ? data.response.suggestions : []
-                        });
-                        // Display any tool outputs after the assistant message
-                        if (data.tool_output) {
-                            addMessageToUI('tool', data.tool_output);
+                    // --- NEW: Collect tool calls and outputs from history ---
+                    let toolCalls = [];
+                    let toolOutputs = [];
+                    const history = sessionData.history || [];
+                    let lastUserMessageIndex = -1;
+
+                    // Find the last user message in history
+                    for (let i = history.length - 1; i >= 0; i--) {
+                        if (history[i].role === 'user' && history[i].content === message) {
+                            lastUserMessageIndex = i;
+                            break;
                         }
+                    }
 
-                        // Check if there are any tool calls in the history
-                        const history = sessionData.history || [];
-                        const newMessages = [];
-
-                        // Find messages that weren't displayed yet (added after the last user message)
-                        let lastUserMessageIndex = -1;
-
-                        // Find the last user message in history
-                        for (let i = history.length - 1; i >= 0; i--) {
-                            if (history[i].role === 'user' && history[i].content === message) {
-                                lastUserMessageIndex = i;
-                                break;
-                            }
-                        }
-
-                        // Collect tool calls and results that came after the user message
-                        if (lastUserMessageIndex >= 0) {
-                            for (let i = lastUserMessageIndex + 1; i < history.length; i++) {
-                                if (history[i].role === 'tool') {
-                                    newMessages.push(history[i]);
+                    // Collect tool calls and results that came after the user message
+                    if (lastUserMessageIndex >= 0) {
+                        for (let i = lastUserMessageIndex + 1; i < history.length; i++) {
+                            if (history[i].role === 'tool') {
+                                if (history[i].content.startsWith('Tool call:')) {
+                                    toolCalls.push(history[i].content.substring(10).trim());
+                                } else if (history[i].content.startsWith('Tool result:')) {
+                                    toolOutputs.push(history[i].content.substring(12).trim());
                                 }
                             }
                         }
+                    }
+                    // --------------------------------------------------------
 
-                        // Display new tool messages
-                        for (const msg of newMessages) {
-                            if (msg.content.startsWith('Tool call:')) {
-                                addMessageToUI('tool_call', msg.content.substring(10).trim());
-                            } else if (msg.content.startsWith('Tool result:')) {
-                                addMessageToUI('tool', msg.content.substring(12).trim());
-                            }
-                        }
+                    // Extract message directly from the input field
+                    if (data.response && data.response.response) {
+                        addMessageToUI('assistant', data.response.response, {
+                            reasoning,
+                            nextStepId,
+                            toolCalls,
+                            toolOutputs,
+                            suggestions: (data.response.suggestions && Array.isArray(data.response.suggestions)) ? data.response.suggestions : []
+                        });
                     } else {
                         // Fall back to previous extraction logic
                         let assistantMessage = null;
@@ -812,7 +832,12 @@
 
                         // If we found a message, display it
                         if (assistantMessage) {
-                            addMessageToUI('assistant', assistantMessage);
+                            addMessageToUI('assistant', assistantMessage, {
+                                reasoning,
+                                nextStepId,
+                                toolCalls,
+                                toolOutputs
+                            });
                         } else {
                             addMessageToUI('system', 'Received response with unexpected structure');
                         }

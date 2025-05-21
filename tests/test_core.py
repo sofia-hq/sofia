@@ -55,7 +55,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
         ],
     )
     ask_response = expected_decision_model(
-        reasoning=["Greeting"], action=Action.ASK.value, input="How can I help?"
+        reasoning=["Greeting"], action=Action.ASK.value, response="How can I help?"
     )
 
     assert session.current_step.get_available_routes() == ["end"]
@@ -76,12 +76,12 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert "Test persona" in session.llm.messages_received[0].content
     assert session.llm.messages_received[1].role == "user"
     assert decision.action.value == Action.ASK.value
-    assert decision.input == "How can I help?"
+    assert decision.response == "How can I help?"
 
     ask_response = expected_decision_model(
         reasoning=["User input"],
         action=Action.ANSWER.value,
-        input="I can help you with that.",
+        response="I can help you with that.",
     )
     session.llm.set_response(ask_response)
     # User response
@@ -92,7 +92,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert "How can I help?" in session.llm.messages_received[1].content
     assert "I need help" in session.llm.messages_received[1].content
     assert decision.action.value == Action.ANSWER.value
-    assert decision.input == "I can help you with that."
+    assert decision.response == "I can help you with that."
 
 
 def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
