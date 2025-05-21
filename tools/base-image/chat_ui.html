@@ -376,6 +376,24 @@
                     const messageElement = document.createElement('div');
                     messageElement.className = 'message-animation';
 
+                    // Detect if content is a JSON object/array (not a string)
+                    let isJson = false;
+                    let jsonContent = null;
+                    if (role === 'assistant' && typeof content === 'object' && content !== null) {
+                        isJson = true;
+                        jsonContent = content;
+                    } else if (role === 'assistant' && typeof content === 'string') {
+                        // Try to parse as JSON if it looks like an object/array string
+                        if ((content.trim().startsWith('{') && content.trim().endsWith('}')) || (content.trim().startsWith('[') && content.trim().endsWith(']'))) {
+                            try {
+                                jsonContent = JSON.parse(content);
+                                isJson = true;
+                            } catch (e) {
+                                isJson = false;
+                            }
+                        }
+                    }
+
                     if (role === 'user') {
                         messageElement.className += ' flex justify-end mb-3';
                         messageElement.innerHTML = `
@@ -385,12 +403,20 @@
                         `;
                     } else if (role === 'assistant') {
                         messageElement.className += ' flex flex-col justify-start mb-3';
-                        const messageHtml = `
-                            <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
-                                ${formatMessage(content)}
-                            </div>
-                        `;
-
+                        let messageHtml = '';
+                        if (isJson) {
+                            messageHtml = `
+                                <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
+                                    <pre class="whitespace-pre-wrap text-xs">${escapeHtml(JSON.stringify(jsonContent, null, 2))}</pre>
+                                </div>
+                            `;
+                        } else {
+                            messageHtml = `
+                                <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
+                                    ${formatMessage(content)}
+                                </div>
+                            `;
+                        }
                         const messageDiv = document.createElement('div');
                         messageDiv.className = 'flex justify-start';
                         messageDiv.innerHTML = messageHtml;

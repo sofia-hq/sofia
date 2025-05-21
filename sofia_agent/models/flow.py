@@ -3,7 +3,7 @@ Flow models for Sofia's decision-making process.
 """
 
 from enum import Enum
-from typing import List, Literal, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 
@@ -48,6 +48,7 @@ class Step(BaseModel):
         routes (List[Route]): List of possible routes from this step.
         available_tools (List[str]): List of tool names available in this step.
         tools (List[Tool]): List of Tool objects available in this step.
+        answer_model (Optional[Dict[str, Dict[str, Any]]]): Pydantic model for the agent's answer structure.
         auto_flow (bool): Flag indicating if the step should automatically flow without additonal inputs or answering.
         provide_suggestions (bool): Flag indicating if the step should provide suggestions to the user.
     Methods:
@@ -58,6 +59,7 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
+    answer_model: Optional[Dict[str, Dict[str, Any]]] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
 
@@ -144,10 +146,21 @@ def create_route_decision_model(
     }
 
     if not current_step.auto_flow:
+        description = (
+            "Input to the user if action is ASK (ask) or ANSWER (provide_answer)."
+        )
+        input_type = Optional[str]
+        if current_step.answer_model:
+            description += (
+                "If AnswerModel is provided, use the model for providing the answer."
+            )
+            input_type = Optional[
+                str | create_base_model("AnswerModel", current_step.answer_model)
+            ]
         params["input"] = {
-            "type": Optional[str],
+            "type": input_type,
             "default": None,
-            "description": "Input (either a question or answer) if action is ASK (ask) or ANSWER (provide_answer)",
+            "description": description,
         }
         if current_step.quick_suggestions:
             params["suggestions"] = {

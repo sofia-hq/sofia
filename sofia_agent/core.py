@@ -198,7 +198,7 @@ class FlowSession:
         self.history.append(self.current_step.get_step_identifier())
         action = decision.action.value
         if action in [Action.ASK.value, Action.ANSWER.value]:
-            self._add_message(self.name, decision.input)
+            self._add_message(self.name, str(decision.input))
             return decision, None
         elif action == Action.TOOL_CALL.value:
             self._add_message(

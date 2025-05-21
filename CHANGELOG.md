@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Your new feature here.
+- Support for step-level `answer_model` in agent config, allowing structured (JSON/object) responses from the agent for specific steps. This enables clients (such as UIs) to render rich, custom layouts and workflows based on structured data, not just plain text.
 
 ### Changed
 - Your changes here.

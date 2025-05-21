@@ -34,6 +34,7 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Package-based tools**: Reference Python package functions directly using `package_name:function` syntax.
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
+- **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses from the agent, enabling UIs and clients to render rich, custom layouts or workflows based on structured data, not just plain text.
 - **OpenAI, Mistral, and Gemini LLM support**
 - **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
 - **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
