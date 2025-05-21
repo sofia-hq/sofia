@@ -1,7 +1,8 @@
 """AgentConfig class for managing agent configurations."""
 
+from typing import Dict, List, Optional
+
 from pydantic_settings import BaseSettings
-from typing import List, Dict, Optional, Literal
 
 from .llms import LLMConfig
 from .models.flow import Step
@@ -39,6 +40,12 @@ class AgentConfig(BaseSettings):
     # Loading from YAML file
     @classmethod
     def from_yaml(cls, file_path: str) -> "AgentConfig":
+        """
+        Load configuration from a YAML file.
+
+        :param file_path: Path to the YAML file.
+        :return: An instance of AgentConfig with the loaded data.
+        """
         import yaml
 
         with open(file_path, "r") as file:
@@ -46,6 +53,11 @@ class AgentConfig(BaseSettings):
         return cls(**data)
 
     def to_yaml(self, file_path: str) -> None:
+        """
+        Save configuration to a YAML file.
+
+        :param file_path: Path to the YAML file.
+        """
         import yaml
 
         with open(file_path, "w") as file:

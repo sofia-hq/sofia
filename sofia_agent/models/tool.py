@@ -153,4 +153,4 @@ class InvalidArgumentsError(Exception):
         return f"Invalid arguments: {', '.join(error_messages)}. Please Try again with valid arguments."
 
 
-__all__ = ["Tool", "Fallback"]
+__all__ = ["Tool", "FallbackError"]

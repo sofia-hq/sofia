@@ -1,10 +1,9 @@
-"""
-Utility functions and helpers for the SOFIA package.
-"""
+"""Utility functions and helpers for the SOFIA package."""
 
-from typing import Any, Dict, Optional, Type, Union, List
-from pydantic import BaseModel, Field, create_model, ConfigDict
 from enum import Enum
+from typing import Any, Dict, List, Optional, Type, Union
+
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 
 def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[BaseModel]:
@@ -35,7 +34,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
             )
         elif isinstance(field_type, list):
             field_types = []
-            for i, item in enumerate(field_type):
+            for _, item in enumerate(field_type):
                 nested_field_type = create_base_model(
                     name=item.get("name", "DynamicModel"),
                     params=item.get("params", {}),

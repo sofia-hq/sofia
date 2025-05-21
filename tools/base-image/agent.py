@@ -1,10 +1,13 @@
+"""SOFIA Agent Initialization."""
+
 import os
 
-from sofia_agent.utils.tracing import initialize_tracing
 from opentelemetry.sdk.resources import Resource
 
 # Initialize Tracing
 if os.getenv("ENABLE_TRACING", "false").lower() == "true":
+    from sofia_agent.utils.tracing import initialize_tracing
+
     initialize_tracing(
         tracer_provider_kwargs={
             "resource": Resource(

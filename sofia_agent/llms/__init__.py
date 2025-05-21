@@ -1,6 +1,4 @@
-"""
-LLM base classes and OpenAI LLM integration for SOFIA.
-"""
+"""LLM base classes and OpenAI LLM integration for SOFIA."""
 
 from typing import Dict, Literal
 
