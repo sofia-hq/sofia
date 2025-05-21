@@ -27,6 +27,21 @@ steps:
     routes:
       - target: get_basic_approval
         condition: Basic itinerary outline has been drafted
+    auto_flow: true
+
+  - step_id: get_basic_approval
+    description: |
+      Present the high-level itinerary to the user and ask for their initial feedback:
+      1. Does the overall structure work for them?
+      2. Are there any days they want to completely change?
+      3. Are there any major attractions missing or unwanted?
+
+      Take notes on all feedback for the day-by-day planning phase.
+    routes:
+      - target: plan_day_details
+        condition: User approves basic outline with minor changes or without changes
+      - target: plan_basic_itinerary
+        condition: User wants substantial revisions to the basic plan
     answer_model:
       days:
         description: |
@@ -73,21 +88,6 @@ steps:
         type: str
         description: |
           A closing statement to the user, asking whether they are satisfied with the plan or if they want to make changes.
-    auto_flow: true
-
-  - step_id: get_basic_approval
-    description: |
-      Present the high-level itinerary to the user and ask for their initial feedback:
-      1. Does the overall structure work for them?
-      2. Are there any days they want to completely change?
-      3. Are there any major attractions missing or unwanted?
-
-      Take notes on all feedback for the day-by-day planning phase.
-    routes:
-      - target: plan_day_details
-        condition: User approves basic outline with minor changes or without changes
-      - target: plan_basic_itinerary
-        condition: User wants substantial revisions to the basic plan
     quick_suggestions: true
 
   - step_id: plan_day_details
