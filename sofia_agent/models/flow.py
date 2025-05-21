@@ -151,8 +151,12 @@ def create_route_decision_model(
         )
         input_type = Optional[str]
         if current_step.answer_model:
-            description += "If AnswerModel is provided, use the model for providing the answer."
-            input_type = Optional[str | create_base_model("AnswerModel", current_step.answer_model)]
+            description += (
+                "If AnswerModel is provided, use the model for providing the answer."
+            )
+            input_type = Optional[
+                str | create_base_model("AnswerModel", current_step.answer_model)
+            ]
         params["input"] = {
             "type": input_type,
             "default": None,

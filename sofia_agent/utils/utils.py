@@ -28,15 +28,15 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
 
         if isinstance(field_type, dict):
             field_type = create_base_model(
-                name = field_type.get("name", "DynamicModel"),
-                params = field_type.get("params", {}),
+                name=field_type.get("name", "DynamicModel"),
+                params=field_type.get("params", {}),
             )
         elif isinstance(field_type, list):
             field_types = []
             for i, item in enumerate(field_type):
                 nested_field_type = create_base_model(
-                    name = item.get("name", "DynamicModel"),
-                    params = item.get("params", {}),
+                    name=item.get("name", "DynamicModel"),
+                    params=item.get("params", {}),
                 )
                 field_types.append(nested_field_type)
             field_type = Union[*field_types]
@@ -54,6 +54,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
         fields[field_name] = (field_type, field_info)
 
     return create_model(name, **fields, __config__=ConfigDict(extra="forbid"))
+
 
 def create_enum(name: str, values: Dict[str, Any]) -> Type[Enum]:
     """
