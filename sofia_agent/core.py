@@ -1,29 +1,26 @@
-"""
-Core models and logic for the SOFIA package, including flow management, session handling.
-"""
+"""Core models and logic for the SOFIA package, including flow management, session handling."""
 
 import pickle
 import uuid
-from typing import Dict, List, Optional, Union, Callable, Any
+from typing import Any, Callable, Dict, List, Optional, Union
+
 from pydantic import BaseModel
 
-from .utils.logging import log_debug, log_error, log_info
-from .models.tool import Tool, InvalidArgumentsError, FallbackError
+from .config import AgentConfig
+from .llms import LLMBase
 from .models.flow import (
     Action,
+    Message,
     Step,
     StepIdentifier,
-    Message,
     create_route_decision_model,
 )
-from .llms import LLMBase
-from .config import AgentConfig
+from .models.tool import FallbackError, InvalidArgumentsError, Tool
+from .utils.logging import log_debug, log_error, log_info
 
 
 class FlowSession:
-    """
-    Manages a single agent session, including step transitions, tool calls, and history.
-    """
+    """Manages a single agent session, including step transitions, tool calls, and history."""
 
     def __init__(
         self,
@@ -33,15 +30,15 @@ class FlowSession:
         start_step_id: str,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
-        tools: List[Callable | str] = [],
+        tools: Optional[List[Callable | str]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         config: Optional[AgentConfig] = None,
-        history: List[Union[Message, StepIdentifier]] = [],
+        history: Optional[List[Union[Message, StepIdentifier]]] = None,
         current_step_id: Optional[str] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
-    ):
+    ) -> None:
         """
         Initialize a FlowSession.
 
@@ -59,10 +56,8 @@ class FlowSession:
         :param current_step_id: Current step ID. (Defaults to start_step_id)
         :param session_id: Unique session ID. (Defaults to a UUID)
         """
-        ## Fixed
-        self.session_id = (
-            f"{name}_{str(uuid.uuid4())}" if not session_id else session_id
-        )
+        # Fixed
+        self.session_id = session_id or f"{name}_{str(uuid.uuid4())}"
         self.name = name
         self.llm = llm
         self.steps = steps
@@ -83,19 +78,17 @@ class FlowSession:
                 if callable(tool)
                 else Tool.from_pkg(tool, tool_arg_descs)
             )
-            for tool in tools
+            for tool in tools or []
         ]
         self.tools = {tool.name: tool for tool in tools_list}
-        ## Variable
-        self.history: List[Union[Message, StepIdentifier]] = history
+        # Variable
+        self.history: List[Union[Message, StepIdentifier]] = history or []
         self.current_step: Step = (
             steps[current_step_id] if current_step_id else steps[start_step_id]
         )
 
-    def save_session(self):
-        """
-        Save the current session to disk as a pickle file.
-        """
+    def save_session(self) -> None:
+        """Save the current session to disk as a pickle file."""
         with open(f"{self.session_id}.pkl", "wb") as f:
             pickle.dump(self, f)
         log_debug(f"Session {self.session_id} saved to disk.")
@@ -124,7 +117,14 @@ class FlowSession:
             "history": [msg.model_dump(mode="json") for msg in self.history],
         }
 
-    def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:
+    def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
+        """
+        Run a tool with the given name and arguments.
+
+        :param tool_name: Name of the tool to run.
+        :param kwargs: Arguments to pass to the tool.
+        :return: Result of the tool execution.
+        """
         tool = self.tools.get(tool_name)
         if not tool:
             log_error(f"Tool '{tool_name}' not found in session tools.")
@@ -135,6 +135,11 @@ class FlowSession:
         return tool.run(**kwargs)
 
     def _get_current_step_tools(self) -> list[Tool]:
+        """
+        Get the list of tools available in the current step.
+
+        :return: List of Tool instances available in the current step.
+        """
         tools = []
         for tool in self.current_step.tool_ids:
             _tool = self.tools.get(tool)
@@ -144,11 +149,22 @@ class FlowSession:
             tools.append(_tool)
         return tools
 
-    def _add_message(self, role: str, message: str):
+    def _add_message(self, role: str, message: str) -> None:
+        """
+        Add a message to the session history.
+
+        :param role: Role of the message sender (e.g., 'user', 'assistant', 'tool').
+        :param message: The message content.
+        """
         self.history.append(Message(role=role, content=message))
         log_debug(f"{role.title()} added: {message}")
 
     def _get_next_decision(self) -> BaseModel:
+        """
+        Get the next decision from the LLM based on the current step and history.
+
+        :return: The decision made by the LLM.
+        """
         route_decision_model = create_route_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
@@ -261,9 +277,7 @@ class FlowSession:
 
 
 class Sofia:
-    """
-    Main interface for creating and managing SOFIA agents.
-    """
+    """Main interface for creating and managing SOFIA agents."""
 
     def __init__(
         self,
@@ -273,11 +287,11 @@ class Sofia:
         start_step_id: str,
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
-        tools: List[Callable | str] = [],
+        tools: Optional[List[Callable | str]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         config: Optional[AgentConfig] = None,
-    ):
+    ) -> None:
         """
         Initialize a Sofia agent.
 
@@ -299,18 +313,18 @@ class Sofia:
         self.persona = persona
         self.show_steps_desc = show_steps_desc
         self.max_errors = max_errors
-        tool_set = set(tools)
+        tool_set = set(tools) if tools else set()
         for step in self.steps.values():
             _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
             tool_set.update(_pkg_tools)
         self.tools = list(tool_set)
         self.config = config
 
-        ## Validate start step ID
+        # Validate start step ID
         if start_step_id not in self.steps:
             log_error(f"Start step ID {start_step_id} not found in steps")
             raise ValueError(f"Start step ID {start_step_id} not found in steps")
-        ## Validate step IDs in routes
+        # Validate step IDs in routes
         for step in self.steps.values():
             for route in step.routes:
                 if route.target not in self.steps:
@@ -320,7 +334,7 @@ class Sofia:
                     raise ValueError(
                         f"Route target {route.target} not found in steps for step {step.step_id}"
                     )
-        ## Validate tool names
+        # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
                 for tool in self.tools:
@@ -342,7 +356,7 @@ class Sofia:
         cls,
         config: AgentConfig,
         llm: Optional[LLMBase] = None,
-        tools: list[Callable | str] = [],
+        tools: Optional[list[Callable | str]] = None,
     ) -> "Sofia":
         """
         Create a Sofia agent from an AgentConfig object.
@@ -358,7 +372,6 @@ class Sofia:
                     "No LLM provided. Please provide an LLM or a config with an LLM."
                 )
             llm = config.llm.get_llm()
-
         return cls(
             llm=llm,
             name=config.name,
@@ -366,7 +379,7 @@ class Sofia:
             start_step_id=config.start_step_id,
             system_message=config.system_message,
             persona=config.persona,
-            tools=tools,
+            tools=tools or [],
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
             config=config,
@@ -450,7 +463,6 @@ class Sofia:
         :param verbose: Whether to return verbose output.
         :return: A tuple containing the decision and session data.
         """
-
         session = (
             self.get_session_from_dict(session_data)
             if session_data
