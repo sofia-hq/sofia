@@ -33,6 +33,7 @@ class FlowSession:
         tools: Optional[List[Callable | str]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
+        max_iter: int = 5,
         config: Optional[AgentConfig] = None,
         history: Optional[List[Union[Message, StepIdentifier]]] = None,
         current_step_id: Optional[str] = None,
@@ -48,9 +49,10 @@ class FlowSession:
         :param start_step_id: ID of the starting step.
         :param system_message: Optional system message.
         :param persona: Optional persona string.
-        :param tools:  List of tool callables or package identifiers (e.g., "math:
+        :param tools:  List of tool callables or package identifiers (e.g., "math:add").
         :param show_steps_desc: Whether to show step descriptions.
-        :param max_errors: Maximum consecutive errors before stopping or fallback.
+        :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
+        :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
         :param history: List of messages and steps in the session. (Optional)
         :param current_step_id: Current step ID. (Defaults to start_step_id)
@@ -65,6 +67,7 @@ class FlowSession:
         self.system_message = system_message
         self.persona = persona
         self.max_errors = max_errors
+        self.max_iter = max_iter
         self.verbose = verbose
         self.config = config
         tool_arg_descs = (
@@ -188,6 +191,7 @@ class FlowSession:
         self,
         user_input: Optional[str] = None,
         no_errors: int = 0,
+        next_count: int = 0,
         return_tool: bool = False,
         return_step_transition: bool = False,
     ) -> tuple[BaseModel, Any]:
@@ -196,6 +200,7 @@ class FlowSession:
 
         :param user_input: Optional user input string.
         :param no_errors: Number of consecutive errors encountered.
+        :param next_count: Number of times the next function has been called.
         :param return_tool: Whether to return tool results.
         :param return_step_transition: Whether to return step transition.
         :return: A tuple containing the decision and any tool results.
@@ -204,6 +209,20 @@ class FlowSession:
             raise ValueError(
                 f"Maximum errors reached ({self.max_errors}). Stopping session."
             )
+        if next_count >= self.max_iter:
+            if not self.current_step.auto_flow:
+                self._add_message(
+                    "fallback",
+                    (
+                        "Maximum iterations reached. Inform the user and based on the "
+                        "available context, produce a fallback response."
+                    ),
+                )
+                return self.next()
+            else:
+                raise RecursionError(
+                    f"Maximum iterations reached ({self.max_iter}). Stopping session."
+                )
 
         log_debug(f"User input received: {user_input}")
         self._add_message("user", user_input) if user_input else None
@@ -249,7 +268,10 @@ class FlowSession:
             if return_tool and _error is None:
                 return decision, tool_results
 
-            return self.next(no_errors=no_errors + 1) if _error else self.next()
+            return self.next(
+                no_errors=no_errors + 1 if _error else 0,
+                next_count=next_count + 1,
+            )
         elif action == ACTION_ENUMS["MOVE"]:
             _error = None
             if decision.next_step_id in self.current_step.get_available_routes():
@@ -266,7 +288,10 @@ class FlowSession:
                 )
             if return_step_transition:
                 return decision, None
-            return self.next(no_errors=no_errors + 1) if _error else self.next()
+            return self.next(
+                no_errors=no_errors + 1 if _error else 0,
+                next_count=next_count + 1,
+            )
         elif action == ACTION_ENUMS["END"]:
             self._add_message("end", "Session ended.")
             return decision, None
@@ -275,7 +300,10 @@ class FlowSession:
                 "error",
                 f"Unknown action: {action}. Please check the action type.",
             )
-            return self.next(no_errors=no_errors + 1)
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+            )
 
 
 class Sofia:
@@ -292,6 +320,7 @@ class Sofia:
         tools: Optional[List[Callable | str]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
+        max_iter: int = 5,
         config: Optional[AgentConfig] = None,
     ) -> None:
         """
@@ -305,6 +334,8 @@ class Sofia:
         :param system_message: Optional system message.
         :param tools: List of tool callables.
         :param show_steps_desc: Whether to show step descriptions.
+        :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
+        :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
         """
         self.llm = llm
@@ -315,6 +346,7 @@ class Sofia:
         self.persona = persona
         self.show_steps_desc = show_steps_desc
         self.max_errors = max_errors
+        self.max_iter = max_iter
         tool_set = set(tools) if tools else set()
         for step in self.steps.values():
             _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
@@ -384,6 +416,7 @@ class Sofia:
             tools=tools or [],
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
+            max_iter=config.max_iter,
             config=config,
         )
 
@@ -404,6 +437,7 @@ class Sofia:
             tools=self.tools,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
+            max_iter=self.max_iter,
             verbose=verbose,
             config=self.config,
         )
@@ -448,6 +482,7 @@ class Sofia:
             system_message=self.system_message,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
+            max_iter=self.max_iter,
             **new_session_data,
         )
 
