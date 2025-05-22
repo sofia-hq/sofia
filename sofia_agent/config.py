@@ -19,6 +19,10 @@ class AgentConfig(BaseSettings):
         start_step_id (str): ID of the starting step.
         tool_arg_descriptions (Dict[str, Dict[str, str]]): Descriptions for tool arguments.
         system_message (Optional[str]): System message for the agent. Default system message will be used if not provided.
+        show_steps_desc (bool): Flag to show step descriptions.
+        max_errors (int): Maximum number of errors allowed.
+        max_iter (int): Maximum number of iterations allowed.
+        llm (Optional[LLMConfig]): Optional LLM configuration.
     Methods:
         from_yaml(file_path: str) -> "AgentConfig": Load configuration from a YAML file.
         to_yaml(file_path: str) -> None: Save configuration to a YAML file.
@@ -34,6 +38,7 @@ class AgentConfig(BaseSettings):
     )
     show_steps_desc: bool = False
     max_errors: int = 3
+    max_iter: int = 3
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
 
