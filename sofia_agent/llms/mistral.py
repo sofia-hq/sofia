@@ -1,21 +1,20 @@
+"""Mistral LLM integration for SOFIA."""
+
 import os
 from typing import List
 
 from pydantic import BaseModel
 
-from ..models.flow import Message
-
 from .base import LLMBase
+from ..models.flow import Message
 
 
 class Mistral(LLMBase):
-    """
-    Mistral AI LLM integration for SOFIA.
-    """
+    """Mistral AI LLM integration for SOFIA."""
 
     __provider__: str = "mistral"
 
-    def __init__(self, model: str = "ministral-8b-latest", **kwargs):
+    def __init__(self, model: str = "ministral-8b-latest", **kwargs) -> None:
         """
         Initialize the MistralAI LLM.
 

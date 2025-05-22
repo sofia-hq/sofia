@@ -1,4 +1,4 @@
 [flake8]
 exclude = tests/*, examples/*
-ignore = ANN101, E501, W503, ANN102
+ignore = ANN101, E501, W503, ANN102, ANN001, ANN002, ANN003, D401
 max-line-length = 100

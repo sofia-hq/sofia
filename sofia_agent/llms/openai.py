@@ -1,20 +1,19 @@
+"""OpenAI LLM integration for SOFIA."""
+
 from typing import List
 
 from pydantic import BaseModel
 
-from ..models.flow import Message
-
 from .base import LLMBase
+from ..models.flow import Message
 
 
 class OpenAI(LLMBase):
-    """
-    OpenAI Chat LLM integration for SOFIA.
-    """
+    """OpenAI Chat LLM integration for SOFIA."""
 
     __provider__: str = "openai"
 
-    def __init__(self, model: str = "gpt-4o-mini", **kwargs):
+    def __init__(self, model: str = "gpt-4o-mini", **kwargs) -> None:
         """
         Initialize the OpenAIChatLLM.
 

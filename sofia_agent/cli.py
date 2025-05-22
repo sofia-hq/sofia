@@ -1,9 +1,13 @@
-import os
-import questionary
+"""Command Line Interface for SOFIA."""
+
 import argparse
+import os
+
+import questionary
 
 
-def cli_init():
+def cli_init() -> None:
+    """Initialize a new agent project interactively."""
     # 1. Ask for target directory
     output_dir = questionary.text(
         "Which directory do you want to create the agent files in? (absolute or relative path)"
@@ -138,7 +142,8 @@ if __name__ == "__main__":
     print(f"Starter Python file written to: {py_path}")
 
 
-def main():
+def main() -> None:
+    """Main function for the CLI."""
     parser = argparse.ArgumentParser(
         prog="sofia",
         description="SOFIA CLI - Simple Orchestrated Flow Intelligence Agent",
@@ -146,9 +151,7 @@ def main():
     subparsers = parser.add_subparsers(dest="command")
 
     # init command
-    init_parser = subparsers.add_parser(
-        "init", help="Start a new agent project interactively"
-    )
+    subparsers.add_parser("init", help="Start a new agent project interactively")
     # help command is handled by argparse
 
     args = parser.parse_args()

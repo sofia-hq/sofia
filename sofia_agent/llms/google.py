@@ -1,20 +1,19 @@
+"""Gemini LLM integration for SOFIA."""
+
 from typing import List
 
 from pydantic import BaseModel
 
-from ..models.flow import Message
-
 from .base import LLMBase
+from ..models.flow import Message
 
 
 class Gemini(LLMBase):
-    """
-    Gemini LLM integration for SOFIA.
-    """
+    """Gemini LLM integration for SOFIA."""
 
     __provider__: str = "google"
 
-    def __init__(self, model: str = "gemini-2.0-flash", **kwargs):
+    def __init__(self, model: str = "gemini-2.0-flash", **kwargs) -> None:
         """
         Initialize the Gemini LLM.
 

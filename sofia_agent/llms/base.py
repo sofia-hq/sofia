@@ -1,24 +1,22 @@
-from typing import List, Optional, Union, Dict
+"""LLMBase class for SOFIA agent framework."""
+
+from typing import Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
-from ..constants import DEFAULT_SYSTEM_MESSAGE, DEFAULT_PERSONA
-from ..models.flow import Step, StepIdentifier, Message
+from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
+from ..models.flow import Message, Step, StepIdentifier
 from ..models.tool import Tool
 from ..utils.logging import log_error
 
 
 class LLMBase:
-    """
-    Abstract base class for LLM integrations in SOFIA.
-    """
+    """Abstract base class for LLM integrations in SOFIA."""
 
     __provider__: str = "base"
 
-    def __init__(self):
-        """
-        Initialize the LLMBase class.
-        """
+    def __init__(self) -> None:
+        """Initialize the LLMBase class."""
         raise NotImplementedError("Subclasses should implement this method.")
 
     @staticmethod
@@ -81,9 +79,11 @@ class LLMBase:
         for i, item in enumerate(history):
             if isinstance(item, Message):
                 if item.role == "error":
-                    if n_last_consecutive_errors > max_errors:
-                        if i < len(history) - max_errors:
-                            continue
+                    if (
+                        n_last_consecutive_errors > max_errors
+                        and i < len(history) - max_errors
+                    ):
+                        continue
                     history_str.append(f"<Error> {item.content}")
                     continue
                 if item.role == "fallback":

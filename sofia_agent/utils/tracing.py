@@ -1,31 +1,38 @@
+"""OpenTelemetry tracing for the Sofia library."""
+
 import os
 
-from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry import trace
-from opentelemetry.trace import SpanKind
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.trace import SpanKind
 
-from ..core import Sofia, FlowSession
+from ..core import FlowSession, Sofia
 
 
 class SofiaInstrumentor(BaseInstrumentor):
-    """
-    Instrumentor for the Sofia library to add OpenTelemetry tracing.
-    """
+    """Instrumentor for the Sofia library to add OpenTelemetry tracing."""
 
-    def instrumentation_dependencies(self):
+    def instrumentation_dependencies(self) -> list:
+        """Return a list of dependencies required for instrumentation."""
         # No external dependencies
         return []
 
-    def _instrument(self, **kwargs):
+    def _instrument(self, **kwargs) -> None:
+        """
+        Instrument the Sofia library to add OpenTelemetry tracing.
+
+        This method patches the create_session, next, _run_tool, and _get_next_decision
+        methods to add tracing spans.
+        """
         tracer = trace.get_tracer(__name__)
 
         # Patch Sofia.create_session
         original_create_session = Sofia.create_session
 
-        def traced_create_session(self, *args, **kwargs):
+        def traced_create_session(self, *args, **kwargs) -> FlowSession:
             with tracer.start_as_current_span(
                 "Sofia.create_session",
                 kind=SpanKind.INTERNAL,
@@ -46,7 +53,7 @@ class SofiaInstrumentor(BaseInstrumentor):
         # Patch FlowSession.next
         original_next = FlowSession.next
 
-        def traced_next(self, *args, **kwargs):
+        def traced_next(self, *args, **kwargs) -> str:
             ctx = getattr(self, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
@@ -93,7 +100,7 @@ class SofiaInstrumentor(BaseInstrumentor):
         # Patch FlowSession._run_tool
         original_run_tool = FlowSession._run_tool
 
-        def traced_run_tool(self, tool_name, kwargs):
+        def traced_run_tool(self, tool_name: str, kwargs) -> str:
             ctx = getattr(self, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
@@ -126,7 +133,7 @@ class SofiaInstrumentor(BaseInstrumentor):
         # Patch FlowSession._get_next_decision to trace LLM calls
         original_get_next_decision = FlowSession._get_next_decision
 
-        def traced_get_next_decision(self, *args, **kwargs):
+        def traced_get_next_decision(self, *args, **kwargs) -> str:
             ctx = getattr(self, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
@@ -149,7 +156,7 @@ class SofiaInstrumentor(BaseInstrumentor):
                     result = original_get_next_decision(self, *args, **kwargs)
                     span.set_attribute("llm.success", True)
                     # Optionally, add output summary or token usage if available
-                    if hasattr(result, "input"):
+                    if hasattr(result, "response"):
                         span.set_attribute("llm.output", str(result.input)[:200])
                     return result
                 except Exception as e:
@@ -159,7 +166,8 @@ class SofiaInstrumentor(BaseInstrumentor):
 
         FlowSession._get_next_decision = traced_get_next_decision
 
-    def _uninstrument(self, **kwargs):
+    def _uninstrument(self, **kwargs) -> None:
+        """Uninstrument the Sofia library and restore original methods."""
         # Unpatch Sofia.create_session
         Sofia.create_session = Sofia.create_session.__wrapped__
 
@@ -171,9 +179,9 @@ class SofiaInstrumentor(BaseInstrumentor):
 
 
 def initialize_tracing(
-    tracer_provider_kwargs: dict = {},
-    exporter_kwargs: dict = {},
-    span_processor_kwargs: dict = {},
+    tracer_provider_kwargs=None,
+    exporter_kwargs=None,
+    span_processor_kwargs=None,
 ) -> None:
     """
     Initialize OpenTelemetry tracing with the specified configuration.
@@ -182,6 +190,12 @@ def initialize_tracing(
     param exporter_kwargs: Dictionary of arguments for the OTLPSpanExporter.
     param span_processor_kwargs: Dictionary of arguments for the BatchSpanProcessor.
     """
+    if tracer_provider_kwargs is None:
+        tracer_provider_kwargs = {}
+    if exporter_kwargs is None:
+        exporter_kwargs = {}
+    if span_processor_kwargs is None:
+        span_processor_kwargs = {}
 
     # Set up OpenTelemetry tracing
     trace.set_tracer_provider(TracerProvider(**tracer_provider_kwargs))
@@ -189,7 +203,7 @@ def initialize_tracing(
 
     # Set up the OTLP exporter
     otlp_exporter = OTLPSpanExporter(
-        endpoint=f"{os.getenv("ELASTIC_APM_SERVER_URL", "http://localhost:8200")}/v1/traces",
+        endpoint=f"{os.getenv('ELASTIC_APM_SERVER_URL', 'http://localhost:8200')}/v1/traces",
         headers={"Authorization": f"Bearer {os.getenv('ELASTIC_APM_TOKEN', '')}"},
         **exporter_kwargs,
     )
@@ -203,8 +217,6 @@ def initialize_tracing(
 
 
 def shutdown_tracing() -> None:
-    """
-    Shutdown OpenTelemetry tracing and clean up resources.
-    """
+    """Shutdown OpenTelemetry tracing and clean up resources."""
     # Uninstrument OpenTelemetry tracing
     SofiaInstrumentor().uninstrument()

@@ -1,15 +1,13 @@
-"""
-Flow models for Sofia's decision-making process.
-"""
+"""Flow models for Sofia's decision-making process."""
 
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 
-from ..utils.utils import create_base_model, create_enum
-from ..constants import ACTION_ENUMS
 from .tool import Tool
+from ..constants import ACTION_ENUMS
+from ..utils.utils import create_base_model, create_enum
 
 Action = Enum("Action", ACTION_ENUMS)
 
@@ -63,7 +61,7 @@ class Step(BaseModel):
     auto_flow: bool = False
     quick_suggestions: bool = False
 
-    def model_post_init(self, __context):
+    def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
         if self.auto_flow and not (self.routes or self.available_tools):
             raise ValueError(
@@ -150,7 +148,7 @@ def create_route_decision_model(
         + (["MOVE"] if available_step_ids else [])
         + (["TOOL_CALL"] if tool_ids else [])
     )
-    ActionEnum = create_action_enum(action_ids)
+    ActionEnum = create_action_enum(action_ids)  # noqa
 
     params = {
         "reasoning": {
