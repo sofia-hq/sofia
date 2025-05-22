@@ -1,5 +1,6 @@
 """OpenTelemetry tracing for the Sofia library."""
 
+import functools
 import os
 
 from opentelemetry import trace
@@ -8,6 +9,8 @@ from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.trace import SpanKind
+
+from pydantic import BaseModel
 
 from ..core import FlowSession, Sofia
 
@@ -30,48 +33,53 @@ class SofiaInstrumentor(BaseInstrumentor):
         tracer = trace.get_tracer(__name__)
 
         # Patch Sofia.create_session
-        original_create_session = Sofia.create_session
+        _original_create_session = Sofia.create_session  # type: ignore
 
-        def traced_create_session(self, *args, **kwargs) -> FlowSession:
+        @functools.wraps(Sofia.create_session)
+        def traced_create_session(self_, *args, **kwargs) -> FlowSession:
             with tracer.start_as_current_span(
                 "Sofia.create_session",
                 kind=SpanKind.INTERNAL,
                 attributes={
-                    "agent.name": self.name,
-                    "agent.class": self.__class__.__name__,
-                    "agent.module": self.__class__.__module__,
+                    "agent.name": self_.name,
+                    "agent.class": self_.__class__.__name__,
+                    "agent.module": self_.__class__.__module__,
                 },
             ) as span:
-                session = original_create_session(self, *args, **kwargs)
+                session = _original_create_session(self_, *args, **kwargs)
                 span.set_attribute("session.id", session.session_id)
                 span.set_attribute("session.start_time", span.start_time)
                 session._otel_root_span_ctx = trace.set_span_in_context(span)
                 return session
 
-        Sofia.create_session = traced_create_session
+        Sofia.create_session = traced_create_session  # type: ignore
 
         # Patch FlowSession.next
-        original_next = FlowSession.next
+        _original_next = FlowSession.next  # type: ignore
 
-        def traced_next(self, *args, **kwargs) -> str:
-            ctx = getattr(self, "_otel_root_span_ctx", None)
+        @functools.wraps(FlowSession.next)
+        def traced_next(self_, *args, **kwargs) -> tuple:
+            """Get the next decision and tool result."""
+            ctx = getattr(self_, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
                 "FlowSession.next",
                 context=span_ctx,
                 kind=SpanKind.INTERNAL,
                 attributes={
-                    "session.id": self.session_id,
-                    "current_step": getattr(self.current_step, "step_id", None),
-                    "step.description": getattr(self.current_step, "description", None),
-                    "step.available_routes": str(
-                        getattr(self.current_step, "routes", [])
+                    "session.id": self_.session_id,
+                    "current_step": getattr(self_.current_step, "step_id", None),
+                    "step.description": getattr(
+                        self_.current_step, "description", None
                     ),
-                    "history.length": len(getattr(self, "history", [])),
+                    "step.available_routes": str(
+                        getattr(self_.current_step, "routes", [])
+                    ),
+                    "history.length": len(getattr(self_, "history", [])),
                 },
             ) as span:
                 try:
-                    decision, tool_result = original_next(self, *args, **kwargs)
+                    decision, tool_result = _original_next(self_, *args, **kwargs)
                     span.set_attribute(
                         "decision.action",
                         getattr(getattr(decision, "action", None), "value", None),
@@ -86,7 +94,7 @@ class SofiaInstrumentor(BaseInstrumentor):
                         )
                     if tool_result is not None:
                         span.set_attribute("tool.result", str(tool_result))
-                    span.set_attribute("session.history_length", len(self.history))
+                    span.set_attribute("session.history_length", len(self_.history))
                     return decision, tool_result
                 except Exception as e:
                     span.record_exception(e)
@@ -95,28 +103,30 @@ class SofiaInstrumentor(BaseInstrumentor):
                     )
                     raise
 
-        FlowSession.next = traced_next
+        FlowSession.next = traced_next  # type: ignore
 
         # Patch FlowSession._run_tool
-        original_run_tool = FlowSession._run_tool
+        _original_run_tool = FlowSession._run_tool  # type: ignore
 
-        def traced_run_tool(self, tool_name: str, kwargs) -> str:
-            ctx = getattr(self, "_otel_root_span_ctx", None)
+        @functools.wraps(FlowSession._run_tool)
+        def traced_run_tool(self_, tool_name, kwargs) -> str:
+            """Run a tool with the given name and arguments."""
+            ctx = getattr(self_, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
                 "FlowSession._run_tool",
                 context=span_ctx,
                 kind=SpanKind.INTERNAL,
                 attributes={
-                    "session.id": self.session_id,
+                    "session.id": self_.session_id,
                     "tool.name": tool_name,
                     "tool.kwargs": str(kwargs),
-                    "step.id": getattr(self, "current_step", None)
-                    and self.current_step.step_id,
+                    "step.id": getattr(self_, "current_step", None)
+                    and self_.current_step.step_id,
                 },
             ) as span:
                 try:
-                    result = original_run_tool(self, tool_name, kwargs)
+                    result = _original_run_tool(self_, tool_name, kwargs)
                     span.set_attribute("tool.result", str(result))
                     span.set_attribute("tool.success", True)
                     return result
@@ -128,34 +138,35 @@ class SofiaInstrumentor(BaseInstrumentor):
                     )
                     raise
 
-        FlowSession._run_tool = traced_run_tool
+        FlowSession._run_tool = traced_run_tool  # type: ignore
 
-        # Patch FlowSession._get_next_decision to trace LLM calls
-        original_get_next_decision = FlowSession._get_next_decision
+        # Patch FlowSession._get_next_decision
+        _original_get_next_decision = FlowSession._get_next_decision  # type: ignore
 
-        def traced_get_next_decision(self, *args, **kwargs) -> str:
-            ctx = getattr(self, "_otel_root_span_ctx", None)
+        @functools.wraps(FlowSession._get_next_decision)
+        def traced_get_next_decision(self_, *args, **kwargs) -> BaseModel:
+            """Get the next decision from the LLM."""
+            ctx = getattr(self_, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
                 "llm._get_output",
                 context=span_ctx,
                 kind=SpanKind.CLIENT,
                 attributes={
-                    "agent.name": getattr(self, "name", None),
-                    "session.id": getattr(self, "session_id", None),
-                    "step.id": getattr(self.current_step, "step_id", None),
-                    "llm.class": self.llm.__class__.__name__,
-                    "llm.provider": getattr(self.llm, "__provider__", None),
-                    "llm.model": getattr(self.llm, "model", None),
-                    "history.length": len(getattr(self, "history", [])),
-                    "system_message": getattr(self, "system_message", None),
-                    "persona": getattr(self, "persona", None),
+                    "agent.name": getattr(self_, "name", None),
+                    "session.id": getattr(self_, "session_id", None),
+                    "step.id": getattr(self_.current_step, "step_id", None),
+                    "llm.class": self_.llm.__class__.__name__,
+                    "llm.provider": getattr(self_.llm, "__provider__", None),
+                    "llm.model": getattr(self_.llm, "model", None),
+                    "history.length": len(getattr(self_, "history", [])),
+                    "system_message": getattr(self_, "system_message", None),
+                    "persona": getattr(self_, "persona", None),
                 },
             ) as span:
                 try:
-                    result = original_get_next_decision(self, *args, **kwargs)
+                    result = _original_get_next_decision(self_, *args, **kwargs)
                     span.set_attribute("llm.success", True)
-                    # Optionally, add output summary or token usage if available
                     if hasattr(result, "response"):
                         span.set_attribute("llm.output", str(result.input)[:200])
                     return result
@@ -164,18 +175,15 @@ class SofiaInstrumentor(BaseInstrumentor):
                     span.set_attribute("llm.success", False)
                     raise
 
-        FlowSession._get_next_decision = traced_get_next_decision
+        FlowSession._get_next_decision = traced_get_next_decision  # type: ignore
 
     def _uninstrument(self, **kwargs) -> None:
         """Uninstrument the Sofia library and restore original methods."""
-        # Unpatch Sofia.create_session
-        Sofia.create_session = Sofia.create_session.__wrapped__
-
-        # Unpatch FlowSession.next
-        FlowSession.next = FlowSession.next.__wrapped__
-
-        # Unpatch FlowSession._run_tool
-        FlowSession._run_tool = FlowSession._run_tool.__wrapped__
+        # Restore original methods
+        Sofia.create_session = Sofia.create_session.__wrapped__  # type: ignore
+        FlowSession.next = FlowSession.next.__wrapped__  # type: ignore
+        FlowSession._run_tool = FlowSession._run_tool.__wrapped__  # type: ignore
+        FlowSession._get_next_decision = FlowSession._get_next_decision.__wrapped__  # type: ignore
 
 
 def initialize_tracing(

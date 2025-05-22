@@ -6,10 +6,6 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
 
-from agent import agent
-
-from db import init_db
-
 from fastapi import FastAPI, HTTPException, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -17,13 +13,16 @@ from fastapi.staticfiles import StaticFiles
 
 from pydantic import BaseModel
 
-from session_store import create_session_store
+from sofia_agent.models.flow import Message as FlowMessage, Step
 
-from sofia_agent.models.flow import Action, Message as FlowMessage, Step
+from src.agent import agent
+from src.db import init_db
+from src.session_store import SessionStore, create_session_store
+
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
-session_store = None
+session_store: Optional[SessionStore] = None
 
 # Get the directory of the current file
 BASE_DIR = pathlib.Path(__file__).parent.absolute()
@@ -61,7 +60,7 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR)), name="static")
 @app.get("/", response_class=HTMLResponse)
 async def get_chat_ui() -> HTMLResponse:
     """Serve the chat UI HTML file."""
-    chat_ui_path = BASE_DIR / "chat_ui.html"
+    chat_ui_path = BASE_DIR / "static" / "index.html"
     if not chat_ui_path.exists():
         raise HTTPException(status_code=404, detail="Chat UI file not found")
 
@@ -85,10 +84,10 @@ class SessionResponse(BaseModel):
 @app.post("/session", response_model=SessionResponse)
 async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
     """Create a new session."""
+    assert session_store is not None, "Session store not initialized"
     session_id = str(uuid.uuid4())
     session = agent.create_session()
     await session_store.set(session_id, session)
-
     # Get initial message from agent
     if initiate:
         decision, _ = session.next(None)
@@ -106,6 +105,7 @@ async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
 @app.post("/session/{session_id}/message", response_model=SessionResponse)
 async def send_message(session_id: str, message: Message) -> SessionResponse:
     """Send a message to an existing session."""
+    assert session_store is not None, "Session store not initialized"
     session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -120,6 +120,7 @@ async def send_message(session_id: str, message: Message) -> SessionResponse:
 @app.delete("/session/{session_id}")
 async def end_session(session_id: str) -> dict:
     """End and cleanup a session."""
+    assert session_store is not None, "Session store not initialized"
     session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -132,6 +133,7 @@ async def end_session(session_id: str) -> dict:
 @app.get("/session/{session_id}/history")
 async def get_session_history(session_id: str) -> dict:
     """Get the history of a session."""
+    assert session_store is not None, "Session store not initialized"
     session = await session_store.get(session_id)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -141,8 +143,7 @@ async def get_session_history(session_id: str) -> dict:
     history_json = [
         msg.model_dump(mode="json")
         for msg in history
-        if isinstance(msg, FlowMessage)
-        and msg.role not in ["error", "fallback", "tool"]
+        if isinstance(msg, FlowMessage) and msg.role not in ["error", "fallback"]
     ]
     return {"session_id": session_id, "history": history_json}
 
@@ -188,6 +189,7 @@ async def websocket_endpoint(
     websocket: WebSocket, session_id: str, initiate: bool = False, verbose: bool = False
 ) -> None:
     """Websocket endpoint for real-time communication."""
+    assert session_store is not None, "Session store not initialized"
     await websocket.accept()
 
     try:
@@ -219,17 +221,10 @@ async def websocket_endpoint(
                         return_tool=verbose,
                         return_step_transition=verbose,
                     )
-                    action_type_map = {
-                        Action.ANSWER.value: "answer",
-                        Action.ASK.value: "answer",
-                        Action.TOOL_CALL.value: "tool_call",
-                        Action.MOVE.value: "step_transition",
-                    }
-                    action_type = action_type_map.get(decision.action.value, "unknown")
                     response_data = {
                         "message": decision.model_dump(mode="json"),
                         "tool_output": tool_output,
-                        "type": action_type,
+                        "type": decision.action.value,
                     }
                     await websocket.send_json(response_data)
                     await session_store.set(session_id, session)

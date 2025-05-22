@@ -86,6 +86,8 @@ class FlowSession:
         self.current_step: Step = (
             steps[current_step_id] if current_step_id else steps[start_step_id]
         )
+        # For OpenTelemetry tracing context
+        self._otel_root_span_ctx: Any = None
 
     def save_session(self) -> None:
         """Save the current session to disk as a pickle file."""

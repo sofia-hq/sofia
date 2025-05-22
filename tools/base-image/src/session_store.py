@@ -20,7 +20,7 @@ from sqlmodel import Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 
-class Session(SQLModel, table=True):
+class Session(SQLModel, table=True):  # type: ignore
     """
     SQLAlchemy model for storing session data in PostgreSQL.
 
@@ -66,7 +66,9 @@ class InMemoryStore:
             return self._store[key][0]
         return None
 
-    async def set(self, key: str, value: FlowSession, ttl: int = None) -> None:
+    async def set(
+        self, key: str, value: FlowSession, ttl: Optional[int] = None
+    ) -> None:
         """Set session in in-memory store."""
         self._store[key] = (value, datetime.now(timezone.utc))
 
@@ -192,6 +194,7 @@ class SessionStore:
 
                 if session_model:
                     session = agent.get_session_from_dict(session_model.session_data)
+                    assert session is not None, "Session should not be None"
                     await self._set_to_cache(session_id, session)
                     return session
             except Exception as e:
