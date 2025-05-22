@@ -12,21 +12,93 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
   ">
-    🚀 <b>SOFIA v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/poly-eye/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+    🚀 <b>SOFIA v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/dowhiledev/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
+
+<h1 align="center">
+  <a href="https://github.com/dowhiledev/sofia">
+    <img src="https://i.ibb.co/WWczLZMd/SOFIA-logo.png" alt="sofia" width="400">
+  </a>
+</h1>
+
 <div align="center">
-<a href="https://github.com/dowhiledev/sofia"><img src="https://i.ibb.co/WWczLZMd/SOFIA-logo.png" alt="sofia"  width="400"></a>
+  <strong>Simple Orchestrated Flow Intelligence Agent</strong>
+  <br />
+  An open-source, configurable multi-step agent framework for building advanced LLM-powered assistants
+  <br />
+  <br />
+  <a href="#usage"><strong>Explore examples »</strong></a>
+  <br />
+  <br />
+  <a href="https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
+  ·
+  <a href="https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
+  ·
+  <a href="https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
+</div>
 
-### **S**imple **O**rchestrated **F**low **I**ntelligence **A**gent
+<div align="center">
+<br />
 
-![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) [![Test](https://github.com/poly-eye/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/poly-eye/sofia/actions/workflows/test.yml) [![Release](https://github.com/poly-eye/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/poly-eye/sofia/actions/workflows/publish.yml) [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) [![License](https://img.shields.io/github/license/poly-eye/sofia)](LICENSE)
+![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) 
+[![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) 
+[![Test](https://github.com/dowhiledev/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/test.yml) 
+[![Release](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml) 
+[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) 
+[![License](https://img.shields.io/github/license/dowhiledev/sofia)](LICENSE)
+
+[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/sofia/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 </div>
+
+<details open="open">
+<summary>Table of Contents</summary>
+
+- [About](#about)
+  - [Features](#features)
+  - [Built With](#built-with)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Usage](#usage)
+  - [CLI: Bootstrap a New Agent](#cli-bootstrap-a-new-agent)
+  - [Python API Example](#python-api-example)
+  - [YAML Config Example](#yaml-config-example)
+  - [Error Handling](#error-handling)
+- [LLM Support](#llm-support)
+  - [OpenAI](#openai)
+  - [Mistral AI](#mistral-ai)
+  - [Google Gemini](#google-gemini)
+- [Configuration](#configuration)
+- [Package Tool Integration](#package-tool-integration)
+- [Examples](#examples)
+  - [Barista Agent](#example-barista-agent)
+  - [Financial Planning Assistant](#example-financial-planning-assistant)
+- [Deployment](#deployment)
+  - [Docker Base Image](#docker-base-image)
+  - [Tracing and Elastic APM Integration](#tracing-and-elastic-apm-integration)
+  - [Persistent Storage and Session Management](#persistent-storage-and-session-management)
+  - [API Endpoints](#api-endpoints)
+- [Roadmap](#roadmap)
+- [Support](#support)
+- [Project assistance](#project-assistance)
+- [Contributing](#contributing)
+- [Authors & contributors](#authors--contributors)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+</details>
+
+---
+
+## About
 
 SOFIA is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. Define your agent's persona, tools, and step-by-step flows in Python or YAML—perfect for conversational, workflow, and automation use cases.
 
-## Features
+The framework allows you to move from no-code to low-code development, making it accessible for both non-programmers and experienced developers to create sophisticated AI agents.
+
+### Features
 
 - **Step-based agent flows**: Define agent behavior as a sequence of steps, each with its own tools and transitions.
 - **Persona-driven**: Easily set the agent's persona for consistent, branded responses.
@@ -34,7 +106,7 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Package-based tools**: Reference Python package functions directly using `package_name:function` syntax.
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
-- **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses from the agent, enabling UIs and clients to render rich, custom layouts or workflows based on structured data, not just plain text.
+- **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses.
 - **OpenAI, Mistral, and Gemini LLM support**
 - **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
 - **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
@@ -44,21 +116,37 @@ SOFIA is an open-source, configurable multi-step agent framework for building ad
 - **Extensible**: Build your own tools, steps, and integrations.
 - **Interactive CLI**: Bootstrap new agents with `sofia init` (install with `[cli]` extra).
 
-## Installation
+### Built With
 
-### From PyPI
+- Python
+- OpenAI, Mistral, and Gemini LLMs
+- Redis/PostgreSQL (optional for storage)
+- OpenTelemetry and Elastic APM (optional for tracing)
+- FastAPI & Docker (optional for deployment)
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.9 or higher
+- Optional: Redis or PostgreSQL for session storage
+- Optional: Elastic APM for tracing
+
+### Installation
+
+#### From PyPI
 
 ```bash
 pip install sofia-agent
 ```
 
-### With CLI support
+#### With CLI support
 
 ```bash
 pip install sofia-agent[cli]
 ```
 
-### With LLM support
+#### With LLM support
 
 ```bash
 pip install sofia-agent[openai]      # For OpenAI support
@@ -66,13 +154,15 @@ pip install sofia-agent[mistralai]   # For Mistral AI support
 pip install sofia-agent[gemini]      # For Google Gemini support
 ```
 
-### With tracing support
+#### With tracing support
 
 ```bash
 pip install sofia-agent[traces]
 ```
 
-## Usage: From No-Code to Low-Code to Full Code
+## Usage
+
+SOFIA supports a spectrum of implementation approaches from no-code to low-code to full-code development.
 
 ### CLI: Bootstrap a New Agent
 
@@ -82,7 +172,7 @@ sofia init
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
 
-### Python API Example
+### Python API Example (Full Code)
 
 ```python
 from sofia_agent import *
@@ -125,33 +215,7 @@ sess = agent.create_session()
 # ... interact with sess.next(user_input)
 ```
 
-### Error Handling
-
-SOFIA provides a configurable error handling mechanism:
-
-```python
-# Configure the maximum number of consecutive errors before stopping
-agent = Sofia(
-    name="robust-agent",
-    # ... other parameters
-    max_errors=5  # Default is 3
-)
-
-# Handle tool errors gracefully
-try:
-    decision, result = session.next(user_input)
-except ValueError as e:
-    # Handle error (e.g., maximum errors reached)
-    print(f"Error: {e}")
-except RecursionError as e:
-    # Handle recursion error (e.g., too many iterations)
-    # Your fallback logic here
-    print(f"Recursion error: {e}")
-```
-
-The agent will automatically retry on errors and provides informative error messages in the session history.
-
-### YAML Config Example
+### YAML Config Example (Low-Code)
 
 ```yaml
 name: utility-bot
@@ -173,63 +237,34 @@ max_errors: 3  # Maximum consecutive errors before stopping
 ```
 
 See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a more full-featured example.
+More examples are available in the [`examples`](examples/) directory.
 
 ## LLM Support
 
-SOFIA supports multiple LLM providers out of the box:
-
-### OpenAI
+### Choose Your LLM (We are adding more soon!)
 
 ```python
-from sofia_agent.llms import OpenAIChatLLM
+from sofia_agent.llms import OpenAI, Mistral, Gemini
 
-llm = OpenAIChatLLM(
-    model="gpt-4o",  # Optional, defaults to "gpt-4o-mini"
-    api_key="your-api-key"  # Optional, defaults to OPENAI_API_KEY env var
-)
+# Choose your LLM provider
+llm = OpenAI(model="gpt-4o-mini")
+llm = Mistral(model="mistral-medium")
+llm = Gemini(model="gemini-pro")
 ```
 
-### Mistral AI
-
-```python
-from sofia_agent.llms import MistralChatLLM
-
-llm = MistralChatLLM(
-    model="mistral-medium",  # Optional
-    api_key="your-api-key"  # Optional, defaults to MISTRAL_API_KEY env var
-)
-```
-
-### Google Gemini
-
-```python
-from sofia_agent.llms import GeminiLLM
-
-llm = GeminiLLM(
-    model="gemini-pro",  # Optional
-    api_key="your-api-key"  # Optional, defaults to GOOGLE_API_KEY env var
-)
-```
-
-You can also specify LLM configuration in your YAML config:
+Or You can also specify LLM configuration in your YAML config:
 
 ```yaml
-name: my-agent
+# ... rest of config
 llm:
   provider: openai
-  model: gpt-4o
+  model: gpt-4o-mini
 # ...rest of config
 ```
 
-## Configuration
-
-- **Persona**: Set in YAML or Python for consistent agent style.
-- **Steps**: Each step defines available tools, description, and routes to other steps.
-- **Tools**: Python functions registered with the agent or package references.
-
 ## Package Tool Integration
 
-SOFIA now allows you to reference Python package functions directly using the `package_name:function` syntax:
+SOFIA allows you to reference Python package functions directly using the `package_name:function` syntax:
 
 ```python
 # Reference a function from a standard library
@@ -251,7 +286,9 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 > **NOTE**: Make sure the package is installed in your environment and function returns an output that is string representable.
 
-## Example: Barista Agent
+## Examples
+
+### Example: Barista Agent
 
 A full example is provided in [`examples/barista/barista.py`](examples/barista.py) and [`examples/config.barista.yaml`](examples/config.barista.yaml).
 
@@ -265,7 +302,7 @@ python barista.py
 python barista_with_config.py
 ```
 
-## Example: Financial Planning Assistant
+### Example: Financial Planning Assistant
 
 A production-ready example of a Financial Planning Assistant is available in [`examples/financial-advisor/`](examples/financial-advisor/). This example demonstrates:
 
@@ -281,7 +318,9 @@ To run the Financial Planning Assistant:
 docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 financial-advisor
 ```
 
-## Docker Base Image
+## Deployment
+
+### Docker Base Image
 
 SOFIA provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/sofia-base`.
 
@@ -322,23 +361,21 @@ The base image supports configuration via environment variables:
 | `SERVICE_NAME` | Service name for tracing | No (default: `sofia-agent`) |
 | `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 
-## Tracing and Elastic APM Integration
+### Tracing and Elastic APM Integration
 
-SOFIA now supports distributed tracing using [OpenTelemetry](https://opentelemetry.io/) and can export traces to [Elastic APM](https://www.elastic.co/apm/).
-
-### Enabling Tracing
+SOFIA supports distributed tracing using [OpenTelemetry](https://opentelemetry.io/) and can export traces to [Elastic APM](https://www.elastic.co/apm/).
 
 To enable tracing, set the following environment variables:
 
-| Variable                  | Description                                      | Required                |
-|---------------------------|--------------------------------------------------|-------------------------|
-| `ENABLE_TRACING`          | Enable OpenTelemetry tracing (`true`/`false`)    | No (default: `false`)   |
-| `ELASTIC_APM_SERVER_URL`  | Elastic APM server URL (e.g. `http://localhost:8200`) | If tracing enabled      |
-| `ELASTIC_APM_TOKEN`       | Elastic APM Token                              | If tracing enabled      |
-| `SERVICE_NAME`            | Service name for tracing                         | No (default: `sofia-agent`) |
-| `SERVICE_VERSION`         | Service version for tracing                      | No (default: `1.0.0`)   |
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No (default: `false`) |
+| `ELASTIC_APM_SERVER_URL` | Elastic APM server URL | If tracing enabled |
+| `ELASTIC_APM_TOKEN` | Elastic APM Token | If tracing enabled |
+| `SERVICE_NAME` | Service name for tracing | No (default: `sofia-agent`) |
+| `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 
-### Example: Running with Tracing Enabled
+Example:
 
 ```bash
 docker run \
@@ -351,17 +388,15 @@ docker run \
   -p 8000:8000 my-sofia-agent
 ```
 
-When tracing is enabled, SOFIA will automatically instrument agent sessions, tool calls, and LLM interactions, and send trace data to your Elastic APM instance.
-
-## Persistent Storage and Session Management
+### Persistent Storage and Session Management
 
 SOFIA base image supports multiple options for session storage:
 
-### In-Memory Storage
+#### In-Memory Storage
 
 The default storage mechanism is in-memory, which does not persist sessions between container restarts.
 
-### Redis Session Storage
+#### Redis Session Storage
 
 For caching and distributed deployments, you can use Redis as a session store:
 
@@ -372,7 +407,7 @@ docker run \
   -p 8000:8000 my-sofia-agent
 ```
 
-### PostgreSQL Persistent Storage
+#### PostgreSQL Persistent Storage
 
 For fully persistent sessions that survive container restarts:
 
@@ -383,11 +418,11 @@ docker run \
   -p 8000:8000 my-sofia-agent
 ```
 
-## API Endpoints
+### API Endpoints
 
 SOFIA base image provides the following REST and WebSocket endpoints:
 
-### Server-side Session Management
+#### Server-side Session Management
 
 - `POST /session` - Create a new session
 - `POST /session/{session_id}/message` - Send a message to a session
@@ -395,70 +430,56 @@ SOFIA base image provides the following REST and WebSocket endpoints:
 - `DELETE /session/{session_id}` - End a session
 - `GET /session/{session_id}/history` - Get session history
 
-### Client-side Session Management
+#### Client-side Session Management
 
 - `POST /chat` - Stateless chat endpoint where the client maintains session state
-  ```json
-  // Request format
-  {
-    "user_input": "Hello, how are you?",
-    "session_data": {
-      "session_id": "unique-id",
-      "current_step_id": "start",
-      "history": []
-    }
-  }
-
-  // Response format
-  {
-    "response": {
-      "action": "answer",
-      "input": "I'm doing well, how can I help you today?"
-    },
-    "tool_output": null,
-    "session_data": {
-      "session_id": "unique-id",
-      "current_step_id": "start",
-      "history": [...]
-    }
-  }
-  ```
 
 For more details, see the [base image README](tools/base-image/README.md).
+
+## Roadmap
+
+See the [open issues](https://github.com/dowhiledev/sofia/issues) for a list of proposed features and known issues.
+
+- [Top Feature Requests](https://github.com/dowhiledev/sofia/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Top Bugs](https://github.com/dowhiledev/sofia/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Newest Bugs](https://github.com/dowhiledev/sofia/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+
+## Support
+
+If you have any questions or need help with SOFIA:
+
+- [GitHub issues](https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
+- Join our [community discussions](https://github.com/dowhiledev/sofia/discussions)
+
+## Project assistance
+
+If you want to say **thank you** or/and support active development of SOFIA:
+
+- Add a [GitHub Star](https://github.com/dowhiledev/sofia) to the project.
+- Tweet about SOFIA.
+- Write articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com/) or your personal blog.
+
+Together, we can make SOFIA **better**!
 
 ## Contributing
 
 Contributions are welcome! Please open issues or pull requests on GitHub.
 
-## From No-Code to Low-Code Evolution
+First off, thanks for taking the time to contribute! Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make will benefit everybody else and are **greatly appreciated**.
 
-SOFIA is evolving to support a spectrum of implementation approaches:
+Please read our contribution guidelines (coming soon), and thank you for being involved!
 
-### No-Code
+## Authors & contributors
 
-- Configure agents entirely through YAML
-- Reference existing Python functions using `package_name:function` syntax
-- Auto-documentation from function docstrings
-
-### Low-Code
-
-- Minimal Python code for custom tools
-- Mix pre-existing package tools with custom tools
-- Configure complex behaviors with minimal coding
-
-### Full-Code
-
-- Complete control over agent implementation
-- Custom tool development
-- Advanced integrations and behaviors
-
-This flexibility allows both non-programmers and experienced developers to create sophisticated AI agents that suit their needs.
+For a full list of all authors and contributors, see [the contributors page](https://github.com/dowhiledev/sofia/contributors).
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
+This project is licensed under the **MIT license**.
+
+See [LICENSE](LICENSE) for more information.
 
 ## Acknowledgements
 
 - Inspired by the open-source LLM community.
-- Built with ❤️ by contributors.
+- Built with ❤️
