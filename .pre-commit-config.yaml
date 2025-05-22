@@ -23,4 +23,4 @@ repos:
   -   id: mypy
       args: [--ignore-missing-imports]
       exclude: examples
-      additional_dependencies: [types-toml]
+      additional_dependencies: [types-toml, types-PyYAML]

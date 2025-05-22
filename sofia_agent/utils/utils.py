@@ -43,7 +43,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
             field_type = Union[*field_types]
 
         if is_list:
-            field_type = List[field_type]
+            field_type = List[field_type]  # type: ignore
         if is_optional:
             field_type = Optional[field_type]
 
@@ -57,7 +57,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
     return create_model(name, **fields, __config__=ConfigDict(extra="forbid"))
 
 
-def create_enum(name: str, values: Dict[str, Any]) -> Type[Enum]:
+def create_enum(name: str, values: Dict[str, Any]) -> Enum:
     """
     Dynamically create an Enum class with the given name and values.
 

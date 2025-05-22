@@ -110,6 +110,7 @@ class Tool(BaseModel):
             _tool_arg_descs = getattr(module, "tool_arg_descs", tool_arg_descs)
             for submodule in tool_name.split("."):
                 module = getattr(module, submodule)
+            assert callable(module), f"{module} is not callable"
             return cls.from_function(module, _tool_arg_descs)
         except Exception as e:
             raise ValueError(f"Could not load tool {identifier}: {e}")

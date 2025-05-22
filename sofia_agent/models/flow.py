@@ -9,7 +9,7 @@ from .tool import Tool
 from ..constants import ACTION_ENUMS
 from ..utils.utils import create_base_model, create_enum
 
-Action = Enum("Action", ACTION_ENUMS)
+Action = create_enum("Action", ACTION_ENUMS)
 
 
 class Route(BaseModel):
@@ -164,7 +164,7 @@ def create_route_decision_model(
         if current_step.answer_model:
             answer_model = current_step.get_answer_model()
             description += f" Use {answer_model.__name__} to ANSWER."
-            response_type = Optional[str | answer_model]
+            response_type = Optional[Union[str, answer_model]]  # type: ignore
         params["response"] = {
             "type": response_type,
             "default": None,
@@ -205,7 +205,7 @@ def create_route_decision_model(
     )
 
 
-def create_action_enum(actions: list[str]) -> Action:
+def create_action_enum(actions: list[str]) -> Enum:
     """
     Dynamically create an Enum class for actions.
 
@@ -213,10 +213,10 @@ def create_action_enum(actions: list[str]) -> Action:
     :param actions: Dictionary of action names to values.
     :return: A dynamically created Enum class.
     """
-    actions = {
+    actions_dict = {
         action: ACTION_ENUMS[action] for action in actions if action in ACTION_ENUMS
     }
-    return create_enum("Action", actions)
+    return create_enum("Action", actions_dict)
 
 
 __all__ = [
