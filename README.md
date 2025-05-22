@@ -41,11 +41,11 @@
 <div align="center">
 <br />
 
-![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent) 
-[![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia) 
-[![Test](https://github.com/dowhiledev/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/test.yml) 
-[![Release](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml) 
-[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base) 
+![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent)
+[![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia)
+[![Test](https://github.com/dowhiledev/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/test.yml)
+[![Release](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml)
+[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base)
 [![License](https://img.shields.io/github/license/dowhiledev/sofia)](LICENSE)
 
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/sofia/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
