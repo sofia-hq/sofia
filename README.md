@@ -119,6 +119,7 @@ agent = Sofia(
     tools=[get_time, "math:sqrt"],  # Mix of custom functions and package references (Optional for package functions)
     persona="You are a friendly assistant that can tell time and perform calculations.",
     max_errors=3  # Will retry up to 3 times before failing
+    max_iter=5,  # Maximum number of iterations (tool calls, step transitions, error_handling) allowed in a single interaction
 )
 sess = agent.create_session()
 # ... interact with sess.next(user_input)
@@ -142,6 +143,10 @@ try:
 except ValueError as e:
     # Handle error (e.g., maximum errors reached)
     print(f"Error: {e}")
+except RecursionError as e:
+    # Handle recursion error (e.g., too many iterations)
+    # Your fallback logic here
+    print(f"Recursion error: {e}")
 ```
 
 The agent will automatically retry on errors and provides informative error messages in the session history.
