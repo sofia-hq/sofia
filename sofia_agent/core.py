@@ -7,9 +7,9 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from .config import AgentConfig
+from .constants import ACTION_ENUMS
 from .llms import LLMBase
 from .models.flow import (
-    Action,
     Message,
     Step,
     StepIdentifier,
@@ -213,15 +213,15 @@ class FlowSession:
 
         self.history.append(self.current_step.get_step_identifier())
         action = decision.action.value
-        if action in [Action.ASK.value, Action.ANSWER.value]:
+        if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
             self._add_message(self.name, str(decision.response))
             return decision, None
-        elif action == Action.TOOL_CALL.value:
+        elif action == ACTION_ENUMS["TOOL_CALL"]:
             self._add_message(
                 "tool",
                 f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}",
             )
-            _error = None
+            _error: Optional[Exception] = None
             try:
                 tool_kwargs = (
                     decision.tool_kwargs.model_dump()
@@ -248,7 +248,7 @@ class FlowSession:
                 return decision, tool_results
 
             return self.next(no_errors=no_errors + 1) if _error else self.next()
-        elif action == Action.MOVE.value:
+        elif action == ACTION_ENUMS["MOVE"]:
             _error = None
             if decision.next_step_id in self.current_step.get_available_routes():
                 self.current_step = self.steps[decision.next_step_id]
@@ -265,7 +265,7 @@ class FlowSession:
             if return_step_transition:
                 return decision, None
             return self.next(no_errors=no_errors + 1) if _error else self.next()
-        elif action == Action.END.value:
+        elif action == ACTION_ENUMS["END"]:
             self._add_message("end", "Session ended.")
             return decision, None
         else:

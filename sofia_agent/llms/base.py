@@ -20,11 +20,11 @@ class LLMBase:
         raise NotImplementedError("Subclasses should implement this method.")
 
     @staticmethod
-    def get_routes_desc(steps: List[Step], current_step: Step) -> str:
+    def get_routes_desc(steps: Dict[str, Step], current_step: Step) -> str:
         """
         Get a string description of available routes from the current step.
 
-        :param steps: List of all steps.
+        :param steps: Dictionary of all steps. (step_id -> Step)
         :param current_step: The current step.
         :return: String description of routes.
         """
@@ -100,7 +100,7 @@ class LLMBase:
     def get_messages(
         self,
         name: str,
-        steps: List[Step],
+        steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
         history: List[Union[Message, Step]],
@@ -111,7 +111,7 @@ class LLMBase:
         Construct the list of messages to send to the LLM.
 
         :param name: Agent name.
-        :param steps: List of steps.
+        :param steps: Dictionary of all steps. (step_id -> Step)
         :param current_step: Current step.
         :param tools: Dictionary of tools.
         :param history: Conversation history.
@@ -156,7 +156,7 @@ class LLMBase:
     def _get_output(
         self,
         name: str,
-        steps: List[Step],
+        steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
         history: List[Union[Message, StepIdentifier]],
@@ -168,7 +168,7 @@ class LLMBase:
         Get a structured response from the LLM using the agent's context.
 
         :param name: Agent name.
-        :param steps: List of steps.
+        :param steps: Dictionary of all steps. (step_id -> Step)
         :param current_step: Current step.
         :param tools: Dictionary of tools.
         :param history: Conversation history.
