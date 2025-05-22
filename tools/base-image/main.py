@@ -11,20 +11,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from pydantic import BaseModel
-
 from sofia_agent.models.flow import Message as FlowMessage, Step
 
 from src.agent import agent
 from src.db import init_db
+from src.models import ChatRequest, ChatResponse, Message, SessionResponse
 from src.session_store import SessionStore, create_session_store
 
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "sofia-agent")
+SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.0.1")
 
 session_store: Optional[SessionStore] = None
 
-# Get the directory of the current file
 BASE_DIR = pathlib.Path(__file__).parent.absolute()
 
 
@@ -41,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await session_store.close()
 
 
-app = FastAPI(title="Sofia Agent API", version="0.1.1", lifespan=lifespan)
+app = FastAPI(title=f"{SERVICE_NAME}-api", version=SERVICE_VERSION, lifespan=lifespan)
 
 # CORS middleware configuration
 app.add_middleware(
@@ -66,19 +66,6 @@ async def get_chat_ui() -> HTMLResponse:
 
     with open(chat_ui_path, "r") as f:
         return HTMLResponse(content=f.read())
-
-
-class Message(BaseModel):
-    """Model for incoming messages."""
-
-    content: str
-
-
-class SessionResponse(BaseModel):
-    """Response model for session creation."""
-
-    session_id: str
-    message: dict
 
 
 @app.post("/session", response_model=SessionResponse)
@@ -146,29 +133,6 @@ async def get_session_history(session_id: str) -> dict:
         if isinstance(msg, FlowMessage) and msg.role not in ["error", "fallback"]
     ]
     return {"session_id": session_id, "history": history_json}
-
-
-class SessionData(BaseModel):
-    """Model for session data."""
-
-    session_id: str
-    current_step_id: str
-    history: list
-
-
-class ChatRequest(BaseModel):
-    """Request model for chat endpoint."""
-
-    user_input: Optional[str] = None
-    session_data: Optional[SessionData] = None
-
-
-class ChatResponse(BaseModel):
-    """Response model for chat endpoint."""
-
-    response: dict
-    tool_output: Optional[str] = None
-    session_data: SessionData
 
 
 @app.post("/chat")
@@ -256,6 +220,8 @@ async def websocket_endpoint(
 
 
 if __name__ == "__main__":
+    import sys
     import uvicorn
 
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    reload = "--reload" in sys.argv
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=reload)

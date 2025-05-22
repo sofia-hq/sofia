@@ -13,7 +13,7 @@ if os.getenv("ENABLE_TRACING", "false").lower() == "true":
             "resource": Resource(
                 {
                     "service.name": os.getenv("SERVICE_NAME", "sofia-agent"),
-                    "service.version": os.getenv("SERVICE_VERSION", "1.0.0"),
+                    "service.version": os.getenv("SERVICE_VERSION", "0.0.1"),
                 }
             )
         }
@@ -24,9 +24,7 @@ from sofia_agent.llms.openai import OpenAI
 
 from .tools import tool_list
 
-config = sa.AgentConfig.from_yaml(
-    os.path.join(os.path.dirname(__file__), "config.agent.yaml")
-)
+config = sa.AgentConfig.from_yaml("config.agent.yaml")
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
 agent = sa.Sofia.from_config(config, llm, tool_list)
 

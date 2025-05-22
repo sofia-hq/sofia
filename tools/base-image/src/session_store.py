@@ -5,8 +5,6 @@ import pickle
 from datetime import datetime, timezone
 from typing import Dict, Optional
 
-from agent import agent
-
 from loguru import logger
 
 from redis.asyncio import Redis
@@ -18,6 +16,8 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from sqlmodel import Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
+
+from .agent import agent
 
 
 class Session(SQLModel, table=True):  # type: ignore

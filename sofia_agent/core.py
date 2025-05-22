@@ -358,7 +358,7 @@ class Sofia:
         cls,
         config: AgentConfig,
         llm: Optional[LLMBase] = None,
-        tools: Optional[list[Callable | str]] = None,
+        tools: Optional[List[Callable | str]] = None,
     ) -> "Sofia":
         """
         Create a Sofia agent from an AgentConfig object.

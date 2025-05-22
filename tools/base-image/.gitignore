@@ -1,4 +1,3 @@
-tools/*.py
-!tools/__init__.py
-
+src/tools/*.py
+!src/tools/__init__.py
 config.*.yaml
