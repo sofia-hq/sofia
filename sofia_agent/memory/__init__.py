@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from .base import Memory
 from .summary import PeriodicalSummarizationMemory
+from ..llms import LLMConfig
 
 
 class MemoryConfig(BaseModel):
@@ -29,6 +30,11 @@ class MemoryConfig(BaseModel):
         if self.type == "base":
             return Memory()
         elif self.type == "summarization":
-            return PeriodicalSummarizationMemory(**self.kwargs or {})
+            _kwargs = self.kwargs.copy() or {}
+            _kwargs["llm"] = LLMConfig(**self.kwargs.get("llm", {
+                "provider": "openai",
+                "model": "gpt-4o-mini"
+            })).get_llm()
+            return PeriodicalSummarizationMemory(**_kwargs)
         else:
             raise ValueError(f"Unsupported memory type: {self.type}")

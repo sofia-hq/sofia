@@ -9,7 +9,7 @@ import tiktoken
 
 from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
-from ..llms import LLMConfig
+from ..llms import LLMBase
 from ..llms.openai import OpenAI
 from ..utils.logging import log_debug
 
@@ -19,7 +19,7 @@ class PeriodicalSummarizationMemory(Memory):
 
     def __init__(
         self,
-        llm_config: LLMConfig,
+        llm: LLMBase,
         alpha: float = math.log(2) / 20,  # noqa
         W: int = 10,
         beta: float = 0.5,
@@ -50,7 +50,7 @@ class PeriodicalSummarizationMemory(Memory):
         self.M = M
         self.N_max = N_max
         self.T_max = T_max
-        self.llm = llm_config.get_llm()
+        self.llm = llm
         self.weights = (
             {"summary": 0.5, "tool": 0.8, "error": 0.0, "fallback": 0.0}
             if weights is None
@@ -96,9 +96,13 @@ class PeriodicalSummarizationMemory(Memory):
         )
         T: int = self.token_counter(total_context)
 
+        log_debug(
+            f"Context length: {N}, Token count: {T}, Max tokens Limit: {self.T_max}"
+        )
         if N <= self.N_max and T <= self.T_max:
             return
 
+        log_debug("Max token limit or item limit exceeded. Summarizing...")
         # Compute scores
         scores = []
         for i, item in enumerate(context_cpy, start=1):
