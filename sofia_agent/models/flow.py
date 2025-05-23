@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .tool import Tool
 from ..constants import ACTION_ENUMS
@@ -140,7 +140,7 @@ class Message(BaseModel):
 class Summary(BaseModel):
     """Summary of a list of messages."""
 
-    content: str
+    content: str = Field(..., description="Detailed summary of the Context.")
 
     def __str__(self) -> str:
         """Return a string representation of the summary."""

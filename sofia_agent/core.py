@@ -28,6 +28,7 @@ class FlowSession:
         self,
         name: str,
         llm: LLMBase,
+        memory: Memory,
         steps: Dict[str, Step],
         start_step_id: str,
         system_message: Optional[str] = None,
@@ -38,7 +39,6 @@ class FlowSession:
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
         history: Optional[List[Union[Message, StepIdentifier, Summary]]] = None,
-        memory: Optional[Memory] = None,
         current_step_id: Optional[str] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
@@ -88,7 +88,7 @@ class FlowSession:
         ]
         self.tools = {tool.name: tool for tool in tools_list}
         # Variable
-        self.memory = memory or Memory()
+        self.memory = memory
         self.memory.context = history or []
         self.current_step: Step = (
             steps[current_step_id] if current_step_id else steps[start_step_id]
@@ -424,16 +424,27 @@ class Sofia:
             config=config,
         )
 
-    def create_session(self, verbose: bool = False) -> FlowSession:
+    def create_session(
+        self, memory: Optional[Memory] = None, verbose: bool = False
+    ) -> FlowSession:
         """
         Create a new FlowSession for this agent.
 
+        :param memory: Optional Memory instance.
+        :param verbose: Whether to return verbose output.
         :return: FlowSession instance.
         """
         log_debug("Creating new session")
+        if not memory:
+            memory = (
+                self.config.memory.get_memory()
+                if self.config and self.config.memory
+                else Memory()
+            )
         return FlowSession(
             name=self.name,
             llm=self.llm,
+            memory=memory,
             steps=self.steps,
             start_step_id=self.start,
             system_message=self.system_message,
@@ -481,9 +492,15 @@ class Sofia:
                     f"Invalid history item: {history_item}. Must be a dict."
                 )
 
+        memory = (
+            self.config.memory.get_memory()
+            if self.config and self.config.memory
+            else Memory()
+        )
         return FlowSession(
             name=self.name,
             llm=self.llm,
+            memory=memory,
             tools=self.tools,
             config=self.config,
             persona=self.persona,

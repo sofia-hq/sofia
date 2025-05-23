@@ -1,11 +1,17 @@
 """Periodical summarization memory module."""
 
 import math
-from typing import Callable, List, Optional, Union
+from typing import List, Optional, Union
 
 from sofia_agent.models.flow import Message, Step, Summary
 
+import tiktoken
+
 from .base import Memory
+from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
+from ..llms import LLMConfig
+from ..llms.openai import OpenAI
+from ..utils.logging import log_debug
 
 
 class PeriodicalSummarizationMemory(Memory):
@@ -13,27 +19,26 @@ class PeriodicalSummarizationMemory(Memory):
 
     def __init__(
         self,
-        token_counter: Callable,
+        llm_config: LLMConfig,
         alpha: float = math.log(2) / 20,  # noqa
         W: int = 10,
         beta: float = 0.5,
         tau: float = 0.2,
         M: int = 2,
         N_max: int = 50,
-        T_max: int = 2000,
+        T_max: int = 4000,
         weights: Optional[dict] = None,
     ) -> None:
         """
         Initialize periodical summarization memory.
 
-        :param token_counter: Function to count tokens in a string.
         :param alpha: Decay rate for recency. (Default: log(2)/20)
         :param W: Hard recency window size. (Default: 10)
         :param beta: Mix between window and decay. (Default: 0.5)
         :param tau: Threshold for summarization. (Default: 0.2)
         :param M: Always keep last M items. (Default: 2)
         :param N_max: Max items before summarization. (Default: 50)
-        :param T_max: Max token count before summarization. (Default: 2000)
+        :param T_max: Max token count before summarization. (Default: 4000)
         :param weights: Weights for different types of messages. (Default: {"summary": 0.5, "tool": 0.8, "error": 0.0, "fallback": 0.0})
         """
         super().__init__()
@@ -45,7 +50,7 @@ class PeriodicalSummarizationMemory(Memory):
         self.M = M
         self.N_max = N_max
         self.T_max = T_max
-        self.token_counter = token_counter
+        self.llm = llm_config.get_llm()
         self.weights = (
             {"summary": 0.5, "tool": 0.8, "error": 0.0, "fallback": 0.0}
             if weights is None
@@ -54,10 +59,33 @@ class PeriodicalSummarizationMemory(Memory):
         # Variable
         self.summary_i = 0  # Index of the last summary
 
+    def token_counter(self, text: str) -> int:
+        """Count the number of tokens in a string."""
+        enc = (
+            tiktoken.encoding_for_model(self.llm.model)
+            if isinstance(self.llm, OpenAI)
+            else tiktoken.get_encoding("cl100k_base")
+        )
+        tokens = enc.encode(text)
+        return len(tokens)
+
     def generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
-        content = " ".join([str(item) for item in items])
-        return Summary(content=content)
+        log_debug(f"Generating summary from {len(items)} items.")
+        items_str = "\n".join([str(item) for item in items])
+        summary = self.llm.get_output(
+            messages=[
+                Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
+                Message(
+                    role="user",
+                    content=f"Summarize the following Context:\n\n{items_str}",
+                ),
+            ],
+            response_format=Summary,
+        )
+        assert isinstance(summary, Summary), "Summary generation failed."
+        log_debug(f"Generated summary: {summary.content}")
+        return summary
 
     def optimize(self) -> None:
         """Optimize memory usage by summarizing."""

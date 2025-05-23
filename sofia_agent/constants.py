@@ -11,3 +11,9 @@ ACTION_ENUMS = {
     "TOOL_CALL": "TOOL_CALL",
     "END": "END",
 }
+
+PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE = (
+    "Your task is to summarize the a list of Messages, Tool calls with results. (Context)"
+    "Identify the most important information and summarize it in a concise manner."
+    "Do not include unnecessary details or irrelevant information."
+)
