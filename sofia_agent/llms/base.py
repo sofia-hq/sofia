@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
-from ..models.flow import Message, Step, StepIdentifier
+from ..models.flow import Message, Step, StepIdentifier, Summary
 from ..models.tool import Tool
 from ..utils.logging import log_error
 
@@ -53,7 +53,9 @@ class LLMBase:
         return "\n".join(tools_desc)
 
     @staticmethod
-    def format_history(history: List[Union[Message, Step]], max_errors: int = 3) -> str:
+    def format_history(
+        history: List[Union[Message, Step, Summary]], max_errors: int = 3
+    ) -> str:
         """
         Format the chat history for display or LLM input.
 
@@ -77,24 +79,22 @@ class LLMBase:
                 f"Too many consecutive errors in history. Only showing the last {max_errors} errors out of  {n_last_consecutive_errors}"
             )
         for i, item in enumerate(history):
-            if isinstance(item, Message):
-                if item.role == "error":
-                    if (
-                        n_last_consecutive_errors > max_errors
-                        and i < len(history) - max_errors
-                    ):
-                        continue
-                    history_str.append(f"<Error> {item.content}")
-                    continue
-                if item.role == "fallback":
-                    history_str.append(f"<Fallback> {item.content}")
-                    continue
-                if item.role == "tool":
-                    history_str.append(f"<Tool> {item.content}")
-                    continue
-                history_str.append(f"[{item.role}] {item.content}")
-            elif isinstance(item, Step):
-                history_str.append(f"<Step> {item.step_id}")
+            # If the error message is not within the last max_errors, skip it
+            if (
+                isinstance(item, Message)
+                and item.role == "error"
+                and n_last_consecutive_errors > max_errors
+                and i < len(history) - max_errors
+            ):
+                continue
+            # If the fallback message is not the last one in the history, skip it
+            if (
+                isinstance(item, Message)
+                and item.role == "fallback"
+                and i < len(history) - 1
+            ):
+                continue
+            history_str.append(str(item))
         return "\n".join(history_str)
 
     def get_messages(
@@ -103,7 +103,7 @@ class LLMBase:
         steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, Step]],
+        history: List[Union[Message, Step, Summary]],
         system_message: str,
         persona: str,
     ) -> List[Message]:
@@ -159,7 +159,7 @@ class LLMBase:
         steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
-        history: List[Union[Message, StepIdentifier]],
+        history: List[Union[Message, StepIdentifier, Summary]],
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,

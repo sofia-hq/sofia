@@ -115,6 +115,10 @@ class Step(BaseModel):
         """
         return StepIdentifier(step_id=self.step_id)
 
+    def __str__(self) -> str:
+        """Return a string representation of the step."""
+        return f"[Step] {self.step_id}: {self.description}"
+
 
 class Message(BaseModel):
     """
@@ -127,6 +131,10 @@ class Message(BaseModel):
 
     role: Literal["user", "tool", "error", "fallback"] | str
     content: str
+
+    def __str__(self) -> str:
+        """Return a string representation of the message."""
+        return f"[{self.role.title()}] {self.content}"
 
 
 class Summary(BaseModel):

@@ -21,7 +21,7 @@ def test_session_creation(basic_agent):
     """Test that agent can create a new session."""
     session = basic_agent.create_session(verbose=True)
     assert session.current_step.step_id == "start"
-    assert len(session.history) == 0
+    assert len(session.memory.context) == 0
 
 
 def test_tool_registration(basic_agent, test_tool_0):
@@ -88,7 +88,6 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     decision, _ = session.next("I need help")
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[1].role == "user"
-    assert "<Step> start" in session.llm.messages_received[1].content
     assert "How can I help?" in session.llm.messages_received[1].content
     assert "I need help" in session.llm.messages_received[1].content
     assert decision.action.value == Action.ANSWER.value
@@ -131,7 +130,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     assert tool_result == "Test tool 0 response: test_arg"
 
     # Verify tool message in history
-    messages = [msg for msg in session.history if isinstance(msg, Message)]
+    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
     assert any(msg.role == "tool" for msg in messages)
 
 
@@ -165,7 +164,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     decision, _ = session.next("Use the tool", return_tool=True)
 
     # Verify tool message in history
-    messages = [msg for msg in session.history if isinstance(msg, Message)]
+    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
     assert any(msg.role == "tool" for msg in messages)
 
 
@@ -197,7 +196,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
         decision, _ = session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
-    messages = [msg for msg in session.history if isinstance(msg, Message)]
+    messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
     assert any(msg.role == "error" for msg in messages)
 
 
