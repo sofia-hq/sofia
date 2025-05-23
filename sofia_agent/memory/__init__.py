@@ -30,11 +30,10 @@ class MemoryConfig(BaseModel):
         if self.type == "base":
             return Memory()
         elif self.type == "summarization":
-            _kwargs = self.kwargs.copy() or {}
-            _kwargs["llm"] = LLMConfig(**self.kwargs.get("llm", {
-                "provider": "openai",
-                "model": "gpt-4o-mini"
-            })).get_llm()
+            _kwargs = self.kwargs.copy() if self.kwargs else {}
+            _kwargs["llm"] = LLMConfig(
+                **_kwargs.get("llm", {"provider": "openai", "model": "gpt-4o-mini"})
+            ).get_llm()
             return PeriodicalSummarizationMemory(**_kwargs)
         else:
             raise ValueError(f"Unsupported memory type: {self.type}")

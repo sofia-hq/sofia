@@ -24,10 +24,11 @@ class PeriodicalSummarizationMemory(Memory):
         W: int = 10,
         beta: float = 0.5,
         tau: float = 0.2,
-        M: int = 2,
+        M: int = 10,
         N_max: int = 50,
         T_max: int = 4000,
         weights: Optional[dict] = None,
+        preserve_history: bool = True,
     ) -> None:
         """
         Initialize periodical summarization memory.
@@ -40,6 +41,7 @@ class PeriodicalSummarizationMemory(Memory):
         :param N_max: Max items before summarization. (Default: 50)
         :param T_max: Max token count before summarization. (Default: 4000)
         :param weights: Weights for different types of messages. (Default: {"summary": 0.5, "tool": 0.8, "error": 0.0, "fallback": 0.0})
+        :param preserve_history: Flag to preserve history for debugging. (Default: True)
         """
         super().__init__()
         # Fixed
@@ -56,8 +58,7 @@ class PeriodicalSummarizationMemory(Memory):
             if weights is None
             else weights
         )
-        # Variable
-        self.summary_i = 0  # Index of the last summary
+        self.preserve_history = preserve_history
 
     def token_counter(self, text: str) -> int:
         """Count the number of tokens in a string."""
@@ -89,7 +90,15 @@ class PeriodicalSummarizationMemory(Memory):
 
     def optimize(self) -> None:
         """Optimize memory usage by summarizing."""
-        context_cpy = self.context[self.summary_i :]
+        summary_i = next(
+            (
+                i
+                for i in range(len(self.context) - 1, -1, -1)
+                if isinstance(self.context[i], Summary)
+            ),
+            0,
+        )
+        context_cpy = self.context[summary_i:]
         N = len(context_cpy)
         total_context = " ".join(
             [str(item) for item in context_cpy if not isinstance(item, Step)]
@@ -97,9 +106,10 @@ class PeriodicalSummarizationMemory(Memory):
         T: int = self.token_counter(total_context)
 
         log_debug(
-            f"Context length: {N}, Token count: {T}, Max tokens Limit: {self.T_max}"
+            f"Overall context length: {len(self.context)}, Selected context length: {N}, Summary index: {summary_i}"
         )
-        if N <= self.N_max and T <= self.T_max:
+        log_debug(f"Token Fill Percentage: {T / self.T_max:.2%}, ")
+        if N < self.N_max and T < self.T_max:
             return
 
         log_debug("Max token limit or item limit exceeded. Summarizing...")
@@ -133,13 +143,21 @@ class PeriodicalSummarizationMemory(Memory):
         # Generate summary
         summary = self.generate_summary(summarize_items)
         # Update context (Previous context (-recent items) + summary + recent items)
-        self.context = self.context[: -self.M] + [summary] + self.context[-self.M :]
-        # Update summary index
-        self.summary_i = len(self.context) - self.M - 1
+        self.context = self.context[: -self.M] if self.preserve_history else []
+        self.context += [summary] + self.context[-self.M :]
+        log_debug(f"Updated context length: {len(self.context)}")
 
     def get_history(self) -> List[Union[Message, Summary, Step]]:
         """Get the history of messages."""
-        return self.context[self.summary_i :]
+        summary_i = next(
+            (
+                i
+                for i in range(len(self.context) - 1, -1, -1)
+                if isinstance(self.context[i], Summary)
+            ),
+            0,
+        )
+        return self.context[summary_i:]
 
 
 __all__ = ["PeriodicalSummarizationMemory"]
