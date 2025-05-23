@@ -1,11 +1,11 @@
 """Periodical summarization memory module."""
 
 import math
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 
-from sofia_agent.models.flow import Message, Step
+from sofia_agent.models.flow import Message, Step, Summary
 
-from .base import Memory, Summary
+from .base import Memory
 
 
 class PeriodicalSummarizationMemory(Memory):
@@ -14,14 +14,14 @@ class PeriodicalSummarizationMemory(Memory):
     def __init__(
         self,
         token_counter: Callable,
-        alpha: float = math.log(2) / 20,
+        alpha: float = math.log(2) / 20,  # noqa
         W: int = 10,
         beta: float = 0.5,
         tau: float = 0.2,
         M: int = 2,
         N_max: int = 50,
         T_max: int = 2000,
-        weights: dict = None,
+        weights: Optional[dict] = None,
     ) -> None:
         """
         Initialize periodical summarization memory.
@@ -57,7 +57,7 @@ class PeriodicalSummarizationMemory(Memory):
     def generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
         content = " ".join([str(item) for item in items])
-        return Summary(content=content, items=items)
+        return Summary(content=content)
 
     def optimize(self) -> None:
         """Optimize memory usage by summarizing."""

@@ -129,6 +129,16 @@ class Message(BaseModel):
     content: str
 
 
+class Summary(BaseModel):
+    """Summary of a list of messages."""
+
+    content: str
+
+    def __str__(self) -> str:
+        """Return a string representation of the summary."""
+        return f"[Previous Summary] {self.content}"
+
+
 def create_route_decision_model(
     current_step: Step, current_step_tools: list[Tool]
 ) -> Type[BaseModel]:
@@ -224,5 +234,6 @@ __all__ = [
     "Route",
     "Step",
     "Message",
+    "Summary",
     "create_route_decision_model",
 ]
