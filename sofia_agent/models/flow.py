@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .tool import Tool
 from ..constants import ACTION_ENUMS
@@ -115,6 +115,10 @@ class Step(BaseModel):
         """
         return StepIdentifier(step_id=self.step_id)
 
+    def __str__(self) -> str:
+        """Return a string representation of the step."""
+        return f"[Step] {self.step_id}: {self.description}"
+
 
 class Message(BaseModel):
     """
@@ -127,6 +131,20 @@ class Message(BaseModel):
 
     role: Literal["user", "tool", "error", "fallback"] | str
     content: str
+
+    def __str__(self) -> str:
+        """Return a string representation of the message."""
+        return f"[{self.role.title()}] {self.content}"
+
+
+class Summary(BaseModel):
+    """Summary of a list of messages."""
+
+    content: str = Field(..., description="Detailed summary of the Context.")
+
+    def __str__(self) -> str:
+        """Return a string representation of the summary."""
+        return f"[Previous Summary] {self.content}"
 
 
 def create_route_decision_model(
@@ -224,5 +242,6 @@ __all__ = [
     "Route",
     "Step",
     "Message",
+    "Summary",
     "create_route_decision_model",
 ]

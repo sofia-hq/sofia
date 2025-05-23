@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from sofia_agent.models.flow import Message as FlowMessage, Step
+from sofia_agent.models.flow import Message as FlowMessage, StepIdentifier, Summary
 
 from src.agent import agent
 from src.db import init_db
@@ -126,7 +126,7 @@ async def get_session_history(session_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Assuming session.history() returns a list of messages
-    history: list[FlowMessage | Step] = session.history
+    history: list[FlowMessage | StepIdentifier | Summary] = session.memory.get_history()
     history_json = [
         msg.model_dump(mode="json")
         for msg in history

@@ -9,10 +9,12 @@ from pydantic import BaseModel
 from .config import AgentConfig
 from .constants import ACTION_ENUMS
 from .llms import LLMBase
+from .memory.base import Memory
 from .models.flow import (
     Message,
     Step,
     StepIdentifier,
+    Summary,
     create_route_decision_model,
 )
 from .models.tool import FallbackError, InvalidArgumentsError, Tool
@@ -26,6 +28,7 @@ class FlowSession:
         self,
         name: str,
         llm: LLMBase,
+        memory: Memory,
         steps: Dict[str, Step],
         start_step_id: str,
         system_message: Optional[str] = None,
@@ -35,7 +38,7 @@ class FlowSession:
         max_errors: int = 3,
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
-        history: Optional[List[Union[Message, StepIdentifier]]] = None,
+        history: Optional[List[Union[Message, StepIdentifier, Summary]]] = None,
         current_step_id: Optional[str] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
@@ -85,7 +88,8 @@ class FlowSession:
         ]
         self.tools = {tool.name: tool for tool in tools_list}
         # Variable
-        self.history: List[Union[Message, StepIdentifier]] = history or []
+        self.memory = memory
+        self.memory.context = history or []
         self.current_step: Step = (
             steps[current_step_id] if current_step_id else steps[start_step_id]
         )
@@ -119,7 +123,7 @@ class FlowSession:
         return {
             "session_id": self.session_id,
             "current_step_id": self.current_step.step_id,
-            "history": [msg.model_dump(mode="json") for msg in self.history],
+            "history": [msg.model_dump(mode="json") for msg in self.memory.context],
         }
 
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
@@ -161,7 +165,7 @@ class FlowSession:
         :param role: Role of the message sender (e.g., 'user', 'assistant', 'tool').
         :param message: The message content.
         """
-        self.history.append(Message(role=role, content=message))
+        self.memory.add(Message(role=role, content=message))
         log_debug(f"{role.title()} added: {message}")
 
     def _get_next_decision(self) -> BaseModel:
@@ -179,7 +183,7 @@ class FlowSession:
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
-            history=self.history,
+            history=self.memory.get_history(),
             response_format=route_decision_model,
             system_message=self.system_message,
             persona=self.persona,
@@ -232,7 +236,7 @@ class FlowSession:
         log_info(str(decision)) if self.verbose else log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
-        self.history.append(self.current_step.get_step_identifier())
+        self.memory.add(self.current_step.get_step_identifier())
         action = decision.action.value
         if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
             self._add_message(self.name, str(decision.response))
@@ -277,7 +281,7 @@ class FlowSession:
             if decision.next_step_id in self.current_step.get_available_routes():
                 self.current_step = self.steps[decision.next_step_id]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
-                self.history.append(self.current_step.get_step_identifier())
+                self.memory.add(self.current_step.get_step_identifier())
             else:
                 self._add_message(
                     "error",
@@ -420,16 +424,27 @@ class Sofia:
             config=config,
         )
 
-    def create_session(self, verbose: bool = False) -> FlowSession:
+    def create_session(
+        self, memory: Optional[Memory] = None, verbose: bool = False
+    ) -> FlowSession:
         """
         Create a new FlowSession for this agent.
 
+        :param memory: Optional Memory instance.
+        :param verbose: Whether to return verbose output.
         :return: FlowSession instance.
         """
         log_debug("Creating new session")
+        if not memory:
+            memory = (
+                self.config.memory.get_memory()
+                if self.config and self.config.memory
+                else Memory()
+            )
         return FlowSession(
             name=self.name,
             llm=self.llm,
+            memory=memory,
             steps=self.steps,
             start_step_id=self.start,
             system_message=self.system_message,
@@ -470,10 +485,22 @@ class Sofia:
                     new_session_data["history"].append(Message(**history_item))
                 elif "step_id" in history_item:
                     new_session_data["history"].append(StepIdentifier(**history_item))
+                elif "content" in history_item:
+                    new_session_data["history"].append(Summary(**history_item))
+            else:
+                raise ValueError(
+                    f"Invalid history item: {history_item}. Must be a dict."
+                )
 
+        memory = (
+            self.config.memory.get_memory()
+            if self.config and self.config.memory
+            else Memory()
+        )
         return FlowSession(
             name=self.name,
             llm=self.llm,
+            memory=memory,
             tools=self.tools,
             config=self.config,
             persona=self.persona,

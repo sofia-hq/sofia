@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 from pydantic_settings import BaseSettings
 
 from .llms import LLMConfig
+from .memory import MemoryConfig
 from .models.flow import Step
 
 
@@ -41,6 +42,8 @@ class AgentConfig(BaseSettings):
     max_iter: int = 3
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
+
+    memory: Optional[MemoryConfig] = None  # Optional memory configuration
 
     # Loading from YAML file
     @classmethod
