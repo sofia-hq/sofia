@@ -12,43 +12,46 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
   ">
-    🚀 <b>SOFIA v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/dowhiledev/sofia/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+    <b>NOMOS v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
 
 <h1 align="center">
-  <a href="https://github.com/dowhiledev/sofia">
-    <img src="https://i.ibb.co/WWczLZMd/SOFIA-logo.png" alt="sofia" width="400">
+  <a href="https://github.com/dowhiledev/nomos">
+    <picture>
+      <source srcset="assets/dark.png" media="(prefers-color-scheme: dark)">
+      <source srcset="assets/light.png" media="(prefers-color-scheme: light)">
+      <img src="assets/light.png" alt="nomos" width="400">
+    </picture>
   </a>
 </h1>
 
 <div align="center">
-  <strong>Simple Orchestrated Flow Intelligence Agent</strong>
-  <br />
+
   An open-source, configurable multi-step agent framework for building advanced LLM-powered assistants
   <br />
   <br />
   <a href="#usage"><strong>Explore examples »</strong></a>
   <br />
   <br />
-  <a href="https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
+  <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
   ·
-  <a href="https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
+  <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
   ·
-  <a href="https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
+  <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
 </div>
 
 <div align="center">
 <br />
 
-![PyPI - Version](https://img.shields.io/pypi/v/sofia-agent)
+![PyPI - Version](https://img.shields.io/pypi/v/nomos)
 [![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia)
-[![Test](https://github.com/dowhiledev/sofia/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/test.yml)
-[![Release](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/sofia/actions/workflows/publish.yml)
-[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/sofia-base)](https://hub.docker.com/r/chandralegend/sofia-base)
-[![License](https://img.shields.io/github/license/dowhiledev/sofia)](LICENSE)
+[![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
+[![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
+[![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base)](https://hub.docker.com/r/chandralegend/nomos-base)
+[![License](https://img.shields.io/github/license/dowhiledev/nomos)](LICENSE)
 
-[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/sofia/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/nomos/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 </div>
 
@@ -94,7 +97,9 @@
 
 ## About
 
-SOFIA is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. Define your agent's persona, tools, and step-by-step flows in Python or YAML—perfect for conversational, workflow, and automation use cases.
+`NOMOS` (previously `S.O.F.I.A - Simple Orchestrated Flow Intelligence Agent`) is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. Define your agent's persona, tools, and step-by-step flows in Python or YAML—perfect for conversational, workflow, and automation use cases.
+
+The name `NOMOS` comes from the Greek word for "law" or "custom" - literally "the rulebook" powering every agentic step. This reflects the framework's core principle of providing structured, rule-based guidance for AI behavior.
 
 The framework allows you to move from no-code to low-code development, making it accessible for both non-programmers and experienced developers to create sophisticated AI agents.
 
@@ -137,37 +142,37 @@ The framework allows you to move from no-code to low-code development, making it
 #### From PyPI
 
 ```bash
-pip install sofia-agent
+pip install nomos-agent
 ```
 
 #### With CLI support
 
 ```bash
-pip install sofia-agent[cli]
+pip install nomos-agent[cli]
 ```
 
 #### With LLM support
 
 ```bash
-pip install sofia-agent[openai]      # For OpenAI support
-pip install sofia-agent[mistralai]   # For Mistral AI support
-pip install sofia-agent[gemini]      # For Google Gemini support
+pip install nomos-agent[openai]      # For OpenAI support
+pip install nomos-agent[mistralai]   # For Mistral AI support
+pip install nomos-agent[gemini]      # For Google Gemini support
 ```
 
 #### With tracing support
 
 ```bash
-pip install sofia-agent[traces]
+pip install nomos-agent[traces]
 ```
 
 ## Usage
 
-SOFIA supports a spectrum of implementation approaches from no-code to low-code to full-code development.
+NOMOS supports a spectrum of implementation approaches from no-code to low-code to full-code development.
 
 ### CLI: Bootstrap a New Agent
 
 ```bash
-sofia init
+nomos init
 ```
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
@@ -175,8 +180,8 @@ This will interactively guide you to create a config YAML and starter Python fil
 ### Python API Example (Full Code)
 
 ```python
-from sofia_agent import *
-from sofia_agent.llms import OpenAIChatLLM
+from nomos_agent import *
+from nomos_agent.llms import OpenAIChatLLM
 
 def get_time():
     """Get the current time.
@@ -201,7 +206,7 @@ steps = [
 ]
 
 llm = OpenAIChatLLM()
-agent = Sofia(
+agent = Nomos(
     name="clockbot",
     llm=llm,
     steps=steps,
@@ -264,7 +269,7 @@ llm:
 
 ## Package Tool Integration
 
-SOFIA allows you to reference Python package functions directly using the `package_name:function` syntax:
+NOMOS allows you to reference Python package functions directly using the `package_name:function` syntax:
 
 ```python
 # Reference a function from a standard library
@@ -322,14 +327,14 @@ docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 financial-advisor
 
 ### Docker Base Image
 
-SOFIA provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/sofia-base`.
+NOMOS provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/nomos-base`.
 
 To use the base image in your own agent:
 
 1. Create a Dockerfile:
 
 ```dockerfile
-FROM chandralegend/sofia-base:latest
+FROM chandralegend/nomos-base:latest
 
 # Copy your config file
 COPY config.agent.yaml /app/config.agent.yaml
@@ -341,8 +346,8 @@ COPY tools.py /app/tools/
 2. Build and run your container:
 
 ```bash
-docker build -t my-sofia-agent .
-docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-sofia-agent
+docker build -t my-nomos-agent .
+docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-nomos-agent
 ```
 
 The base image supports configuration via environment variables:
@@ -363,7 +368,7 @@ The base image supports configuration via environment variables:
 
 ### Tracing and Elastic APM Integration
 
-SOFIA supports distributed tracing using [OpenTelemetry](https://opentelemetry.io/) and can export traces to [Elastic APM](https://www.elastic.co/apm/).
+NOMOS supports distributed tracing using [OpenTelemetry](https://opentelemetry.io/) and can export traces to [Elastic APM](https://www.elastic.co/apm/).
 
 To enable tracing, set the following environment variables:
 
@@ -382,15 +387,15 @@ docker run \
   -e ENABLE_TRACING=true \
   -e ELASTIC_APM_SERVER_URL=http://your-apm-server:8200 \
   -e ELASTIC_APM_TOKEN=your-apm-token \
-  -e SERVICE_NAME=my-sofia-agent \
+  -e SERVICE_NAME=my-nomos-agent \
   -e SERVICE_VERSION=1.0.0 \
   -e OPENAI_API_KEY=your-openai-key \
-  -p 8000:8000 my-sofia-agent
+  -p 8000:8000 my-nomos-agent
 ```
 
 ### Persistent Storage and Session Management
 
-SOFIA base image supports multiple options for session storage:
+NOMOS base image supports multiple options for session storage:
 
 #### In-Memory Storage
 
@@ -404,7 +409,7 @@ For caching and distributed deployments, you can use Redis as a session store:
 docker run \
   -e REDIS_URL=redis://redis:6379/0 \
   -e OPENAI_API_KEY=your-openai-key \
-  -p 8000:8000 my-sofia-agent
+  -p 8000:8000 my-nomos-agent
 ```
 
 #### PostgreSQL Persistent Storage
@@ -415,12 +420,12 @@ For fully persistent sessions that survive container restarts:
 docker run \
   -e DATABASE_URL=postgresql+asyncpg://user:pass@postgres/dbname \
   -e OPENAI_API_KEY=your-openai-key \
-  -p 8000:8000 my-sofia-agent
+  -p 8000:8000 my-nomos-agent
 ```
 
 ### API Endpoints
 
-SOFIA base image provides the following REST and WebSocket endpoints:
+NOMOS base image provides the following REST and WebSocket endpoints:
 
 #### Server-side Session Management
 
@@ -438,28 +443,28 @@ For more details, see the [base image README](tools/base-image/README.md).
 
 ## Roadmap
 
-See the [open issues](https://github.com/dowhiledev/sofia/issues) for a list of proposed features and known issues.
+See the [open issues](https://github.com/dowhiledev/nomos/issues) for a list of proposed features and known issues.
 
-- [Top Feature Requests](https://github.com/dowhiledev/sofia/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
-- [Top Bugs](https://github.com/dowhiledev/sofia/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
-- [Newest Bugs](https://github.com/dowhiledev/sofia/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
+- [Top Feature Requests](https://github.com/dowhiledev/nomos/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Top Bugs](https://github.com/dowhiledev/nomos/issues?q=is%3Aissue+is%3Aopen+label%3Abug+sort%3Areactions-%2B1-desc) (Add your votes using the 👍 reaction)
+- [Newest Bugs](https://github.com/dowhiledev/nomos/issues?q=is%3Aopen+is%3Aissue+label%3Abug)
 
 ## Support
 
-If you have any questions or need help with SOFIA:
+If you have any questions or need help with NOMOS:
 
-- [GitHub issues](https://github.com/dowhiledev/sofia/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
-- Join our [community discussions](https://github.com/dowhiledev/sofia/discussions)
+- [GitHub issues](https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+)
+- Join our [community discussions](https://github.com/dowhiledev/nomos/discussions)
 
 ## Project assistance
 
-If you want to say **thank you** or/and support active development of SOFIA:
+If you want to say **thank you** or/and support active development of NOMOS:
 
-- Add a [GitHub Star](https://github.com/dowhiledev/sofia) to the project.
-- Tweet about SOFIA.
+- Add a [GitHub Star](https://github.com/dowhiledev/nomos) to the project.
+- Tweet about NOMOS.
 - Write articles about the project on [Dev.to](https://dev.to/), [Medium](https://medium.com/) or your personal blog.
 
-Together, we can make SOFIA **better**!
+Together, we can make NOMOS **better**!
 
 ## Contributing
 
@@ -471,7 +476,7 @@ Please read our contribution guidelines (coming soon), and thank you for being i
 
 ## Authors & contributors
 
-For a full list of all authors and contributors, see [the contributors page](https://github.com/dowhiledev/sofia/contributors).
+For a full list of all authors and contributors, see [the contributors page](https://github.com/dowhiledev/nomos/contributors).
 
 ## License
 
