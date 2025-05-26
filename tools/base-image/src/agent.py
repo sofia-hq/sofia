@@ -12,14 +12,14 @@ if os.getenv("ENABLE_TRACING", "false").lower() == "true":
         tracer_provider_kwargs={
             "resource": Resource(
                 {
-                    "service.name": os.getenv("SERVICE_NAME", "sofia-agent"),
+                    "service.name": os.getenv("SERVICE_NAME", "nomos-agent"),
                     "service.version": os.getenv("SERVICE_VERSION", "0.0.1"),
                 }
             )
         }
     )
 
-import nomos
+import nomos  # noqa
 from nomos.llms.openai import OpenAI
 
 from .tools import tool_list

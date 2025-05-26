@@ -32,13 +32,13 @@ class NomosInstrumentor(BaseInstrumentor):
         """
         tracer = trace.get_tracer(__name__)
 
-        # Patch Nomos.create_session
-        _original_create_session = Nomos.create_session  # type: ignore
+        # Patch Agent.create_session
+        _original_create_session = Agent.create_session  # type: ignore
 
         @functools.wraps(Agent.create_session)
         def traced_create_session(self_, *args, **kwargs) -> Session:
             with tracer.start_as_current_span(
-                "Nomos.create_session",
+                "Agent.create_session",
                 kind=SpanKind.INTERNAL,
                 attributes={
                     "agent.name": self_.name,
@@ -52,7 +52,7 @@ class NomosInstrumentor(BaseInstrumentor):
                 session._otel_root_span_ctx = trace.set_span_in_context(span)
                 return session
 
-        Nomos.create_session = traced_create_session  # type: ignore
+        Agent.create_session = traced_create_session  # type: ignore
 
         # Patch Session.next
         _original_next = Session.next  # type: ignore
@@ -180,7 +180,7 @@ class NomosInstrumentor(BaseInstrumentor):
     def _uninstrument(self, **kwargs) -> None:
         """Uninstrument the Nomos library and restore original methods."""
         # Restore original methods
-        Nomos.create_session = Nomos.create_session.__wrapped__  # type: ignore
+        Agent.create_session = Agent.create_session.__wrapped__  # type: ignore
         Session.next = Session.next.__wrapped__  # type: ignore
         Session._run_tool = Session._run_tool.__wrapped__  # type: ignore
         Session._get_next_decision = Session._get_next_decision.__wrapped__  # type: ignore

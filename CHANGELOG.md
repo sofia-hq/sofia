@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
+## [0.1.13] - 2025-05-26
+
+### Changed
+- Brand update to Nomos.
+
+### Added
+- Added an iteration (next) limiter to avoid infinite loops in the workflow. This ensures that workflows do not get stuck in an infinite loop, enhancing reliability and predictability of agent behavior.
+
+
 ## [0.1.12] - 2025-05-22
 
 ### Added
