@@ -4,14 +4,14 @@ import os
 os.environ["SOFIA_LOG_LEVEL"] = "DEBUG"
 os.environ["SOFIA_ENABLE_LOGGING"] = "true"
 
-from sofia_agent import *
+from nomos import *
 from barista_tools import tools
-from sofia_agent.llms.openai import OpenAI
+from nomos.llms.openai import OpenAI
 
 # Define the LLM and Barista
 config = AgentConfig.from_yaml("config.barista.yaml")
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
-barista = Sofia.from_config(config, llm, tools)
+barista = Agent.from_config(config, llm, tools)
 
 # Start the conversation
 sess = barista.create_session()

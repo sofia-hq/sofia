@@ -6,7 +6,7 @@ from opentelemetry.sdk.resources import Resource
 
 # Initialize Tracing
 if os.getenv("ENABLE_TRACING", "false").lower() == "true":
-    from sofia_agent.utils.tracing import initialize_tracing
+    from nomos.utils.tracing import initialize_tracing
 
     initialize_tracing(
         tracer_provider_kwargs={
@@ -19,14 +19,14 @@ if os.getenv("ENABLE_TRACING", "false").lower() == "true":
         }
     )
 
-import sofia_agent as sa
-from sofia_agent.llms.openai import OpenAI
+import nomos
+from nomos.llms.openai import OpenAI
 
 from .tools import tool_list
 
-config = sa.AgentConfig.from_yaml("config.agent.yaml")
+config = nomos.AgentConfig.from_yaml("config.agent.yaml")
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
-agent = sa.Sofia.from_config(config, llm, tool_list)
+agent = nomos.Agent.from_config(config, llm, tool_list)
 
 # # Uncomment the following lines to run the agent in a standalone mode
 # if __name__ == "__main__":

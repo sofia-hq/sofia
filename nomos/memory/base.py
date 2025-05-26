@@ -4,7 +4,7 @@ import os
 import pickle
 from typing import List, Union
 
-from sofia_agent.models.flow import Message, StepIdentifier, Summary
+from nomos.models.flow import Message, StepIdentifier, Summary
 
 
 class Memory:

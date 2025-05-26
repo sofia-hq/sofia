@@ -1,4 +1,4 @@
-FROM chandralegend/sofia-base:latest
+FROM chandralegend/nomos-base:latest
 
 # Optional: Copy a local config file
 COPY config.agent.yaml /app/config.agent.yaml

@@ -1,4 +1,4 @@
-"""OpenTelemetry tracing for the Sofia library."""
+"""OpenTelemetry tracing for the Nomos library."""
 
 import functools
 import os
@@ -12,11 +12,11 @@ from opentelemetry.trace import SpanKind
 
 from pydantic import BaseModel
 
-from ..core import FlowSession, Sofia
+from ..core import Agent, Session
 
 
-class SofiaInstrumentor(BaseInstrumentor):
-    """Instrumentor for the Sofia library to add OpenTelemetry tracing."""
+class NomosInstrumentor(BaseInstrumentor):
+    """Instrumentor for the Nomos library to add OpenTelemetry tracing."""
 
     def instrumentation_dependencies(self) -> list:
         """Return a list of dependencies required for instrumentation."""
@@ -25,20 +25,20 @@ class SofiaInstrumentor(BaseInstrumentor):
 
     def _instrument(self, **kwargs) -> None:
         """
-        Instrument the Sofia library to add OpenTelemetry tracing.
+        Instrument the Nomos library to add OpenTelemetry tracing.
 
         This method patches the create_session, next, _run_tool, and _get_next_decision
         methods to add tracing spans.
         """
         tracer = trace.get_tracer(__name__)
 
-        # Patch Sofia.create_session
-        _original_create_session = Sofia.create_session  # type: ignore
+        # Patch Nomos.create_session
+        _original_create_session = Nomos.create_session  # type: ignore
 
-        @functools.wraps(Sofia.create_session)
-        def traced_create_session(self_, *args, **kwargs) -> FlowSession:
+        @functools.wraps(Agent.create_session)
+        def traced_create_session(self_, *args, **kwargs) -> Session:
             with tracer.start_as_current_span(
-                "Sofia.create_session",
+                "Nomos.create_session",
                 kind=SpanKind.INTERNAL,
                 attributes={
                     "agent.name": self_.name,
@@ -52,18 +52,18 @@ class SofiaInstrumentor(BaseInstrumentor):
                 session._otel_root_span_ctx = trace.set_span_in_context(span)
                 return session
 
-        Sofia.create_session = traced_create_session  # type: ignore
+        Nomos.create_session = traced_create_session  # type: ignore
 
-        # Patch FlowSession.next
-        _original_next = FlowSession.next  # type: ignore
+        # Patch Session.next
+        _original_next = Session.next  # type: ignore
 
-        @functools.wraps(FlowSession.next)
+        @functools.wraps(Session.next)
         def traced_next(self_, *args, **kwargs) -> tuple:
             """Get the next decision and tool result."""
             ctx = getattr(self_, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
-                "FlowSession.next",
+                "Session.next",
                 context=span_ctx,
                 kind=SpanKind.INTERNAL,
                 attributes={
@@ -103,18 +103,18 @@ class SofiaInstrumentor(BaseInstrumentor):
                     )
                     raise
 
-        FlowSession.next = traced_next  # type: ignore
+        Session.next = traced_next  # type: ignore
 
-        # Patch FlowSession._run_tool
-        _original_run_tool = FlowSession._run_tool  # type: ignore
+        # Patch Session._run_tool
+        _original_run_tool = Session._run_tool  # type: ignore
 
-        @functools.wraps(FlowSession._run_tool)
+        @functools.wraps(Session._run_tool)
         def traced_run_tool(self_, tool_name, kwargs) -> str:
             """Run a tool with the given name and arguments."""
             ctx = getattr(self_, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
             with tracer.start_as_current_span(
-                "FlowSession._run_tool",
+                "Session._run_tool",
                 context=span_ctx,
                 kind=SpanKind.INTERNAL,
                 attributes={
@@ -138,12 +138,12 @@ class SofiaInstrumentor(BaseInstrumentor):
                     )
                     raise
 
-        FlowSession._run_tool = traced_run_tool  # type: ignore
+        Session._run_tool = traced_run_tool  # type: ignore
 
-        # Patch FlowSession._get_next_decision
-        _original_get_next_decision = FlowSession._get_next_decision  # type: ignore
+        # Patch Session._get_next_decision
+        _original_get_next_decision = Session._get_next_decision  # type: ignore
 
-        @functools.wraps(FlowSession._get_next_decision)
+        @functools.wraps(Session._get_next_decision)
         def traced_get_next_decision(self_, *args, **kwargs) -> BaseModel:
             """Get the next decision from the LLM."""
             ctx = getattr(self_, "_otel_root_span_ctx", None)
@@ -175,15 +175,15 @@ class SofiaInstrumentor(BaseInstrumentor):
                     span.set_attribute("llm.success", False)
                     raise
 
-        FlowSession._get_next_decision = traced_get_next_decision  # type: ignore
+        Session._get_next_decision = traced_get_next_decision  # type: ignore
 
     def _uninstrument(self, **kwargs) -> None:
-        """Uninstrument the Sofia library and restore original methods."""
+        """Uninstrument the Nomos library and restore original methods."""
         # Restore original methods
-        Sofia.create_session = Sofia.create_session.__wrapped__  # type: ignore
-        FlowSession.next = FlowSession.next.__wrapped__  # type: ignore
-        FlowSession._run_tool = FlowSession._run_tool.__wrapped__  # type: ignore
-        FlowSession._get_next_decision = FlowSession._get_next_decision.__wrapped__  # type: ignore
+        Nomos.create_session = Nomos.create_session.__wrapped__  # type: ignore
+        Session.next = Session.next.__wrapped__  # type: ignore
+        Session._run_tool = Session._run_tool.__wrapped__  # type: ignore
+        Session._get_next_decision = Session._get_next_decision.__wrapped__  # type: ignore
 
 
 def initialize_tracing(
@@ -221,10 +221,10 @@ def initialize_tracing(
     tracer_provider.add_span_processor(span_processor)
 
     # Initialize OpenTelemetry tracing
-    SofiaInstrumentor().instrument()
+    NomosInstrumentor().instrument()
 
 
 def shutdown_tracing() -> None:
     """Shutdown OpenTelemetry tracing and clean up resources."""
     # Uninstrument OpenTelemetry tracing
-    SofiaInstrumentor().uninstrument()
+    NomosInstrumentor().uninstrument()

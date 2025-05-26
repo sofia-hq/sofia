@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: chandralegend/sofia-base
+  IMAGE_NAME: chandralegend/nomos-base
 
 jobs:
   build-and-push:

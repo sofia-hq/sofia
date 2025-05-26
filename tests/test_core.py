@@ -1,11 +1,10 @@
 """Tests for core Sofia agent functionality."""
 
 import pytest
-from sofia_agent.models.flow import Action, create_route_decision_model, Message
-from sofia_agent.models.tool import InvalidArgumentsError
-from sofia_agent.core import Sofia
-from sofia_agent.config import AgentConfig
-from sofia_agent.models.tool import Tool
+from nomos.models.flow import Action, create_route_decision_model, Message
+from nomos.core import Agent
+from nomos.config import AgentConfig
+from nomos.models.tool import Tool
 
 
 def test_agent_initialization(basic_agent):
@@ -213,7 +212,7 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
         },
     )
 
-    agent = Sofia.from_config(
+    agent = Agent.from_config(
         llm=mock_llm,
         config=config,
         tools=[test_tool_0, test_tool_1],

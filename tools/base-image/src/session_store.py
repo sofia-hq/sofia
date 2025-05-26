@@ -9,7 +9,7 @@ from loguru import logger
 
 from redis.asyncio import Redis
 
-from sofia_agent.types import FlowSession
+from nomos.types import Session
 
 from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -58,16 +58,16 @@ class InMemoryStore:
 
         This is a simple dictionary-based store that does not persist data.
         """
-        self._store: Dict[str, tuple[FlowSession, datetime]] = {}
+        self._store: Dict[str, tuple[Session, datetime]] = {}
 
-    async def get(self, key: str) -> Optional[FlowSession]:
+    async def get(self, key: str) -> Optional[Session]:
         """Get session from in-memory store."""
         if key in self._store:
             return self._store[key][0]
         return None
 
     async def set(
-        self, key: str, value: FlowSession, ttl: Optional[int] = None
+        self, key: str, value: Session, ttl: Optional[int] = None
     ) -> None:
         """Set session in in-memory store."""
         self._store[key] = (value, datetime.now(timezone.utc))
@@ -111,7 +111,7 @@ class SessionStore:
             f"Cache={'Redis' if redis else 'Memory'}"
         )
 
-    async def _get_from_cache(self, session_id: str) -> Optional[FlowSession]:
+    async def _get_from_cache(self, session_id: str) -> Optional[Session]:
         """Get session from cache (Redis or memory)."""
         if self.redis:
             try:
@@ -123,7 +123,7 @@ class SessionStore:
 
         return await self.memory_store.get(session_id)
 
-    async def _set_to_cache(self, session_id: str, session: FlowSession) -> None:
+    async def _set_to_cache(self, session_id: str, session: Session) -> None:
         """Set session in cache (Redis or memory)."""
         if self.redis:
             try:
@@ -147,7 +147,7 @@ class SessionStore:
 
         await self.memory_store.delete(session_id)
 
-    async def _update_db(self, session_id: str, session: FlowSession) -> None:
+    async def _update_db(self, session_id: str, session: Session) -> None:
         """Update existing session in database or create new one."""
         if not self.db:
             return
@@ -178,7 +178,7 @@ class SessionStore:
             # Rollback the transaction on error
             await self.db.rollback()
 
-    async def get(self, session_id: str) -> Optional[FlowSession]:
+    async def get(self, session_id: str) -> Optional[Session]:
         """Get session from cache or database."""
         # Try cache first
         session = await self._get_from_cache(session_id)
@@ -202,7 +202,7 @@ class SessionStore:
 
         return None
 
-    async def set(self, session_id: str, session: FlowSession) -> None:
+    async def set(self, session_id: str, session: Session) -> None:
         """Set or update session in both database and cache."""
         # Update database if available
         if self.db:

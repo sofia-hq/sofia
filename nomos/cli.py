@@ -94,8 +94,8 @@ Update the tool definitions and tool_arg_descriptions as needed.
 \"\"\"
 
 import os
-from sofia.core import Sofia
-from sofia.config import AgentConfig
+from nomos.core import Agent
+from nomos.config import AgentConfig
 
 # Place your tool definitions here:
 # def my_tool(...):

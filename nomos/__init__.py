@@ -5,14 +5,14 @@ Define your agent's persona, tools, and step-by-step flows in Python or YAML—p
 """
 
 from .config import AgentConfig
-from .core import Sofia
+from .core import Agent
 from .models.flow import Action, Route, Step
 
 __version__ = "0.1.12"
 __author__ = "Chandra Irugalbandara"
 
 __all__ = [
-    "Sofia",
+    "Agent",
     "AgentConfig",
     "Action",
     "Step",

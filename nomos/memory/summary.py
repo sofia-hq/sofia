@@ -3,7 +3,7 @@
 import math
 from typing import List, Optional, Union
 
-from sofia_agent.models.flow import Message, Step, Summary
+from nomos.models.flow import Message, Step, Summary
 
 import tiktoken
 

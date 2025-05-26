@@ -1,4 +1,4 @@
-"""Sofia Agent API."""
+"""Nomos Agent API."""
 
 import os
 import pathlib
@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from sofia_agent.models.flow import Message as FlowMessage, StepIdentifier, Summary
+from nomos.models.flow import Message as FlowMessage, StepIdentifier, Summary
 
 from src.agent import agent
 from src.db import init_db
@@ -20,7 +20,7 @@ from src.session_store import SessionStore, create_session_store
 
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
-SERVICE_NAME = os.getenv("SERVICE_NAME", "sofia-agent")
+SERVICE_NAME = os.getenv("SERVICE_NAME", "nomos-agent")
 SERVICE_VERSION = os.getenv("SERVICE_VERSION", "0.0.1")
 
 session_store: Optional[SessionStore] = None

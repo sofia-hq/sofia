@@ -1,7 +1,7 @@
 import uuid
 from typing import Literal, Optional
 
-from sofia_agent.utils.logging import log_info
+from nomos.utils.logging import log_info
 
 # Simulate Inventory
 coffee_cart = []

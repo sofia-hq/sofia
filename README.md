@@ -45,7 +45,7 @@
 <br />
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos)
-[![codecov](https://codecov.io/gh/chandralegend/sofia/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/sofia)
+[![codecov](https://codecov.io/gh/chandralegend/nomos/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/nomos)
 [![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
 [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base)](https://hub.docker.com/r/chandralegend/nomos-base)
@@ -119,7 +119,7 @@ The framework allows you to move from no-code to low-code development, making it
 - **Elastic APM tracing**: Built-in support for distributed tracing and monitoring.
 - **Docker deployment**: Pre-built base image for rapid deployment.
 - **Extensible**: Build your own tools, steps, and integrations.
-- **Interactive CLI**: Bootstrap new agents with `sofia init` (install with `[cli]` extra).
+- **Interactive CLI**: Bootstrap new agents with `nomos init` (install with `[cli]` extra).
 
 ### Built With
 
@@ -142,27 +142,27 @@ The framework allows you to move from no-code to low-code development, making it
 #### From PyPI
 
 ```bash
-pip install nomos-agent
+pip install nomos
 ```
 
 #### With CLI support
 
 ```bash
-pip install nomos-agent[cli]
+pip install nomos[cli]
 ```
 
 #### With LLM support
 
 ```bash
-pip install nomos-agent[openai]      # For OpenAI support
-pip install nomos-agent[mistralai]   # For Mistral AI support
-pip install nomos-agent[gemini]      # For Google Gemini support
+pip install nomos[openai]      # For OpenAI support
+pip install nomos[mistralai]   # For Mistral AI support
+pip install nomos[gemini]      # For Google Gemini support
 ```
 
 #### With tracing support
 
 ```bash
-pip install nomos-agent[traces]
+pip install nomos[traces]
 ```
 
 ## Usage
@@ -180,8 +180,8 @@ This will interactively guide you to create a config YAML and starter Python fil
 ### Python API Example (Full Code)
 
 ```python
-from nomos_agent import *
-from nomos_agent.llms import OpenAIChatLLM
+from nomos import *
+from nomos.llms import OpenAIChatLLM
 
 def get_time():
     """Get the current time.
@@ -249,7 +249,7 @@ More examples are available in the [`examples`](examples/) directory.
 ### Choose Your LLM (We are adding more soon!)
 
 ```python
-from sofia_agent.llms import OpenAI, Mistral, Gemini
+from nomos.llms import OpenAI, Mistral, Gemini
 
 # Choose your LLM provider
 llm = OpenAI(model="gpt-4o-mini")
@@ -314,7 +314,7 @@ A production-ready example of a Financial Planning Assistant is available in [`e
 - Budget planning and expense tracking
 - Savings goal management
 - Financial health assessment
-- Uses the sofia-base Docker image
+- Uses the nomos-base Docker image
 - Production-ready configuration
 
 To run the Financial Planning Assistant:
@@ -363,7 +363,7 @@ The base image supports configuration via environment variables:
 | `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No |
 | `ELASTIC_APM_SERVER_URL` | Elastic APM server URL | If tracing enabled |
 | `ELASTIC_APM_TOKEN` | Elastic APM Token | If tracing enabled |
-| `SERVICE_NAME` | Service name for tracing | No (default: `sofia-agent`) |
+| `SERVICE_NAME` | Service name for tracing | No (default: `nomos-agent`) |
 | `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 
 ### Tracing and Elastic APM Integration
@@ -377,7 +377,7 @@ To enable tracing, set the following environment variables:
 | `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No (default: `false`) |
 | `ELASTIC_APM_SERVER_URL` | Elastic APM server URL | If tracing enabled |
 | `ELASTIC_APM_TOKEN` | Elastic APM Token | If tracing enabled |
-| `SERVICE_NAME` | Service name for tracing | No (default: `sofia-agent`) |
+| `SERVICE_NAME` | Service name for tracing | No (default: `nomos-agent`) |
 | `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
 
 Example:

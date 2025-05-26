@@ -1,7 +1,7 @@
 [project]
-name = "sofia-agent"
+name = "nomos"
 version = "0.1.12"
-description = "SOFIA: Simple Orchestrated Flow Intelligence Agent"
+description = "Configurable multi-step agent framework for building advanced LLM-powered assistants"
 authors = [
     {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}
 ]
@@ -43,11 +43,11 @@ traces = [
 ]
 
 [project.scripts]
-sofia = "sofia_agent.cli:main"
+nomos = "nomos.cli:main"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --cov=sofia_agent --cov-report=term-missing"
+addopts = "-ra -q --cov=nomos --cov-report=term-missing"
 testpaths = [
     "tests",
 ]

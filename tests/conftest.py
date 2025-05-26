@@ -4,10 +4,10 @@ import pytest
 from typing import List
 from pydantic import BaseModel
 
-from sofia_agent.models.flow import Message, Step, Route
-from sofia_agent.llms import LLMBase
-from sofia_agent.core import Sofia
-from sofia_agent.utils.logging import log_error
+from nomos.models.flow import Message, Step, Route
+from nomos.llms import LLMBase
+from nomos.core import Agent
+from nomos.utils.logging import log_error
 
 
 class MockLLM(LLMBase):
@@ -86,7 +86,7 @@ def test_tool_1():
 @pytest.fixture
 def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1):
     """Fixture providing a basic Sofia agent instance."""
-    return Sofia(
+    return Agent(
         name="test_agent",
         llm=mock_llm,
         steps=basic_steps,

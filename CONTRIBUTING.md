@@ -1,6 +1,6 @@
-# Contributing to Sofia projects
+# Contributing to Nomos projects
 
-A big welcome and thank you for considering contributing to Sofia open source projects! It’s people like you that make it a reality for users in our community.
+A big welcome and thank you for considering contributing to Nomos open source projects! It’s people like you that make it a reality for users in our community.
 
 Reading and following these guidelines will help us make the contribution process easy and effective for everyone involved. It also communicates that you agree to respect the time of the developers managing and developing these open source projects. In return, we will reciprocate that respect by addressing your issue, assessing changes, and helping you finalize your pull requests.
 
@@ -55,4 +55,4 @@ In general, we follow the ["fork-and-pull" Git workflow](https://github.com/susa
 
 ## Getting Help
 
-Join us in the [SOFIA Community]() and post your question there in the correct category with a descriptive tag.
+Join us in the [Nomos Community]() and post your question there in the correct category with a descriptive tag.

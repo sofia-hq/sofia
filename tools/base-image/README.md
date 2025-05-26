@@ -1,10 +1,10 @@
-# Sofia Base Image
+# Nomos Base Image
 
-Official base image for building SOFIA (Simple Orchestrated Flow Intelligence Agent) agents.
+Official base image for building Nomos (Simple Orchestrated Flow Intelligence Agent) agents.
 
 ## Features
 
-- Pre-installed SOFIA agent framework
+- Pre-installed Nomos agent framework
 - Configurable via environment variables or mounted config files
 - Built-in support for OpenAI, Mistral, and Gemini LLMs
 - FastAPI-based HTTP and WebSocket endpoints
@@ -15,12 +15,12 @@ Official base image for building SOFIA (Simple Orchestrated Flow Intelligence Ag
 ## Quick Start
 
 ```bash
-docker pull chandralegend/sofia-base:latest
+docker pull chandralegend/nomos-base:latest
 ```
 
 Create a Dockerfile:
 ```dockerfile
-FROM chandralegend/sofia-base:latest
+FROM chandralegend/nomos-base:latest
 COPY config.agent.yaml /app/config.agent.yaml
 ```
 
@@ -53,7 +53,7 @@ docker run -e OPENAI_API_KEY=your-key \
 | `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No |
 | `ELASTIC_APM_SERVER_URL` | Elastic APM server URL (e.g. `http://localhost:8200`) | If `ENABLE_TRACING` is set to `true` |
 | `ELASTIC_APM_TOKEN` | Elastic APM Token | If `ENABLE_TRACING` is set to `true` |
-| `SERVICE_NAME` | Name of the service for tracing | No (default: `sofia-agent`) |
+| `SERVICE_NAME` | Name of the service for tracing | No (default: `Nomos-agent`) |
 | `SERVICE_VERSION` | Version of the service for tracing | No (default: `1.0.0`) |
 
 ## Storage Options
@@ -84,7 +84,7 @@ docker run -e DATABASE_URL=postgresql+asyncpg://user:pass@localhost/dbname ...
 
 ## Tracing and Elastic APM
 
-SOFIA base image supports distributed tracing using OpenTelemetry and can export traces to Elastic APM.
+Nomos base image supports distributed tracing using OpenTelemetry and can export traces to Elastic APM.
 
 To enable tracing, set the following environment variables:
 
@@ -113,7 +113,7 @@ docker run \
 
 ## GitHub Repository
 
-For more information, visit [SOFIA GitHub Repository](https://github.com/sofia-hq/sofia)
+For more information, visit [Nomos GitHub Repository](https://github.com/Nomos-hq/Nomos)
 
 ## License
 

@@ -21,7 +21,7 @@ from .models.tool import FallbackError, InvalidArgumentsError, Tool
 from .utils.logging import log_debug, log_error, log_info
 
 
-class FlowSession:
+class Session:
     """Manages a single agent session, including step transitions, tool calls, and history."""
 
     def __init__(
@@ -44,7 +44,7 @@ class FlowSession:
         verbose: bool = False,
     ) -> None:
         """
-        Initialize a FlowSession.
+        Initialize a Session.
 
         :param name: Name of the agent.
         :param llm: LLMBase instance.
@@ -103,12 +103,12 @@ class FlowSession:
         log_debug(f"Session {self.session_id} saved to disk.")
 
     @classmethod
-    def load_session(cls, session_id: str) -> "FlowSession":
+    def load_session(cls, session_id: str) -> "Session":
         """
-        Load a FlowSession from disk by session_id.
+        Load a Session from disk by session_id.
 
         :param session_id: The session ID string.
-        :return: Loaded FlowSession instance.
+        :return: Loaded Session instance.
         """
         with open(f"{session_id}.pkl", "rb") as f:
             log_debug(f"Session {session_id} loaded from disk.")
@@ -310,8 +310,8 @@ class FlowSession:
             )
 
 
-class Sofia:
-    """Main interface for creating and managing SOFIA agents."""
+class Agent:
+    """Main interface for creating and managing Nomos Agents."""
 
     def __init__(
         self,
@@ -328,7 +328,7 @@ class Sofia:
         config: Optional[AgentConfig] = None,
     ) -> None:
         """
-        Initialize a Sofia agent.
+        Initialize an Agent.
 
         :param llm: LLMBase instance.
         :param name: Name of the agent.
@@ -395,9 +395,9 @@ class Sofia:
         config: AgentConfig,
         llm: Optional[LLMBase] = None,
         tools: Optional[List[Callable | str]] = None,
-    ) -> "Sofia":
+    ) -> "Agent":
         """
-        Create a Sofia agent from an AgentConfig object.
+        Create an Agent from an AgentConfig object.
 
         :param llm: LLMBase instance.
         :param config: AgentConfig instance.
@@ -426,13 +426,13 @@ class Sofia:
 
     def create_session(
         self, memory: Optional[Memory] = None, verbose: bool = False
-    ) -> FlowSession:
+    ) -> Session:
         """
-        Create a new FlowSession for this agent.
+        Create a new Session for this agent.
 
         :param memory: Optional Memory instance.
         :param verbose: Whether to return verbose output.
-        :return: FlowSession instance.
+        :return: Session instance.
         """
         log_debug("Creating new session")
         if not memory:
@@ -441,7 +441,7 @@ class Sofia:
                 if self.config and self.config.memory
                 else Memory()
             )
-        return FlowSession(
+        return Session(
             name=self.name,
             llm=self.llm,
             memory=memory,
@@ -457,22 +457,22 @@ class Sofia:
             config=self.config,
         )
 
-    def load_session(self, session_id: str) -> FlowSession:
+    def load_session(self, session_id: str) -> Session:
         """
-        Load a FlowSession by session_id.
+        Load a Session by session_id.
 
         :param session_id: The session ID string.
-        :return: Loaded FlowSession instance.
+        :return: Loaded Session instance.
         """
         log_debug(f"Loading session {session_id}")
-        return FlowSession.load_session(session_id)
+        return Session.load_session(session_id)
 
-    def get_session_from_dict(self, session_data: dict) -> FlowSession:
+    def get_session_from_dict(self, session_data: dict) -> Session:
         """
-        Create a FlowSession from a dictionary.
+        Create a Session from a dictionary.
 
         :param session_data: Dictionary containing session data.
-        :return: FlowSession instance.
+        :return: Session instance.
         """
         log_debug(f"Creating session from dict: {session_data}")
 
@@ -497,7 +497,7 @@ class Sofia:
             if self.config and self.config.memory
             else Memory()
         )
-        return FlowSession(
+        return Session(
             name=self.name,
             llm=self.llm,
             memory=memory,
@@ -538,4 +538,4 @@ class Sofia:
         return decision, tool_output, session.to_dict()
 
 
-__all__ = ["FlowSession", "Sofia"]
+__all__ = ["Session", "Agent"]
