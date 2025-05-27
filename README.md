@@ -65,7 +65,7 @@
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
 - [Usage](#usage)
-  - [CLI: Bootstrap a New Agent](#cli-bootstrap-a-new-agent)
+  - [CLI Usage](#cli-usage)
   - [Python API Example](#python-api-example)
   - [YAML Config Example](#yaml-config-example)
   - [Error Handling](#error-handling)
@@ -169,10 +169,105 @@ pip install nomos[traces]
 
 NOMOS supports a spectrum of implementation approaches from no-code to low-code to full-code development.
 
-### CLI: Bootstrap a New Agent
+### CLI Usage
+
+The Nomos CLI provides powerful commands to bootstrap, develop, and deploy your agents.
+
+#### Initialize a New Agent
+
+Create a new agent project interactively:
 
 ```bash
 nomos init
+```
+
+**Options:**
+- `--directory, -d`: Project directory (default: `./my-nomos-agent`)
+- `--name, -n`: Agent name
+- `--template, -t`: Template to use (`basic`, `conversational`, `workflow`)
+
+**Example:**
+```bash
+nomos init --directory ./my-bot --name chatbot --template basic
+```
+
+#### Development Mode
+
+Run your agent locally for development and testing:
+
+```bash
+nomos run
+```
+
+**Options:**
+- `--config, -c`: Configuration file path (default: `config.agent.yaml`)
+- `--tools, -t`: Python files with tool definitions (can be used multiple times)
+- `--port, -p`: Development server port (default: `8000`)
+- `--verbose, -v`: Enable verbose logging
+
+**Examples:**
+```bash
+# Basic usage
+nomos run
+
+# With custom config and tools
+nomos run --config my-config.yaml --tools tools.py --tools utils.py
+
+# With verbose logging on custom port
+nomos run --verbose --port 3000
+```
+
+#### Production Deployment
+
+Serve your agent using Docker for production:
+
+```bash
+nomos serve
+```
+
+**Options:**
+- `--config, -c`: Configuration file path (default: `config.agent.yaml`)
+- `--tools, -t`: Python files with tool definitions (can be used multiple times)
+- `--dockerfile, -f`: Path to custom Dockerfile
+- `--tag`: Docker image tag (default: `nomos-agent`)
+- `--port, -p`: Host port to bind to (default: `8000`)
+- `--build/--no-build`: Build Docker image before running (default: `true`)
+
+**Examples:**
+```bash
+# Basic deployment
+nomos serve
+
+# With custom Dockerfile and tools
+nomos serve --dockerfile custom.Dockerfile --tools tools.py
+
+# Custom port without building
+nomos serve --port 9000 --no-build
+```
+
+#### Testing
+
+Run tests for your agent:
+
+```bash
+nomos test
+```
+
+**Options:**
+- `--pattern, -p`: Test file pattern to match (default: `test_*.py`)
+- `--verbose, -v`: Enable verbose test output
+- `--coverage/--no-coverage`: Generate coverage report (default: `true`)
+
+**Examples:**
+```bash
+# Run all tests
+nomos test
+
+# Run specific test pattern
+nomos test --pattern "test_tools*"
+
+# Verbose output without coverage
+nomos test --verbose --no-coverage
 ```
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.

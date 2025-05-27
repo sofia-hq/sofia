@@ -3,265 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sofia Chat Interface</title>
+    <title>Nomos - AI Agent Chat</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Material Tailwind CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/@material-tailwind/html@latest/styles/material-tailwind.css">
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <!-- Heroicons for modern icons -->
+    <script src="https://unpkg.com/@heroicons/react@2.0.18/24/outline/index.js" type="module"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Inter font for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        'nomos': {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49'
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'pulse-gentle': 'pulseGentle 2s infinite',
+                        'typing': 'typing 1.4s infinite'
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
     <style>
+        * {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
         :root {
-            --color-bg: #f9fafb;
-            --color-bg-chat: #fff;
-            --color-header: #2563eb;
-            --color-header-text: #fff;
-            --color-bubble-user: #2563eb;
-            --color-bubble-user-text: #fff;
-            --color-bubble-assistant: #f3f4f6;
-            --color-bubble-assistant-text: #111827;
-            --color-bubble-tool: #ecfdf5;
-            --color-bubble-tool-text: #065f46;
-            --color-bubble-system: #fef2f2;
-            --color-bubble-system-text: #991b1b;
-            --color-scrollbar: #ccc;
-            --color-scrollbar-hover: #aaa;
-        }
-        .dark-mode {
-            --color-bg: #18181b;
-            --color-bg-chat: #23272f;
-            --color-header: #1e293b;
-            --color-header-text: #f1f5f9;
-            --color-bubble-user: #2563eb;
-            --color-bubble-user-text: #fff;
-            --color-bubble-assistant: #334155;
-            --color-bubble-assistant-text: #f1f5f9;
-            --color-bubble-tool: #14532d;
-            --color-bubble-tool-text: #bbf7d0;
-            --color-bubble-system: #7f1d1d;
-            --color-bubble-system-text: #fee2e2;
-            --color-scrollbar: #334155;
-            --color-scrollbar-hover: #64748b;
-        }
-        body {
-            background: var(--color-bg);
-            color: var(--color-bubble-assistant-text);
-            transition: background 0.3s, color 0.3s;
-        }
-        header {
-            background: var(--color-header);
-            color: var(--color-header-text);
-            transition: background 0.3s, color 0.3s;
-        }
-        #chat-container {
-            background: var(--color-bg-chat);
-            transition: background 0.3s;
+            --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            --gradient-secondary: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            --backdrop-blur: blur(20px);
         }
 
-        /* Accordion (collapsible) dark mode support */
-        .border-b.border-gray-200 {
-            border-color: #e5e7eb !important;
-        }
-        .dark-mode .border-b.border-gray-200 {
-            border-color: #334155 !important;
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .accordion-content {
-            background: var(--color-bg-chat);
-            color: var(--color-bubble-assistant-text);
-            transition: background 0.3s, color 0.3s, max-height 0.3s;
-        }
-
-        /* Fix for overall background in light mode */
-        body:not(.dark-mode) {
-            background: #f9fafb !important;
-        }
-
-        .chat-bubble.bg-blue-500 {
-            background: var(--color-bubble-user) !important;
-            color: var(--color-bubble-user-text) !important;
-        }
-        .chat-bubble.bg-gray-100 {
-            background: var(--color-bubble-assistant) !important;
-            color: var(--color-bubble-assistant-text) !important;
-        }
-        .chat-bubble.bg-green-50 {
-            background: var(--color-bubble-tool) !important;
-            color: var(--color-bubble-tool-text) !important;
-        }
-        .chat-bubble.bg-red-50 {
-            background: var(--color-bubble-system) !important;
-            color: var(--color-bubble-system-text) !important;
-        }
-        .chat-bubble.bg-yellow-50 {
-            background: #fef9c3 !important;
-            color: #92400e !important;
-        }
-        /* Scrollbar styling */
-        #chat-container::-webkit-scrollbar {
-            width: 8px;
-        }
-        #chat-container::-webkit-scrollbar-track {
-            background: var(--color-bg-chat);
-            border-radius: 10px;
-        }
-        #chat-container::-webkit-scrollbar-thumb {
-            background: var(--color-scrollbar);
-            border-radius: 10px;
-        }
-        #chat-container::-webkit-scrollbar-thumb:hover {
-            background: var(--color-scrollbar-hover);
+        .dark .glass-morphism {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .chat-bubble {
-            max-width: 80%;
+            max-width: 85%;
             word-wrap: break-word;
-        }
-        .typing-indicator span {
-            animation: blink 1.4s infinite both;
-        }
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-        @keyframes blink {
-            0%, 100% { opacity: 0.2; }
-            50% { opacity: 1; }
+            position: relative;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        /* Message animation */
+        .chat-bubble.user {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            margin-left: auto;
+            border-radius: 24px 24px 8px 24px;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .chat-bubble.assistant {
+            background: rgba(255, 255, 255, 0.9);
+            color: #1f2937;
+            margin-right: auto;
+            border-radius: 24px 24px 24px 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .chat-bubble.assistant {
+            background: rgba(55, 65, 81, 0.9);
+            color: #f9fafb;
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgb(156, 163, 175);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: 0ms; }
+        .typing-dot:nth-child(2) { animation-delay: 200ms; }
+        .typing-dot:nth-child(3) { animation-delay: 400ms; }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes pulseGentle {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-10px); opacity: 1; }
         }
 
         .message-animation {
             animation: fadeIn 0.3s ease-out forwards;
         }
 
-        /* Accordion animation */
-        .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
         }
 
-        .accordion-active .accordion-content {
-            max-height: 500px;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        /* Tailwind dark mode for buttons, input, and collapsibles */
-        button, .dark-mode button {
-            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 3px;
         }
-        button.bg-blue-600 {
-            background: #2563eb;
-            color: #fff;
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
         }
-        .dark-mode button.bg-blue-600, .dark-mode button.dark\:bg-blue-700 {
-            background: #1d4ed8 !important;
-            color: #fff !important;
+
+        /* Input animations */
+        .input-focus {
+            transition: all 0.2s ease;
         }
-        button.bg-gray-200 {
-            background: #e5e7eb;
-            color: #374151;
+
+        .input-focus:focus {
+            transform: scale(1.01);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
         }
-        .dark-mode button.bg-gray-200, .dark-mode button.dark\:bg-gray-700 {
-            background: #374151 !important;
-            color: #f1f5f9 !important;
+
+        /* Logo animation */
+        .logo-glow {
+            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.3));
         }
-        button.bg-red-100 {
-            background: #fee2e2;
-            color: #b91c1c;
+
+        /* Status indicators */
+        .status-connected {
+            background: linear-gradient(135deg, #10b981, #059669);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
         }
-        .dark-mode button.bg-red-100, .dark-mode button.dark\:bg-red-800 {
-            background: #7f1d1d !important;
-            color: #fee2e2 !important;
+
+        .status-connecting {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            animation: pulseGentle 2s infinite;
         }
-        /* Collapsible/Accordion header dark mode */
-        .accordion-header, .dark-mode .accordion-header {
-            transition: background 0.3s, color 0.3s;
-        }
-        .bg-blue-50 { background: #eff6ff !important; color: #1e40af !important; }
-        .dark-mode .bg-blue-50 { background: #1e293b !important; color: #60a5fa !important; }
-        .bg-purple-50 { background: #f5f3ff !important; color: #6d28d9 !important; }
-        .dark-mode .bg-purple-50 { background: #312e81 !important; color: #c7d2fe !important; }
-        .bg-yellow-50 { background: #fef9c3 !important; color: #92400e !important; }
-        .dark-mode .bg-yellow-50 { background: #78350f !important; color: #fde68a !important; }
-        .bg-green-50 { background: #ecfdf5 !important; color: #065f46 !important; }
-        .dark-mode .bg-green-50 { background: #14532d !important; color: #bbf7d0 !important; }
-        .bg-red-50 { background: #fef2f2 !important; color: #991b1b !important; }
-        .dark-mode .bg-red-50 { background: #7f1d1d !important; color: #fee2e2 !important; }
-        /* Textarea auto-expand */
-        textarea {
-            resize: none;
-            overflow: hidden;
-            min-height: 44px;
-            max-height: 200px;
-            transition: background 0.3s, color 0.3s, border-color 0.3s;
+
+        .status-error {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col transition-colors duration-300" id="body-root">
-    <header class="bg-blue-600 dark:bg-gray-800 text-white dark:text-gray-100 py-3 px-6 shadow-md flex justify-between items-center transition-colors duration-300">
-        <h1 class="text-2xl font-bold">Sofia</h1>
-        <div class="flex items-center gap-3">
-            <div id="connection-status" class="text-sm bg-yellow-500 dark:bg-yellow-700 px-2 py-1 rounded transition-colors duration-300">Connecting...</div>
-            <button id="dark-mode-toggle" class="ml-4 px-2 py-1 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300" title="Toggle dark mode">
-                <i class="fas fa-moon"></i>
-            </button>
-        </div>
-    </header>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 min-h-screen relative overflow-hidden" id="body-root">
+    <!-- Animated background elements -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-nomos-400/20 rounded-full blur-3xl animate-pulse-gentle"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/20 rounded-full blur-3xl animate-pulse-gentle" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-300/10 rounded-full blur-3xl animate-pulse-gentle" style="animation-delay: 2s;"></div>
+    </div>
 
-    <main class="flex-grow flex flex-col p-4 md:p-6 max-w-4xl mx-auto w-full transition-colors duration-300">
-        <div id="chat-container" class="flex-grow bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4 overflow-y-auto h-[75vh] flex flex-col transition-colors duration-300">
-            <div id="messages" class="space-y-3 flex-grow"></div>
-            <div id="typing-indicator" class="typing-indicator text-gray-500 dark:text-gray-300 hidden py-2">
-                <div class="chat-bubble bg-gray-200 dark:bg-gray-700 rounded-lg p-3 px-4 inline-block">
-                    <span>.</span><span>.</span><span>.</span>
+    <!-- Main container with glass morphism -->
+    <div class="relative z-10 min-h-screen flex flex-col">
+        <header class="glass-morphism border-b border-white/20 dark:border-gray-700/50 backdrop-blur-xl">
+            <div class="max-w-7xl mx-auto px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <!-- Logo and title -->
+                    <div class="flex items-center space-x-4">
+                        <div class="logo-glow">
+                            <svg class="w-10 h-10 text-nomos-600 dark:text-nomos-400" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12 2L13.09 6.26L17 4L14.74 8.13L19 9L14.74 9.87L17 14L13.09 11.74L12 16L10.91 11.74L7 14L9.26 9.87L5 9L9.26 8.13L7 4L10.91 6.26L12 2Z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold bg-gradient-to-r from-nomos-600 to-nomos-800 dark:from-nomos-400 dark:to-nomos-300 bg-clip-text text-transparent">
+                                Nomos
+                            </h1>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">AI Agent Chat</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Status and controls -->
+                    <div class="flex items-center space-x-4">
+                        <div id="connection-status" class="flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connecting">
+                            <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                            <span>Connecting...</span>
+                        </div>
+                        
+                        <button id="dark-mode-toggle" 
+                                class="p-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 group" 
+                                title="Toggle dark mode">
+                            <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </header>
 
-        <form id="message-form" class="flex gap-2">
-            <textarea
-                id="user-input"
-                class="flex-grow border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300"
-                placeholder="Type your message..."
-                required
-                rows="1"
-                style="resize: none; min-height: 44px; max-height: 200px;"
-            ></textarea>
-            <button
-                type="submit"
-                class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors duration-300 flex items-center gap-2"
-            >
-                <span>Send</span>
-                <i class="fas fa-paper-plane text-sm"></i>
-            </button>
-        </form>
+        <main class="flex-1 flex flex-col p-6 max-w-6xl mx-auto w-full">
+            <!-- Chat container with glass morphism -->
+            <div class="flex-1 glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden mb-6">
+                <div class="flex flex-col h-[calc(100vh-12rem)]">
+                    <!-- Messages area -->
+                    <div id="chat-container" class="flex-1 p-6 overflow-y-auto custom-scrollbar">
+                        <div id="messages" class="space-y-4 min-h-full flex flex-col justify-end"></div>
+                        
+                        <!-- Typing indicator -->
+                        <div id="typing-indicator" class="typing-indicator text-gray-500 dark:text-gray-400 hidden py-4 animate-fade-in">
+                            <div class="flex items-center space-x-2 px-4 py-3 bg-white/60 dark:bg-gray-800/60 rounded-2xl backdrop-blur-sm border border-white/30 dark:border-gray-700/50 max-w-fit">
+                                <div class="flex space-x-1">
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                    <div class="typing-dot"></div>
+                                </div>
+                                <span class="text-sm font-medium">Nomos is thinking...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Input area -->
+                    <div class="border-t border-white/20 dark:border-gray-700/50 p-6 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                        <form id="message-form" class="flex gap-4 items-end">
+                            <div class="flex-1 relative">
+                                <textarea
+                                    id="user-input"
+                                    class="w-full glass-morphism border border-white/30 dark:border-gray-700/50 rounded-2xl px-6 py-4 focus:outline-none focus:ring-2 focus:ring-nomos-500/50 focus:border-nomos-400 bg-white/70 dark:bg-gray-900/70 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 input-focus resize-none backdrop-blur-sm text-base"
+                                    placeholder="Ask Nomos anything..."
+                                    required
+                                    rows="1"
+                                    style="min-height: 56px; max-height: 200px;"
+                                ></textarea>
+                                
+                                <!-- Character counter (optional) -->
+                                <div class="absolute bottom-2 right-4 text-xs text-gray-400 dark:text-gray-500 pointer-events-none">
+                                    <span id="char-count">0</span>/2000
+                                </div>
+                            </div>
+                            
+                            <button
+                                type="submit"
+                                class="group relative px-6 py-4 bg-gradient-to-r from-nomos-500 to-nomos-600 hover:from-nomos-600 hover:to-nomos-700 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nomos-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                id="send-button"
+                            >
+                                <div class="flex items-center space-x-2">
+                                    <span class="hidden sm:block">Send</span>
+                                    <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                    </svg>
+                                </div>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
 
-        <div class="mt-4 flex justify-between">
-            <button
-                id="new-chat-btn"
-                class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 transition-colors duration-300 flex items-center gap-2"
-            >
-                <i class="fas fa-plus text-sm"></i>
-                <span>New Chat</span>
-            </button>
-            <button
-                id="clear-storage-btn"
-                class="bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 px-4 py-2 rounded-lg hover:bg-red-200 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors duration-300 flex items-center gap-2"
-            >
-                <i class="fas fa-trash text-sm"></i>
-                <span>Clear History</span>
-            </button>
-        </div>
-    </main>
+            <!-- Action buttons -->
+            <div class="flex flex-wrap justify-between gap-4">
+                <div class="flex gap-3">
+                    <button
+                        id="new-chat-btn"
+                        class="group flex items-center space-x-2 px-4 py-2.5 glass-morphism border border-white/30 dark:border-gray-700/50 rounded-xl hover:bg-white/40 dark:hover:bg-gray-800/40 text-gray-700 dark:text-gray-300 font-medium transition-all duration-200 hover:scale-105"
+                    >
+                        <svg class="w-4 h-4 group-hover:rotate-90 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <span>New Chat</span>
+                    </button>
+                    
+                    <button
+                        id="clear-storage-btn"
+                        class="group flex items-center space-x-2 px-4 py-2.5 glass-morphism border border-red-200/50 dark:border-red-800/50 rounded-xl hover:bg-red-50/50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-medium transition-all duration-200 hover:scale-105"
+                    >
+                        <svg class="w-4 h-4 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        <span>Clear History</span>
+                    </button>
+                </div>
+                
+                <!-- Quick actions -->
+                <div class="flex gap-2">
+                    <button class="p-2 glass-morphism border border-white/30 dark:border-gray-700/50 rounded-xl hover:bg-white/40 dark:hover:bg-gray-800/40 text-gray-600 dark:text-gray-400 transition-all duration-200 hover:scale-105" title="Export chat">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="p-2 glass-morphism border border-white/30 dark:border-gray-700/50 rounded-xl hover:bg-white/40 dark:hover:bg-gray-800/40 text-gray-600 dark:text-gray-400 transition-all duration-200 hover:scale-105" title="Settings">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
 
-    <!-- Material Tailwind JS -->
-    <script src="https://unpkg.com/@material-tailwind/html@latest/scripts/script-name.js"></script>
+    <!-- Modern Lucide Icons for better performance -->
+    <script>
+        // Initialize Lucide icons when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const messagesContainer = document.getElementById('messages');
@@ -277,6 +363,26 @@
             let sessionData = null;
             let isProcessingRequest = false;
             let accordionCounter = 0;
+
+            // Character counter functionality
+            const charCount = document.getElementById('char-count');
+            if (userInput && charCount) {
+                userInput.addEventListener('input', () => {
+                    charCount.textContent = userInput.value.length;
+                    
+                    // Auto-resize textarea
+                    userInput.style.height = 'auto';
+                    userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
+                });
+                
+                // Handle Enter key (send message) vs Shift+Enter (new line)
+                userInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        messageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                    }
+                });
+            }
 
             // Helper function to escape HTML
             function escapeHtml(unsafe) {
@@ -331,21 +437,21 @@
                 const iconId = `icon-${accordionCounter}`;
 
                 const divElement = document.createElement('div');
-                // Add mb-3 for margin-bottom and rounded-lg for rounded corners
-                divElement.className = 'border-b border-gray-200 mt-1 mb-3 rounded-lg overflow-hidden';
+                // Modern glass morphism accordion styling
+                divElement.className = 'glass-morphism border border-white/20 dark:border-gray-700/30 mt-2 mb-3 rounded-2xl overflow-hidden backdrop-blur-sm';
 
                 divElement.innerHTML = `
-                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t-lg flex justify-between items-center py-2 px-4">
-                        <span>${headerText}</span>
-                        <span id="${iconId}" class="transition-transform duration-300">
+                    <button onclick="toggleAccordion('${contentId}', '${iconId}')" class="w-full ${headerClass} rounded-t-2xl flex justify-between items-center py-3 px-4 hover:bg-white/20 dark:hover:bg-gray-800/20 transition-all duration-200">
+                        <span class="font-medium">${headerText}</span>
+                        <span id="${iconId}" class="transition-transform duration-300 ease-out">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                                 stroke="currentColor" class="w-4 h-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                             </svg>
                         </span>
                     </button>
-                    <div id="${contentId}" class="accordion-content bg-white dark:bg-gray-800 px-4 pb-3 pt-2">
-                        <div class="text-sm">${content}</div>
+                    <div id="${contentId}" class="accordion-content bg-white/30 dark:bg-gray-800/30 px-4 pb-3 pt-2 backdrop-blur-sm overflow-hidden transition-all duration-300 ease-out" style="max-height: 0;">
+                        <div class="text-sm leading-relaxed">${content}</div>
                     </div>
                 `;
 
@@ -357,8 +463,8 @@
                 const content = document.getElementById(contentId);
                 const icon = document.getElementById(iconId);
 
-                if (content.style.maxHeight) {
-                    content.style.maxHeight = null;
+                if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                    content.style.maxHeight = '0px';
                     icon.classList.remove('rotate-180');
                 } else {
                     content.style.maxHeight = content.scrollHeight + "px";
@@ -396,14 +502,14 @@
                     }
 
                     if (role === 'user') {
-                        messageElement.className += ' flex justify-end mb-3';
+                        messageElement.className += ' flex justify-end mb-4';
                         messageElement.innerHTML = `
-                            <div class="chat-bubble bg-blue-500 text-white rounded-lg p-3 px-4 shadow-sm">
+                            <div class="chat-bubble user p-4 shadow-lg animate-fade-in">
                                 ${escapeHtml(content)}
                             </div>
                         `;
                     } else if (role === 'assistant') {
-                        messageElement.className += ' flex flex-col justify-start mb-3';
+                        messageElement.className += ' flex flex-col justify-start mb-4';
 
                         // 1. Reasoning
                         if (extras.reasoning && extras.reasoning.length > 0) {
@@ -456,13 +562,13 @@
                         let messageHtml = '';
                         if (typeof content === 'object' && content !== null) {
                             messageHtml = `
-                                <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
-                                    <pre class="whitespace-pre-wrap text-xs">${escapeHtml(JSON.stringify(content, null, 2))}</pre>
+                                <div class="chat-bubble assistant p-4 shadow-lg animate-fade-in">
+                                    <pre class="whitespace-pre-wrap text-sm font-mono">${escapeHtml(JSON.stringify(content, null, 2))}</pre>
                                 </div>
                             `;
                         } else {
                             messageHtml = `
-                                <div class="chat-bubble bg-gray-100 rounded-lg p-3 px-4 shadow-sm">
+                                <div class="chat-bubble assistant p-4 shadow-lg animate-fade-in">
                                     ${formatMessage(content)}
                                 </div>
                             `;
@@ -479,7 +585,7 @@
                             extras.suggestions.forEach(suggestion => {
                                 const btn = document.createElement('button');
                                 btn.type = 'button';
-                                btn.className = 'bg-blue-100 text-blue-700 px-3 py-1 rounded-lg hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 transition text-sm';
+                                btn.className = 'glass-morphism border border-nomos-200 dark:border-nomos-700 text-nomos-700 dark:text-nomos-300 px-4 py-2 rounded-full hover:bg-nomos-100 dark:hover:bg-nomos-800 focus:outline-none focus:ring-2 focus:ring-nomos-400 transition-all text-sm font-medium backdrop-blur-sm';
                                 btn.textContent = suggestion;
                                 btn.onclick = () => {
                                     userInput.value = suggestion;
@@ -518,10 +624,15 @@
                         }, 0);
                         messageElement.appendChild(accordion);
                     } else if (role === 'system') {
-                        messageElement.className += ' flex justify-center mb-3';
+                        messageElement.className += ' flex justify-center mb-4';
                         messageElement.innerHTML = `
-                            <div class="chat-bubble bg-red-50 text-red-800 rounded-lg p-3 px-4 text-sm border border-red-200 shadow-sm">
-                                <i class="fas fa-info-circle mr-1"></i> ${escapeHtml(content)}
+                            <div class="glass-morphism border border-amber-200 dark:border-amber-700 text-amber-800 dark:text-amber-200 rounded-2xl p-4 text-sm backdrop-blur-sm shadow-lg max-w-md text-center animate-fade-in">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span>${escapeHtml(content)}</span>
+                                </div>
                             </div>
                         `;
                     }
@@ -532,7 +643,14 @@
                     }
 
                     messagesContainer.appendChild(messageElement);
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                    // Smooth scroll to bottom
+                    setTimeout(() => {
+                        messagesContainer.scrollTo({
+                            top: messagesContainer.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 100);
                 } catch (e) {
                     console.error('Error adding message to UI:', e);
                 }
@@ -541,7 +659,7 @@
             // Function to clear all chat data
             function clearChatData() {
                 sessionData = null;
-                localStorage.removeItem('sofiaSessionData');
+                localStorage.removeItem('nomosSessionData');
                 messagesContainer.innerHTML = '';
             }
 
@@ -550,8 +668,11 @@
             checkServerAndInitialize();
 
             function checkServerAndInitialize() {
-                connectionStatus.textContent = 'Connecting...';
-                connectionStatus.className = 'text-sm bg-yellow-500 px-2 py-1 rounded transition-colors duration-300';
+                connectionStatus.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
+                    <span>Connecting...</span>
+                `;
+                connectionStatus.className = 'flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connecting';
 
                 // Set flag to prevent concurrent requests
                 if (isProcessingRequest) {
@@ -577,16 +698,22 @@
                     return response.json();
                 })
                 .then(data => {
-                    connectionStatus.textContent = 'Connected';
-                    connectionStatus.className = 'text-sm bg-green-500 px-2 py-1 rounded transition-colors duration-300';
+                    connectionStatus.innerHTML = `
+                        <div class="w-2 h-2 rounded-full bg-current"></div>
+                        <span>Connected</span>
+                    `;
+                    connectionStatus.className = 'flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connected text-white';
 
                     // Try to restore session or create a new one
                     initializeChat();
                 })
                 .catch(error => {
                     console.error('Connection error:', error);
-                    connectionStatus.textContent = 'Connection Failed';
-                    connectionStatus.className = 'text-sm bg-red-500 px-2 py-1 rounded transition-colors duration-300';
+                    connectionStatus.innerHTML = `
+                        <div class="w-2 h-2 rounded-full bg-current"></div>
+                        <span>Connection Failed</span>
+                    `;
+                    connectionStatus.className = 'flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-error text-white';
                     addMessageToUI('system', `Server connection error: ${error.message}. Make sure the server is running at http://localhost:8000`);
                 })
                 .finally(() => {
@@ -601,9 +728,9 @@
                 }
 
                 // Check for existing session in localStorage
-                if (localStorage.getItem('sofiaSessionData')) {
+                if (localStorage.getItem('nomosSessionData')) {
                     try {
-                        sessionData = JSON.parse(localStorage.getItem('sofiaSessionData'));
+                        sessionData = JSON.parse(localStorage.getItem('nomosSessionData'));
 
                         // Render chat history only if history is present and not empty
                         if (sessionData.history && sessionData.history.length > 0) {
@@ -614,7 +741,7 @@
                         }
                     } catch (e) {
                         console.error('Failed to parse session data:', e);
-                        localStorage.removeItem('sofiaSessionData');
+                        localStorage.removeItem('nomosSessionData');
                         createNewSession(true);
                     }
                 } else {
@@ -630,9 +757,23 @@
                 const userMessage = userInput.value.trim();
                 if (!userMessage) return;
 
+                // Disable send button and show loading state
+                const sendButton = document.getElementById('send-button');
+                sendButton.disabled = true;
+                sendButton.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        <span class="hidden sm:block">Sending...</span>
+                    </div>
+                `;
+
                 // Add user message to UI
                 addMessageToUI('user', userMessage);
                 userInput.value = '';
+                userInput.style.height = 'auto';
+                charCount.textContent = '0';
 
                 // Show typing indicator
                 typingIndicator.classList.remove('hidden');
@@ -645,15 +786,24 @@
                     addMessageToUI('system', 'Error: Failed to send message. Please try again.');
                 }
 
-                // Hide typing indicator
+                // Hide typing indicator and restore send button
                 typingIndicator.classList.add('hidden');
+                sendButton.disabled = false;
+                sendButton.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="hidden sm:block">Send</span>
+                        <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </div>
+                `;
             });
 
             // Create a new session
             newChatBtn.addEventListener('click', () => {
                 // Clear session data before creating a new session
                 sessionData = null;
-                localStorage.removeItem('sofiaSessionData');
+                localStorage.removeItem('nomosSessionData');
                 messagesContainer.innerHTML = '';
                 createNewSession(true);
             });
@@ -701,7 +851,7 @@
                     sessionData = data.session_data;
 
                     // Save to local storage
-                    localStorage.setItem('sofiaSessionData', JSON.stringify(sessionData));
+                    localStorage.setItem('nomosSessionData', JSON.stringify(sessionData));
 
                     // Extract message directly from the input field
                     if (data.response && data.response.response) {
@@ -768,7 +918,7 @@
                     sessionData = data.session_data;
 
                     // Save to local storage
-                    localStorage.setItem('sofiaSessionData', JSON.stringify(sessionData));
+                    localStorage.setItem('nomosSessionData', JSON.stringify(sessionData));
 
                     // Extract reasoning if available
                     let reasoning = [];
@@ -906,27 +1056,37 @@
             // Dark mode logic
             function setDarkMode(enabled) {
                 if (enabled) {
-                    document.body.classList.add('dark-mode');
-                    localStorage.setItem('sofiaDarkMode', '1');
-                    darkModeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('nomosDarkMode', '1');
+                    darkModeToggle.innerHTML = `
+                        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"/>
+                        </svg>
+                    `;
                     darkModeToggle.title = 'Switch to light mode';
                 } else {
-                    document.body.classList.remove('dark-mode');
-                    localStorage.setItem('sofiaDarkMode', '0');
-                    darkModeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('nomosDarkMode', '0');
+                    darkModeToggle.innerHTML = `
+                        <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    `;
                     darkModeToggle.title = 'Switch to dark mode';
                 }
             }
+            
             // On load, set mode from localStorage or system preference
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const savedDark = localStorage.getItem('sofiaDarkMode');
+            const savedDark = localStorage.getItem('nomosDarkMode');
             if (savedDark === '1' || (savedDark === null && prefersDark)) {
                 setDarkMode(true);
             } else {
                 setDarkMode(false);
             }
+            
             darkModeToggle.addEventListener('click', () => {
-                setDarkMode(!document.body.classList.contains('dark-mode'));
+                setDarkMode(!document.documentElement.classList.contains('dark'));
             });
         });
     </script>
