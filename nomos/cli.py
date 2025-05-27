@@ -17,6 +17,13 @@ from rich.text import Text
 
 import typer
 
+try:
+    import docker
+    from docker.errors import BuildError, DockerException
+    DOCKER_AVAILABLE = True
+except ImportError:
+    DOCKER_AVAILABLE = False
+
 console = Console()
 app = typer.Typer(
     name="nomos",
@@ -282,6 +289,9 @@ def serve(
     dockerfile: Optional[str] = typer.Option(
         None, "--dockerfile", "-f", help="Path to custom Dockerfile"
     ),
+    env_file: Optional[str] = typer.Option(
+        None, "--env-file", "-e", help="Path to .env file to load environment variables"
+    ),
     tag: Optional[str] = typer.Option("nomos-agent", "--tag", help="Docker image tag"),
     port: int = typer.Option(8000, "--port", "-p", help="Host port to bind to"),
     build: bool = typer.Option(
@@ -290,6 +300,13 @@ def serve(
 ) -> None:
     """Serve the Nomos agent using Docker."""
     print_banner()
+    
+    if not DOCKER_AVAILABLE:
+        console.print(
+            "❌ Docker library not available. Install with: pip install nomos[cli]",
+            style=ERROR_COLOR,
+        )
+        raise typer.Exit(1)
 
     config_path = Path(config)  # type: ignore
 
@@ -313,6 +330,17 @@ def serve(
                 raise typer.Exit(1)
             tool_files.append(tool_path)
 
+    # Validate env file exists if provided
+    env_file_path = None
+    if env_file:
+        env_file_path = Path(env_file)
+        if not env_file_path.exists():
+            console.print(
+                f"❌ Environment file not found: [bold]{env_file_path}[/bold]",
+                style=ERROR_COLOR,
+            )
+            raise typer.Exit(1)
+
     console.print(
         Panel(
             f"🐳 Serving agent with Docker on port [bold]{port}[/bold]",
@@ -322,7 +350,7 @@ def serve(
     )
 
     try:
-        _serve_with_docker(config_path, tool_files, dockerfile, tag, port, build)  # type: ignore
+        _serve_with_docker(config_path, tool_files, dockerfile, env_file_path, tag, port, build)  # type: ignore
     except KeyboardInterrupt:
         console.print("\n👋 Docker serve stopped.", style=WARNING_COLOR)
     except Exception as e:
@@ -561,6 +589,11 @@ PORT=8000
 # ELASTIC_APM_TOKEN=your_apm_token
 # SERVICE_NAME=my-nomos-agent
 # SERVICE_VERSION=1.0.0
+
+# To use this .env file with Docker:
+# 1. Copy this file to .env: cp .env.example .env
+# 2. Fill in your actual values above
+# 3. Run: nomos serve --env-file .env
 """
 
     with open(target_dir / ".env.example", "w") as f:
@@ -601,7 +634,12 @@ A Nomos agent for {persona.lower()}.
    nomos serve
    ```
 
-2. **Or manually:**
+2. **Or with environment variables:**
+   ```bash
+   nomos serve --env-file .env
+   ```
+
+3. **Or manually:**
    ```bash
    docker build -t {name}-agent .
    docker run -e OPENAI_API_KEY=your_key -p 8000:8000 {name}-agent
@@ -826,11 +864,28 @@ def _serve_with_docker(
     config_path: Path,
     tool_files: List[Path],
     dockerfile: Optional[str],
+    env_file_path: Optional[Path],
     tag: str,
     port: int,
     build: bool,
 ) -> None:
     """Serve the agent using Docker."""
+    if not DOCKER_AVAILABLE:
+        console.print(
+            "❌ Docker library not available. Install with: pip install nomos[cli]",
+            style=ERROR_COLOR,
+        )
+        raise typer.Exit(1)
+    
+    try:
+        client = docker.from_env()
+    except DockerException as e:
+        console.print(
+            f"❌ Could not connect to Docker daemon: {e}",
+            style=ERROR_COLOR,
+        )
+        raise typer.Exit(1)
+    
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
@@ -847,26 +902,6 @@ def _serve_with_docker(
         # Create tools directory structure
         tools_dir = build_context / "tools"
         tools_dir.mkdir()
-
-        # Create __init__.py for tools module (similar to base-image structure)
-        init_content = '''"""This module imports all tools from the tools directory and makes them available in a list."""
-
-import os
-
-tool_list: list = []
-
-for filename in os.listdir(os.path.dirname(__file__)):
-    if filename.endswith(".py") and filename != "__init__.py":
-        module_name = filename[:-3]  # Remove the .py extension
-        try:
-            module = __import__(f"tools.{module_name}", fromlist=[""])
-            tool_list.extend(getattr(module, "tools", []))
-        except ImportError as e:
-            print(f"Warning: Could not import {module_name}: {e}")
-
-__all__ = ["tool_list"]
-'''
-        (tools_dir / "__init__.py").write_text(init_content)
 
         # Copy tool files to tools directory
         for tool_file in tool_files:
@@ -899,30 +934,65 @@ EXPOSE 8000
 
         if build:
             console.print("🔨 Building Docker image...", style=PRIMARY_COLOR)
-
-            build_cmd = ["docker", "build", "-t", tag, "."]
-            result = subprocess.run(
-                build_cmd, cwd=build_context, capture_output=True, text=True
-            )
-
-            if result.returncode != 0:
+            
+            try:
+                # Build the Docker image using the docker library
+                image, build_logs = client.images.build(
+                    path=str(build_context),
+                    tag=tag,
+                    rm=True,
+                    pull=False
+                )
+                
+                # Print build logs (optional, for debugging)
+                for log in build_logs:
+                    if 'stream' in log:
+                        # Remove the newline to avoid double spacing
+                        stream_msg = log['stream'].rstrip('\n')
+                        if stream_msg:  # Only print non-empty messages
+                            console.print(f"🔧 {stream_msg}", style="dim")
+                
+                console.print("✅ Docker image built successfully", style=SUCCESS_COLOR)
+                
+            except BuildError as e:
                 console.print("❌ Docker build failed:", style=ERROR_COLOR)
-                console.print(result.stderr)
+                for log in e.build_log:
+                    if 'stream' in log:
+                        console.print(log['stream'].rstrip('\n'), style=ERROR_COLOR)
                 raise typer.Exit(1)
-
-            console.print("✅ Docker image built successfully", style=SUCCESS_COLOR)
+            except DockerException as e:
+                console.print(f"❌ Docker build error: {e}", style=ERROR_COLOR)
+                raise typer.Exit(1)
 
         console.print(
             f"🚀 Starting Docker container on port {port}...", style=PRIMARY_COLOR
         )
         console.print(f"📁 Build context: [dim]{build_context}[/dim]")
 
-        # Run the container
-        run_cmd = ["docker", "run", "--rm", "-p", f"{port}:8000", tag]
-
+        # Prepare environment variables
+        environment = {}
+        if env_file_path:
+            env_vars = _parse_env_file(env_file_path)
+            console.print(f"🔧 Loading {len(env_vars)} environment variables from [dim]{env_file_path}[/dim]")
+            environment.update(env_vars)
+        
         try:
-            subprocess.run(run_cmd, check=True)
-        except subprocess.CalledProcessError as e:
+            # Run the Docker container using the docker library
+            container = client.containers.run(
+                tag,
+                detach=False,  # Run in foreground to see output
+                remove=True,   # Equivalent to --rm
+                ports={'8000/tcp': port},  # Port mapping
+                environment=environment,
+                stdout=True,
+                stderr=True,
+                stream=True
+            )
+            
+            # Since we're running with detach=False and stream=True, 
+            # the container.run() will block and stream output
+            
+        except DockerException as e:
             console.print(f"❌ Docker run failed: {e}", style=ERROR_COLOR)
             raise typer.Exit(1)
         except KeyboardInterrupt:
@@ -951,6 +1021,45 @@ def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
     else:
         console.print("❌ Some tests failed!", style=ERROR_COLOR)
         raise typer.Exit(result.returncode)
+
+
+def _parse_env_file(env_file_path: Path) -> dict:
+    """Parse a .env file and return a dictionary of environment variables."""
+    env_vars = {}
+    
+    try:
+        with open(env_file_path, 'r') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                
+                # Skip empty lines and comments
+                if not line or line.startswith('#'):
+                    continue
+                
+                # Look for KEY=VALUE format
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Remove quotes from value if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    
+                    env_vars[key] = value
+                else:
+                    console.print(
+                        f"⚠️  Warning: Invalid line {line_num} in env file: {line}",
+                        style=WARNING_COLOR
+                    )
+    
+    except Exception as e:
+        console.print(f"❌ Error reading env file: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
+    
+    return env_vars
 
 
 def main() -> None:

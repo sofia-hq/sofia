@@ -26,6 +26,7 @@ build-backend = "poetry.core.masonry.api"
 cli = [
     "typer (>=0.16.0,<0.17.0)",
     "rich (>=13.0.0,<14.0.0)",
+    "docker (>=7.1.0,<8.0.0)",
 ]
 openai = [
     "openai (>=1.76.0,<2.0.0)",

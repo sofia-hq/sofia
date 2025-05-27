@@ -54,6 +54,8 @@ def scrape_website(url: str) -> str:
     return markdown
 
 
+tools = [search_google, scrape_website]
+
 if __name__ == "__main__":
     # Example usage
     query = "Python programming"
