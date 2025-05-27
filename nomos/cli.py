@@ -1,165 +1,706 @@
-"""Command Line Interface for SOFIA."""
+"""Command Line Interface for Nomos."""
 
-import argparse
+import json
 import os
+import subprocess
+import sys
+from pathlib import Path
+from typing import List, Optional
 
-import questionary
+import typer
+from rich import print
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Confirm, Prompt
+from rich.table import Table
+from rich.text import Text
+
+console = Console()
+app = typer.Typer(
+    name="nomos",
+    help="Nomos CLI - Configurable multi-step agent framework for building advanced LLM-powered assistants",
+    add_completion=False,
+)
+
+# Color constants for consistent styling
+PRIMARY_COLOR = "cyan"
+SUCCESS_COLOR = "green"
+WARNING_COLOR = "yellow"
+ERROR_COLOR = "red"
 
 
-def cli_init() -> None:
-    """Initialize a new agent project interactively."""
-    # 1. Ask for target directory
-    output_dir = questionary.text(
-        "Which directory do you want to create the agent files in? (absolute or relative path)"
-    ).ask()
-    output_dir = os.path.abspath(output_dir)
-    os.makedirs(output_dir, exist_ok=True)
+def print_banner():
+    """Print the Nomos banner."""
+    banner = Text("🏛️ NOMOS", style=f"bold {PRIMARY_COLOR}")
+    subtitle = Text("Configurable multi-step agent framework", style="dim")
+    console.print()
+    console.print(banner, justify="center")
+    console.print(subtitle, justify="center")
+    console.print()
 
-    # 2. Ask for agent name and persona
-    agent_name = questionary.text("Agent name (e.g. barista):").ask()
-    persona = questionary.text("Describe the agent's persona:").ask()
 
-    # 3. Ask for LLM
-    llm_choice = questionary.select(
-        "Which LLM do you want to use?",
-        choices=["OpenAIChatLLM", "Custom (implement your own)"],
-    ).ask()
-
-    # 4. Collect steps
+@app.command()
+def init(
+    directory: Optional[str] = typer.Option(
+        None,
+        "--directory",
+        "-d",
+        help="Directory to create the agent project in"
+    ),
+    name: Optional[str] = typer.Option(
+        None,
+        "--name",
+        "-n",
+        help="Name of the agent"
+    ),
+    template: Optional[str] = typer.Option(
+        "basic",
+        "--template",
+        "-t",
+        help="Template to use (basic, conversational, workflow)"
+    ),
+):
+    """Initialize a new Nomos agent project interactively."""
+    print_banner()
+    
+    console.print(Panel(
+        "Welcome to Nomos! Let's create your new agent project.",
+        title="Project Initialization",
+        border_style=PRIMARY_COLOR
+    ))
+    
+    # Get target directory
+    if not directory:
+        directory = Prompt.ask(
+            "📁 Project directory",
+            default="./my-nomos-agent"
+        )
+    
+    target_dir = Path(directory).resolve()
+    
+    if target_dir.exists() and any(target_dir.iterdir()):
+        if not Confirm.ask(f"Directory [bold]{target_dir}[/bold] already exists and is not empty. Continue?"):
+            console.print("❌ Project initialization cancelled.", style=ERROR_COLOR)
+            raise typer.Exit(1)
+    
+    target_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Get agent name
+    if not name:
+        name = Prompt.ask(
+            "🤖 Agent name",
+            default=target_dir.name.replace("-", "_").replace(" ", "_")
+        )
+    
+    # Get agent persona
+    persona = Prompt.ask(
+        "🎭 Agent persona (describe your agent's role and personality)",
+        default="You are a helpful assistant."
+    )
+    
+    # Choose LLM provider
+    llm_choices = ["OpenAI", "Mistral", "Gemini", "Custom"]
+    llm_table = Table(title="Choose LLM Provider")
+    llm_table.add_column("Option", style=PRIMARY_COLOR)
+    llm_table.add_column("Provider")
+    
+    for i, choice in enumerate(llm_choices, 1):
+        llm_table.add_row(str(i), choice)
+    
+    console.print(llm_table)
+    
+    llm_choice_idx = int(Prompt.ask(
+        "🧠 Select LLM provider",
+        choices=[str(i) for i in range(1, len(llm_choices) + 1)],
+        default="1"
+    )) - 1
+    
+    llm_choice = llm_choices[llm_choice_idx]
+    
+    # Collect steps
     steps = []
-    add_more = True
-    while add_more:
-        step_id = questionary.text("Step ID:").ask()
-        description = questionary.text("Step description:").ask()
-        available_tools = questionary.text(
-            "Comma-separated tool names available in this step:"
-        ).ask()
-        available_tools = [t.strip() for t in available_tools.split(",") if t.strip()]
-        routes = []
-        add_route = questionary.confirm("Add a route from this step?").ask()
-        while add_route:
-            target = questionary.text("Route target step ID:").ask()
-            condition = questionary.text(
-                "Route condition (when to take this route):"
-            ).ask()
-            routes.append({"target": target, "condition": condition})
-            add_route = questionary.confirm("Add another route?").ask()
-        steps.append(
+    console.print("\n📋 Let's define your agent's workflow steps...")
+    
+    # Add default steps based on template
+    if template == "basic":
+        steps = [
             {
+                "step_id": "start",
+                "description": "Greet the user and understand their needs",
+                "available_tools": [],
+                "routes": [{"target": "help", "condition": "User needs assistance"}]
+            },
+            {
+                "step_id": "help",
+                "description": "Provide assistance to the user",
+                "available_tools": [],
+                "routes": [{"target": "end", "condition": "Task completed"}]
+            },
+            {
+                "step_id": "end",
+                "description": "End the conversation politely",
+                "available_tools": [],
+                "routes": []
+            }
+        ]
+    
+    # Allow user to customize steps
+    if Confirm.ask("🔧 Would you like to customize the workflow steps?"):
+        steps = []
+        add_more = True
+        
+        while add_more:
+            step_id = Prompt.ask("Step ID")
+            description = Prompt.ask("Step description")
+            
+            # Tools
+            available_tools = []
+            if Confirm.ask("Add tools to this step?"):
+                tools_input = Prompt.ask("Tool names (comma-separated)", default="")
+                available_tools = [t.strip() for t in tools_input.split(",") if t.strip()]
+            
+            # Routes
+            routes = []
+            if Confirm.ask("Add routes from this step?"):
+                add_route = True
+                while add_route:
+                    target = Prompt.ask("Route target step ID")
+                    condition = Prompt.ask("Route condition")
+                    routes.append({"target": target, "condition": condition})
+                    add_route = Confirm.ask("Add another route?")
+            
+            steps.append({
                 "step_id": step_id,
                 "description": description,
                 "available_tools": available_tools,
-                "routes": routes,
-            }
-        )
-        add_more = questionary.confirm("Add another step?").ask()
+                "routes": routes
+            })
+            
+            add_more = Confirm.ask("Add another step?")
+    
+    # Generate project files
+    _generate_project_files(target_dir, name, persona, llm_choice, steps)
+    
+    console.print(Panel(
+        f"✅ Project created successfully in [bold]{target_dir}[/bold]",
+        title="Success",
+        border_style=SUCCESS_COLOR
+    ))
+    
+    # Show next steps
+    next_steps = f"""
+📁 Navigate to your project: [bold]cd {target_dir}[/bold]
+🔧 Edit configuration: [bold]config.agent.yaml[/bold]
+🛠️ Add tools: [bold]tools.py[/bold]
+🏃 Run development mode: [bold]nomos run[/bold]
+🚀 Serve with Docker: [bold]nomos serve[/bold]
+"""
+    
+    console.print(Panel(
+        next_steps.strip(),
+        title="Next Steps",
+        border_style=PRIMARY_COLOR
+    ))
 
-    # 5. Collect tool arg descriptions
-    tool_arg_descriptions = {}
-    add_tool = questionary.confirm(
-        "Do you want to add tool argument descriptions?"
-    ).ask()
-    while add_tool:
-        tool_name = questionary.text("Tool name:").ask()
-        tool_args = {}
-        add_arg = questionary.confirm("Add argument for this tool?").ask()
-        while add_arg:
-            arg_name = questionary.text("Argument name:").ask()
-            arg_desc = questionary.text("Argument description:").ask()
-            tool_args[arg_name] = arg_desc
-            add_arg = questionary.confirm("Add another argument?").ask()
-        tool_arg_descriptions[tool_name] = tool_args
-        add_tool = questionary.confirm("Add another tool?").ask()
 
-    # 6. Write config YAML
-    import yaml
+@app.command()
+def run(
+    config: Optional[str] = typer.Option(
+        "config.agent.yaml",
+        "--config",
+        "-c",
+        help="Path to agent configuration file"
+    ),
+    tools: Optional[str] = typer.Option(
+        "tools.py",
+        "--tools",
+        "-t",
+        help="Path to tools file"
+    ),
+    port: int = typer.Option(
+        8000,
+        "--port",
+        "-p",
+        help="Port to run the development server on"
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose logging"
+    ),
+):
+    """Run the Nomos agent in development mode."""
+    print_banner()
+    
+    config_path = Path(config)
+    tools_path = Path(tools)
+    
+    # Validate files exist
+    if not config_path.exists():
+        console.print(f"❌ Configuration file not found: [bold]{config_path}[/bold]", style=ERROR_COLOR)
+        raise typer.Exit(1)
+    
+    if not tools_path.exists():
+        console.print(f"❌ Tools file not found: [bold]{tools_path}[/bold]", style=ERROR_COLOR)
+        raise typer.Exit(1)
+    
+    console.print(Panel(
+        f"🏃 Starting development server on port [bold]{port}[/bold]",
+        title="Development Mode",
+        border_style=PRIMARY_COLOR
+    ))
+    
+    try:
+        # Import and run the agent
+        _run_development_server(config_path, tools_path, port, verbose)
+    except KeyboardInterrupt:
+        console.print("\n👋 Development server stopped.", style=WARNING_COLOR)
+    except Exception as e:
+        console.print(f"❌ Error running development server: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
 
-    config = {
-        "persona": persona,
-        "steps": steps,
-        "tool_arg_descriptions": tool_arg_descriptions,
-    }
-    config_path = os.path.join(output_dir, f"config.{agent_name}.yaml")
-    with open(config_path, "w") as f:
-        yaml.dump(config, f, sort_keys=False)
 
-    # 7. Write starter Python file
-    py_path = os.path.join(output_dir, f"{agent_name}_with_config.py")
-    with open(py_path, "w") as f:
-        f.write(
-            f"""
-\"\"\"
-Starter agent for {agent_name} using SOFIA config.
-Update the tool definitions and tool_arg_descriptions as needed.
-\"\"\"
+@app.command()
+def serve(
+    config: Optional[str] = typer.Option(
+        "config.agent.yaml",
+        "--config",
+        "-c",
+        help="Path to agent configuration file"
+    ),
+    dockerfile: Optional[str] = typer.Option(
+        None,
+        "--dockerfile",
+        "-f",
+        help="Path to custom Dockerfile"
+    ),
+    tag: Optional[str] = typer.Option(
+        "nomos-agent",
+        "--tag",
+        help="Docker image tag"
+    ),
+    port: int = typer.Option(
+        8000,
+        "--port",
+        "-p",
+        help="Host port to bind to"
+    ),
+    build: bool = typer.Option(
+        True,
+        "--build/--no-build",
+        help="Build Docker image before running"
+    ),
+):
+    """Serve the Nomos agent using Docker."""
+    print_banner()
+    
+    config_path = Path(config)
+    
+    if not config_path.exists():
+        console.print(f"❌ Configuration file not found: [bold]{config_path}[/bold]", style=ERROR_COLOR)
+        raise typer.Exit(1)
+    
+    console.print(Panel(
+        f"🐳 Serving agent with Docker on port [bold]{port}[/bold]",
+        title="Docker Serve",
+        border_style=PRIMARY_COLOR
+    ))
+    
+    try:
+        _serve_with_docker(config_path, dockerfile, tag, port, build)
+    except KeyboardInterrupt:
+        console.print("\n👋 Docker serve stopped.", style=WARNING_COLOR)
+    except Exception as e:
+        console.print(f"❌ Error serving with Docker: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
+
+
+@app.command()
+def test(
+    pattern: Optional[str] = typer.Option(
+        "test_*.py",
+        "--pattern",
+        "-p",
+        help="Test file pattern to match"
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose",
+        "-v",
+        help="Enable verbose test output"
+    ),
+    coverage: bool = typer.Option(
+        True,
+        "--coverage/--no-coverage",
+        help="Generate coverage report"
+    ),
+):
+    """Run the Nomos testing framework."""
+    print_banner()
+    
+    console.print(Panel(
+        "🧪 Running Nomos agent tests",
+        title="Testing Framework",
+        border_style=PRIMARY_COLOR
+    ))
+    
+    try:
+        _run_tests(pattern, verbose, coverage)
+    except Exception as e:
+        console.print(f"❌ Error running tests: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
+
+
+def _generate_project_files(target_dir: Path, name: str, persona: str, llm_choice: str, steps: List[dict]):
+    """Generate project files for the new agent."""
+    # Generate config.agent.yaml
+    config_content = f"""# Nomos Agent Configuration
+name: {name}
+persona: |
+  {persona}
+start_step_id: {steps[0]['step_id'] if steps else 'start'}
+
+steps:
+"""
+    
+    for step in steps:
+        config_content += f"""  - step_id: {step['step_id']}
+    description: |
+      {step['description']}
+"""
+        if step['available_tools']:
+            config_content += "    available_tools:\n"
+            for tool in step['available_tools']:
+                config_content += f"      - {tool}\n"
+        
+        if step['routes']:
+            config_content += "    routes:\n"
+            for route in step['routes']:
+                config_content += f"""      - target: {route['target']}
+        condition: {route['condition']}
+"""
+    
+    # Write config file
+    with open(target_dir / "config.agent.yaml", "w") as f:
+        f.write(config_content)
+    
+    # Generate tools.py
+    tools_content = f'''"""Tools for {name} agent."""
+
+def sample_tool(query: str) -> str:
+    """
+    A sample tool that echoes the input query.
+    
+    Args:
+        query: The input query to echo
+        
+    Returns:
+        The echoed query with a prefix
+    """
+    return f"You said: {{query}}"
+
+
+# Add more tools here as needed
+tool_list = [sample_tool]
+'''
+    
+    with open(target_dir / "tools.py", "w") as f:
+        f.write(tools_content)
+    
+    # Generate main.py for development
+    main_content = f'''"""Main entry point for {name} agent."""
 
 import os
-from nomos.core import Agent
-from nomos.config import AgentConfig
+from pathlib import Path
 
-# Place your tool definitions here:
-# def my_tool(...):
-#     ...
+import nomos
+from nomos.llms.openai import OpenAI
+from tools import tool_list
 
-# Load config
-yaml_path = os.path.join(os.path.dirname(__file__), 'config.{agent_name}.yaml')
-config = AgentConfig.from_yaml(yaml_path)
 
-llm = None
-"""
-        )
-        if llm_choice == "OpenAIChatLLM":
-            f.write(
-                """
-from sofia.llms import OpenAIChatLLM
-llm = OpenAIChatLLM()
-"""
-            )
-        else:
-            f.write(
-                """
-# from sofia.llms import BaseLLM
-# class MyCustomLLM(BaseLLM):
-#     ... # Implement your custom LLM here
-# llm = MyCustomLLM()
-"""
-            )
-        f.write(
-            """
-agent = Sofia(
-    llm=llm,
-    config=config,
-    tools=[],  # Add your tool functions here
-)
+def main():
+    """Run the agent interactively."""
+    # Load configuration
+    config_path = Path(__file__).parent / "config.agent.yaml"
+    config = nomos.AgentConfig.from_yaml(str(config_path))
+    
+    # Initialize LLM
+    llm = OpenAI()  # Requires OPENAI_API_KEY environment variable
+    
+    # Create agent
+    agent = nomos.Agent.from_config(config, llm, tool_list)
+    
+    # Create session
+    session = agent.create_session(verbose=True)
+    
+    print(f"🤖 {{config.name}} agent is ready! Type 'quit' to exit.\\n")
+    
+    while True:
+        try:
+            user_input = input("You: ").strip()
+            if user_input.lower() in ['quit', 'exit', 'bye']:
+                print("👋 Goodbye!")
+                break
+                
+            if not user_input:
+                continue
+                
+            decision, _ = session.next(user_input)
+            
+            if hasattr(decision, 'response') and decision.response:
+                print(f"🤖 {{config.name}}: {{decision.response}}")
+            
+        except KeyboardInterrupt:
+            print("\\n👋 Goodbye!")
+            break
+        except Exception as e:
+            print(f"❌ Error: {{e}}")
+
 
 if __name__ == "__main__":
-    sess = agent.create_session()
-    # ... interact with sess.next(user_input)
-"""
-        )
+    main()
+'''
+    
+    with open(target_dir / "main.py", "w") as f:
+        f.write(main_content)
+    
+    # Generate Dockerfile
+    dockerfile_content = f'''FROM chandralegend/nomos-base:latest
 
-    print(f"Agent config written to: {config_path}")
-    print(f"Starter Python file written to: {py_path}")
+# Copy configuration and tools
+COPY config.agent.yaml /app/config.agent.yaml
+COPY tools.py /app/tools.py
+
+# Expose port
+EXPOSE 8000
+
+# The base image already has the entrypoint configured
+'''
+    
+    with open(target_dir / "Dockerfile", "w") as f:
+        f.write(dockerfile_content)
+    
+    # Generate requirements.txt
+    requirements_content = f'''nomos[{llm_choice.lower()}]>=0.1.13
+'''
+    
+    with open(target_dir / "requirements.txt", "w") as f:
+        f.write(requirements_content)
+    
+    # Generate .env.example
+    env_content = '''# Environment variables for your Nomos agent
+
+# LLM API Keys (uncomment the one you're using)
+# OPENAI_API_KEY=your_openai_api_key_here
+# MISTRAL_API_KEY=your_mistral_api_key_here
+# GOOGLE_API_KEY=your_google_api_key_here
+
+# Server configuration
+PORT=8000
+
+# Optional: Database configuration for persistent sessions
+# DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname
+# REDIS_URL=redis://localhost:6379/0
+
+# Optional: Tracing configuration
+# ENABLE_TRACING=true
+# ELASTIC_APM_SERVER_URL=http://localhost:8200
+# ELASTIC_APM_TOKEN=your_apm_token
+# SERVICE_NAME=my-nomos-agent
+# SERVICE_VERSION=1.0.0
+'''
+    
+    with open(target_dir / ".env.example", "w") as f:
+        f.write(env_content)
+    
+    # Generate README.md
+    readme_content = f'''# {name.title()} Agent
+
+A Nomos agent for {persona.lower()}.
+
+## Quick Start
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Set up environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys
+   ```
+
+3. **Run in development mode:**
+   ```bash
+   nomos run
+   ```
+
+4. **Or run directly:**
+   ```bash
+   python main.py
+   ```
+
+## Docker Deployment
+
+1. **Build and serve with Docker:**
+   ```bash
+   nomos serve
+   ```
+
+2. **Or manually:**
+   ```bash
+   docker build -t {name}-agent .
+   docker run -e OPENAI_API_KEY=your_key -p 8000:8000 {name}-agent
+   ```
+
+## Configuration
+
+- `config.agent.yaml`: Agent configuration and workflow steps
+- `tools.py`: Custom tools and functions
+- `main.py`: Development entry point
+
+## API Endpoints
+
+When serving with Docker, the following endpoints are available:
+
+- `POST /chat`: Send messages to the agent
+- `GET /sessions/{{session_id}}`: Get session information
+- `GET /health`: Health check endpoint
+
+## Testing
+
+Run tests with:
+```bash
+nomos test
+```
+
+## Learn More
+
+- [Nomos Documentation](https://github.com/dowhiledev/nomos)
+- [Configuration Guide](https://github.com/dowhiledev/nomos/blob/main/README.md)
+'''
+    
+    with open(target_dir / "README.md", "w") as f:
+        f.write(readme_content)
 
 
-def main() -> None:
-    """Main function for the CLI."""
-    parser = argparse.ArgumentParser(
-        prog="sofia",
-        description="SOFIA CLI - Simple Orchestrated Flow Intelligence Agent",
-    )
-    subparsers = parser.add_subparsers(dest="command")
+def _run_development_server(config_path: Path, tools_path: Path, port: int, verbose: bool):
+    """Run the agent in development mode."""
+    # Create a simple development server
+    dev_server_code = f'''
+import sys
+import os
+from pathlib import Path
 
-    # init command
-    subparsers.add_parser("init", help="Start a new agent project interactively")
-    # help command is handled by argparse
+# Add current directory to Python path
+sys.path.insert(0, str(Path.cwd()))
 
-    args = parser.parse_args()
+import nomos
+from nomos.llms.openai import OpenAI
 
-    if args.command == "init":
-        cli_init()
+try:
+    from tools import tool_list
+except ImportError:
+    print("⚠️  Warning: Could not import tools from tools.py")
+    tool_list = []
+
+def main():
+    config = nomos.AgentConfig.from_yaml("{config_path}")
+    
+    # Initialize LLM (you may need to set API keys)
+    llm = OpenAI()
+    
+    agent = nomos.Agent.from_config(config, llm, tool_list)
+    session = agent.create_session(verbose={verbose})
+    
+    print(f"🤖 {{config.name}} agent ready on interactive mode!")
+    print("Type 'quit' to exit\\n")
+    
+    while True:
+        try:
+            user_input = input("You: ").strip()
+            if user_input.lower() in ['quit', 'exit', 'bye']:
+                break
+                
+            if not user_input:
+                continue
+                
+            decision, _ = session.next(user_input)
+            
+            if hasattr(decision, 'response') and decision.response:
+                print(f"Agent: {{decision.response}}")
+                
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            print(f"Error: {{e}}")
+
+if __name__ == "__main__":
+    main()
+'''
+    
+    # Execute the development server
+    exec(dev_server_code)
+
+
+def _serve_with_docker(config_path: Path, dockerfile: Optional[str], tag: str, port: int, build: bool):
+    """Serve the agent using Docker."""
+    if build:
+        console.print("🔨 Building Docker image...", style=PRIMARY_COLOR)
+        
+        # Use custom Dockerfile if provided, otherwise use default
+        dockerfile_arg = f"-f {dockerfile}" if dockerfile else ""
+        
+        build_cmd = f"docker build {dockerfile_arg} -t {tag} ."
+        result = subprocess.run(build_cmd, shell=True, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            console.print(f"❌ Docker build failed: {result.stderr}", style=ERROR_COLOR)
+            raise typer.Exit(1)
+        
+        console.print("✅ Docker image built successfully", style=SUCCESS_COLOR)
+    
+    console.print(f"🚀 Starting Docker container on port {port}...", style=PRIMARY_COLOR)
+    
+    # Run the container
+    run_cmd = f"docker run --rm -p {port}:8000 {tag}"
+    
+    try:
+        subprocess.run(run_cmd, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        console.print(f"❌ Docker run failed: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
+
+
+def _run_tests(pattern: str, verbose: bool, coverage: bool):
+    """Run tests using pytest."""
+    cmd = ["python", "-m", "pytest"]
+    
+    if pattern != "test_*.py":
+        cmd.extend(["-k", pattern])
+    
+    if verbose:
+        cmd.append("-v")
+    
+    if coverage:
+        cmd.extend(["--cov=.", "--cov-report=term-missing"])
+    
+    console.print(f"🧪 Running: [bold]{' '.join(cmd)}[/bold]", style=PRIMARY_COLOR)
+    
+    result = subprocess.run(cmd)
+    
+    if result.returncode == 0:
+        console.print("✅ All tests passed!", style=SUCCESS_COLOR)
     else:
-        parser.print_help()
+        console.print("❌ Some tests failed!", style=ERROR_COLOR)
+        raise typer.Exit(result.returncode)
+
+
+def main():
+    """Main CLI entry point."""
+    app()
 
 
 if __name__ == "__main__":
