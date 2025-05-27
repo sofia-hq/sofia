@@ -1,7 +1,7 @@
 """Tests for core Sofia agent functionality."""
 
 import pytest
-from nomos.models.flow import Action, create_route_decision_model, Message
+from nomos.models.flow import Action, create_decision_model, Message
 from nomos.core import Agent
 from nomos.config import AgentConfig
 from nomos.models.tool import Tool
@@ -45,7 +45,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     # Set up session
     session = basic_agent.create_session(verbose=True)
 
-    expected_decision_model = create_route_decision_model(
+    expected_decision_model = create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
@@ -71,7 +71,6 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     decision, _ = session.next()
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[0].role == "system"
-    assert "Your Name: test_agent" in session.llm.messages_received[0].content
     assert "Test persona" in session.llm.messages_received[0].content
     assert session.llm.messages_received[1].role == "user"
     assert decision.action.value == Action.ASK.value
@@ -100,7 +99,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     session = basic_agent.create_session(verbose=True)
 
     # Create response models with tool
-    tool_model = create_route_decision_model(
+    tool_model = create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
@@ -140,7 +139,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     session = basic_agent.create_session(verbose=True)
 
     # Create response models with tool
-    tool_model = create_route_decision_model(
+    tool_model = create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
@@ -172,7 +171,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
 
     session = basic_agent.create_session(verbose=True)
 
-    tool_model = create_route_decision_model(
+    tool_model = create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),

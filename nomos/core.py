@@ -15,7 +15,7 @@ from .models.flow import (
     Step,
     StepIdentifier,
     Summary,
-    create_route_decision_model,
+    create_decision_model,
 )
 from .models.tool import FallbackError, InvalidArgumentsError, Tool
 from .utils.logging import log_debug, log_error, log_info
@@ -143,7 +143,7 @@ class Session:
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
         return tool.run(**kwargs)
 
-    def _get_current_step_tools(self) -> list[Tool]:
+    def _get_current_step_tools(self) -> List[Tool]:
         """
         Get the list of tools available in the current step.
 
@@ -174,12 +174,11 @@ class Session:
 
         :return: The decision made by the LLM.
         """
-        route_decision_model = create_route_decision_model(
+        route_decision_model = create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
         )
         decision = self.llm._get_output(
-            name=self.name,
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,

@@ -24,6 +24,10 @@ class Route(BaseModel):
     target: str
     condition: str
 
+    def __str__(self) -> str:
+        """Return a string representation of the route."""
+        return f"- if '{self.condition}' then -> {self.target}"
+
 
 class StepIdentifier(BaseModel):
     """
@@ -140,15 +144,22 @@ class Message(BaseModel):
 class Summary(BaseModel):
     """Summary of a list of messages."""
 
-    content: str = Field(..., description="Detailed summary of the Context.")
+    summary: List[str] = Field(
+        ..., description="Detailed summary of the Context. (Min 5 items)"
+    )
+
+    @property
+    def content(self) -> str:
+        """Get the summary content as a single string (markdown list)."""
+        return "\n".join(f"- {item}" for item in self.summary if item.strip())
 
     def __str__(self) -> str:
         """Return a string representation of the summary."""
-        return f"[Previous Summary] {self.content}"
+        return f"[Past Summary] {self.content}"
 
 
-def create_route_decision_model(
-    current_step: Step, current_step_tools: list[Tool]
+def create_decision_model(
+    current_step: Step, current_step_tools: List[Tool]
 ) -> Type[BaseModel]:
     """
     Dynamically create a Pydantic model for route/tool decision output.
@@ -198,7 +209,7 @@ def create_route_decision_model(
         params["next_step_id"] = {
             "type": Optional[Literal[*available_step_ids]],
             "default": None,
-            "description": "Next step ID for MOVE.",
+            "description": "Where to MOVE.",
         }
 
     if len(tool_ids) > 0 and len(tool_models) > 0:
@@ -218,12 +229,12 @@ def create_route_decision_model(
         }
 
     return create_base_model(
-        "RouteDecision",
+        "Decision",
         params,
     )
 
 
-def create_action_enum(actions: list[str]) -> Enum:
+def create_action_enum(actions: List[str]) -> Enum:
     """
     Dynamically create an Enum class for actions.
 
@@ -243,5 +254,5 @@ __all__ = [
     "Step",
     "Message",
     "Summary",
-    "create_route_decision_model",
+    "create_decision_model",
 ]

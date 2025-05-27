@@ -4,9 +4,9 @@ import os
 import pathlib
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, List, Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -126,7 +126,7 @@ async def get_session_history(session_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Assuming session.history() returns a list of messages
-    history: list[FlowMessage | StepIdentifier | Summary] = session.memory.get_history()
+    history: List[FlowMessage | StepIdentifier | Summary] = session.memory.get_history()
     history_json = [
         msg.model_dump(mode="json")
         for msg in history
@@ -146,77 +146,6 @@ async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
         tool_output=tool_output,
         session_data=session_data,
     )
-
-
-@app.websocket("/ws/{session_id}")
-async def websocket_endpoint(
-    websocket: WebSocket, session_id: str, initiate: bool = False, verbose: bool = False
-) -> None:
-    """Websocket endpoint for real-time communication."""
-    assert session_store is not None, "Session store not initialized"
-    await websocket.accept()
-
-    try:
-        session = await session_store.get(session_id)
-        if not session:
-            await websocket.close(code=1000, reason="Session not found")
-            return
-
-        # Send initial greeting if requested
-        if initiate:
-            decision, _ = session.next(None)
-            await session_store.set(session_id, session)
-            await websocket.send_json(
-                {
-                    "message": decision.model_dump(mode="json"),
-                    "tool_output": None,
-                    "type": "answer",
-                }
-            )
-
-        while True:
-            try:
-                data = await websocket.receive_json()
-
-                if "message" in data and data["message"]:
-                    user_message = data["message"]
-                    decision, tool_output = session.next(
-                        user_message,
-                        return_tool=verbose,
-                        return_step_transition=verbose,
-                    )
-                    response_data = {
-                        "message": decision.model_dump(mode="json"),
-                        "tool_output": tool_output,
-                        "type": decision.action.value,
-                    }
-                    await websocket.send_json(response_data)
-                    await session_store.set(session_id, session)
-
-                elif "close" in data and data["close"]:
-                    await websocket.close(code=1000, reason="Client requested close")
-                    break
-                else:
-                    raise ValueError("Invalid message format")
-            except Exception as e:
-                await websocket.send_json(
-                    {
-                        "message": f"Error processing message: {str(e)}",
-                        "tool_output": None,
-                        "type": "error",
-                    }
-                )
-                break
-    except Exception as e:
-        await websocket.send_json(
-            {
-                "message": f"Error: {str(e)}",
-                "tool_output": None,
-                "type": "error",
-            }
-        )
-    finally:
-        await websocket.close(code=1000, reason="Session ended")
 
 
 if __name__ == "__main__":

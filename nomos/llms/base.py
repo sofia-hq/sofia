@@ -20,18 +20,14 @@ class LLMBase:
         raise NotImplementedError("Subclasses should implement this method.")
 
     @staticmethod
-    def get_routes_desc(steps: Dict[str, Step], current_step: Step) -> str:
+    def get_routes_desc(current_step: Step) -> str:
         """
         Get a string description of available routes from the current step.
 
-        :param steps: Dictionary of all steps. (step_id -> Step)
         :param current_step: The current step.
         :return: String description of routes.
         """
-        routes_desc = [
-            f"- if '{r.condition}' then -> {steps[r.target].step_id}"
-            for r in current_step.routes
-        ]
+        routes_desc = [str(route) for route in current_step.routes]
         return "\n".join(routes_desc)
 
     @staticmethod
@@ -99,8 +95,6 @@ class LLMBase:
 
     def get_messages(
         self,
-        name: str,
-        steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
         history: List[Union[Message, Step, Summary]],
@@ -110,8 +104,6 @@ class LLMBase:
         """
         Construct the list of messages to send to the LLM.
 
-        :param name: Agent name.
-        :param steps: Dictionary of all steps. (step_id -> Step)
         :param current_step: Current step.
         :param tools: Dictionary of tools.
         :param history: Conversation history.
@@ -121,22 +113,21 @@ class LLMBase:
         """
         messages = []
         system_prompt = system_message + "\n"
-        system_prompt += f"Your Name: {name}" + "\n"
-        system_prompt += f"Your Persona: {persona}" + "\n\n"
-        system_prompt += f"Current Step: {current_step.step_id}" + "\n"
-        system_prompt += f"Instructions: {current_step.description.strip()}" + "\n"
+        system_prompt += f"{persona}\n\n"
+        system_prompt += f"Instructions: {current_step.description.strip()}\n"
         system_prompt += (
-            "Available Routes (Step and Condition required to move):\n"
-            + self.get_routes_desc(steps, current_step)
+            f"Available Routes:\n{self.get_routes_desc(current_step)}\n"
+            if current_step.routes
+            else ""
         )
-        if len(current_step.available_tools) > 0:
-            system_prompt += "\nAvailable Tools:\n" + self.get_tools_desc(
-                tools, current_step.tool_ids
-            )
+        system_prompt += (
+            f"\nAvailable Tools:\n{self.get_tools_desc(tools, current_step.tool_ids)}\n"
+            if current_step.tool_ids
+            else ""
+        )
         messages.append(Message(role="system", content=system_prompt))
-        messages.append(
-            Message(role="user", content=f"History:\n{self.format_history(history)}")
-        )
+        user_prompt = f"History:\n{self.format_history(history)}"
+        messages.append(Message(role="user", content=user_prompt))
         return messages
 
     def get_output(
@@ -155,7 +146,6 @@ class LLMBase:
 
     def _get_output(
         self,
-        name: str,
         steps: Dict[str, Step],
         current_step: Step,
         tools: Dict[str, Tool],
@@ -167,7 +157,6 @@ class LLMBase:
         """
         Get a structured response from the LLM using the agent's context.
 
-        :param name: Agent name.
         :param steps: Dictionary of all steps. (step_id -> Step)
         :param current_step: Current step.
         :param tools: Dictionary of tools.
@@ -182,8 +171,6 @@ class LLMBase:
             for item in history
         ]
         messages = self.get_messages(
-            name=name,
-            steps=steps,
             current_step=current_step,
             tools=tools,
             history=history,
