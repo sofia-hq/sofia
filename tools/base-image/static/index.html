@@ -50,7 +50,7 @@
         * {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
-        
+
         :root {
             --gradient-primary: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
             --gradient-secondary: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
@@ -190,6 +190,24 @@
             background: linear-gradient(135deg, #ef4444, #dc2626);
             box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
         }
+
+        /* Accordion improvements */
+        .accordion-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+        }
+
+        .accordion-content * {
+            color: inherit !important;
+        }
+
+        /* Ensure proper text colors in all themes */
+        .dark .accordion-content {
+            color: #f9fafb;
+        }
+
+        .accordion-content {
+            color: #1f2937;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 min-h-screen relative overflow-hidden" id="body-root">
@@ -219,16 +237,33 @@
                             <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">AI Agent Chat</p>
                         </div>
                     </div>
-                    
-                    <!-- Status and controls -->
+
+                    <!-- Navigation and controls -->
                     <div class="flex items-center space-x-4">
+                        <!-- Documentation link -->
+                        <a href="/docs"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="group flex items-center space-x-2 px-4 py-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-nomos-600 dark:hover:text-nomos-400 font-medium"
+                           title="Open Documentation">
+                            <svg class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.168 18.477 18.582 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                            <span class="hidden sm:block">Docs</span>
+                            <svg class="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+
+                        <!-- Connection status -->
                         <div id="connection-status" class="flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium status-connecting">
                             <div class="w-2 h-2 rounded-full bg-current animate-pulse"></div>
                             <span>Connecting...</span>
                         </div>
-                        
-                        <button id="dark-mode-toggle" 
-                                class="p-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 group" 
+
+                        <!-- Dark mode toggle -->
+                        <button id="dark-mode-toggle"
+                                class="p-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 group"
                                 title="Toggle dark mode">
                             <svg class="w-5 h-5 text-gray-700 dark:text-gray-300 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
@@ -246,7 +281,7 @@
                     <!-- Messages area -->
                     <div id="chat-container" class="flex-1 p-6 overflow-y-auto custom-scrollbar">
                         <div id="messages" class="space-y-4 min-h-full flex flex-col justify-end"></div>
-                        
+
                         <!-- Typing indicator -->
                         <div id="typing-indicator" class="typing-indicator text-gray-500 dark:text-gray-400 hidden py-4 animate-fade-in">
                             <div class="flex items-center space-x-2 px-4 py-3 bg-white/60 dark:bg-gray-800/60 rounded-2xl backdrop-blur-sm border border-white/30 dark:border-gray-700/50 max-w-fit">
@@ -259,7 +294,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Input area -->
                     <div class="border-t border-white/20 dark:border-gray-700/50 p-6 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
                         <form id="message-form" class="flex gap-4 items-end">
@@ -272,13 +307,13 @@
                                     rows="1"
                                     style="min-height: 56px; max-height: 200px;"
                                 ></textarea>
-                                
+
                                 <!-- Character counter (optional) -->
                                 <div class="absolute bottom-2 right-4 text-xs text-gray-400 dark:text-gray-500 pointer-events-none">
                                     <span id="char-count">0</span>/2000
                                 </div>
                             </div>
-                            
+
                             <button
                                 type="submit"
                                 class="group relative px-6 py-4 bg-gradient-to-r from-nomos-500 to-nomos-600 hover:from-nomos-600 hover:to-nomos-700 text-white rounded-2xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-nomos-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -308,7 +343,7 @@
                         </svg>
                         <span>New Chat</span>
                     </button>
-                    
+
                     <button
                         id="clear-storage-btn"
                         class="group flex items-center space-x-2 px-4 py-2.5 glass-morphism border border-red-200/50 dark:border-red-800/50 rounded-xl hover:bg-red-50/50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 font-medium transition-all duration-200 hover:scale-105"
@@ -319,7 +354,7 @@
                         <span>Clear History</span>
                     </button>
                 </div>
-                
+
                 <!-- Quick actions -->
                 <div class="flex gap-2">
                     <button class="p-2 glass-morphism border border-white/30 dark:border-gray-700/50 rounded-xl hover:bg-white/40 dark:hover:bg-gray-800/40 text-gray-600 dark:text-gray-400 transition-all duration-200 hover:scale-105" title="Export chat">
@@ -327,7 +362,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </button>
-                    
+
                     <button class="p-2 glass-morphism border border-white/30 dark:border-gray-700/50 rounded-xl hover:bg-white/40 dark:hover:bg-gray-800/40 text-gray-600 dark:text-gray-400 transition-all duration-200 hover:scale-105" title="Settings">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -369,12 +404,12 @@
             if (userInput && charCount) {
                 userInput.addEventListener('input', () => {
                     charCount.textContent = userInput.value.length;
-                    
+
                     // Auto-resize textarea
                     userInput.style.height = 'auto';
                     userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
                 });
-                
+
                 // Handle Enter key (send message) vs Shift+Enter (new line)
                 userInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -450,8 +485,8 @@
                             </svg>
                         </span>
                     </button>
-                    <div id="${contentId}" class="accordion-content bg-white/30 dark:bg-gray-800/30 px-4 pb-3 pt-2 backdrop-blur-sm overflow-hidden transition-all duration-300 ease-out" style="max-height: 0;">
-                        <div class="text-sm leading-relaxed">${content}</div>
+                    <div id="${contentId}" class="accordion-content bg-white/30 dark:bg-gray-800/30 px-4 pb-3 pt-2 backdrop-blur-sm overflow-hidden transition-all duration-300 ease-out" style="max-height: 0; opacity: 0;">
+                        <div class="text-sm leading-relaxed text-gray-800 dark:text-gray-200">${content}</div>
                     </div>
                 `;
 
@@ -464,10 +499,18 @@
                 const icon = document.getElementById(iconId);
 
                 if (content.style.maxHeight && content.style.maxHeight !== '0px') {
+                    // Collapse
                     content.style.maxHeight = '0px';
+                    content.style.opacity = '0';
+                    content.style.paddingTop = '0px';
+                    content.style.paddingBottom = '0px';
                     icon.classList.remove('rotate-180');
                 } else {
-                    content.style.maxHeight = content.scrollHeight + "px";
+                    // Expand
+                    content.style.maxHeight = content.scrollHeight + 20 + "px"; // Add padding
+                    content.style.opacity = '1';
+                    content.style.paddingTop = '8px';
+                    content.style.paddingBottom = '12px';
                     icon.classList.add('rotate-180');
                 }
             };
@@ -606,7 +649,12 @@
                         // Collapse by default
                         setTimeout(() => {
                             const contentDiv = accordion.querySelector('.accordion-content');
-                            if (contentDiv) contentDiv.style.maxHeight = null;
+                            if (contentDiv) {
+                                contentDiv.style.maxHeight = '0px';
+                                contentDiv.style.opacity = '0';
+                                contentDiv.style.paddingTop = '0px';
+                                contentDiv.style.paddingBottom = '0px';
+                            }
                         }, 0);
                         messageElement.appendChild(accordion);
                     } else if (role === 'tool') {
@@ -620,7 +668,12 @@
                         // Collapse by default
                         setTimeout(() => {
                             const contentDiv = accordion.querySelector('.accordion-content');
-                            if (contentDiv) contentDiv.style.maxHeight = null;
+                            if (contentDiv) {
+                                contentDiv.style.maxHeight = '0px';
+                                contentDiv.style.opacity = '0';
+                                contentDiv.style.paddingTop = '0px';
+                                contentDiv.style.paddingBottom = '0px';
+                            }
                         }, 0);
                         messageElement.appendChild(accordion);
                     } else if (role === 'system') {
@@ -643,14 +696,26 @@
                     }
 
                     messagesContainer.appendChild(messageElement);
-                    
-                    // Smooth scroll to bottom
+
+                    // Ensure immediate scroll to bottom with multiple fallbacks
+                    const scrollToBottom = () => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    };
+
+                    // Immediate scroll
+                    scrollToBottom();
+
+                    // Delayed scroll after DOM updates
+                    setTimeout(scrollToBottom, 50);
+                    setTimeout(scrollToBottom, 150);
+
+                    // Use smooth scroll for the final adjustment
                     setTimeout(() => {
                         messagesContainer.scrollTo({
                             top: messagesContainer.scrollHeight,
                             behavior: 'smooth'
                         });
-                    }, 100);
+                    }, 200);
                 } catch (e) {
                     console.error('Error adding message to UI:', e);
                 }
@@ -860,8 +925,13 @@
                         // Force a small delay to ensure the UI updates properly
                         setTimeout(() => {
                             addMessageToUI('assistant', message);
-                            // Explicitly scroll to the bottom
-                            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            // Explicitly scroll to the bottom with multiple attempts
+                            setTimeout(() => {
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }, 100);
+                            setTimeout(() => {
+                                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                            }, 300);
                         }, 100);
                     } else {
                         // Fall back to previous extraction logic
@@ -1048,6 +1118,11 @@
                             }
                         }
                     }
+
+                    // Scroll to bottom after rendering all history
+                    setTimeout(() => {
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }, 200);
                 } catch (e) {
                     console.error('Error rendering chat history:', e);
                 }
@@ -1075,7 +1150,7 @@
                     darkModeToggle.title = 'Switch to dark mode';
                 }
             }
-            
+
             // On load, set mode from localStorage or system preference
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const savedDark = localStorage.getItem('nomosDarkMode');
@@ -1084,7 +1159,7 @@
             } else {
                 setDarkMode(false);
             }
-            
+
             darkModeToggle.addEventListener('click', () => {
                 setDarkMode(!document.documentElement.classList.contains('dark'));
             });
