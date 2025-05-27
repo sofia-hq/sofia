@@ -13,9 +13,9 @@
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
         window.mermaid = mermaid;
-        
+
         // Initialize mermaid with proper configuration
-        mermaid.initialize({ 
+        mermaid.initialize({
             startOnLoad: false,  // We'll manually initialize
             theme: 'default',
             themeVariables: {
@@ -30,20 +30,17 @@
             fontSize: 14,
             curve: 'basis'
         });
-        
-        console.log('Mermaid loaded and initialized');
     </script>
-    
+
     <!-- Fallback: Load mermaid via UMD if ES modules fail -->
     <script>
         // Fallback loader for mermaid
         if (!window.mermaid) {
-            console.log('Loading mermaid fallback...');
             const script = document.createElement('script');
             script.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
             script.onload = function() {
                 if (window.mermaid) {
-                    window.mermaid.initialize({ 
+                    window.mermaid.initialize({
                         startOnLoad: false,
                         theme: 'default',
                         themeVariables: {
@@ -58,7 +55,6 @@
                         fontSize: 14,
                         curve: 'basis'
                     });
-                    console.log('Mermaid fallback loaded and initialized');
                 }
             };
             document.head.appendChild(script);
@@ -265,7 +261,7 @@
         }
     </style>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 min-h-screen relative overflow-hidden" id="body-root">
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 h-screen relative overflow-hidden" id="body-root">
     <!-- Animated background elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-nomos-400/20 rounded-full blur-3xl animate-pulse-gentle"></div>
@@ -274,7 +270,7 @@
     </div>
 
     <!-- Main container with glass morphism -->
-    <div class="relative z-10 min-h-screen flex flex-col">
+    <div class="relative z-10 h-full flex flex-col">
         <header class="glass-morphism border-b border-white/20 dark:border-gray-700/50 backdrop-blur-xl">
             <div class="w-full px-6 py-4">
                 <div class="flex justify-between items-center">
@@ -329,85 +325,71 @@
             </div>
         </header>
 
-        <main class="flex-1 flex p-6 w-full gap-6">
-            <!-- Left panel: Agent Configuration -->
-            <div class="w-2/5 flex flex-col gap-6">
-                <!-- Agent Information Panel -->
-                <div class="glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden">
-                    <!-- Agent info header -->
+        <main class="flex-1 flex p-6 w-full gap-6 overflow-hidden">
+            <!-- Left panel: Agent Overview -->
+            <div class="w-2/5 flex flex-col overflow-hidden">
+                <div class="glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden flex flex-col h-full">
+                    <!-- Agent Overview header -->
                     <div class="bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/50 p-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-blue-500/20 rounded-xl">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-nomos-500/20 rounded-xl">
+                                <svg class="w-5 h-5 text-nomos-600 dark:text-nomos-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 dark:text-gray-100">Agent Overview</h3>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Configuration, Statistics & Workflow Visualization</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Agent Overview content area -->
+                    <div class="flex-1 p-4 overflow-y-auto custom-scrollbar">
+                        <!-- Agent Information Section -->
+                        <div class="space-y-4 mb-6">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <div class="p-1.5 bg-blue-500/20 rounded-lg">
+                                    <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Agent Information</h3>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">Configuration & Statistics</p>
-                                </div>
+                                <h4 class="font-medium text-gray-900 dark:text-gray-100">Agent Information</h4>
                             </div>
-                            <button id="refresh-agent-info" class="p-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 group" title="Refresh agent information">
-                                <svg class="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                            </button>
+                            <div id="agent-info-loading" class="flex items-center justify-center py-8">
+                                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                            </div>
+                            <div id="agent-info-content" class="hidden space-y-4">
+                                <!-- Agent metadata will be populated here -->
+                            </div>
+                            <div id="agent-info-error" class="hidden text-left py-4 text-red-500 dark:text-red-400">
+                                <p class="text-sm">Failed to load agent information</p>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Agent info content -->
-                    <div class="p-4 space-y-4 max-h-64 overflow-y-auto custom-scrollbar">
-                        <div id="agent-info-loading" class="flex items-center justify-center py-8">
-                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                        </div>
-                        <div id="agent-info-content" class="hidden space-y-4">
-                            <!-- Agent metadata will be populated here -->
-                        </div>
-                        <div id="agent-info-error" class="hidden text-center py-4 text-red-500 dark:text-red-400">
-                            <p class="text-sm">Failed to load agent information</p>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Workflow Diagram Panel -->
-                <div class="flex-1 glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden">
-                    <!-- Diagram header -->
-                    <div class="bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/50 p-4">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3">
-                                <div class="p-2 bg-nomos-500/20 rounded-xl">
-                                    <svg class="w-5 h-5 text-nomos-600 dark:text-nomos-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        <!-- Workflow Diagram Section -->
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-2 mb-3">
+                                <div class="p-1.5 bg-nomos-500/20 rounded-lg">
+                                    <svg class="w-4 h-4 text-nomos-600 dark:text-nomos-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                     </svg>
                                 </div>
-                                <div>
-                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Workflow Diagram</h3>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">Agent Flow Visualization</p>
+                                <h4 class="font-medium text-gray-900 dark:text-gray-100">Workflow Diagram</h4>
+                            </div>
+                            <div id="diagram-container" class="relative bg-white/5 dark:bg-gray-900/20 rounded-xl border border-white/10 dark:border-gray-700/30 p-4 min-h-96">
+                                <div id="loading-diagram" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-nomos-500"></div>
+                                    <p class="text-sm font-medium mt-2">Loading workflow diagram...</p>
                                 </div>
-                            </div>
-                            <button id="refresh-diagram" class="p-2 rounded-xl glass-morphism hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 group" title="Refresh diagram">
-                                <svg class="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:text-nomos-600 dark:group-hover:text-nomos-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Diagram container -->
-                    <div class="flex-1 p-4 overflow-auto custom-scrollbar">
-                        <div id="diagram-container" class="h-full flex items-center justify-center">
-                            <div id="loading-diagram" class="flex flex-col items-center space-y-4 text-gray-500 dark:text-gray-400">
-                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-nomos-500"></div>
-                                <p class="text-sm font-medium">Loading workflow diagram...</p>
-                            </div>
-                            <div id="mermaid-diagram" class="w-full h-full hidden"></div>
-                            <div id="diagram-error" class="hidden flex flex-col items-center space-y-4 text-red-500 dark:text-red-400">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <p class="text-sm font-medium text-center">Failed to load diagram</p>
-                                <button class="text-xs px-3 py-1 bg-red-500/20 rounded-lg hover:bg-red-500/30 transition-colors" onclick="window.loadAgentDiagram()">Retry</button>
+                                <div id="mermaid-diagram" class="w-full hidden transition-transform duration-200 origin-center" style="transform-origin: center center;"></div>
+                                <div id="diagram-error" class="hidden absolute inset-0 flex flex-col items-center justify-center text-red-500 dark:text-red-400">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <p class="text-sm font-medium text-center mt-2">Failed to load diagram</p>
+                                    <button class="text-xs px-3 py-1 bg-red-500/20 rounded-lg hover:bg-red-500/30 transition-colors mt-2" onclick="window.loadAgentDiagram()">Retry</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -415,9 +397,46 @@
             </div>
 
             <!-- Right panel: Chat Interface -->
-            <div class="w-3/5 flex flex-col">
-                <div class="flex-1 glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden">
-                    <div class="flex flex-col h-[calc(100vh-12rem)]">
+            <div class="w-3/5 flex flex-col overflow-hidden">
+                <div class="flex-1 glass-morphism rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 overflow-hidden flex flex-col">
+                    <!-- Chat header with action buttons -->
+                    <div class="bg-white/20 dark:bg-gray-800/20 backdrop-blur-sm border-b border-white/20 dark:border-gray-700/50 p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="p-2 bg-green-500/20 rounded-xl">
+                                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 dark:text-gray-100">Chat Interface</h3>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">Conversation with Nomos</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button
+                                    id="new-chat-btn"
+                                    class="group flex items-center space-x-2 px-4 py-2 glass-morphism rounded-xl hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-nomos-600 dark:hover:text-nomos-400 font-medium border border-white/30 dark:border-gray-700/50"
+                                    title="Start a new chat">
+                                    <svg class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                    </svg>
+                                    <span class="hidden sm:block">New Chat</span>
+                                </button>
+
+                                <button
+                                    id="clear-storage-btn"
+                                    class="group flex items-center space-x-2 px-4 py-2 glass-morphism rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800"
+                                    title="Clear all chat history">
+                                    <svg class="w-4 h-4 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                    <span class="hidden sm:block">Clear</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col flex-1 overflow-hidden">
                         <!-- Messages area -->
                         <div id="chat-container" class="flex-1 p-6 overflow-y-auto custom-scrollbar">
                             <div id="messages" class="space-y-4 min-h-full flex flex-col justify-end"></div>
@@ -436,7 +455,7 @@
                         </div>
 
                         <!-- Input area -->
-                        <div class="border-t border-white/20 dark:border-gray-700/50 p-6 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
+                        <div class="flex-none border-t border-white/20 dark:border-gray-700/50 p-6 bg-white/30 dark:bg-gray-800/30 backdrop-blur-sm">
                             <form id="message-form" class="flex gap-4 items-end">
                                 <div class="flex-1 relative">
                                     <textarea
@@ -472,31 +491,6 @@
                 </div>
             </div>
         </main>
-
-        <!-- Action buttons -->
-        <div class="flex justify-center p-6 w-full">
-            <div class="flex gap-4">
-                <button
-                    id="new-chat-btn"
-                    class="group flex items-center space-x-2 px-6 py-3 glass-morphism rounded-2xl hover:bg-white/20 dark:hover:bg-gray-800/50 transition-all duration-200 text-gray-700 dark:text-gray-300 hover:text-nomos-600 dark:hover:text-nomos-400 font-medium border border-white/30 dark:border-gray-700/50"
-                    title="Start a new chat">
-                    <svg class="w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                    </svg>
-                    <span>New Chat</span>
-                </button>
-
-                <button
-                    id="clear-storage-btn"
-                    class="group flex items-center space-x-2 px-6 py-3 glass-morphism rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800"
-                    title="Clear all chat history">
-                    <svg class="w-5 h-5 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
-                    <span>Clear History</span>
-                </button>
-            </div>
-        </div>
     </div>
 
     <!-- Modern Lucide Icons for better performance -->
@@ -530,27 +524,22 @@
                 const diagramEl = document.getElementById('mermaid-diagram');
                 const errorEl = document.getElementById('diagram-error');
 
-                console.log('Loading agent diagram...');
-
                 // Show loading state
                 loadingEl.classList.remove('hidden');
                 diagramEl.classList.add('hidden');
                 errorEl.classList.add('hidden');
 
                 try {
-                    console.log('Fetching /config...');
                     const response = await fetch('/config');
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
 
                     const config = await response.json();
-                    console.log('Config received:', config);
-                    
+
                     // Get the Mermaid diagram code from the response
                     const mermaidCode = config.visualization?.mermaid_flowchart;
-                    console.log('Mermaid code:', mermaidCode);
-                    
+
                     if (!mermaidCode) {
                         throw new Error('No diagram data found in configuration');
                     }
@@ -563,17 +552,14 @@
                     diagramEl.innerHTML = '';
 
                     // Check if Mermaid is available
-                    console.log('Mermaid library available:', !!window.mermaid);
-                    
+
                     if (window.mermaid) {
-                        console.log('Rendering mermaid diagram...');
-                        
+
                         // Method 1: Try using mermaid.render (newer API)
                         try {
                             const diagramId = 'agent-flow-' + Date.now();
                             const { svg } = await window.mermaid.render(diagramId, mermaidCode);
                             diagramEl.innerHTML = svg;
-                            console.log('Diagram rendered successfully with render method');
                             return;
                         } catch (renderError) {
                             console.warn('Render method failed:', renderError);
@@ -582,11 +568,10 @@
                         // Method 2: Fallback to mermaid.mermaidAPI.render
                         try {
                             const diagramId = 'agent-flow-' + Date.now();
-                            
+
                             if (window.mermaid.mermaidAPI && window.mermaid.mermaidAPI.render) {
                                 window.mermaid.mermaidAPI.render(diagramId, mermaidCode, (svg) => {
                                     diagramEl.innerHTML = svg;
-                                    console.log('Diagram rendered successfully with mermaidAPI method');
                                 });
                                 return;
                             }
@@ -600,15 +585,14 @@
                             diagramDiv.className = 'mermaid';
                             diagramDiv.textContent = mermaidCode;
                             diagramEl.appendChild(diagramDiv);
-                            
+
                             // Reinitialize mermaid
                             window.mermaid.init(undefined, diagramDiv);
-                            console.log('Diagram rendered successfully with init method');
                             return;
                         } catch (initError) {
                             console.warn('Init method failed:', initError);
                         }
-                        
+
                         throw new Error('All mermaid rendering methods failed');
                     } else {
                         throw new Error('Mermaid library not loaded');
@@ -616,12 +600,12 @@
 
                 } catch (error) {
                     console.error('Failed to load agent diagram:', error);
-                    
+
                     // Show error state
                     loadingEl.classList.add('hidden');
                     diagramEl.classList.add('hidden');
                     errorEl.classList.remove('hidden');
-                    
+
                     // Update error message
                     const errorMsg = errorEl.querySelector('p');
                     if (errorMsg) {
@@ -711,7 +695,6 @@
 
             // Simple console logger
             function log(message) {
-                console.log(message);
             }
 
             // Function to create a Material Tailwind accordion
@@ -1071,22 +1054,18 @@
                 const contentEl = document.getElementById('agent-info-content');
                 const errorEl = document.getElementById('agent-info-error');
 
-                console.log('Loading agent information...');
-
                 // Show loading state
                 loadingEl.classList.remove('hidden');
                 contentEl.classList.add('hidden');
                 errorEl.classList.add('hidden');
 
                 try {
-                    console.log('Fetching /config for agent info...');
                     const response = await fetch('/config');
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
 
                     const config = await response.json();
-                    console.log('Agent config received:', config);
 
                     // Hide loading, show content
                     loadingEl.classList.add('hidden');
@@ -1095,102 +1074,39 @@
                     // Clear existing content
                     contentEl.innerHTML = '';
 
-                    // Create agent information display
+                    // Create simplified agent information display - only formatted name and persona
                     const infoHTML = `
-                        <!-- Agent Metadata -->
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Agent Name</span>
-                                <span class="text-sm text-gray-900 dark:text-gray-100 font-semibold">${config.metadata?.name || 'Unknown'}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Version</span>
-                                <span class="text-sm text-gray-900 dark:text-gray-100">${config.metadata?.version || 'N/A'}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Start Step</span>
-                                <span class="text-sm text-gray-900 dark:text-gray-100">${config.metadata?.start_step_id || 'N/A'}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Generated</span>
-                                <span class="text-sm text-gray-900 dark:text-gray-100">${config.metadata?.generated_at ? new Date(config.metadata.generated_at).toLocaleDateString() : 'N/A'}</span>
+                        <!-- Agent Name -->
+                        <div class="space-y-3">
+                            <div class="text-left">
+                                <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">${config.metadata?.formatted_name || config.metadata?.name || 'Unknown Agent'}</h4>
+                                <div class="w-16 h-0.5 bg-gradient-to-r from-nomos-500 to-blue-500 mt-2 rounded-full"></div>
                             </div>
                         </div>
 
                         <!-- Persona -->
                         ${config.metadata?.persona ? `
-                        <div class="border-t border-white/20 dark:border-gray-700/50 pt-3">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Persona</span>
-                            <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">${config.metadata.persona}</p>
-                        </div>
-                        ` : ''}
-
-                        <!-- Flow Statistics -->
-                        ${config.flow_statistics ? `
-                        <div class="border-t border-white/20 dark:border-gray-700/50 pt-3">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Flow Statistics</span>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="bg-white/10 dark:bg-gray-800/20 rounded-lg p-2 text-center">
-                                    <div class="text-lg font-bold text-blue-600 dark:text-blue-400">${config.flow_statistics.total_steps || 0}</div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-400">Steps</div>
+                        <div class="border-t border-white/20 dark:border-gray-700/50 pt-4 mt-4">
+                            <div class="text-left">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-3">Agent Persona</span>
+                                <div class="bg-white/10 dark:bg-gray-800/20 rounded-xl p-4 border border-white/20 dark:border-gray-700/30">
+                                    <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed text-left">${config.metadata.persona}</p>
                                 </div>
-                                <div class="bg-white/10 dark:bg-gray-800/20 rounded-lg p-2 text-center">
-                                    <div class="text-lg font-bold text-green-600 dark:text-green-400">${config.flow_statistics.total_routes || 0}</div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-400">Routes</div>
-                                </div>
-                                <div class="bg-white/10 dark:bg-gray-800/20 rounded-lg p-2 text-center">
-                                    <div class="text-lg font-bold text-purple-600 dark:text-purple-400">${config.flow_statistics.total_tools || 0}</div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-400">Tools</div>
-                                </div>
-                                <div class="bg-white/10 dark:bg-gray-800/20 rounded-lg p-2 text-center">
-                                    <div class="text-lg font-bold text-orange-600 dark:text-orange-400">${config.flow_statistics.step_categories ? Object.keys(config.flow_statistics.step_categories).length : 0}</div>
-                                    <div class="text-xs text-gray-600 dark:text-gray-400">Categories</div>
-                                </div>
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        <!-- Available Tools -->
-                        ${config.tools_information?.available_tools && config.tools_information.available_tools.length > 0 ? `
-                        <div class="border-t border-white/20 dark:border-gray-700/50 pt-3">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Available Tools</span>
-                            <div class="flex flex-wrap gap-1">
-                                ${config.tools_information.available_tools.map(tool => `
-                                    <span class="px-2 py-1 bg-blue-500/20 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
-                                        ${tool}
-                                    </span>
-                                `).join('')}
-                            </div>
-                        </div>
-                        ` : ''}
-
-                        <!-- Tool Usage Statistics -->
-                        ${config.tools_information?.tool_usage_statistics ? `
-                        <div class="border-t border-white/20 dark:border-gray-700/50 pt-3">
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Tool Usage</span>
-                            <div class="space-y-1">
-                                ${Object.entries(config.tools_information.tool_usage_statistics).map(([tool, count]) => `
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-xs text-gray-600 dark:text-gray-400">${tool}</span>
-                                        <span class="text-xs text-gray-900 dark:text-gray-100 font-medium">${count} uses</span>
-                                    </div>
-                                `).join('')}
                             </div>
                         </div>
                         ` : ''}
                     `;
 
                     contentEl.innerHTML = infoHTML;
-                    console.log('Agent information loaded successfully');
 
                 } catch (error) {
                     console.error('Failed to load agent information:', error);
-                    
+
                     // Show error state
                     loadingEl.classList.add('hidden');
                     contentEl.classList.add('hidden');
                     errorEl.classList.remove('hidden');
-                    
+
                     // Update error message
                     const errorMsg = errorEl.querySelector('p');
                     if (errorMsg) {
