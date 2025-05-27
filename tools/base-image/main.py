@@ -1,5 +1,6 @@
 """Nomos Agent API."""
 
+import datetime
 import os
 import pathlib
 import uuid
@@ -8,7 +9,7 @@ from typing import AsyncGenerator, List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from nomos.models.flow import Message as FlowMessage, StepIdentifier, Summary
@@ -17,6 +18,7 @@ from src.agent import agent
 from src.db import init_db
 from src.models import ChatRequest, ChatResponse, Message, SessionResponse
 from src.session_store import SessionStore, create_session_store
+from src.yaml_to_mermaid import generate_config_json, parse_yaml_config
 
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
@@ -146,6 +148,31 @@ async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
         tool_output=tool_output,
         session_data=session_data,
     )
+
+
+@app.get("/config", response_class=JSONResponse)
+async def get_agent_config() -> JSONResponse:
+    """Get the agent configuration as JSON with enhanced metadata."""
+    config_path = BASE_DIR / "config.agent.yaml"
+    if not config_path.exists():
+        raise HTTPException(
+            status_code=404, detail="Agent configuration file not found"
+        )
+
+    try:
+        # Parse the YAML configuration
+        config = parse_yaml_config(str(config_path))
+
+        # Generate enhanced JSON representation
+        config_json = generate_config_json(config)
+        config_json["metadata"]["generated_at"] = datetime.datetime.now().isoformat()
+        config_json["metadata"]["config_file_path"] = str(config_path)
+
+        return JSONResponse(content=config_json)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error processing configuration: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
