@@ -5,13 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- ## [0.1.13]
+<!-- ## [0.1.14]
 
 ### Added
-. Added a iteration (next) limiter to avoid infinite loops in the workflow.
+- Your new features here.
 
 ### Changed
-- Your changes here.
+- Update the CLI (Now uses typer and with more options).
+- Simplified naming convention for agent and better prompting mechanism.
 
 ### Deprecated
 - Your deprecated features here.
@@ -24,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Your security fixes here. -->
+
+## [0.1.14] - 2025-05-27
+
+### Changed
+- Updated CLI to use `typer` for better command-line interface management and more options.
+- Simplified naming convention for agents and improved prompting mechanism for better user experience.
 
 ## [0.1.13] - 2025-05-26
 

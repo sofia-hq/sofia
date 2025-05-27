@@ -8,7 +8,7 @@ from .config import AgentConfig
 from .core import Agent
 from .models.flow import Action, Route, Step
 
-__version__ = "0.1.12"
+__version__ = "0.1.14"
 __author__ = "Chandra Irugalbandara"
 
 __all__ = [
