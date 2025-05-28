@@ -1099,6 +1099,9 @@ def _parse_env_file(env_file_path: Path) -> dict:
                         style=WARNING_COLOR,
                     )
 
+    except FileNotFoundError:
+        # Re-raise FileNotFoundError for testing purposes
+        raise
     except Exception as e:
         console.print(f"❌ Error reading env file: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
