@@ -5,14 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- ## [0.1.14]
+<!-- ## [0.1.15]
 
 ### Added
 - Your new features here.
 
 ### Changed
-- Update the CLI (Now uses typer and with more options).
-- Simplified naming convention for agent and better prompting mechanism.
+- Your changes here.
 
 ### Deprecated
 - Your deprecated features here.
@@ -25,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Your security fixes here. -->
+
+## [0.1.15] - 2025-05-28
+
+### Fixed
+- `nomos serve` not identifying the tools
 
 ## [0.1.14] - 2025-05-27
 

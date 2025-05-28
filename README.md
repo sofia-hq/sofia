@@ -12,7 +12,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
   ">
-    <b>NOMOS v0.1.12 released!</b> &nbsp;|&nbsp; Enhanced error handling, improved session management, and more. <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+    <b>NOMOS v0.1.15 released!</b> &nbsp;|&nbsp; CLI and Production deployment improvements, and more! <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
 
@@ -229,9 +229,11 @@ nomos serve
 - `--config, -c`: Configuration file path (default: `config.agent.yaml`)
 - `--tools, -t`: Python files with tool definitions (can be used multiple times)
 - `--dockerfile, -f`: Path to custom Dockerfile
+- `--env-file, -e`: Path to .env file to load environment variables
 - `--tag`: Docker image tag (default: `nomos-agent`)
 - `--port, -p`: Host port to bind to (default: `8000`)
 - `--build/--no-build`: Build Docker image before running (default: `true`)
+- `--detach/--no-detach`: Run container in detached mode (background)
 
 **Examples:**
 ```bash
@@ -243,6 +245,12 @@ nomos serve --dockerfile custom.Dockerfile --tools tools.py
 
 # Custom port without building
 nomos serve --port 9000 --no-build
+
+# Run in detached mode (background)
+nomos serve --detach
+
+# With environment file
+nomos serve --env-file .env --detach
 ```
 
 #### Testing
@@ -397,9 +405,12 @@ To run the Barista agent:
 ```bash
 cd examples/barista
 export OPENAI_API_KEY=your-api-key-here
-python barista.py
-# or
-python barista_with_config.py
+
+# Run in development mode
+nomos run --config config.barista.yaml --tools barista_tools.py
+
+# Or serve with Docker
+nomos serve --config config.barista.yaml --tools barista_tools.py
 ```
 
 ### Example: Financial Planning Assistant
@@ -415,7 +426,17 @@ A production-ready example of a Financial Planning Assistant is available in [`e
 To run the Financial Planning Assistant:
 
 ```bash
-docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 financial-advisor
+cd examples/financial-advisor
+
+# Run in development mode
+export OPENAI_API_KEY=your-api-key-here
+nomos run --config config.agent.yaml --tools tools.py
+
+# Or serve with Docker
+nomos serve --config config.agent.yaml --tools tools.py
+
+# Or serve in detached mode
+nomos serve --config config.agent.yaml --tools tools.py --detach
 ```
 
 ## Deployment
@@ -435,7 +456,7 @@ FROM chandralegend/nomos-base:latest
 COPY config.agent.yaml /app/config.agent.yaml
 
 # Copy your tools
-COPY tools.py /app/tools/
+COPY tools.py /app/src/tools/
 ```
 
 2. Build and run your container:

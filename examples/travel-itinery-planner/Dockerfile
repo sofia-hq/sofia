@@ -4,4 +4,4 @@ FROM chandralegend/nomos-base:latest
 COPY config.agent.yaml /app/config.agent.yaml
 
 # Copy the tools.py script
-COPY tools.py /app/tools/
+COPY tools.py /app/src/tools/

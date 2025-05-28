@@ -20,6 +20,7 @@ import typer
 try:
     import docker
     from docker.errors import BuildError, DockerException
+
     DOCKER_AVAILABLE = True
 except ImportError:
     DOCKER_AVAILABLE = False
@@ -297,10 +298,20 @@ def serve(
     build: bool = typer.Option(
         True, "--build/--no-build", help="Build Docker image before running"
     ),
+    detach: bool = typer.Option(
+        False,
+        "--detach/--no-detach",
+        help="Run container in detached mode (background)",
+    ),
 ) -> None:
-    """Serve the Nomos agent using Docker."""
+    """Serve the Nomos agent using Docker.
+
+    This command builds and runs the agent in a Docker container. By default,
+    the container runs in the foreground, but you can use --detach to run it
+    in the background.
+    """
     print_banner()
-    
+
     if not DOCKER_AVAILABLE:
         console.print(
             "❌ Docker library not available. Install with: pip install nomos[cli]",
@@ -350,7 +361,7 @@ def serve(
     )
 
     try:
-        _serve_with_docker(config_path, tool_files, dockerfile, env_file_path, tag, port, build)  # type: ignore
+        _serve_with_docker(config_path, tool_files, dockerfile, env_file_path, tag, port, build, detach)  # type: ignore
     except KeyboardInterrupt:
         console.print("\n👋 Docker serve stopped.", style=WARNING_COLOR)
     except Exception as e:
@@ -868,6 +879,7 @@ def _serve_with_docker(
     tag: str,
     port: int,
     build: bool,
+    detach: bool,
 ) -> None:
     """Serve the agent using Docker."""
     if not DOCKER_AVAILABLE:
@@ -876,7 +888,7 @@ def _serve_with_docker(
             style=ERROR_COLOR,
         )
         raise typer.Exit(1)
-    
+
     try:
         client = docker.from_env()
     except DockerException as e:
@@ -885,7 +897,7 @@ def _serve_with_docker(
             style=ERROR_COLOR,
         )
         raise typer.Exit(1)
-    
+
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
@@ -917,7 +929,7 @@ def _serve_with_docker(
 
 # Copy configuration and tools
 COPY config.agent.yaml /app/config.agent.yaml
-COPY tools/ /app/tools/
+COPY tools/ /app/src/tools/
 
 # Expose port
 EXPOSE 8000
@@ -934,38 +946,37 @@ EXPOSE 8000
 
         if build:
             console.print("🔨 Building Docker image...", style=PRIMARY_COLOR)
-            
+
             try:
                 # Build the Docker image using the docker library
                 image, build_logs = client.images.build(
-                    path=str(build_context),
-                    tag=tag,
-                    rm=True,
-                    pull=False
+                    path=str(build_context), tag=tag, rm=True, pull=False
                 )
-                
+
                 # Print build logs (optional, for debugging)
                 for log in build_logs:
-                    if 'stream' in log:
+                    if "stream" in log:
                         # Remove the newline to avoid double spacing
-                        stream_msg = log['stream'].rstrip('\n')
+                        stream_msg = log["stream"].rstrip("\n")
                         if stream_msg:  # Only print non-empty messages
                             console.print(f"🔧 {stream_msg}", style="dim")
-                
+
                 console.print("✅ Docker image built successfully", style=SUCCESS_COLOR)
-                
+
             except BuildError as e:
                 console.print("❌ Docker build failed:", style=ERROR_COLOR)
                 for log in e.build_log:
-                    if 'stream' in log:
-                        console.print(log['stream'].rstrip('\n'), style=ERROR_COLOR)
+                    if "stream" in log:
+                        console.print(log["stream"].rstrip("\n"), style=ERROR_COLOR)
                 raise typer.Exit(1)
             except DockerException as e:
                 console.print(f"❌ Docker build error: {e}", style=ERROR_COLOR)
                 raise typer.Exit(1)
 
+        mode_text = "in detached mode" if detach else "in foreground"
         console.print(
-            f"🚀 Starting Docker container on port {port}...", style=PRIMARY_COLOR
+            f"🚀 Starting Docker container on port {port} {mode_text}...",
+            style=PRIMARY_COLOR,
         )
         console.print(f"📁 Build context: [dim]{build_context}[/dim]")
 
@@ -973,30 +984,63 @@ EXPOSE 8000
         environment = {}
         if env_file_path:
             env_vars = _parse_env_file(env_file_path)
-            console.print(f"🔧 Loading {len(env_vars)} environment variables from [dim]{env_file_path}[/dim]")
-            environment.update(env_vars)
-        
-        try:
-            # Run the Docker container using the docker library
-            container = client.containers.run(
-                tag,
-                detach=False,  # Run in foreground to see output
-                remove=True,   # Equivalent to --rm
-                ports={'8000/tcp': port},  # Port mapping
-                environment=environment,
-                stdout=True,
-                stderr=True,
-                stream=True
+            console.print(
+                f"🔧 Loading {len(env_vars)} environment variables from [dim]{env_file_path}[/dim]"
             )
-            
-            # Since we're running with detach=False and stream=True, 
-            # the container.run() will block and stream output
-            
+            environment.update(env_vars)
+
+        try:
+            if detach:
+                # Run the Docker container in detached mode
+                container = client.containers.run(
+                    tag,
+                    detach=True,  # Run in background
+                    remove=True,  # Equivalent to --rm
+                    ports={"8000/tcp": port},  # Port mapping
+                    environment=environment,
+                    name=f"{tag}-{port}",  # Give it a predictable name
+                )
+
+                console.print(
+                    "✅ Container started in detached mode", style=SUCCESS_COLOR
+                )
+                console.print(f"🐳 Container ID: [dim]{container.short_id}[/dim]")
+                console.print(
+                    f"🌐 Agent accessible at: [bold]http://localhost:{port}[/bold]"
+                )
+                console.print(
+                    f"📋 To view logs: [dim]docker logs -f {container.short_id}[/dim]"
+                )
+                console.print(
+                    f"🛑 To stop: [dim]docker stop {container.short_id}[/dim]"
+                )
+
+            else:
+                # Run the Docker container in foreground mode
+                container = client.containers.run(
+                    tag,
+                    detach=False,  # Run in foreground to see output
+                    remove=True,  # Equivalent to --rm
+                    ports={"8000/tcp": port},  # Port mapping
+                    environment=environment,
+                    stdout=True,
+                    stderr=True,
+                    stream=True,
+                )
+
+                # Since we're running with detach=False and stream=True,
+                # the container.run() will block and stream output
+
         except DockerException as e:
             console.print(f"❌ Docker run failed: {e}", style=ERROR_COLOR)
             raise typer.Exit(1)
         except KeyboardInterrupt:
-            console.print("\n👋 Docker container stopped.", style=WARNING_COLOR)
+            if not detach:
+                console.print("\n👋 Docker container stopped.", style=WARNING_COLOR)
+            else:
+                console.print(
+                    "\n👋 Detached container continues running.", style=WARNING_COLOR
+                )
 
 
 def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
@@ -1026,39 +1070,39 @@ def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
 def _parse_env_file(env_file_path: Path) -> dict:
     """Parse a .env file and return a dictionary of environment variables."""
     env_vars = {}
-    
+
     try:
-        with open(env_file_path, 'r') as f:
+        with open(env_file_path, "r") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                
+
                 # Skip empty lines and comments
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
-                
+
                 # Look for KEY=VALUE format
-                if '=' in line:
-                    key, value = line.split('=', 1)
+                if "=" in line:
+                    key, value = line.split("=", 1)
                     key = key.strip()
                     value = value.strip()
-                    
+
                     # Remove quotes from value if present
-                    if value.startswith('"') and value.endswith('"'):
+                    if (value.startswith('"') and value.endswith('"')) or (
+                        value.startswith("'") and value.endswith("'")
+                    ):
                         value = value[1:-1]
-                    elif value.startswith("'") and value.endswith("'"):
-                        value = value[1:-1]
-                    
+
                     env_vars[key] = value
                 else:
                     console.print(
                         f"⚠️  Warning: Invalid line {line_num} in env file: {line}",
-                        style=WARNING_COLOR
+                        style=WARNING_COLOR,
                     )
-    
+
     except Exception as e:
         console.print(f"❌ Error reading env file: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
-    
+
     return env_vars
 
 
