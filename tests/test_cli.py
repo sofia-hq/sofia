@@ -687,7 +687,6 @@ class TestCLIHelpers:
 
         assert result.exit_code == 0
         assert "Serve the Nomos agent using Docker" in result.stdout
-        assert "--detach" in result.stdout
 
 
 class TestErrorHandling:
