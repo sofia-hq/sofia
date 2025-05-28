@@ -45,7 +45,7 @@
 <br />
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos)
-[![codecov](https://codecov.io/gh/chandralegend/nomos/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/chandralegend/nomos)
+[![codecov](https://codecov.io/gh/dowhiledev/nomos/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/dowhiledev/nomos)
 [![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
 [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base)](https://hub.docker.com/r/chandralegend/nomos-base)
