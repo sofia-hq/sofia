@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.15] - 2025-05-28
 
+### Tested
+- Tests for CLI added to ensure the CLI commands work as expected and to prevent regressions in future updates.
+
 ### Fixed
 - `nomos serve` not identifying the tools
 
