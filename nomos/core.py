@@ -17,7 +17,7 @@ from .models.flow import (
     Summary,
     create_decision_model,
 )
-from .models.tool import FallbackError, InvalidArgumentsError, Tool
+from .models.tool import FallbackError, Tool
 from .utils.logging import log_debug, log_error, log_info
 
 
@@ -237,30 +237,32 @@ class Session:
 
         self.memory.add(self.current_step.get_step_identifier())
         action = decision.action.value
+        response: Union[str, BaseModel] = decision.response
         if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
-            self._add_message(self.name, str(decision.response))
+            self._add_message(self.name, str(response))
             return decision, None
         elif action == ACTION_ENUMS["TOOL_CALL"]:
-            self._add_message(
-                "tool",
-                f"Tool call: {decision.tool_name} with args: {decision.tool_kwargs}",
-            )
             _error: Optional[Exception] = None
             try:
-                tool_kwargs = (
-                    decision.tool_kwargs.model_dump()
-                    if isinstance(decision.tool_kwargs, BaseModel)
-                    else {}
-                )
-                log_debug(
-                    f"Running tool: {decision.tool_name} with args: {tool_kwargs}"
-                )
-                tool_results = self._run_tool(decision.tool_name, tool_kwargs)
-                self._add_message("tool", f"Tool result: {tool_results}")
+                assert (
+                    response.__class__.__name__ == "ToolCall"
+                ), "Expected ToolCall response"
+                tool_name: str = response.tool_name  # type: ignore
+                tool_kwargs_model: BaseModel = response.tool_kwargs  # type: ignore
+                tool_kwargs: dict = tool_kwargs_model.model_dump()
+                log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
+                try:
+                    tool_results = self._run_tool(tool_name, tool_kwargs)
+                    self._add_message(
+                        "tool",
+                        f"Tool {tool_name} executed successfully with args {tool_kwargs}.\nResults: {tool_results}",
+                    )
+                except Exception as e:
+                    self._add_message(
+                        "tool", f"Running tool {tool_name} with args {tool_kwargs}"
+                    )
+                    raise e
                 log_info(f"Tool Results: {tool_results}") if self.verbose else None
-            except InvalidArgumentsError as e:
-                _error = e
-                self._add_message("error", str(e))
             except FallbackError as e:
                 _error = e
                 self._add_message("fallback", str(e))
@@ -270,24 +272,23 @@ class Session:
 
             if return_tool and _error is None:
                 return decision, tool_results
-
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
             )
         elif action == ACTION_ENUMS["MOVE"]:
             _error = None
-            if decision.next_step_id in self.current_step.get_available_routes():
-                self.current_step = self.steps[decision.next_step_id]
+            if response in self.current_step.get_available_routes():
+                self.current_step = self.steps[response]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
                 self.memory.add(self.current_step.get_step_identifier())
             else:
                 self._add_message(
                     "error",
-                    f"Invalid route: {decision.next_step_id} not in {self.current_step.get_available_routes()}",
+                    f"Invalid route: {response} not in {self.current_step.get_available_routes()}",
                 )
                 _error = ValueError(
-                    f"Invalid route: {decision.next_step_id} not in {self.current_step.get_available_routes()}"
+                    f"Invalid route: {response} not in {self.current_step.get_available_routes()}"
                 )
             if return_step_transition:
                 return decision, None

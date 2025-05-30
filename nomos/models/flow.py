@@ -193,46 +193,51 @@ def create_decision_model(
         "action": {"type": ActionEnum, "description": "Next Action"},
     }
 
+    response_desc = []
+    response_types = []
+    params["response"] = {}
     if not current_step.auto_flow:
-        description = "Response if ASK or ANSWER."
-        response_type = Optional[str]
         if current_step.answer_model:
             answer_model = current_step.get_answer_model()
-            description += f" Use {answer_model.__name__} to ANSWER."
-            response_type = Optional[Union[str, answer_model]]  # type: ignore
-        params["response"] = {
-            "type": response_type,
-            "default": None,
-            "description": description,
-        }
+            response_desc.append(f"Response ({answer_model.__name__}) if ANSWER.")
+            response_types.append(answer_model)
+            response_desc.append("Response (String) if ASK.")
+            response_types.append(str)
+        else:
+            response_desc.append("Response (String) if ASK or ANSWER.")
+            response_types.append(str)
         if current_step.quick_suggestions:
             params["suggestions"] = {
                 "type": List[str],
-                "description": "Quick User Input Suggestions for the User to Choose",
+                "description": "Quick User Input Suggestions for the User to Choose if ASK.",
             }
-
     if len(available_step_ids) > 0:
-        params["next_step_id"] = {
-            "type": Optional[Literal[*available_step_ids]],
-            "default": None,
-            "description": "Where to MOVE.",
-        }
+        response_desc.append("Step Id (String) if MOVE.")
+        response_types.append(Literal[*available_step_ids])
 
     if len(tool_ids) > 0 and len(tool_models) > 0:
-        params["tool_name"] = {
-            "type": Optional[Literal[*tool_ids]],
-            "default": None,
-            "description": "Tool name for TOOL_CALL.",
-        }
-        params["tool_kwargs"] = {
-            "type": (
-                Optional[tool_models[0]]
-                if len(tool_models) == 1
-                else Optional[Union[*tool_models]]
-            ),
-            "default": None,
-            "description": "Corresponding Tool arguments for TOOL_CALL.",
-        }
+        tool_call_model = create_base_model(
+            "ToolCall",
+            {
+                "tool_name": {
+                    "type": Literal[*tool_ids],
+                    "description": "Tool name for TOOL_CALL.",
+                },
+                "tool_kwargs": {
+                    "type": (
+                        tool_models[0] if len(tool_models) == 1 else Union[*tool_models]
+                    ),
+                    "description": "Corresponding Tool arguments for TOOL_CALL.",
+                },
+            },
+        )
+        response_desc.append("Tool Call (ToolCall) if TOOL_CALL.")
+        response_types.append(tool_call_model)
+    assert (
+        len(response_desc) > 0 and len(response_types) > 0
+    ), "Something went wrong, Please check the step configuration."
+    params["response"]["type"] = Union[*response_types]
+    params["response"]["description"] = " | ".join(response_desc)
 
     return create_base_model(
         "Decision",
