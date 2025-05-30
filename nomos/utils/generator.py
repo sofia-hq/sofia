@@ -10,7 +10,7 @@ from rich.prompt import Confirm, Prompt
 import yaml
 
 from ..llms import LLMConfig
-from ..models.flow import Route, Message
+from ..models.flow import Message, Route
 
 
 REASONING_PROMPT = """
@@ -29,9 +29,7 @@ Your task is to generate a valid agent configuration based on the provided use c
 
 
 class Step(BaseModel):
-    """
-    Represents a step in the agent's workflow.
-    """
+    """Represents a step in the agent's workflow."""
 
     step_id: str = Field(..., description="Unique identifier for the step")
     description: str = Field(..., description="Description of what this step does")
@@ -50,9 +48,7 @@ class Step(BaseModel):
 
 
 class AgentConfiguration(BaseModel):
-    """
-    Configuration for the agent.
-    """
+    """Configuration for the agent."""
 
     name: str = Field(..., description="Name of the agent (eg. 'example_agent')")
     persona: str = Field(
@@ -76,12 +72,21 @@ class AgentConfiguration(BaseModel):
 
 
 class AgentGenerator:
+    """Generates agent configurations based on use cases and available tools."""
+
     def __init__(
         self,
         console: Optional[Console] = None,
         max_retries: int = 3,
         llm_config: Optional[LLMConfig] = None,
     ) -> None:
+        """
+        Initialize the AgentGenerator with an LLM configuration and console.
+
+        :param console: Optional Rich Console for output.
+        :param max_retries: Maximum number of retries for generating a valid agent configuration.
+        :param llm_config: Optional LLM configuration. If not provided, defaults to OpenAI's GPT-4o-mini.
+        """
         llm_config = llm_config or LLMConfig(provider="openai", model="gpt-4o-mini")
         self.llm = llm_config.get_llm()
         self.max_retries = max_retries
@@ -89,9 +94,7 @@ class AgentGenerator:
 
     @staticmethod
     def validate_agent_configuration(config: AgentConfiguration) -> Optional[str]:
-        """
-        Validate the agent configuration.
-        """
+        """Validate the agent configuration."""
         errors = []
         available_steps = [step.step_id for step in config.steps]
         if config.start_step_id not in available_steps:
@@ -109,7 +112,13 @@ class AgentGenerator:
     def generate(
         self, usecase: str, tools_available: Optional[str] = None
     ) -> AgentConfiguration:
-        """Generate a basic agent configuration based on the use case."""
+        """
+        Generate a basic agent configuration based on the use case.
+
+        :param usecase: The use case for which the agent is being generated.
+        :param tools_available: Optional string listing available tools for the agent.
+        :return: An AgentConfiguration object containing the generated agent configuration.
+        """
         usecase_str = f"Usecase: {usecase}"
         if tools_available:
             usecase_str += f"\nTools available: {tools_available}"
