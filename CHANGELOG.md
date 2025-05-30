@@ -27,11 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.15] - 2025-05-28
 
+### Added
+- Ability to generate agent config using AI, `nomos init --generate`.
+
 ### Tested
 - Tests for CLI added to ensure the CLI commands work as expected and to prevent regressions in future updates.
 
 ### Fixed
 - `nomos serve` not identifying the tools
+
+### Improved
+- Now Uses better/simplified decision making for agent steps
 
 ## [0.1.14] - 2025-05-27
 
