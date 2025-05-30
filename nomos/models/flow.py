@@ -239,47 +239,6 @@ def create_decision_model(
     params["response"]["type"] = Union[*response_types]
     params["response"]["description"] = " | ".join(response_desc)
 
-    # if not current_step.auto_flow:
-    #     description = "Response if ASK or ANSWER."
-    #     response_type = Optional[str]
-    #     if current_step.answer_model:
-    #         answer_model = current_step.get_answer_model()
-    #         description += f" Use {answer_model.__name__} to ANSWER."
-    #         response_type = Optional[Union[str, answer_model]]  # type: ignore
-    #     params["response"] = {
-    #         "type": response_type,
-    #         "default": None,
-    #         "description": description,
-    #     }
-    #     if current_step.quick_suggestions:
-    #         params["suggestions"] = {
-    #             "type": List[str],
-    #             "description": "Quick User Input Suggestions for the User to Choose",
-    #         }
-
-    # if len(available_step_ids) > 0:
-    #     params["next_step_id"] = {
-    #         "type": Optional[Literal[*available_step_ids]],
-    #         "default": None,
-    #         "description": "Where to MOVE.",
-    #     }
-
-    # if len(tool_ids) > 0 and len(tool_models) > 0:
-    #     params["tool_name"] = {
-    #         "type": Optional[Literal[*tool_ids]],
-    #         "default": None,
-    #         "description": "Tool name for TOOL_CALL.",
-    #     }
-    #     params["tool_kwargs"] = {
-    #         "type": (
-    #             Optional[tool_models[0]]
-    #             if len(tool_models) == 1
-    #             else Optional[Union[*tool_models]]
-    #         ),
-    #         "default": None,
-    #         "description": "Corresponding Tool arguments for TOOL_CALL.",
-    #     }
-
     return create_base_model(
         "Decision",
         params,
