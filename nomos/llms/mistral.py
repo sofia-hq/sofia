@@ -36,12 +36,14 @@ class Mistral(LLMBase):
         self,
         messages: List[Message],
         response_format: BaseModel,
+        **kwargs: dict,
     ) -> BaseModel:
         """
         Get a structured response from the Mistral LLM.
 
         :param messages: List of Message objects.
         :param response_format: Pydantic model for the expected response.
+        :param kwargs: Additional parameters for Mistral API.
         :return: Parsed response as a BaseModel.
         """
         _messages = [msg.model_dump() for msg in messages]
@@ -49,9 +51,28 @@ class Mistral(LLMBase):
         print(r)
         # TODO: Fix the issue where the mistralai client doesnt support None values
         comp = self.client.chat.parse(
-            model=self.model, messages=_messages, response_format=response_format
+            model=self.model,
+            messages=_messages,
+            response_format=response_format,
+            **kwargs,
         )
         return comp.choices[0].message.parsed
+
+    def generate(
+        self,
+        messages: List[Message],
+        **kwargs: dict,
+    ) -> str:
+        """
+        Generate a response from the Mistral LLM.
+
+        :param messages: List of Message objects.
+        :param kwargs: Additional parameters for Mistral API.
+        :return: Generated response as a string.
+        """
+        _messages = [msg.model_dump() for msg in messages]
+        comp = self.client.chat.complete(model=self.model, messages=_messages, **kwargs)
+        return comp.choices[0].message.content if comp.choices else ""  # type: ignore
 
 
 __all__ = ["Mistral"]

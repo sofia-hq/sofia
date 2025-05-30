@@ -29,12 +29,14 @@ class Gemini(LLMBase):
         self,
         messages: List[Message],
         response_format: BaseModel,
+        **kwargs: dict,
     ) -> BaseModel:
         """
         Get a structured response from the Gemini LLM.
 
         :param messages: List of Message objects.
         :param response_format: Pydantic model for the expected response.
+        :param kwargs: Additional parameters for Gemini API.
         :return: Parsed response as a BaseModel.
         """
         try:
@@ -54,6 +56,7 @@ class Gemini(LLMBase):
                 system_instruction=system_message,
                 response_mime_type="application/json",
                 response_schema=response_format,
+                **kwargs,
             ),
         )
         return comp.parsed

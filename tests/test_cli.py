@@ -11,7 +11,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from nomos.cli import app, DOCKER_AVAILABLE, _parse_env_file, _serve_with_docker
+from nomos.cli import app, _parse_env_file, _serve_with_docker
 
 
 class TestCLI:
@@ -231,18 +231,8 @@ class TestRunCommand(TestCLI):
 class TestServeCommand(TestCLI):
     """Test the serve command."""
 
-    def test_serve_docker_not_available(self):
-        """Test serve command when Docker is not available."""
-        with patch("nomos.cli.DOCKER_AVAILABLE", False):
-            result = self.runner.invoke(app, ["serve"])
-
-            assert result.exit_code == 1
-            assert "Docker library not available" in result.stdout
-
     def test_serve_config_not_found(self):
         """Test serve command with non-existent config file."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         result = self.runner.invoke(
             app, ["serve", "--config", "/non/existent/config.yaml"]
@@ -254,8 +244,6 @@ class TestServeCommand(TestCLI):
     @patch("nomos.cli._serve_with_docker")
     def test_serve_basic_success(self, mock_serve_docker):
         """Test successful serve command."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         config_path = self.create_temp_config()
 
@@ -266,8 +254,6 @@ class TestServeCommand(TestCLI):
 
     def test_serve_tool_not_found(self):
         """Test serve command with non-existent tool file."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         config_path = self.create_temp_config()
 
@@ -287,8 +273,6 @@ class TestServeCommand(TestCLI):
 
     def test_serve_env_file_not_found(self):
         """Test serve command with non-existent env file."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         config_path = self.create_temp_config()
 
@@ -303,8 +287,6 @@ class TestServeCommand(TestCLI):
     @patch("nomos.cli._serve_with_docker")
     def test_serve_with_all_options(self, mock_serve_docker):
         """Test serve command with all options."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         config_path = self.create_temp_config()
         tools_path = self.create_temp_tools()
@@ -388,55 +370,12 @@ MULTI_LINE=line1\\nline2
 
     @patch("docker.from_env")
     @patch("tempfile.TemporaryDirectory")
-    def test_serve_with_docker_docker_unavailable(self, mock_temp_dir, mock_docker):
-        """Test _serve_with_docker when Docker library is unavailable."""
-        with patch("nomos.cli.DOCKER_AVAILABLE", False):
-            with pytest.raises(typer.Exit) as exc_info:
-                _serve_with_docker(
-                    config_path=Path("config.yaml"),
-                    tool_files=[],
-                    dockerfile=None,
-                    env_file_path=None,
-                    tag="test-tag",
-                    port=8000,
-                    build=True,
-                    detach=False,
-                )
-            assert exc_info.value.exit_code == 1
-
-    @patch("docker.from_env")
-    def test_serve_with_docker_connection_error(self, mock_docker):
-        """Test _serve_with_docker when Docker daemon connection fails."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
-
-        from docker.errors import DockerException
-
-        mock_docker.side_effect = DockerException("Connection failed")
-
-        with pytest.raises(typer.Exit) as exc_info:
-            _serve_with_docker(
-                config_path=Path("config.yaml"),
-                tool_files=[],
-                dockerfile=None,
-                env_file_path=None,
-                tag="test-tag",
-                port=8000,
-                build=True,
-                detach=False,
-            )
-        assert exc_info.value.exit_code == 1
-
-    @patch("docker.from_env")
-    @patch("tempfile.TemporaryDirectory")
     @patch("shutil.copy2")
     @patch("nomos.cli.console")
     def test_serve_with_docker_build_success(
         self, mock_console, mock_copy, mock_temp_dir, mock_docker
     ):
         """Test _serve_with_docker with successful build."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         # Setup mocks
         mock_temp_dir.return_value.__enter__.return_value = self.temp_dir
@@ -490,8 +429,6 @@ MULTI_LINE=line1\\nline2
         self, mock_console, mock_copy, mock_temp_dir, mock_docker
     ):
         """Test _serve_with_docker with build error."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         from docker.errors import BuildError
 
@@ -531,8 +468,6 @@ MULTI_LINE=line1\\nline2
         self, mock_console, mock_copy, mock_temp_dir, mock_docker
     ):
         """Test _serve_with_docker in foreground mode."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         # Setup mocks
         mock_temp_dir.return_value.__enter__.return_value = self.temp_dir
@@ -571,9 +506,6 @@ MULTI_LINE=line1\\nline2
         self, mock_console, mock_copy, mock_temp_dir, mock_docker
     ):
         """Test _serve_with_docker with environment file."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
-
         # Setup mocks
         mock_temp_dir.return_value.__enter__.return_value = self.temp_dir
         mock_client = Mock()
@@ -615,8 +547,6 @@ MULTI_LINE=line1\\nline2
         self, mock_console, mock_copy, mock_temp_dir, mock_docker
     ):
         """Test _serve_with_docker with tool files."""
-        if not DOCKER_AVAILABLE:
-            pytest.skip("Docker not available")
 
         # Setup mocks
         mock_temp_dir.return_value.__enter__.return_value = self.temp_dir

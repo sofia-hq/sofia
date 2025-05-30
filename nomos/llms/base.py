@@ -134,12 +134,14 @@ class LLMBase:
         self,
         messages: List[Message],
         response_format: BaseModel,
+        **kwargs: dict,
     ) -> BaseModel:
         """
         Get a structured response from the LLM.
 
         :param messages: List of Message objects.
         :param response_format: Pydantic model for the expected response.
+        :param kwargs: Additional parameters for the LLM.
         :return: Parsed response as a BaseModel.
         """
         raise NotImplementedError("Subclasses should implement this method.")
@@ -180,6 +182,20 @@ class LLMBase:
             persona=persona if persona else DEFAULT_PERSONA.strip(),
         )
         return self.get_output(messages=messages, response_format=response_format)
+
+    def generate(
+        self,
+        messages: List[Message],
+        **kwargs: dict,
+    ) -> str:
+        """
+        Generate a response from the LLM based on the provided messages.
+
+        :param messages: List of Message objects.
+        :param kwargs: Additional parameters for the LLM.
+        :return: Generated response as a string.
+        """
+        raise NotImplementedError("Subclasses should implement this method.")
 
 
 __all__ = ["LLMBase"]

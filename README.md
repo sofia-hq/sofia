@@ -185,10 +185,13 @@ nomos init
 - `--directory, -d`: Project directory (default: `./my-nomos-agent`)
 - `--name, -n`: Agent name
 - `--template, -t`: Template to use (`basic`, `conversational`, `workflow`)
+- `--generate, -g`: Generate a template using AI (You are required to set the corresponding LLM API key in your environment variables, e.g., `OPENAI_API_KEY` for OpenAI)
 
 **Example:**
 ```bash
 nomos init --directory ./my-bot --name chatbot --template basic
+# or
+nomos init --directory ./my-bot --name chatbot --generate
 ```
 
 #### Development Mode

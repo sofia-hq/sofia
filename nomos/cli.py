@@ -8,7 +8,9 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-from rich import print  # noqa
+import docker
+from docker.errors import BuildError, DockerException
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
@@ -17,13 +19,9 @@ from rich.text import Text
 
 import typer
 
-try:
-    import docker
-    from docker.errors import BuildError, DockerException
+from .llms import LLMConfig
+from .utils.generator import AgentConfiguration, AgentGenerator
 
-    DOCKER_AVAILABLE = True
-except ImportError:
-    DOCKER_AVAILABLE = False
 
 console = Console()
 app = typer.Typer(
@@ -61,8 +59,26 @@ def init(
         "-t",
         help="Template to use (basic, conversational, workflow)",
     ),
+    generate: bool = typer.Option(
+        False, "--generate", "-g", help="Generate agent configuration using AI"
+    ),
+    usecase: Optional[str] = typer.Option(
+        None, "--usecase", "-u", help="Use case description or path to text file"
+    ),
+    tools: Optional[str] = typer.Option(
+        None, "--tools", help="Comma-separated list of available tools"
+    ),
 ) -> None:
-    """Initialize a new Nomos agent project interactively."""
+    r"""Initialize a new Nomos agent project interactively.
+
+    Examples:\n
+    # Traditional interactive setup\n
+    nomos init\n
+    # AI-powered generation from use case\n
+    nomos init --generate --usecase "Create a weather agent" --tools "weather_api"\n
+    # Load use case from file\n
+    nomos init --generate --usecase "./my_usecase.txt" --provider openai --model gpt-4o-mini
+    """
     print_banner()
 
     console.print(
@@ -124,9 +140,8 @@ def init(
 
     llm_choice = llm_choices[llm_choice_idx]
 
-    # Collect steps
+    # Handle AI generation or traditional step collection
     steps = []
-    console.print("\n📋 Let's define your agent's workflow steps...")
 
     # Add default steps based on template
     if template == "basic":
@@ -151,46 +166,42 @@ def init(
             },
         ]
 
-    # Allow user to customize steps
-    if Confirm.ask("🔧 Would you like to customize the workflow steps?"):
-        steps = []
-        add_more = True
-
-        while add_more:
-            step_id = Prompt.ask("Step ID")
-            description = Prompt.ask("Step description")
-
-            # Tools
-            available_tools = []
-            if Confirm.ask("Add tools to this step?"):
-                tools_input = Prompt.ask("Tool names (comma-separated)", default="")
-                available_tools = [
-                    t.strip() for t in tools_input.split(",") if t.strip()
-                ]
-
-            # Routes
-            routes = []
-            if Confirm.ask("Add routes from this step?"):
-                add_route = True
-                while add_route:
-                    target = Prompt.ask("Route target step ID")
-                    condition = Prompt.ask("Route condition")
-                    routes.append({"target": target, "condition": condition})
-                    add_route = Confirm.ask("Add another route?")
-
-            steps.append(
-                {
-                    "step_id": step_id,
-                    "description": description,
-                    "available_tools": available_tools,
-                    "routes": routes,
-                }
-            )
-
-            add_more = Confirm.ask("Add another step?")
-
     # Generate project files
     _generate_project_files(target_dir, name, persona, llm_choice, steps)  # type: ignore
+
+    if not generate:
+        generate = Confirm.ask(
+            "🤖 Would you like to generate the agent configuration using AI?",
+            default=True,
+        )
+
+    if generate:
+        provider = Prompt.ask(
+            "Choose one of the following LLM providers you would like to use for generation",
+            choices=["openai", "mistral", "google"],
+            default=None,
+        )
+        model = Prompt.ask(
+            "Mention the model you would like to use for generation", default=None
+        )
+        usecase = Prompt.ask(
+            "Please provide a use case description or path to a text file containing the use case",
+            default="Create a weather agent",
+        )
+        tools = Prompt.ask(
+            "Mention the tools available for the agent (comma-separated, e.g. weather_api, calculator)",
+            default=None,
+        )
+        generated_config = _handle_config_generation(
+            usecase=usecase, provider=provider, model=model, tools=tools  # type: ignore
+        )
+        if generated_config:
+            config_path = target_dir / "config.agent.yaml"
+            generated_config.dump(str(config_path.absolute()))
+            console.print(
+                f"📄 Generated configuration saved to [bold]{config_path}[/bold]",
+                style=SUCCESS_COLOR,
+            )
 
     console.print(
         Panel(
@@ -311,13 +322,6 @@ def serve(
     in the background.
     """
     print_banner()
-
-    if not DOCKER_AVAILABLE:
-        console.print(
-            "❌ Docker library not available. Install with: pip install nomos[cli]",
-            style=ERROR_COLOR,
-        )
-        raise typer.Exit(1)
 
     config_path = Path(config)  # type: ignore
 
@@ -882,13 +886,6 @@ def _serve_with_docker(
     detach: bool,
 ) -> None:
     """Serve the agent using Docker."""
-    if not DOCKER_AVAILABLE:
-        console.print(
-            "❌ Docker library not available. Install with: pip install nomos[cli]",
-            style=ERROR_COLOR,
-        )
-        raise typer.Exit(1)
-
     try:
         client = docker.from_env()
     except DockerException as e:
@@ -1107,6 +1104,30 @@ def _parse_env_file(env_file_path: Path) -> dict:
         raise typer.Exit(1)
 
     return env_vars
+
+
+def _handle_config_generation(
+    usecase: str,
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
+    tools: Optional[str] = None,
+) -> Optional[AgentConfiguration]:
+    """Handle AI generation of agent configuration."""
+    llm_config: Optional[LLMConfig] = None
+    if provider or model:
+        llm_config = LLMConfig(
+            provider=provider,
+            model=model,
+        )
+    generator = AgentGenerator(
+        console=console,
+        llm_config=llm_config,
+    )
+    try:
+        config = generator.generate(usecase=usecase, tools_available=tools)
+        return config
+    except Exception:
+        return None
 
 
 def main() -> None:

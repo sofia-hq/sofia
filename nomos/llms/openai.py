@@ -34,12 +34,14 @@ class OpenAI(LLMBase):
         self,
         messages: List[Message],
         response_format: BaseModel,
+        **kwargs: dict,
     ) -> BaseModel:
         """
         Get a structured response from the OpenAI LLM.
 
         :param messages: List of Message objects.
         :param response_format: Pydantic model for the expected response.
+        :param kwargs: Additional parameters for OpenAI API.
         :return: Parsed response as a BaseModel.
         """
         _messages = [msg.model_dump() for msg in messages]
@@ -47,8 +49,31 @@ class OpenAI(LLMBase):
             model=self.model,
             messages=_messages,
             response_format=response_format,
+            **kwargs,
         )
         return comp.choices[0].message.parsed
+
+    def generate(
+        self,
+        messages: List[Message],
+        **kwargs: dict,
+    ) -> str:
+        """
+        Generate a response from the OpenAI LLM based on the provided messages.
+
+        :param messages: List of Message objects.
+        :param kwargs: Additional parameters for OpenAI API.
+        :return: Generated response as a string.
+        """
+        from openai.types.chat import ChatCompletion
+
+        _messages = [msg.model_dump() for msg in messages]
+        comp: ChatCompletion = self.client.chat.completions.create(
+            messages=_messages,
+            model=self.model,
+            **kwargs,
+        )
+        return comp.choices[0].message.content if comp.choices else ""  # type: ignore
 
 
 __all__ = ["OpenAI"]

@@ -24,7 +24,7 @@ class MockLLM(LLMBase):
         self.response = response
 
     def get_output(
-        self, messages: List[Message], response_format: BaseModel
+        self, messages: List[Message], response_format: BaseModel, **kwargs: dict
     ) -> BaseModel:
         """Mock implementation that returns pre-set responses."""
         self.messages_received = messages

@@ -21,8 +21,14 @@ class Route(BaseModel):
         condition (str): The condition for taking this route.
     """
 
-    target: str
-    condition: str
+    target: str = Field(
+        ...,
+        description="Target step ID to move to when this route is taken.",
+    )
+    condition: str = Field(
+        ...,
+        description="Condition that must be met to take this route.",
+    )
 
     def __str__(self) -> str:
         """Return a string representation of the route."""
