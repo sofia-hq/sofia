@@ -106,12 +106,14 @@ class AgentGenerator:
                     )
         return "\n".join(errors) if errors else None
 
-    def generate(self, usecase: str, tools_available: Optional[str] = None) -> AgentConfiguration:
+    def generate(
+        self, usecase: str, tools_available: Optional[str] = None
+    ) -> AgentConfiguration:
         """Generate a basic agent configuration based on the use case."""
         usecase_str = f"Usecase: {usecase}"
         if tools_available:
             usecase_str += f"\nTools available: {tools_available}"
-        
+
         messages = [
             Message(role="system", content=REASONING_PROMPT.strip()),
             Message(
