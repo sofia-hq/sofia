@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NOMOS - Build Intelligent AI Agents in Minutes</title>
-    <meta name="description" content="NOMOS is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. From no-code to low-code development.">
+    <meta name="description"
+        content="NOMOS is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. From no-code to low-code development.">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -15,13 +17,10 @@
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-    <!-- Lottie Player -->
-    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
-
     <!-- Three.js CanvasRenderer -->
     <script>
         // Simplified CanvasRenderer for particle waves
-        THREE.CanvasRenderer = function(parameters) {
+        THREE.CanvasRenderer = function (parameters) {
             parameters = parameters || {};
 
             var _this = this;
@@ -33,7 +32,7 @@
             this.domElement = _canvas;
             this.autoClear = true;
 
-            this.setSize = function(width, height, updateStyle) {
+            this.setSize = function (width, height, updateStyle) {
                 _canvas.width = width;
                 _canvas.height = height;
 
@@ -43,16 +42,16 @@
                 }
             };
 
-            this.setPixelRatio = function(value) {
+            this.setPixelRatio = function (value) {
                 // Handle pixel ratio if needed
             };
 
-            this.setClearColor = function(color, alpha) {
+            this.setClearColor = function (color, alpha) {
                 _clearColor.set(color);
                 _clearAlpha = alpha !== undefined ? alpha : 1;
             };
 
-            this.clear = function() {
+            this.clear = function () {
                 if (_clearAlpha > 0) {
                     _context.fillStyle = 'rgba(' +
                         Math.floor(_clearColor.r * 255) + ',' +
@@ -64,7 +63,7 @@
                 }
             };
 
-            this.render = function(scene, camera) {
+            this.render = function (scene, camera) {
                 if (this.autoClear === true) {
                     this.clear();
                 }
@@ -78,7 +77,7 @@
                 _context.save();
                 _context.translate(canvasWidthHalf, canvasHeightHalf);
 
-                scene.children.forEach(function(child) {
+                scene.children.forEach(function (child) {
                     if (child instanceof THREE.Sprite && child.material.isSpriteCanvasMaterial) {
                         var position = child.position.clone();
                         position.project(camera);
@@ -114,7 +113,8 @@
     <!-- Custom Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
 
     <style>
         body {
@@ -146,8 +146,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .bounce-in {
@@ -155,10 +162,25 @@
         }
 
         @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-            70% { transform: scale(0.9); opacity: 0.9; }
-            100% { transform: scale(1); opacity: 1; }
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            70% {
+                transform: scale(0.9);
+                opacity: 0.9;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .float {
@@ -166,8 +188,15 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
         }
 
         .node-animation {
@@ -175,9 +204,19 @@
         }
 
         @keyframes nodeFloat {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            33% { transform: translateY(-15px) rotate(120deg); }
-            66% { transform: translateY(10px) rotate(240deg); }
+
+            0%,
+            100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            33% {
+                transform: translateY(-15px) rotate(120deg);
+            }
+
+            66% {
+                transform: translateY(10px) rotate(240deg);
+            }
         }
 
         /* Particle Wave Background Styles */
@@ -197,6 +236,7 @@
         }
     </style>
 </head>
+
 <body class="bg-white text-black antialiased">
 
     <!-- Navigation -->
@@ -212,11 +252,13 @@
                     <a href="#features" class="text-gray-700 hover:text-black transition-colors">Features</a>
                     <a href="#examples" class="text-gray-700 hover:text-black transition-colors">Examples</a>
                     <a href="#ecosystem" class="text-gray-700 hover:text-black transition-colors">Ecosystem</a>
-                    <a href="https://github.com/dowhiledev/nomos" class="text-gray-700 hover:text-black transition-colors">GitHub</a>
+                    <a href="https://github.com/dowhiledev/nomos"
+                        class="text-gray-700 hover:text-black transition-colors">GitHub</a>
                 </div>
 
                 <div class="flex items-center space-x-4">
-                    <a href="#get-started" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+                    <a href="#get-started"
+                        class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
                         Get Started
                     </a>
                 </div>
@@ -227,37 +269,40 @@
     <!-- Hero Section -->
     <section class="hero-gradient pt-24 pb-16 min-h-screen flex items-center relative overflow-hidden">
         <!-- Particle Wave Background -->
-        <canvas id="particle-canvas"></canvas>
-
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8 fade-in">
                     <!-- Announcement -->
                     <div class="inline-flex items-center bg-gray-100 rounded-full px-4 py-2 text-sm">
-                        <span class="bg-black text-white text-xs px-2 py-1 rounded-full mr-3">NEW</span>
-                        <span>Kosmos Studio & Production Suite - Coming Soon</span>
+                        <span class="bg-black text-white text-xs px-2 py-1 rounded-full mr-3">COMING SOON</span>
+                        <span>Kosmos Studio & Production Suite</span>
                         <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
                     </div>
 
                     <!-- Main Headline -->
-                    <div class="space-y-6">
-                        <h1 class="text-5xl lg:text-7xl font-bold leading-tight">
-                            Build <span class="gradient-text">Intelligent</span><br>
-                            AI Agents with<br>
-                            <span class="text-black">Developer Control</span>
+                    <div class="space-y-10 lg:space-y-14">
+                        <h1 class="text-4xl lg:text-5xl font-bold leading-relaxed lg:leading-[1.15]">
+                            Build Intelligent<br>
+                            <span class="bg-black text-white rounded px-2 py-1">AI Agents</span> with<br>
+                            <span class="bg-black text-white rounded px-2 py-1 text-5xl lg:text-6xl font-bold leading-relaxed lg:leading-[1.4]">CONTROL</span>
+                            &amp;
+                            <span class="bg-black text-white rounded px-2 py-1 text-5xl lg:text-6xl font-bold leading-relaxed">RELIABILITY</span>
                         </h1>
 
-                        <p class="text-xl text-gray-600 max-w-2xl leading-relaxed">
-                            Unlike prompt-based frameworks, NOMOS gives developers full control over agent behavior, tool access, and decision flow. Build sophisticated AI agents that work exactly as designed.
+                        <p class="text-xl text-gray-600 max-w-2xl leading-relaxed lg:mt-6">
+                            Unlike prompt-based frameworks, NOMOS gives developers full control over agent behavior,
+                            tool access, and decision flow. Build sophisticated AI agents that work exactly as designed.
                         </p>
                     </div>
 
                     <!-- CTA Buttons -->
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="#get-started" class="bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-all transform hover:scale-105 text-center font-medium">
+                        <a href="#get-started"
+                            class="bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-all transform hover:scale-105 text-center font-medium">
                             Get Started Free
                         </a>
-                        <a href="https://github.com/dowhiledev/nomos" class="border-2 border-black text-black px-8 py-4 rounded-lg hover:bg-black hover:text-white transition-all text-center font-medium">
+                        <a href="https://github.com/dowhiledev/nomos"
+                            class="border-2 border-black text-black px-8 py-4 rounded-lg hover:bg-black hover:text-white transition-all text-center font-medium">
                             <i data-lucide="github" class="w-5 h-5 inline mr-2"></i>
                             View on GitHub
                         </a>
@@ -285,18 +330,14 @@
                 </div>
 
                 <!-- Right side content placeholder for lg screens -->
-                <div class="hidden lg:flex justify-center items-center">
-                    <dotlottie-player
-                        src="https://lottie.host/0e160dfa-be50-40ce-a314-346d0305f815/21drLt2YZM.lottie"
-                        background="transparent"
-                        speed="1"
-                        style="width: 400px; height: 400px"
-                        loop
-                        autoplay>
-                    </dotlottie-player>
+                <div class="hidden lg:block">
+                    <!-- Content can be placed here if needed -->
                 </div>
             </div>
         </div>
+        <canvas id="particle-canvas"></canvas>
+
+
     </section>
 
     <!-- Problem/Solution Section -->
@@ -399,7 +440,8 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-4">Step-based Architecture</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        Define agent behavior as sequences of steps. Each step controls what tools are available and how decisions flow.
+                        Define agent behavior as sequences of steps. Each step controls what tools are available and how
+                        decisions flow.
                     </p>
                 </div>
 
@@ -410,7 +452,8 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-4">Multi-LLM Support</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        OpenAI, Mistral, Gemini, and more. Switch providers with configuration changes, not code rewrites.
+                        OpenAI, Mistral, Gemini, and more. Switch providers with configuration changes, not code
+                        rewrites.
                     </p>
                 </div>
 
@@ -492,7 +535,8 @@
                         </div>
 
                         <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div
+                                class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i data-lucide="credit-card" class="w-6 h-6 text-gray-700"></i>
                             </div>
                             <div class="flex-1">
@@ -503,7 +547,8 @@
                         </div>
 
                         <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <div
+                                class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i data-lucide="check-circle" class="w-6 h-6 text-gray-600"></i>
                             </div>
                             <div class="flex-1">
@@ -522,7 +567,8 @@
                             <h4 class="font-semibold">Controlled Execution</h4>
                         </div>
                         <p class="text-gray-600">
-                            Each step defines exactly what tools are available. No more agents calling inappropriate functions.
+                            Each step defines exactly what tools are available. No more agents calling inappropriate
+                            functions.
                         </p>
                     </div>
 
@@ -542,7 +588,8 @@
                             <h4 class="font-semibold">Easy Testing</h4>
                         </div>
                         <p class="text-gray-600">
-                            Test individual steps and transitions independently. Debug complex workflows with confidence.
+                            Test individual steps and transitions independently. Debug complex workflows with
+                            confidence.
                         </p>
                     </div>
                 </div>
@@ -565,38 +612,46 @@
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Use Case 1: Customer Service -->
                 <div class="text-center group">
-                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                    <div
+                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
                         <i data-lucide="headphones" class="w-10 h-10"></i>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Customer Service</h3>
-                    <p class="text-gray-600">Intelligent support agents that escalate appropriately and access the right tools at the right time.</p>
+                    <p class="text-gray-600">Intelligent support agents that escalate appropriately and access the right
+                        tools at the right time.</p>
                 </div>
 
                 <!-- Use Case 2: Workflow Automation -->
                 <div class="text-center group">
-                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                    <div
+                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
                         <i data-lucide="repeat" class="w-10 h-10"></i>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Process Automation</h3>
-                    <p class="text-gray-600">Multi-step business processes with approvals, notifications, and data validation.</p>
+                    <p class="text-gray-600">Multi-step business processes with approvals, notifications, and data
+                        validation.</p>
                 </div>
 
                 <!-- Use Case 3: Data Analysis -->
                 <div class="text-center group">
-                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                    <div
+                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
                         <i data-lucide="bar-chart" class="w-10 h-10"></i>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">Data Analysis</h3>
-                    <p class="text-gray-600">Intelligent analysis pipelines that know when to aggregate, visualize, or dive deeper.</p>
+                    <p class="text-gray-600">Intelligent analysis pipelines that know when to aggregate, visualize, or
+                        dive deeper.</p>
                 </div>
 
                 <!-- Use Case 4: API Orchestration -->
                 <div class="text-center group">
-                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                    <div
+                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
                         <i data-lucide="network" class="w-10 h-10"></i>
                     </div>
                     <h3 class="text-xl font-semibold mb-3">API Orchestration</h3>
-                    <p class="text-gray-600">Coordinate complex API calls across services with intelligent error handling and retries.</p>
+                    <p class="text-gray-600">Coordinate complex API calls across services with intelligent error
+                        handling and retries.</p>
                 </div>
             </div>
 
@@ -609,8 +664,10 @@
                             <i data-lucide="coffee" class="w-6 h-6 mr-3"></i>
                             <h4 class="font-semibold">Coffee Shop Assistant</h4>
                         </div>
-                        <p class="text-gray-600 text-sm mb-4">Multi-step ordering process with menu recommendations and payment processing</p>
-                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/barista" class="text-black hover:underline text-sm font-medium">
+                        <p class="text-gray-600 text-sm mb-4">Multi-step ordering process with menu recommendations and
+                            payment processing</p>
+                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/barista"
+                            class="text-black hover:underline text-sm font-medium">
                             Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
                         </a>
                     </div>
@@ -620,8 +677,10 @@
                             <i data-lucide="trending-up" class="w-6 h-6 mr-3"></i>
                             <h4 class="font-semibold">Financial Advisor</h4>
                         </div>
-                        <p class="text-gray-600 text-sm mb-4">Investment analysis and portfolio recommendations with risk assessment</p>
-                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/financial-advisor" class="text-black hover:underline text-sm font-medium">
+                        <p class="text-gray-600 text-sm mb-4">Investment analysis and portfolio recommendations with
+                            risk assessment</p>
+                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/financial-advisor"
+                            class="text-black hover:underline text-sm font-medium">
                             Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
                         </a>
                     </div>
@@ -631,8 +690,10 @@
                             <i data-lucide="map" class="w-6 h-6 mr-3"></i>
                             <h4 class="font-semibold">Travel Planner</h4>
                         </div>
-                        <p class="text-gray-600 text-sm mb-4">Intelligent itinerary planning with weather, budget, and preference considerations</p>
-                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/travel-itinery-planner" class="text-black hover:underline text-sm font-medium">
+                        <p class="text-gray-600 text-sm mb-4">Intelligent itinerary planning with weather, budget, and
+                            preference considerations</p>
+                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/travel-itinery-planner"
+                            class="text-black hover:underline text-sm font-medium">
                             Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
                         </a>
                     </div>
@@ -666,7 +727,8 @@
                                 <p class="text-gray-600">AI Agent Framework</p>
                             </div>
                         </div>
-                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Available Now</span>
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Available
+                            Now</span>
                     </div>
                     <p class="text-gray-700 mb-4">
                         The core framework for building intelligent, step-based AI agents with full developer control.
@@ -775,7 +837,8 @@
                 <p class="text-gray-600 mb-6">
                     Join our community to get early access to the complete ecosystem
                 </p>
-                <a href="https://discord.gg/nomos" class="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors">
+                <a href="https://discord.gg/nomos"
+                    class="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors">
                     <i data-lucide="users" class="w-5 h-5 inline mr-2"></i>
                     Join Discord Community
                 </a>
@@ -791,19 +854,23 @@
                     Ready to Build Your AI Agent?
                 </h2>
                 <p class="text-xl text-gray-300 max-w-3xl mx-auto mb-12">
-                    Join thousands of developers building production-ready AI agents with full control and predictable behavior.
+                    Join thousands of developers building production-ready AI agents with full control and predictable
+                    behavior.
                 </p>
 
                 <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
-                    <a href="https://github.com/dowhiledev/nomos" class="bg-white text-black px-8 py-4 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 text-center font-medium">
+                    <a href="https://github.com/dowhiledev/nomos"
+                        class="bg-white text-black px-8 py-4 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 text-center font-medium">
                         <i data-lucide="star" class="w-5 h-5 inline mr-2"></i>
                         Star on GitHub
                     </a>
-                    <a href="https://github.com/dowhiledev/nomos/blob/main/README.md" class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
+                    <a href="https://github.com/dowhiledev/nomos/blob/main/README.md"
+                        class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
                         <i data-lucide="book" class="w-5 h-5 inline mr-2"></i>
                         Read Documentation
                     </a>
-                    <a href="https://discord.gg/nomos" class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
+                    <a href="https://discord.gg/nomos"
+                        class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
                         <i data-lucide="message-circle" class="w-5 h-5 inline mr-2"></i>
                         Join Community
                     </a>
@@ -840,17 +907,22 @@
                         <li><a href="#features" class="hover:text-black">Features</a></li>
                         <li><a href="#examples" class="hover:text-black">Examples</a></li>
                         <li><a href="#ecosystem" class="hover:text-black">Ecosystem</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/releases" class="hover:text-black">Changelog</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/releases"
+                                class="hover:text-black">Changelog</a></li>
                     </ul>
                 </div>
 
                 <div>
                     <h4 class="font-semibold mb-4">Resources</h4>
                     <ul class="space-y-2 text-gray-600">
-                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/README.md" class="hover:text-black">Documentation</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/tree/main/examples" class="hover:text-black">Examples</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/issues" class="hover:text-black">Issues</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/discussions" class="hover:text-black">Discussions</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/README.md"
+                                class="hover:text-black">Documentation</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/tree/main/examples"
+                                class="hover:text-black">Examples</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/issues" class="hover:text-black">Issues</a>
+                        </li>
+                        <li><a href="https://github.com/dowhiledev/nomos/discussions"
+                                class="hover:text-black">Discussions</a></li>
                     </ul>
                 </div>
 
@@ -858,9 +930,12 @@
                     <h4 class="font-semibold mb-4">Community</h4>
                     <ul class="space-y-2 text-gray-600">
                         <li><a href="https://discord.gg/nomos" class="hover:text-black">Discord</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/CONTRIBUTING.md" class="hover:text-black">Contributing</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/CODE_OF_CONDUCT.md" class="hover:text-black">Code of Conduct</a></li>
-                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/LICENSE" class="hover:text-black">License</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/CONTRIBUTING.md"
+                                class="hover:text-black">Contributing</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/CODE_OF_CONDUCT.md"
+                                class="hover:text-black">Code of Conduct</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/LICENSE"
+                                class="hover:text-black">License</a></li>
                     </ul>
                 </div>
             </div>
@@ -872,28 +947,29 @@
     </footer>
 
     <!-- Scroll to Top Button -->
-    <button id="scrollToTop" class="fixed bottom-8 right-8 bg-black text-white p-3 rounded-lg shadow-lg hover:bg-gray-800 transition-all transform hover:scale-110 opacity-0 invisible">
+    <button id="scrollToTop"
+        class="fixed bottom-8 right-8 bg-black text-white p-3 rounded-lg shadow-lg hover:bg-gray-800 transition-all transform hover:scale-110 opacity-0 invisible">
         <i data-lucide="arrow-up" class="w-6 h-6"></i>
     </button>
 
     <script>
         // Three.js SpriteCanvasMaterial Implementation
-        THREE.SpriteCanvasMaterial = function ( parameters ) {
-            THREE.Material.call( this );
+        THREE.SpriteCanvasMaterial = function (parameters) {
+            THREE.Material.call(this);
             this.type = 'SpriteCanvasMaterial';
-            this.color = new THREE.Color( 0xffffff );
-            this.program = function () {};
-            this.setValues( parameters );
+            this.color = new THREE.Color(0xffffff);
+            this.program = function () { };
+            this.setValues(parameters);
         };
 
-        THREE.SpriteCanvasMaterial.prototype = Object.create( THREE.Material.prototype );
+        THREE.SpriteCanvasMaterial.prototype = Object.create(THREE.Material.prototype);
         THREE.SpriteCanvasMaterial.prototype.constructor = THREE.SpriteCanvasMaterial;
         THREE.SpriteCanvasMaterial.prototype.isSpriteCanvasMaterial = true;
 
         THREE.SpriteCanvasMaterial.prototype.clone = function () {
             var material = new THREE.SpriteCanvasMaterial();
-            material.copy( this );
-            material.color.copy( this.color );
+            material.copy(this);
+            material.color.copy(this.color);
             material.program = this.program;
             return material;
         };
@@ -928,7 +1004,7 @@
             var PI2 = Math.PI * 2;
             var material = new THREE.SpriteCanvasMaterial({
                 color: 0x000000, // Black particles for contrast
-                program: function(context) {
+                program: function (context) {
                     context.globalAlpha = 0.2; // More transparent particles
                     context.beginPath();
                     context.arc(0, 0, 0.2, 0, PI2, true); // Reduced particle size
@@ -997,11 +1073,11 @@
 
                     // Position particles at the bottom and create wave motion
                     particle.position.y = -600 + (Math.sin((ix + count) * 0.3) * 50) +
-                                         (Math.sin((iy + count) * 0.5) * 50);
+                        (Math.sin((iy + count) * 0.5) * 50);
 
                     // Scale particles
                     particle.scale.x = particle.scale.y = (Math.sin((ix + count) * 0.3) + 1) * 2 +
-                                                         (Math.sin((iy + count) * 0.5) + 1) * 2;
+                        (Math.sin((iy + count) * 0.5) + 1) * 2;
                 }
             }
 
@@ -1013,7 +1089,7 @@
         lucide.createIcons();
 
         // Initialize particle wave when page loads
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Small delay to ensure canvas and hero section are ready
             setTimeout(initParticleWave, 100);
         });
@@ -1063,4 +1139,5 @@
         }
     </script>
 </body>
+
 </html>
