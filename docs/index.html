@@ -5,178 +5,181 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NOMOS - Build Intelligent AI Agents in Minutes</title>
     <meta name="description" content="NOMOS is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. From no-code to low-code development.">
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
+
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
+
+    <!-- Lottie Player -->
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+
     <!-- Three.js CanvasRenderer -->
     <script>
         // Simplified CanvasRenderer for particle waves
         THREE.CanvasRenderer = function(parameters) {
             parameters = parameters || {};
-            
+
             var _this = this;
             var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas');
             var _context = _canvas.getContext('2d', { alpha: parameters.alpha === true });
             var _clearColor = new THREE.Color(0x000000);
             var _clearAlpha = 0;
-            
+
             this.domElement = _canvas;
             this.autoClear = true;
-            
+
             this.setSize = function(width, height, updateStyle) {
                 _canvas.width = width;
                 _canvas.height = height;
-                
+
                 if (updateStyle !== false) {
                     _canvas.style.width = width + 'px';
                     _canvas.style.height = height + 'px';
                 }
             };
-            
+
             this.setPixelRatio = function(value) {
                 // Handle pixel ratio if needed
             };
-            
+
             this.setClearColor = function(color, alpha) {
                 _clearColor.set(color);
                 _clearAlpha = alpha !== undefined ? alpha : 1;
             };
-            
+
             this.clear = function() {
                 if (_clearAlpha > 0) {
-                    _context.fillStyle = 'rgba(' + 
-                        Math.floor(_clearColor.r * 255) + ',' + 
-                        Math.floor(_clearColor.g * 255) + ',' + 
+                    _context.fillStyle = 'rgba(' +
+                        Math.floor(_clearColor.r * 255) + ',' +
+                        Math.floor(_clearColor.g * 255) + ',' +
                         Math.floor(_clearColor.b * 255) + ',' + _clearAlpha + ')';
                     _context.fillRect(0, 0, _canvas.width, _canvas.height);
                 } else {
                     _context.clearRect(0, 0, _canvas.width, _canvas.height);
                 }
             };
-            
+
             this.render = function(scene, camera) {
                 if (this.autoClear === true) {
                     this.clear();
                 }
-                
+
                 // Simple sprite rendering for particle wave
                 var canvasWidth = _canvas.width;
                 var canvasHeight = _canvas.height;
                 var canvasWidthHalf = canvasWidth / 2;
                 var canvasHeightHalf = canvasHeight / 2;
-                
+
                 _context.save();
                 _context.translate(canvasWidthHalf, canvasHeightHalf);
-                
+
                 scene.children.forEach(function(child) {
                     if (child instanceof THREE.Sprite && child.material.isSpriteCanvasMaterial) {
                         var position = child.position.clone();
                         position.project(camera);
-                        
+
                         var x = position.x * canvasWidthHalf;
                         var y = -position.y * canvasHeightHalf;
-                        
+
                         if (position.z > -1 && position.z < 1) {
                             _context.save();
                             _context.translate(x, y);
                             _context.scale(child.scale.x, child.scale.y);
-                            
+
                             // Set color
                             var color = child.material.color;
-                            _context.fillStyle = 'rgb(' + 
-                                Math.floor(color.r * 255) + ',' + 
-                                Math.floor(color.g * 255) + ',' + 
+                            _context.fillStyle = 'rgb(' +
+                                Math.floor(color.r * 255) + ',' +
+                                Math.floor(color.g * 255) + ',' +
                                 Math.floor(color.b * 255) + ')';
-                            
+
                             // Execute material program
                             child.material.program(_context);
-                            
+
                             _context.restore();
                         }
                     }
                 });
-                
+
                 _context.restore();
             };
         };
     </script>
-    
+
     <!-- Custom Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
-        
+
         .gradient-text {
             background: linear-gradient(135deg, #000000 0%, #4B5563 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        
+
         .hero-gradient {
             background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
         }
-        
+
         .feature-card {
             transition: all 0.3s ease;
         }
-        
+
         .feature-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
-        
+
         .fade-in {
             animation: fadeIn 0.8s ease-in-out;
         }
-        
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
+
         .bounce-in {
             animation: bounceIn 1s ease-out;
         }
-        
+
         @keyframes bounceIn {
             0% { transform: scale(0.3); opacity: 0; }
             50% { transform: scale(1.05); opacity: 0.8; }
             70% { transform: scale(0.9); opacity: 0.9; }
             100% { transform: scale(1); opacity: 1; }
         }
-        
+
         .float {
             animation: float 6s ease-in-out infinite;
         }
-        
+
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-20px); }
         }
-        
+
         .node-animation {
             animation: nodeFloat 8s ease-in-out infinite;
         }
-        
+
         @keyframes nodeFloat {
             0%, 100% { transform: translateY(0px) rotate(0deg); }
             33% { transform: translateY(-15px) rotate(120deg); }
             66% { transform: translateY(10px) rotate(240deg); }
         }
-        
+
         /* Particle Wave Background Styles */
         #particle-canvas {
             position: absolute;
@@ -187,7 +190,7 @@
             z-index: 1;
             pointer-events: none;
         }
-        
+
         .hero-content {
             position: relative;
             z-index: 2;
@@ -195,7 +198,7 @@
     </style>
 </head>
 <body class="bg-white text-black antialiased">
-    
+
     <!-- Navigation -->
     <nav class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-100 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -204,14 +207,14 @@
                     <div class="text-2xl font-bold">NOMOS</div>
                     <span class="bg-black text-white text-xs px-2 py-1 rounded-lg">v0.1.15</span>
                 </div>
-                
+
                 <div class="hidden md:flex items-center space-x-8">
                     <a href="#features" class="text-gray-700 hover:text-black transition-colors">Features</a>
                     <a href="#examples" class="text-gray-700 hover:text-black transition-colors">Examples</a>
                     <a href="#ecosystem" class="text-gray-700 hover:text-black transition-colors">Ecosystem</a>
                     <a href="https://github.com/dowhiledev/nomos" class="text-gray-700 hover:text-black transition-colors">GitHub</a>
                 </div>
-                
+
                 <div class="flex items-center space-x-4">
                     <a href="#get-started" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
                         Get Started
@@ -225,7 +228,7 @@
     <section class="hero-gradient pt-24 pb-16 min-h-screen flex items-center relative overflow-hidden">
         <!-- Particle Wave Background -->
         <canvas id="particle-canvas"></canvas>
-        
+
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8 fade-in">
@@ -235,7 +238,7 @@
                         <span>Kosmos Studio & Production Suite - Coming Soon</span>
                         <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
                     </div>
-                    
+
                     <!-- Main Headline -->
                     <div class="space-y-6">
                         <h1 class="text-5xl lg:text-7xl font-bold leading-tight">
@@ -243,12 +246,12 @@
                             AI Agents with<br>
                             <span class="text-black">Developer Control</span>
                         </h1>
-                        
+
                         <p class="text-xl text-gray-600 max-w-2xl leading-relaxed">
                             Unlike prompt-based frameworks, NOMOS gives developers full control over agent behavior, tool access, and decision flow. Build sophisticated AI agents that work exactly as designed.
                         </p>
                     </div>
-                    
+
                     <!-- CTA Buttons -->
                     <div class="flex flex-col sm:flex-row gap-4">
                         <a href="#get-started" class="bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-all transform hover:scale-105 text-center font-medium">
@@ -259,7 +262,7 @@
                             View on GitHub
                         </a>
                     </div>
-                    
+
                     <!-- Quick Stats -->
                     <div class="flex flex-wrap items-center gap-6 text-sm text-gray-600">
                         <div class="flex items-center space-x-2">
@@ -280,10 +283,17 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Right side content placeholder for lg screens -->
-                <div class="hidden lg:block">
-                    <!-- Content can be placed here if needed -->
+                <div class="hidden lg:flex justify-center items-center">
+                    <dotlottie-player
+                        src="https://lottie.host/0e160dfa-be50-40ce-a314-346d0305f815/21drLt2YZM.lottie"
+                        background="transparent"
+                        speed="1"
+                        style="width: 400px; height: 400px"
+                        loop
+                        autoplay>
+                    </dotlottie-player>
                 </div>
             </div>
         </div>
@@ -300,7 +310,7 @@
                     Stop fighting unpredictable prompts. NOMOS gives you architectural control over your AI agents.
                 </p>
             </div>
-            
+
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <!-- Other Frameworks -->
                 <div class="space-y-6">
@@ -333,7 +343,7 @@
                         </ul>
                     </div>
                 </div>
-                
+
                 <!-- NOMOS -->
                 <div class="space-y-6">
                     <div class="bg-white border-2 border-black rounded-lg p-8">
@@ -380,7 +390,7 @@
                     From rapid prototyping to enterprise deployment. NOMOS scales with your needs.
                 </p>
             </div>
-            
+
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Feature 1: Step-based Architecture -->
                 <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
@@ -392,7 +402,7 @@
                         Define agent behavior as sequences of steps. Each step controls what tools are available and how decisions flow.
                     </p>
                 </div>
-                
+
                 <!-- Feature 2: Multi-LLM Support -->
                 <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
                     <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
@@ -403,7 +413,7 @@
                         OpenAI, Mistral, Gemini, and more. Switch providers with configuration changes, not code rewrites.
                     </p>
                 </div>
-                
+
                 <!-- Feature 3: Tool Control -->
                 <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
                     <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
@@ -414,7 +424,7 @@
                         Control exactly which tools your agent can access at each step. No more unwanted function calls.
                     </p>
                 </div>
-                
+
                 <!-- Feature 4: Configuration-Driven -->
                 <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
                     <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
@@ -425,7 +435,7 @@
                         YAML or Python configuration. Change agent behavior without touching core logic.
                     </p>
                 </div>
-                
+
                 <!-- Feature 5: Session Management -->
                 <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
                     <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
@@ -436,7 +446,7 @@
                         Built-in persistence with Redis or PostgreSQL. Stateful conversations that survive restarts.
                     </p>
                 </div>
-                
+
                 <!-- Feature 6: Cloud Ready -->
                 <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
                     <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
@@ -462,12 +472,12 @@
                     See how NOMOS transforms complex AI workflows into simple, manageable configurations.
                 </p>
             </div>
-            
+
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <!-- Visual Flow -->
                 <div class="bg-white rounded-lg p-8 shadow-lg">
                     <h3 class="text-xl font-semibold mb-6 text-center">Agent Flow Architecture</h3>
-                    
+
                     <!-- Step Flow Visualization -->
                     <div class="space-y-6">
                         <div class="flex items-center space-x-4">
@@ -480,7 +490,7 @@
                             </div>
                             <i data-lucide="arrow-down" class="w-5 h-5 text-gray-400"></i>
                         </div>
-                        
+
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i data-lucide="credit-card" class="w-6 h-6 text-gray-700"></i>
@@ -491,7 +501,7 @@
                             </div>
                             <i data-lucide="arrow-down" class="w-5 h-5 text-gray-400"></i>
                         </div>
-                        
+
                         <div class="flex items-center space-x-4">
                             <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                                 <i data-lucide="check-circle" class="w-6 h-6 text-gray-600"></i>
@@ -503,7 +513,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Benefits -->
                 <div class="space-y-6">
                     <div class="bg-white rounded-lg p-6 border border-gray-200">
@@ -515,7 +525,7 @@
                             Each step defines exactly what tools are available. No more agents calling inappropriate functions.
                         </p>
                     </div>
-                    
+
                     <div class="bg-white rounded-lg p-6 border border-gray-200">
                         <div class="flex items-center mb-4">
                             <i data-lucide="target" class="w-6 h-6 text-black mr-3"></i>
@@ -525,7 +535,7 @@
                             Clear step transitions and conditions ensure your agent behaves consistently every time.
                         </p>
                     </div>
-                    
+
                     <div class="bg-white rounded-lg p-6 border border-gray-200">
                         <div class="flex items-center mb-4">
                             <i data-lucide="zap" class="w-6 h-6 text-black mr-3"></i>
@@ -551,7 +561,7 @@
                     From customer service to complex automation, NOMOS adapts to your business needs.
                 </p>
             </div>
-            
+
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                 <!-- Use Case 1: Customer Service -->
                 <div class="text-center group">
@@ -561,7 +571,7 @@
                     <h3 class="text-xl font-semibold mb-3">Customer Service</h3>
                     <p class="text-gray-600">Intelligent support agents that escalate appropriately and access the right tools at the right time.</p>
                 </div>
-                
+
                 <!-- Use Case 2: Workflow Automation -->
                 <div class="text-center group">
                     <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
@@ -570,7 +580,7 @@
                     <h3 class="text-xl font-semibold mb-3">Process Automation</h3>
                     <p class="text-gray-600">Multi-step business processes with approvals, notifications, and data validation.</p>
                 </div>
-                
+
                 <!-- Use Case 3: Data Analysis -->
                 <div class="text-center group">
                     <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
@@ -579,7 +589,7 @@
                     <h3 class="text-xl font-semibold mb-3">Data Analysis</h3>
                     <p class="text-gray-600">Intelligent analysis pipelines that know when to aggregate, visualize, or dive deeper.</p>
                 </div>
-                
+
                 <!-- Use Case 4: API Orchestration -->
                 <div class="text-center group">
                     <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
@@ -589,7 +599,7 @@
                     <p class="text-gray-600">Coordinate complex API calls across services with intelligent error handling and retries.</p>
                 </div>
             </div>
-            
+
             <!-- Example Projects -->
             <div class="mt-16">
                 <h3 class="text-2xl font-semibold text-center mb-8">Ready-to-Deploy Examples</h3>
@@ -604,7 +614,7 @@
                             Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
                         </a>
                     </div>
-                    
+
                     <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
                         <div class="flex items-center mb-4">
                             <i data-lucide="trending-up" class="w-6 h-6 mr-3"></i>
@@ -615,7 +625,7 @@
                             Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
                         </a>
                     </div>
-                    
+
                     <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
                         <div class="flex items-center mb-4">
                             <i data-lucide="map" class="w-6 h-6 mr-3"></i>
@@ -642,7 +652,7 @@
                     NOMOS is just the beginning. A complete suite of tools for production AI agent deployment.
                 </p>
             </div>
-            
+
             <!-- Current: NOMOS -->
             <div class="mb-12">
                 <div class="bg-white rounded-lg p-8 border-2 border-black">
@@ -669,7 +679,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Coming Soon -->
             <!-- Kosmos Studio - Full Width -->
             <div class="mb-6">
@@ -689,7 +699,7 @@
                     <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
                 </div>
             </div>
-            
+
             <!-- Other Products - Grid -->
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Argus Observability -->
@@ -708,7 +718,7 @@
                     </p>
                     <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
                 </div>
-                
+
                 <!-- Clio Versioning -->
                 <div class="bg-white rounded-lg p-6 border border-gray-200">
                     <div class="flex items-center mb-4">
@@ -725,7 +735,7 @@
                     </p>
                     <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
                 </div>
-                
+
                 <!-- Echo Testing -->
                 <div class="bg-white rounded-lg p-6 border border-gray-200">
                     <div class="flex items-center mb-4">
@@ -742,7 +752,7 @@
                     </p>
                     <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
                 </div>
-                
+
                 <!-- Hermes Deploy -->
                 <div class="bg-white rounded-lg p-6 border border-gray-200">
                     <div class="flex items-center mb-4">
@@ -760,7 +770,7 @@
                     <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
                 </div>
             </div>
-            
+
             <div class="text-center mt-12">
                 <p class="text-gray-600 mb-6">
                     Join our community to get early access to the complete ecosystem
@@ -783,7 +793,7 @@
                 <p class="text-xl text-gray-300 max-w-3xl mx-auto mb-12">
                     Join thousands of developers building production-ready AI agents with full control and predictable behavior.
                 </p>
-                
+
                 <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
                     <a href="https://github.com/dowhiledev/nomos" class="bg-white text-black px-8 py-4 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 text-center font-medium">
                         <i data-lucide="star" class="w-5 h-5 inline mr-2"></i>
@@ -823,7 +833,7 @@
                         </a>
                     </div>
                 </div>
-                
+
                 <div>
                     <h4 class="font-semibold mb-4">Product</h4>
                     <ul class="space-y-2 text-gray-600">
@@ -833,7 +843,7 @@
                         <li><a href="https://github.com/dowhiledev/nomos/releases" class="hover:text-black">Changelog</a></li>
                     </ul>
                 </div>
-                
+
                 <div>
                     <h4 class="font-semibold mb-4">Resources</h4>
                     <ul class="space-y-2 text-gray-600">
@@ -843,7 +853,7 @@
                         <li><a href="https://github.com/dowhiledev/nomos/discussions" class="hover:text-black">Discussions</a></li>
                     </ul>
                 </div>
-                
+
                 <div>
                     <h4 class="font-semibold mb-4">Community</h4>
                     <ul class="space-y-2 text-gray-600">
@@ -854,7 +864,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             <div class="border-t border-gray-200 mt-12 pt-8 text-center text-gray-600">
                 <p>&copy; 2025 NOMOS. Released under the MIT License.</p>
             </div>
@@ -865,7 +875,7 @@
     <button id="scrollToTop" class="fixed bottom-8 right-8 bg-black text-white p-3 rounded-lg shadow-lg hover:bg-gray-800 transition-all transform hover:scale-110 opacity-0 invisible">
         <i data-lucide="arrow-up" class="w-6 h-6"></i>
     </button>
-    
+
     <script>
         // Three.js SpriteCanvasMaterial Implementation
         THREE.SpriteCanvasMaterial = function ( parameters ) {
@@ -898,7 +908,7 @@
         function initParticleWave() {
             const canvas = document.getElementById('particle-canvas');
             const heroSection = document.querySelector('.hero-gradient');
-            
+
             if (!canvas || !heroSection) return;
 
             // Get hero section dimensions
@@ -939,18 +949,18 @@
             }
 
             // Setup renderer with CanvasRenderer
-            renderer = new THREE.CanvasRenderer({ 
+            renderer = new THREE.CanvasRenderer({
                 canvas: canvas,
-                alpha: true 
+                alpha: true
             });
-            
+
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(rect.width, rect.height);
             renderer.setClearColor(scene.fog.color);
 
             // Handle resize
             window.addEventListener('resize', onWindowResize, false);
-            
+
             // Start animation
             animate();
         }
@@ -958,7 +968,7 @@
         function onWindowResize() {
             const heroSection = document.querySelector('.hero-gradient');
             if (!heroSection) return;
-            
+
             const rect = heroSection.getBoundingClientRect();
             windowHalfX = rect.width / 2;
             windowHalfY = rect.height / 2;
@@ -984,11 +994,11 @@
             for (var ix = 0; ix < AMOUNTX; ix++) {
                 for (var iy = 0; iy < AMOUNTY; iy++) {
                     var particle = particles[i++];
-                    
+
                     // Position particles at the bottom and create wave motion
                     particle.position.y = -600 + (Math.sin((ix + count) * 0.3) * 50) +
                                          (Math.sin((iy + count) * 0.5) * 50);
-                    
+
                     // Scale particles
                     particle.scale.x = particle.scale.y = (Math.sin((ix + count) * 0.3) + 1) * 2 +
                                                          (Math.sin((iy + count) * 0.5) + 1) * 2;
@@ -1001,13 +1011,13 @@
 
         // Initialize Lucide icons
         lucide.createIcons();
-        
+
         // Initialize particle wave when page loads
         document.addEventListener('DOMContentLoaded', function() {
             // Small delay to ensure canvas and hero section are ready
             setTimeout(initParticleWave, 100);
         });
-        
+
         // Smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -1021,10 +1031,10 @@
                 }
             });
         });
-        
+
         // Scroll to top button
         const scrollToTopBtn = document.getElementById('scrollToTop');
-        
+
         window.addEventListener('scroll', () => {
             if (window.pageYOffset > 300) {
                 scrollToTopBtn.classList.remove('opacity-0', 'invisible');
@@ -1034,18 +1044,18 @@
                 scrollToTopBtn.classList.remove('opacity-100', 'visible');
             }
         });
-        
+
         scrollToTopBtn.addEventListener('click', () => {
             window.scrollTo({
                 top: 0,
                 behavior: 'smooth'
             });
         });
-        
+
         // Mobile menu toggle (if needed)
         const mobileMenuBtn = document.querySelector('[data-mobile-menu-toggle]');
         const mobileMenu = document.querySelector('[data-mobile-menu]');
-        
+
         if (mobileMenuBtn && mobileMenu) {
             mobileMenuBtn.addEventListener('click', () => {
                 mobileMenu.classList.toggle('hidden');
