@@ -331,7 +331,49 @@
 
                 <!-- Right side content placeholder for lg screens -->
                 <div class="hidden lg:block">
-                    <!-- Content can be placed here if needed -->
+                    <!-- Click to Copy Component -->
+                    <div class="bg-black rounded-lg p-6 font-mono text-sm space-y-3 max-w-md">
+                        <div class="text-white transition-colors mb-4 text-xs uppercase tracking-wide cursor-default">AI Agent Ready in Few Easy Steps</div>
+
+                        <!-- Command 1: Install -->
+                        <div class="group relative">
+                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors" onclick="copyCommand('pip install nomos[cli,openai]', this)">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-gray-500">$</span>
+                                    <span class="text-green-400">pip install nomos[cli,openai]</span>
+                                </div>
+                                <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </div>
+
+                        <!-- Command 2: Init -->
+                        <div class="group relative">
+                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors" onclick="copyCommand('nomos init', this)">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-gray-500">$</span>
+                                    <span class="text-green-400">nomos init --generate</span>
+                                </div>
+                                <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </div>
+
+
+                        <!-- Command 3: Serve -->
+                        <div class="group relative">
+                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors" onclick="copyCommand('nomos serve', this)">
+                                <div class="flex items-center space-x-3">
+                                    <span class="text-gray-500">$</span>
+                                    <span class="text-green-400">nomos serve</span>
+                                </div>
+                                <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
+                            </div>
+                        </div>
+
+                        <!-- Copy feedback -->
+                        <div id="copyFeedback" class="text-center text-xs text-gray-400 opacity-0 transition-opacity">
+                            Copied to clipboard!
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1087,6 +1129,29 @@
 
         // Initialize Lucide icons
         lucide.createIcons();
+
+        // Copy to clipboard functionality
+        function copyCommand(command, element) {
+            navigator.clipboard.writeText(command).then(function() {
+                // Change icon to check temporarily
+                const icon = element.querySelector('i[data-lucide="copy"]');
+                icon.setAttribute('data-lucide', 'check');
+                lucide.createIcons();
+
+                // Show feedback
+                const feedback = document.getElementById('copyFeedback');
+                feedback.style.opacity = '1';
+
+                // Reset after 2 seconds
+                setTimeout(function() {
+                    icon.setAttribute('data-lucide', 'copy');
+                    lucide.createIcons();
+                    feedback.style.opacity = '0';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+            });
+        }
 
         // Initialize particle wave when page loads
         document.addEventListener('DOMContentLoaded', function () {
