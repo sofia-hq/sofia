@@ -1,242 +1,368 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sofia HQ - Enterprise-Grade Agentic AI</title>
+    <title>NOMOS - Build Intelligent AI Agents in Minutes</title>
+    <meta name="description" content="NOMOS is an open-source, configurable multi-step agent framework for building advanced LLM-powered assistants. From no-code to low-code development.">
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Three.js CanvasRenderer -->
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'glass-white': 'rgba(255, 255, 255, 0.7)',
-                        'glass-dark': 'rgba(17, 24, 39, 0.75)',
-                        'glass-card': 'rgba(255, 255, 255, 0.5)',
-                        'glass-card-dark': 'rgba(17, 24, 39, 0.6)',
-                    },
-                    backdropBlur: {
-                        'md': '12px',
-                    }
+        // Simplified CanvasRenderer for particle waves
+        THREE.CanvasRenderer = function(parameters) {
+            parameters = parameters || {};
+            
+            var _this = this;
+            var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas');
+            var _context = _canvas.getContext('2d', { alpha: parameters.alpha === true });
+            var _clearColor = new THREE.Color(0x000000);
+            var _clearAlpha = 0;
+            
+            this.domElement = _canvas;
+            this.autoClear = true;
+            
+            this.setSize = function(width, height, updateStyle) {
+                _canvas.width = width;
+                _canvas.height = height;
+                
+                if (updateStyle !== false) {
+                    _canvas.style.width = width + 'px';
+                    _canvas.style.height = height + 'px';
                 }
-            }
-        }
+            };
+            
+            this.setPixelRatio = function(value) {
+                // Handle pixel ratio if needed
+            };
+            
+            this.setClearColor = function(color, alpha) {
+                _clearColor.set(color);
+                _clearAlpha = alpha !== undefined ? alpha : 1;
+            };
+            
+            this.clear = function() {
+                if (_clearAlpha > 0) {
+                    _context.fillStyle = 'rgba(' + 
+                        Math.floor(_clearColor.r * 255) + ',' + 
+                        Math.floor(_clearColor.g * 255) + ',' + 
+                        Math.floor(_clearColor.b * 255) + ',' + _clearAlpha + ')';
+                    _context.fillRect(0, 0, _canvas.width, _canvas.height);
+                } else {
+                    _context.clearRect(0, 0, _canvas.width, _canvas.height);
+                }
+            };
+            
+            this.render = function(scene, camera) {
+                if (this.autoClear === true) {
+                    this.clear();
+                }
+                
+                // Simple sprite rendering for particle wave
+                var canvasWidth = _canvas.width;
+                var canvasHeight = _canvas.height;
+                var canvasWidthHalf = canvasWidth / 2;
+                var canvasHeightHalf = canvasHeight / 2;
+                
+                _context.save();
+                _context.translate(canvasWidthHalf, canvasHeightHalf);
+                
+                scene.children.forEach(function(child) {
+                    if (child instanceof THREE.Sprite && child.material.isSpriteCanvasMaterial) {
+                        var position = child.position.clone();
+                        position.project(camera);
+                        
+                        var x = position.x * canvasWidthHalf;
+                        var y = -position.y * canvasHeightHalf;
+                        
+                        if (position.z > -1 && position.z < 1) {
+                            _context.save();
+                            _context.translate(x, y);
+                            _context.scale(child.scale.x, child.scale.y);
+                            
+                            // Set color
+                            var color = child.material.color;
+                            _context.fillStyle = 'rgb(' + 
+                                Math.floor(color.r * 255) + ',' + 
+                                Math.floor(color.g * 255) + ',' + 
+                                Math.floor(color.b * 255) + ')';
+                            
+                            // Execute material program
+                            child.material.program(_context);
+                            
+                            _context.restore();
+                        }
+                    }
+                });
+                
+                _context.restore();
+            };
+        };
     </script>
+    
+    <!-- Custom Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            scroll-behavior: smooth;
-            position: relative;
         }
-
-        /* Main content container to ensure proper layering with lottie background */
-        main, section, footer {
-            position: relative;
-            z-index: 1;
-        }
-        .gradient-bg {
-            background: linear-gradient(120deg, #6366f1, #8b5cf6, #d946ef);
-        }
-        .gradient-bg-dark {
-            background: linear-gradient(120deg, #4f46e5, #7e22ce, #c026d3);
-        }
+        
         .gradient-text {
-            background: linear-gradient(120deg, #6366f1, #8b5cf6, #d946ef);
+            background: linear-gradient(135deg, #000000 0%, #4B5563 100%);
             -webkit-background-clip: text;
-            background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-        .dark .gradient-text {
-            background: linear-gradient(120deg, #818cf8, #a78bfa, #e879f9);
-            -webkit-background-clip: text;
             background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        }
+        
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+        
         .feature-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
         }
-        .timeline-dot::before {
-            content: '';
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .bounce-in {
+            animation: bounceIn 1s ease-out;
+        }
+        
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            70% { transform: scale(0.9); opacity: 0.9; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .node-animation {
+            animation: nodeFloat 8s ease-in-out infinite;
+        }
+        
+        @keyframes nodeFloat {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-15px) rotate(120deg); }
+            66% { transform: translateY(10px) rotate(240deg); }
+        }
+        
+        /* Particle Wave Background Styles */
+        #particle-canvas {
             position: absolute;
-            width: 2px;
-            background-color: #d1d5db;
-            top: 24px;
-            bottom: 0;
-            left: 11px;
-            z-index: -1;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
         }
-        .dark .timeline-dot::before {
-            background-color: #374151;
-        }
-        .timeline-dot:last-child::before {
-            display: none;
-        }
-        .glass-effect {
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .dark .glass-card {
-            background: rgba(17, 24, 39, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
-        }
-        .frosted-nav {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .dark .frosted-nav {
-            background: rgba(17, 24, 39, 0.65);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .frosted-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .dark .frosted-card {
-            background: rgba(31, 41, 55, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .hero-pattern {
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-        }
-        .dark .hero-pattern {
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%234f46e5' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
         }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-    <!-- Lottie Background -->
-    <div class="fixed inset-0 w-full h-full z-0 pointer-events-none overflow-hidden" style="min-width: 100vw; min-height: 100vh;" aria-hidden="true">
-        <dotlottie-player src="https://lottie.host/905cf397-e0b3-40cc-b49e-4175998c9511/BATO4r2SVK.lottie" background="transparent" speed="1" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -2; min-width: 100%; min-height: 100%;" loop autoplay></dotlottie-player>
-        <div class="fixed inset-0 bg-white/30 dark:bg-gray-900/40" style="z-index: -1;"></div>
-    </div>
+<body class="bg-white text-black antialiased">
+    
     <!-- Navigation -->
-    <nav class="frosted-nav fixed w-full z-50 transition-all duration-300">
+    <nav class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-100 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0 flex items-center">
-                        <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
-                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="ml-2 text-xl font-bold text-gray-900 dark:text-white">Sofia HQ</span>
-                    </div>
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="text-2xl font-bold">NOMOS</div>
+                    <span class="bg-black text-white text-xs px-2 py-1 rounded-lg">v0.1.15</span>
                 </div>
+                
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#features" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">Features</a>
-                    <a href="#roadmap" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">Roadmap</a>
-                    <a href="#documentation" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">Documentation</a>
-                    <a href="https://github.com/sofia-hq/sofia" target="_blank" class="text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 px-3 py-2 text-sm font-medium">GitHub</a>
-                    <a href="#contact" class="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-300">Contact Us</a>
-                    <button id="theme-toggle" class="p-2 rounded-full text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 focus:outline-none">
-                        <!-- Sun icon -->
-                        <svg id="sun-icon" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
-                        </svg>
-                        <!-- Moon icon -->
-                        <svg id="moon-icon" class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                        </svg>
-                    </button>
+                    <a href="#features" class="text-gray-700 hover:text-black transition-colors">Features</a>
+                    <a href="#examples" class="text-gray-700 hover:text-black transition-colors">Examples</a>
+                    <a href="#ecosystem" class="text-gray-700 hover:text-black transition-colors">Ecosystem</a>
+                    <a href="https://github.com/dowhiledev/nomos" class="text-gray-700 hover:text-black transition-colors">GitHub</a>
                 </div>
-                <div class="flex md:hidden items-center space-x-4">
-                    <button id="theme-toggle-mobile" class="p-2 rounded-full text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 focus:outline-none">
-                        <!-- Sun icon -->
-                        <svg id="sun-icon-mobile" class="w-5 h-5 hidden dark:block" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
-                        </svg>
-                        <!-- Moon icon -->
-                        <svg id="moon-icon-mobile" class="w-5 h-5 block dark:hidden" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                        </svg>
-                    </button>
-                    <button id="mobile-menu-button" class="text-gray-500 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 focus:outline-none">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                
+                <div class="flex items-center space-x-4">
+                    <a href="#get-started" class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+                        Get Started
+                    </a>
                 </div>
-            </div>
-        </div>
-        <!-- Mobile menu -->
-        <div id="mobile-menu" class="hidden md:hidden frosted-nav absolute w-full">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                <a href="#features" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">Features</a>
-                <a href="#roadmap" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">Roadmap</a>
-                <a href="#documentation" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">Documentation</a>
-                <a href="https://github.com/sofia-hq/sofia" target="_blank" class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-indigo-400 dark:hover:bg-gray-800">GitHub</a>
-                <a href="#contact" class="block px-3 py-2 rounded-md text-base font-medium bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600">Contact Us</a>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="pt-24 pb-16 md:pt-32 md:pb-24 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 dark:from-gray-800/80 dark:to-gray-900/80 hero-pattern">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row items-center">
-                <div class="md:w-1/2 md:pr-12">
-                    <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white leading-tight">
-                        Enterprise-Grade <span class="gradient-text">Agentic AI</span> Made Simple
-                    </h1>
-                    <p class="mt-6 text-xl text-gray-600 dark:text-gray-300 max-w-3xl">
-                        Deploy reliable, scalable AI agents with near rule-based system reliability.
-                        Open-source core with enterprise-ready platform.
-                    </p>
-                    <div class="mt-8 flex flex-col sm:flex-row gap-4">
-                        <a href="#contact" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 md:py-4 md:text-lg md:px-8 transition duration-150 ease-in-out">
-                            Get Started
+    <section class="hero-gradient pt-24 pb-16 min-h-screen flex items-center relative overflow-hidden">
+        <!-- Particle Wave Background -->
+        <canvas id="particle-canvas"></canvas>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="space-y-8 fade-in">
+                    <!-- Announcement -->
+                    <div class="inline-flex items-center bg-gray-100 rounded-full px-4 py-2 text-sm">
+                        <span class="bg-black text-white text-xs px-2 py-1 rounded-full mr-3">NEW</span>
+                        <span>Kosmos Studio & Production Suite - Coming Soon</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    </div>
+                    
+                    <!-- Main Headline -->
+                    <div class="space-y-6">
+                        <h1 class="text-5xl lg:text-7xl font-bold leading-tight">
+                            Build <span class="gradient-text">Intelligent</span><br>
+                            AI Agents with<br>
+                            <span class="text-black">Developer Control</span>
+                        </h1>
+                        
+                        <p class="text-xl text-gray-600 max-w-2xl leading-relaxed">
+                            Unlike prompt-based frameworks, NOMOS gives developers full control over agent behavior, tool access, and decision flow. Build sophisticated AI agents that work exactly as designed.
+                        </p>
+                    </div>
+                    
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="#get-started" class="bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-all transform hover:scale-105 text-center font-medium">
+                            Get Started Free
                         </a>
-                        <a href="https://github.com/sofia-hq/sofia" target="_blank" class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 md:py-4 md:text-lg md:px-8 transition duration-150 ease-in-out">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
-                            </svg>
-                            GitHub
+                        <a href="https://github.com/dowhiledev/nomos" class="border-2 border-black text-black px-8 py-4 rounded-lg hover:bg-black hover:text-white transition-all text-center font-medium">
+                            <i data-lucide="github" class="w-5 h-5 inline mr-2"></i>
+                            View on GitHub
                         </a>
                     </div>
-                </div>
-                <div class="md:w-1/2 mt-12 md:mt-0">
-                    <div class="relative">
-                        <div class="absolute inset-0 bg-gradient-to-r from-indigo-400 to-purple-500 dark:from-indigo-600 dark:to-purple-700 rounded-lg transform rotate-3 scale-105 opacity-20 blur-xl"></div>
-                        <div class="relative frosted-card rounded-lg shadow-xl">
-                            <div class="flex items-center justify-between mb-4 p-6 pb-0">
-                                <div class="flex space-x-2">
-                                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                                    <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                                </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">Sofia Agent Builder</div>
-                            </div>
-                            <div class="bg-gray-50 dark:bg-gray-800 m-6 p-4 rounded-md font-mono text-sm text-gray-800 dark:text-gray-200">
-                                <div class="flex items-center mb-3">
-                                    <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                                    <span class="text-green-600 dark:text-green-400 font-semibold">Agent deployed successfully</span>
-                                </div>
-                                <div class="text-gray-600 dark:text-gray-400">
-                                    <span class="text-purple-600 dark:text-purple-400">sofia</span> deploy --agent customer-support<br/>
-                                    <span class="text-gray-500 dark:text-gray-500">✓ Initializing agent...</span><br/>
-                                    <span class="text-gray-500 dark:text-gray-500">✓ Configuring tools...</span><br/>
-                                    <span class="text-gray-500 dark:text-gray-500">✓ Setting up knowledge base...</span><br/>
-                                    <span class="text-gray-500 dark:text-gray-500">✓ Deploying to production...</span><br/>
-                                    <span class="text-green-600 dark:text-green-400">Agent deployed at: https://api.sofiahq.com/agents/customer-support</span>
-                                </div>
-                            </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
+                            <span>Open Source</span>
                         </div>
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
+                            <span>Production Ready</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
+                            <span>Multi-LLM Support</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
+                            <span>Cloud Deployment</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right side content placeholder for lg screens -->
+                <div class="hidden lg:block">
+                    <!-- Content can be placed here if needed -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem/Solution Section -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Developer Control vs Prompt Chaos
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Stop fighting unpredictable prompts. NOMOS gives you architectural control over your AI agents.
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Other Frameworks -->
+                <div class="space-y-6">
+                    <div class="bg-white border border-gray-200 rounded-lg p-8">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="alert-circle" class="w-6 h-6 text-gray-600 mr-3"></i>
+                            <h3 class="text-xl font-semibold text-gray-800">Other Agent Frameworks</h3>
+                        </div>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-center">
+                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
+                                Agents controlled by prompts
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
+                                Unpredictable tool access
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
+                                Hard to debug and test
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
+                                Complex workflow management
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
+                                Inconsistent behavior in production
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- NOMOS -->
+                <div class="space-y-6">
+                    <div class="bg-white border-2 border-black rounded-lg p-8">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-black mr-3"></i>
+                            <h3 class="text-xl font-semibold text-black">NOMOS Framework</h3>
+                        </div>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-center">
+                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
+                                Developers define agent behavior
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
+                                Controlled tool access per step
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
+                                Predictable and testable flows
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
+                                Step-by-step workflow control
+                            </li>
+                            <li class="flex items-center">
+                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
+                                Consistent production behavior
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -244,562 +370,687 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-16 bg-white dark:bg-gray-900 transition-colors duration-300">
+    <section id="features" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-                    Enterprise-Ready AI Agents
+            <div class="text-center mb-16">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Built for Production AI Agents
                 </h2>
-                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
-                    Deploy reliable, scalable AI agents with the click of a button
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    From rapid prototyping to enterprise deployment. NOMOS scales with your needs.
                 </p>
             </div>
-
-            <div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                <!-- Feature 1 -->
-                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
-                    <div class="p-6">
-                        <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">High Reliability</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Sofia delivers agents with near rule-based system reliability, ensuring consistent performance for mission-critical applications.
-                        </p>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1: Step-based Architecture -->
+                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="workflow" class="w-8 h-8 text-white"></i>
                     </div>
-                </div>
-
-                <!-- Feature 2 -->
-                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
-                    <div class="p-6">
-                        <div class="w-12 h-12 rounded-md bg-purple-100 dark:bg-purple-900 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">No-Code Agent Builder</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Build sophisticated AI agents without writing a single line of code. Our visual builder makes agent creation accessible to everyone.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Feature 3 -->
-                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
-                    <div class="p-6">
-                        <div class="w-12 h-12 rounded-md bg-pink-100 dark:bg-pink-900 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-pink-600 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Enterprise Scalability</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Serve thousands of users with our managed platform. We handle server management, observability, and versioning for you.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Feature 4 -->
-                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
-                    <div class="p-6">
-                        <div class="w-12 h-12 rounded-md bg-blue-100 dark:bg-blue-900 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Built-in Integrations</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Connect your agents to popular tools and services out of the box. No additional setup required.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Feature 5 -->
-                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
-                    <div class="p-6">
-                        <div class="w-12 h-12 rounded-md bg-green-100 dark:bg-green-900 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Managed API Keys</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            No need to manage LLM API keys. We handle the complexity of API management and optimization for you.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Feature 6 -->
-                <div class="feature-card frosted-card rounded-xl overflow-hidden transition duration-300">
-                    <div class="p-6">
-                        <div class="w-12 h-12 rounded-md bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mb-4">
-                            <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Open-Core Architecture</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Built on our open-source framework (SOFIA) with enterprise features. Avoid vendor lock-in while getting the support you need.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="py-16 bg-gray-50 dark:bg-gray-800 transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-                    How Sofia Works
-                </h2>
-                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
-                    From idea to production in minutes, not months
-                </p>
-            </div>
-
-            <div class="mt-12 max-w-lg mx-auto grid gap-8 md:grid-cols-3 md:max-w-none">
-                <div class="flex flex-col rounded-lg overflow-hidden glass-card">
-                    <div class="p-6 flex-1">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 dark:bg-indigo-600 text-white mb-4">
-                            <span class="text-lg font-bold">1</span>
-                        </div>
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white">Design Your Agent</h3>
-                        <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
-                            Use our no-code builder to design your agent's behavior, knowledge, and capabilities.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex flex-col rounded-lg overflow-hidden glass-card">
-                    <div class="p-6 flex-1">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 dark:bg-indigo-600 text-white mb-4">
-                            <span class="text-lg font-bold">2</span>
-                        </div>
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white">Configure Integrations</h3>
-                        <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
-                            Connect your agent to your existing tools and data sources with our built-in integrations.
-                        </p>
-                    </div>
-                </div>
-
-                <div class="flex flex-col rounded-lg overflow-hidden glass-card">
-                    <div class="p-6 flex-1">
-                        <div class="flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 dark:bg-indigo-600 text-white mb-4">
-                            <span class="text-lg font-bold">3</span>
-                        </div>
-                        <h3 class="text-xl font-medium text-gray-900 dark:text-white">Deploy & Scale</h3>
-                        <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
-                            One-click deployment to our managed platform. We handle scaling, monitoring, and maintenance.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Roadmap Section -->
-    <section id="roadmap" class="py-16 bg-white dark:bg-gray-900 transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-                    Product Roadmap
-                </h2>
-                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
-                    Our vision for the future of Sofia HQ
-                </p>
-            </div>
-
-            <div class="mt-16 max-w-3xl mx-auto">
-                <div class="space-y-8">
-                    <!-- Current -->
-                    <div class="relative pl-8 timeline-dot">
-                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-green-500 dark:bg-green-600 rounded-full">
-                            <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Current Release</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Open-source framework with core agentic capabilities, no-code agent builder, and basic integrations.
-                        </p>
-                        <div class="mt-3 flex items-center text-sm text-green-600 dark:text-green-400">
-                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                            </svg>
-                            Available now
-                        </div>
-                    </div>
-
-                    <!-- Q2 2024 -->
-                    <div class="relative pl-8 timeline-dot">
-                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
-                            <span class="text-white text-xs font-bold">Q3</span>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Q3 2025</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Enterprise platform launch with managed deployments, observability tools, and expanded integration catalog.
-                        </p>
-                    </div>
-
-                    <!-- Q3 2024 -->
-                    <div class="relative pl-8 timeline-dot">
-                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
-                            <span class="text-white text-xs font-bold">Q4</span>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">Q4 2025</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Advanced analytics dashboard, multi-agent orchestration, and custom LLM support.
-                        </p>
-                    </div>
-
-                    <!-- 2025 -->
-                    <div class="relative pl-8">
-                        <div class="absolute left-0 top-1 flex items-center justify-center w-6 h-6 bg-indigo-500 dark:bg-indigo-600 rounded-full">
-                            <span class="text-white text-xs font-bold">26</span>
-                        </div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">2026</h3>
-                        <p class="mt-2 text-gray-600 dark:text-gray-300">
-                            Enterprise security features, private cloud deployment options, and advanced agent collaboration tools.
-                            Industry-specific agent templates, advanced reasoning capabilities, and autonomous agent networks.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Documentation Section -->
-    <section id="documentation" class="py-16 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 dark:from-gray-800/80 dark:to-gray-900/80 hero-pattern transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center">
-                <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white sm:text-4xl">
-                    Documentation & Resources
-                </h2>
-                <p class="mt-4 max-w-2xl mx-auto text-xl text-gray-500 dark:text-gray-400">
-                    Everything you need to get started with Sofia
-                </p>
-            </div>
-
-            <div class="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                <a href="#" class="group">
-                    <div class="h-full flex flex-col rounded-lg overflow-hidden glass-card group-hover:shadow-lg transition duration-300">
-                        <div class="p-6 flex-1">
-                            <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
-                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition duration-300">Documentation</h3>
-                            <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
-                                Comprehensive guides, API references, and examples to help you build with Sofia.
-                            </p>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-3">
-                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">
-                                Read the docs →
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <a href="https://github.com/sofia-hq/sofia" target="_blank" class="group">
-                    <div class="h-full flex flex-col rounded-lg overflow-hidden glass-card group-hover:shadow-lg transition duration-300">
-                        <div class="p-6 flex-1">
-                            <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
-                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition duration-300">GitHub Repository</h3>
-                            <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
-                                Explore our open-source code, contribute to the project, and join our community.
-                            </p>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-3">
-                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">
-                                View on GitHub →
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <a href="#" class="group">
-                    <div class="h-full flex flex-col rounded-lg overflow-hidden glass-card group-hover:shadow-lg transition duration-300">
-                        <div class="p-6 flex-1">
-                            <div class="w-12 h-12 rounded-md bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center mb-4">
-                                <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition duration-300">Tutorials & Examples</h3>
-                            <p class="mt-3 text-base text-gray-500 dark:text-gray-300">
-                                Step-by-step tutorials and example projects to help you build your first Sofia agent.
-                            </p>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-800 px-6 py-3">
-                            <div class="text-sm font-medium text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-300">
-                                View tutorials →
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- CTA Section -->
-    <section id="contact" class="py-16 bg-gradient-to-r from-indigo-700 to-purple-700 dark:from-indigo-900 dark:to-purple-900 transition-colors duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:flex lg:items-center lg:justify-between">
-                <div class="lg:w-1/2">
-                    <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
-                        Ready to transform your business with AI?
-                    </h2>
-                    <p class="mt-4 text-lg text-indigo-100">
-                        Get in touch to learn how Sofia can help you build reliable, scalable AI agents for your enterprise.
+                    <h3 class="text-xl font-semibold mb-4">Step-based Architecture</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Define agent behavior as sequences of steps. Each step controls what tools are available and how decisions flow.
                     </p>
-                    <div class="mt-8">
-                        <h3 class="text-xl font-semibold text-white">We're looking for:</h3>
-                        <div class="mt-4 flex flex-col sm:flex-row gap-4">
-                            <div class="flex items-center">
-                                <svg class="h-6 w-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="ml-2 text-white">Early adopters</span>
+                </div>
+                
+                <!-- Feature 2: Multi-LLM Support -->
+                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="brain" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-4">Multi-LLM Support</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        OpenAI, Mistral, Gemini, and more. Switch providers with configuration changes, not code rewrites.
+                    </p>
+                </div>
+                
+                <!-- Feature 3: Tool Control -->
+                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="wrench" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-4">Precise Tool Control</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Control exactly which tools your agent can access at each step. No more unwanted function calls.
+                    </p>
+                </div>
+                
+                <!-- Feature 4: Configuration-Driven -->
+                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="settings" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-4">Configuration-Driven</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        YAML or Python configuration. Change agent behavior without touching core logic.
+                    </p>
+                </div>
+                
+                <!-- Feature 5: Session Management -->
+                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="database" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-4">Session Management</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Built-in persistence with Redis or PostgreSQL. Stateful conversations that survive restarts.
+                    </p>
+                </div>
+                
+                <!-- Feature 6: Cloud Ready -->
+                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
+                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                        <i data-lucide="cloud" class="w-8 h-8 text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-4">Deploy Anywhere</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Docker containers, Kubernetes, AWS, Azure, GCP. Production-ready deployment options.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Visualization -->
+    <section class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Simple Configuration, Powerful Results
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    See how NOMOS transforms complex AI workflows into simple, manageable configurations.
+                </p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Visual Flow -->
+                <div class="bg-white rounded-lg p-8 shadow-lg">
+                    <h3 class="text-xl font-semibold mb-6 text-center">Agent Flow Architecture</h3>
+                    
+                    <!-- Step Flow Visualization -->
+                    <div class="space-y-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="play" class="w-6 h-6 text-white"></i>
                             </div>
-                            <div class="flex items-center">
-                                <svg class="h-6 w-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="ml-2 text-white">Strategic partners</span>
+                            <div class="flex-1">
+                                <div class="font-medium">Step 1: Greeting</div>
+                                <div class="text-sm text-gray-600">Tools: get_menu, take_order</div>
                             </div>
-                            <div class="flex items-center">
-                                <svg class="h-6 w-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                <span class="ml-2 text-white">Investors</span>
+                            <i data-lucide="arrow-down" class="w-5 h-5 text-gray-400"></i>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="credit-card" class="w-6 h-6 text-gray-700"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-medium">Step 2: Payment</div>
+                                <div class="text-sm text-gray-600">Tools: process_payment, send_receipt</div>
+                            </div>
+                            <i data-lucide="arrow-down" class="w-5 h-5 text-gray-400"></i>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i data-lucide="check-circle" class="w-6 h-6 text-gray-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-medium">Complete</div>
+                                <div class="text-sm text-gray-600">Order processed successfully</div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="mt-10 lg:mt-0 lg:w-1/2 lg:pl-8">
-                    <div class="glass-card rounded-lg overflow-hidden">
-                        <form class="p-6 space-y-6">
-                            <div>
-                                <label for="name" class="block text-sm font-medium text-white">Name</label>
-                                <div class="mt-1">
-                                    <input type="text" name="name" id="name" class="block w-full rounded-md border-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-indigo-800/50 dark:bg-indigo-900/50 text-white placeholder-indigo-300" placeholder="Your name">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="email" class="block text-sm font-medium text-white">Email</label>
-                                <div class="mt-1">
-                                    <input type="email" name="email" id="email" class="block w-full rounded-md border-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-indigo-800/50 dark:bg-indigo-900/50 text-white placeholder-indigo-300" placeholder="you@example.com">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="message" class="block text-sm font-medium text-white">Message</label>
-                                <div class="mt-1">
-                                    <textarea id="message" name="message" rows="4" class="block w-full rounded-md border-indigo-500 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 bg-indigo-800/50 dark:bg-indigo-900/50 text-white placeholder-indigo-300" placeholder="Tell us how we can help you"></textarea>
-                                </div>
-                            </div>
-                            <div>
-                                <button type="button" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-indigo-700 dark:text-indigo-900 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-indigo-700 w-full justify-center transition-colors duration-300">
-                                    Contact Us
-                                </button>
-                            </div>
-                        </form>
+                
+                <!-- Benefits -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-lg p-6 border border-gray-200">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="shield" class="w-6 h-6 text-black mr-3"></i>
+                            <h4 class="font-semibold">Controlled Execution</h4>
+                        </div>
+                        <p class="text-gray-600">
+                            Each step defines exactly what tools are available. No more agents calling inappropriate functions.
+                        </p>
                     </div>
+                    
+                    <div class="bg-white rounded-lg p-6 border border-gray-200">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="target" class="w-6 h-6 text-black mr-3"></i>
+                            <h4 class="font-semibold">Predictable Behavior</h4>
+                        </div>
+                        <p class="text-gray-600">
+                            Clear step transitions and conditions ensure your agent behaves consistently every time.
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-6 border border-gray-200">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="zap" class="w-6 h-6 text-black mr-3"></i>
+                            <h4 class="font-semibold">Easy Testing</h4>
+                        </div>
+                        <p class="text-gray-600">
+                            Test individual steps and transitions independently. Debug complex workflows with confidence.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section id="examples" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Built for Every Use Case
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    From customer service to complex automation, NOMOS adapts to your business needs.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Use Case 1: Customer Service -->
+                <div class="text-center group">
+                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                        <i data-lucide="headphones" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Customer Service</h3>
+                    <p class="text-gray-600">Intelligent support agents that escalate appropriately and access the right tools at the right time.</p>
+                </div>
+                
+                <!-- Use Case 2: Workflow Automation -->
+                <div class="text-center group">
+                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                        <i data-lucide="repeat" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Process Automation</h3>
+                    <p class="text-gray-600">Multi-step business processes with approvals, notifications, and data validation.</p>
+                </div>
+                
+                <!-- Use Case 3: Data Analysis -->
+                <div class="text-center group">
+                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                        <i data-lucide="bar-chart" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">Data Analysis</h3>
+                    <p class="text-gray-600">Intelligent analysis pipelines that know when to aggregate, visualize, or dive deeper.</p>
+                </div>
+                
+                <!-- Use Case 4: API Orchestration -->
+                <div class="text-center group">
+                    <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
+                        <i data-lucide="network" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-3">API Orchestration</h3>
+                    <p class="text-gray-600">Coordinate complex API calls across services with intelligent error handling and retries.</p>
+                </div>
+            </div>
+            
+            <!-- Example Projects -->
+            <div class="mt-16">
+                <h3 class="text-2xl font-semibold text-center mb-8">Ready-to-Deploy Examples</h3>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="coffee" class="w-6 h-6 mr-3"></i>
+                            <h4 class="font-semibold">Coffee Shop Assistant</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">Multi-step ordering process with menu recommendations and payment processing</p>
+                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/barista" class="text-black hover:underline text-sm font-medium">
+                            Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="trending-up" class="w-6 h-6 mr-3"></i>
+                            <h4 class="font-semibold">Financial Advisor</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">Investment analysis and portfolio recommendations with risk assessment</p>
+                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/financial-advisor" class="text-black hover:underline text-sm font-medium">
+                            Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
+                        <div class="flex items-center mb-4">
+                            <i data-lucide="map" class="w-6 h-6 mr-3"></i>
+                            <h4 class="font-semibold">Travel Planner</h4>
+                        </div>
+                        <p class="text-gray-600 text-sm mb-4">Intelligent itinerary planning with weather, budget, and preference considerations</p>
+                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/travel-itinery-planner" class="text-black hover:underline text-sm font-medium">
+                            Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section -->
+    <section id="ecosystem" class="py-20 bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Complete AI Agent Ecosystem
+                </h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    NOMOS is just the beginning. A complete suite of tools for production AI agent deployment.
+                </p>
+            </div>
+            
+            <!-- Current: NOMOS -->
+            <div class="mb-12">
+                <div class="bg-white rounded-lg p-8 border-2 border-black">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-black rounded-lg flex items-center justify-center mr-4">
+                                <span class="text-white font-bold">N</span>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold">NOMOS</h3>
+                                <p class="text-gray-600">AI Agent Framework</p>
+                            </div>
+                        </div>
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Available Now</span>
+                    </div>
+                    <p class="text-gray-700 mb-4">
+                        The core framework for building intelligent, step-based AI agents with full developer control.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Step-based flows</span>
+                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Multi-LLM support</span>
+                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Tool control</span>
+                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Session management</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Coming Soon -->
+            <!-- Kosmos Studio - Full Width -->
+            <div class="mb-6">
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="palette" class="w-5 h-5 text-gray-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Kosmos</h4>
+                            <p class="text-sm text-gray-600">Visual Studio</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        No-code visual builder for AI agents. Drag, drop, deploy.
+                    </p>
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                </div>
+            </div>
+            
+            <!-- Other Products - Grid -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Argus Observability -->
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="eye" class="w-5 h-5 text-gray-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Argus</h4>
+                            <p class="text-sm text-gray-600">Observability</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Real-time monitoring, tracing, and analytics for your agents.
+                    </p>
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                </div>
+                
+                <!-- Clio Versioning -->
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="git-branch" class="w-5 h-5 text-gray-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Clio</h4>
+                            <p class="text-sm text-gray-600">Versioning</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Version control and rollback for agent configurations and models.
+                    </p>
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                </div>
+                
+                <!-- Echo Testing -->
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="check-square" class="w-5 h-5 text-gray-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Echo</h4>
+                            <p class="text-sm text-gray-600">Testing</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        Automated testing framework for AI agent behavior and performance.
+                    </p>
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                </div>
+                
+                <!-- Hermes Deploy -->
+                <div class="bg-white rounded-lg p-6 border border-gray-200">
+                    <div class="flex items-center mb-4">
+                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="rocket" class="w-5 h-5 text-gray-600"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold">Hermes</h4>
+                            <p class="text-sm text-gray-600">Enterprise Deployment</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">
+                        One-click deployment to any cloud provider with auto-scaling, security, and compliance built-in.
+                    </p>
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                </div>
+            </div>
+            
+            <div class="text-center mt-12">
+                <p class="text-gray-600 mb-6">
+                    Join our community to get early access to the complete ecosystem
+                </p>
+                <a href="https://discord.gg/nomos" class="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors">
+                    <i data-lucide="users" class="w-5 h-5 inline mr-2"></i>
+                    Join Discord Community
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started Section -->
+    <section id="get-started" class="py-20 bg-black text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
+                    Ready to Build Your AI Agent?
+                </h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto mb-12">
+                    Join thousands of developers building production-ready AI agents with full control and predictable behavior.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+                    <a href="https://github.com/dowhiledev/nomos" class="bg-white text-black px-8 py-4 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 text-center font-medium">
+                        <i data-lucide="star" class="w-5 h-5 inline mr-2"></i>
+                        Star on GitHub
+                    </a>
+                    <a href="https://github.com/dowhiledev/nomos/blob/main/README.md" class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
+                        <i data-lucide="book" class="w-5 h-5 inline mr-2"></i>
+                        Read Documentation
+                    </a>
+                    <a href="https://discord.gg/nomos" class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
+                        <i data-lucide="message-circle" class="w-5 h-5 inline mr-2"></i>
+                        Join Community
+                    </a>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 dark:bg-black transition-colors duration-300">
-        <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                    <div class="flex items-center">
-                        <svg class="h-8 w-8 text-indigo-500 dark:text-indigo-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
-                            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                        <span class="ml-2 text-xl font-bold text-white">Sofia HQ</span>
-                    </div>
-                    <p class="mt-4 text-base text-gray-400">
-                        Enterprise-grade agentic AI with the reliability of rule-based systems.
+    <footer class="bg-gray-50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="space-y-4">
+                    <div class="text-2xl font-bold">NOMOS</div>
+                    <p class="text-gray-600">
+                        The open-source framework for building intelligent AI agents with developer control.
                     </p>
-                    <div class="mt-6 flex space-x-6">
-                        <a href="#" class="text-gray-400 hover:text-gray-300">
-                            <span class="sr-only">Twitter</span>
-                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84"></path>
-                            </svg>
+                    <div class="flex space-x-4">
+                        <a href="https://github.com/dowhiledev/nomos" class="text-gray-600 hover:text-black">
+                            <i data-lucide="github" class="w-6 h-6"></i>
                         </a>
-                        <a href="https://github.com/sofia-hq/sofia" target="_blank" class="text-gray-400 hover:text-gray-300">
-                            <span class="sr-only">GitHub</span>
-                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"></path>
-                            </svg>
+                        <a href="https://twitter.com/dowhiledev" class="text-gray-600 hover:text-black">
+                            <i data-lucide="twitter" class="w-6 h-6"></i>
                         </a>
-                        <a href="#" class="text-gray-400 hover:text-gray-300">
-                            <span class="sr-only">LinkedIn</span>
-                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" clip-rule="evenodd"></path>
-                            </svg>
+                        <a href="https://discord.gg/nomos" class="text-gray-600 hover:text-black">
+                            <i data-lucide="message-circle" class="w-6 h-6"></i>
                         </a>
                     </div>
                 </div>
+                
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Resources</h3>
-                    <ul class="mt-4 space-y-4">
-                        <li>
-                            <a href="#" class="text-base text-gray-300 hover:text-white">Documentation</a>
-                        </li>
-                        <li>
-                            <a href="https://github.com/sofia-hq/sofia" target="_blank" class="text-base text-gray-300 hover:text-white">GitHub</a>
-                        </li>
-                        <li>
-                            <a href="#" class="text-base text-gray-300 hover:text-white">Tutorials</a>
-                        </li>
-                        <li>
-                            <a href="#" class="text-base text-gray-300 hover:text-white">Blog</a>
-                        </li>
+                    <h4 class="font-semibold mb-4">Product</h4>
+                    <ul class="space-y-2 text-gray-600">
+                        <li><a href="#features" class="hover:text-black">Features</a></li>
+                        <li><a href="#examples" class="hover:text-black">Examples</a></li>
+                        <li><a href="#ecosystem" class="hover:text-black">Ecosystem</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/releases" class="hover:text-black">Changelog</a></li>
                     </ul>
                 </div>
+                
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-400 tracking-wider uppercase">Company</h3>
-                    <ul class="mt-4 space-y-4">
-                        <li>
-                            <a href="#" class="text-base text-gray-300 hover:text-white">About</a>
-                        </li>
-                        <li>
-                            <a href="#" class="text-base text-gray-300 hover:text-white">Careers</a>
-                        </li>
-                        <li>
-                            <a href="#contact" class="text-base text-gray-300 hover:text-white">Contact</a>
-                        </li>
-                        <li>
-                            <a href="#" class="text-base text-gray-300 hover:text-white">Investors</a>
-                        </li>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-gray-600">
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/README.md" class="hover:text-black">Documentation</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/tree/main/examples" class="hover:text-black">Examples</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/issues" class="hover:text-black">Issues</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/discussions" class="hover:text-black">Discussions</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-semibold mb-4">Community</h4>
+                    <ul class="space-y-2 text-gray-600">
+                        <li><a href="https://discord.gg/nomos" class="hover:text-black">Discord</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/CONTRIBUTING.md" class="hover:text-black">Contributing</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/CODE_OF_CONDUCT.md" class="hover:text-black">Code of Conduct</a></li>
+                        <li><a href="https://github.com/dowhiledev/nomos/blob/main/LICENSE" class="hover:text-black">License</a></li>
                     </ul>
                 </div>
             </div>
-            <div class="mt-12 border-t border-gray-800 pt-8">
-                <p class="text-base text-gray-400 text-center">
-                    &copy; 2025 Sofia HQ. All rights reserved.
-                </p>
+            
+            <div class="border-t border-gray-200 mt-12 pt-8 text-center text-gray-600">
+                <p>&copy; 2025 NOMOS. Released under the MIT License.</p>
             </div>
         </div>
     </footer>
 
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTop" class="fixed bottom-8 right-8 bg-black text-white p-3 rounded-lg shadow-lg hover:bg-gray-800 transition-all transform hover:scale-110 opacity-0 invisible">
+        <i data-lucide="arrow-up" class="w-6 h-6"></i>
+    </button>
+    
     <script>
-        // Theme toggle functionality
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const themeToggleBtnMobile = document.getElementById('theme-toggle-mobile');
-        const html = document.documentElement;
+        // Three.js SpriteCanvasMaterial Implementation
+        THREE.SpriteCanvasMaterial = function ( parameters ) {
+            THREE.Material.call( this );
+            this.type = 'SpriteCanvasMaterial';
+            this.color = new THREE.Color( 0xffffff );
+            this.program = function () {};
+            this.setValues( parameters );
+        };
 
-        // Always set dark theme as default, override if user has explicitly set light theme
-        if (localStorage.theme === 'light') {
-            html.classList.remove('dark');
-        } else {
-            html.classList.add('dark');
-            localStorage.theme = 'dark';
-        }
+        THREE.SpriteCanvasMaterial.prototype = Object.create( THREE.Material.prototype );
+        THREE.SpriteCanvasMaterial.prototype.constructor = THREE.SpriteCanvasMaterial;
+        THREE.SpriteCanvasMaterial.prototype.isSpriteCanvasMaterial = true;
 
-        // Toggle theme function
-        function toggleTheme() {
-            if (html.classList.contains('dark')) {
-                html.classList.remove('dark');
-                localStorage.theme = 'light';
-            } else {
-                html.classList.add('dark');
-                localStorage.theme = 'dark';
-            }
-        }
+        THREE.SpriteCanvasMaterial.prototype.clone = function () {
+            var material = new THREE.SpriteCanvasMaterial();
+            material.copy( this );
+            material.color.copy( this.color );
+            material.program = this.program;
+            return material;
+        };
 
-        // Add event listeners to theme toggle buttons
-        themeToggleBtn.addEventListener('click', toggleTheme);
-        themeToggleBtnMobile.addEventListener('click', toggleTheme);
+        // Particle Wave Variables - exactly matching the example
+        var SEPARATION = 200, AMOUNTX = 40, AMOUNTY = 60;
+        var camera, scene, renderer;
+        var particles = [];
+        var count = 0;
+        var windowHalfX, windowHalfY;
 
-        // Mobile menu toggle
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
+        function initParticleWave() {
+            const canvas = document.getElementById('particle-canvas');
+            const heroSection = document.querySelector('.hero-gradient');
+            
+            if (!canvas || !heroSection) return;
 
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
-        });
+            // Get hero section dimensions
+            const rect = heroSection.getBoundingClientRect();
+            windowHalfX = rect.width / 2;
+            windowHalfY = rect.height / 2;
 
-        // Close mobile menu when clicking on a link
-        const mobileMenuLinks = mobileMenu.querySelectorAll('a');
-        mobileMenuLinks.forEach(link => {
-            link.addEventListener('click', () => {
-                mobileMenu.classList.add('hidden');
+            // Setup camera for side profile view
+            camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 1, 10000);
+            camera.position.set(0, 0, 1000);
+
+            // Setup scene with fog
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0xffffff, 1000, 4000);
+
+            // Create particle material with black color for better contrast
+            var PI2 = Math.PI * 2;
+            var material = new THREE.SpriteCanvasMaterial({
+                color: 0x000000, // Black particles for contrast
+                program: function(context) {
+                    context.globalAlpha = 0.2; // More transparent particles
+                    context.beginPath();
+                    context.arc(0, 0, 0.2, 0, PI2, true); // Reduced particle size
+                    context.fill();
+                }
             });
+
+            // Create particles grid spread across the width and depth
+            var i = 0;
+            for (var ix = 0; ix < AMOUNTX; ix++) {
+                for (var iy = 0; iy < AMOUNTY; iy++) {
+                    var particle = particles[i++] = new THREE.Sprite(material);
+                    particle.position.x = ix * SEPARATION - ((AMOUNTX * SEPARATION) / 2);
+                    particle.position.z = iy * SEPARATION - ((AMOUNTY * SEPARATION) / 2);
+                    particle.position.y = -800; // Start even further down at bottom
+                    scene.add(particle);
+                }
+            }
+
+            // Setup renderer with CanvasRenderer
+            renderer = new THREE.CanvasRenderer({ 
+                canvas: canvas,
+                alpha: true 
+            });
+            
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(rect.width, rect.height);
+            renderer.setClearColor(scene.fog.color);
+
+            // Handle resize
+            window.addEventListener('resize', onWindowResize, false);
+            
+            // Start animation
+            animate();
+        }
+
+        function onWindowResize() {
+            const heroSection = document.querySelector('.hero-gradient');
+            if (!heroSection) return;
+            
+            const rect = heroSection.getBoundingClientRect();
+            windowHalfX = rect.width / 2;
+            windowHalfY = rect.height / 2;
+
+            camera.aspect = rect.width / rect.height;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(rect.width, rect.height);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            render();
+        }
+
+        function render() {
+            // Side profile camera position - looking at the wave from the side
+            camera.position.set(0, 0, 1000);
+            camera.lookAt(0, -200, 0); // Look down towards the bottom of the screen
+
+            var i = 0;
+
+            for (var ix = 0; ix < AMOUNTX; ix++) {
+                for (var iy = 0; iy < AMOUNTY; iy++) {
+                    var particle = particles[i++];
+                    
+                    // Position particles at the bottom and create wave motion
+                    particle.position.y = -600 + (Math.sin((ix + count) * 0.3) * 50) +
+                                         (Math.sin((iy + count) * 0.5) * 50);
+                    
+                    // Scale particles
+                    particle.scale.x = particle.scale.y = (Math.sin((ix + count) * 0.3) + 1) * 2 +
+                                                         (Math.sin((iy + count) * 0.5) + 1) * 2;
+                }
+            }
+
+            renderer.render(scene, camera);
+            count += 0.1; // Animation speed matching example
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Initialize particle wave when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Small delay to ensure canvas and hero section are ready
+            setTimeout(initParticleWave, 100);
         });
-
-        // Smooth scrolling for anchor links
+        
+        // Smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
+            anchor.addEventListener('click', function (e) {
                 e.preventDefault();
-
-                const targetId = this.getAttribute('href');
-                if (targetId === '#') return;
-
-                const targetElement = document.querySelector(targetId);
-                if (targetElement) {
-                    window.scrollTo({
-                        top: targetElement.offsetTop - 80,
-                        behavior: 'smooth'
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
                     });
                 }
             });
         });
-
-        // Form submission
-        const contactForm = document.querySelector('form');
-        const contactButton = contactForm.querySelector('button');
-
-        contactButton.addEventListener('click', () => {
-            const nameInput = document.getElementById('name');
-            const emailInput = document.getElementById('email');
-            const messageInput = document.getElementById('message');
-
-            if (nameInput.value && emailInput.value && messageInput.value) {
-                contactButton.textContent = 'Message Sent!';
-                contactButton.classList.remove('bg-white', 'text-indigo-700', 'hover:bg-indigo-50');
-                contactButton.classList.add('bg-green-500', 'text-white', 'hover:bg-green-600');
-
-                // Reset form
-                setTimeout(() => {
-                    nameInput.value = '';
-                    emailInput.value = '';
-                    messageInput.value = '';
-
-                    setTimeout(() => {
-                        contactButton.textContent = 'Contact Us';
-                        contactButton.classList.remove('bg-green-500', 'text-white', 'hover:bg-green-600');
-                        contactButton.classList.add('bg-white', 'text-indigo-700', 'hover:bg-indigo-50');
-                    }, 2000);
-                }, 1000);
-            }
-        });
-
-        // Navbar scroll effect
-        const nav = document.querySelector('nav');
+        
+        // Scroll to top button
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 10) {
-                nav.classList.add('shadow-md');
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.remove('opacity-0', 'invisible');
+                scrollToTopBtn.classList.add('opacity-100', 'visible');
             } else {
-                nav.classList.remove('shadow-md');
+                scrollToTopBtn.classList.add('opacity-0', 'invisible');
+                scrollToTopBtn.classList.remove('opacity-100', 'visible');
             }
         });
+        
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        // Mobile menu toggle (if needed)
+        const mobileMenuBtn = document.querySelector('[data-mobile-menu-toggle]');
+        const mobileMenu = document.querySelector('[data-mobile-menu]');
+        
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93db026cd4ae5134',t:'MTc0Njg5NjYwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
