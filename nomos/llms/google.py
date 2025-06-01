@@ -43,7 +43,7 @@ class Gemini(LLMBase):
             from google.genai import types
         except ImportError:
             raise ImportError(
-                "Google GenAI package is not installed. Please install it using 'pip install sofia-agent[google]."
+                "Google GenAI package is not installed. Please install it using 'pip install nomos[google]."
             )
 
         system_message = next(msg.content for msg in messages if msg.role == "system")
