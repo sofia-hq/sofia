@@ -25,7 +25,7 @@ class Mistral(LLMBase):
             from mistralai import Mistral
         except ImportError:
             raise ImportError(
-                "Mistral package is not installed. Please install it using 'pip install sofia-agent[mistral]."
+                "Mistral package is not installed. Please install it using 'pip install nomos[mistral]."
             )
 
         self.model = model

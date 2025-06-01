@@ -24,7 +24,7 @@ class OpenAI(LLMBase):
             from openai import OpenAI
         except ImportError:
             raise ImportError(
-                "OpenAI package is not installed. Please install it using 'pip install sofia-agent[openai]."
+                "OpenAI package is not installed. Please install it using 'pip install nomos[openai]."
             )
 
         self.model = model
