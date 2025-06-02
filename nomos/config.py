@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 from pydantic_settings import BaseSettings
 
-from .llms import LLMConfig
+from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.flow import Step
 
@@ -70,6 +70,14 @@ class AgentConfig(BaseSettings):
 
         with open(file_path, "w") as file:
             yaml.dump(self.model_dump(), file)
+
+    def get_llm(self) -> LLMBase:
+        """
+        Get the appropriate LLM instance based on the configuration.
+
+        :return: An instance of the defined LLM integration.
+        """
+        return self.llm.get_llm() if self.llm else OpenAI()
 
 
 __all__ = ["AgentConfig"]
