@@ -520,8 +520,7 @@ def main():
     config = nomos.AgentConfig.from_yaml(str(config_path))
 
     # Initialize LLM
-    llm_kwargs = config.llm.kwargs or {{}} if config.llm else {{}}
-    llm = OpenAI(**llm_kwargs)  # Define api_key in config.llm or set OPENAI_API_KEY environment variable
+    llm = config.get_llm()
 
     # Create agent
     agent = nomos.Agent.from_config(config, llm, tool_list)
@@ -794,8 +793,8 @@ def main():
         config = nomos.AgentConfig.from_yaml("{config_path}")
 
         # Initialize LLM (you may need to set API keys)
-        llm_kwargs = config.llm.kwargs or {{}} if config.llm else {{}}
-        llm = OpenAI(**llm_kwargs)
+        llm = config.get_llm()
+
 
         agent = nomos.Agent.from_config(config, llm, tool_list)
         session = agent.create_session(verbose={verbose})
