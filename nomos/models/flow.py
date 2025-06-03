@@ -42,8 +42,10 @@ class FlowConfig(BaseModel):
     enters: List[str] = Field(..., description="Step IDs that can enter this flow")
     exits: List[str] = Field(..., description="Step IDs that can exit this flow")
     description: Optional[str] = None
-    memory_config: Optional[Dict[str, Any]] = None
-    components: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    components: Dict[str, dict[str, Any]] = Field(
+        default_factory=dict,
+        description="Components to be used in the flow, e.g., memory, tools",
+    )
 
 
 class Flow:

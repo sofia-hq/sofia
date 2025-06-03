@@ -159,16 +159,14 @@ ordering_flow_config = FlowConfig(
     enters=["greeting", "order_entry"],  # Entry points into this flow
     exits=["order_review"],  # Exit points to other flows
     description="Handle customer greeting and order taking process",
-    memory_config={
-        "retriever_k": 5,
-        "summary_length": 150,
-    },
     components={
         "memory": {
-            "type": "flow_memory",
-            "config": {
-                "retriever_k": 5,
-                "summary_length": 150,
+            "llm": {
+                "provider": "openai",
+                "model": "gpt-4o-mini",
+            },
+            "retriever": {
+                "method": "bm25",
             },
         }
     },

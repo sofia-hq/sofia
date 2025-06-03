@@ -163,10 +163,12 @@ class FlowMemoryComponent(FlowComponent):
 
     def __init__(
         self,
-        llm: Optional[LLMConfig] = None,
-        retriever: Optional[RetrieverConfig] = None,
+        llm: Optional[Dict[str, Any]] = None,
+        retriever: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        llm = LLMConfig(**llm) if llm else None
+        retriever = RetrieverConfig(**retriever) if retriever else None
         self.memory = FlowMemory(llm=llm, retriever=retriever)
 
     def enter(self, context: "FlowContextType") -> None:

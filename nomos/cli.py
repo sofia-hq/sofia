@@ -778,8 +778,7 @@ from pathlib import Path
 # Add current directory to Python path
 sys.path.insert(0, str(Path.cwd()))
 
-import nomos
-from nomos.llms.openai import OpenAI
+import nomos as n
 
 try:
     from tools import tool_list
@@ -790,13 +789,12 @@ except ImportError as e:
 
 def main():
     try:
-        config = nomos.AgentConfig.from_yaml("{config_path}")
+        config = n.AgentConfig.from_yaml("{config_path}")
 
         # Initialize LLM (you may need to set API keys)
         llm = config.get_llm()
 
-
-        agent = nomos.Agent.from_config(config, llm, tool_list)
+        agent = n.Agent.from_config(config, llm, tool_list)
         session = agent.create_session(verbose={verbose})
 
         print(f"🤖 {{config.name}} agent ready in interactive mode!")
@@ -814,9 +812,7 @@ def main():
                     continue
 
                 decision, _ = session.next(user_input)
-
-                if hasattr(decision, 'response') and decision.response:
-                    print(f"Agent: {{decision.response}}")
+                print(f"Agent: {{decision.response}}")
 
             except KeyboardInterrupt:
                 break
