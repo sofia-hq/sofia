@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMConfig
-from ..models.agent import Message, Summary
+from ..models.agent import Message, StepIdentifier, Summary
 from ..models.flow import FlowComponent, FlowContext
 
 
@@ -174,7 +174,7 @@ class FlowMemoryComponent(FlowComponent):
         """Search in flow memory."""
         return self.memory._search(query, **kwargs)
 
-    def add_to_context(self, item: Union[Message, Summary]) -> None:
+    def add_to_context(self, item: Union[Message, Summary, StepIdentifier]) -> None:
         """Add item to flow memory context."""
         self.memory.context.append(item)
         self.memory._index()

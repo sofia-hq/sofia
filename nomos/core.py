@@ -194,13 +194,17 @@ class Session:
         :param role: Role of the message sender (e.g., 'user', 'assistant', 'tool').
         :param message: The message content.
         """
-        self.memory.add(Message(role=role, content=message))
+        message_obj = Message(role=role, content=message)
 
-        # Add to flow memory if we're in a flow
+        # If we're in a flow, only update flow memory
         if self.current_flow and self.flow_context:
             flow_memory = self.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
-                flow_memory.add_to_context(Message(role=role, content=message))
+                flow_memory.add_to_context(message_obj)
+            # Don't update session memory while in flow
+        else:
+            # Only update session memory when not in a flow
+            self.memory.add(message_obj)
 
         log_debug(f"{role.title()} added: {message}")
 
@@ -357,7 +361,7 @@ class Session:
         log_info(str(decision)) if self.verbose else log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
-        self.memory.add(self.current_step.get_step_identifier())
+        self._add_step_identifier(self.current_step.get_step_identifier())
         action = decision.action.value
         response: Union[str, BaseModel] = decision.response
         if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
@@ -413,7 +417,7 @@ class Session:
 
                 self.current_step = self.steps[response]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
-                self.memory.add(self.current_step.get_step_identifier())
+                self._add_step_identifier(self.current_step.get_step_identifier())
 
                 # Check if we need to enter a new flow after moving
                 self._handle_flow_transitions()
@@ -457,6 +461,24 @@ class Session:
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
             )
+
+    def _add_step_identifier(self, step_identifier: StepIdentifier) -> None:
+        """
+        Add a step identifier to the appropriate memory.
+
+        :param step_identifier: The step identifier to add.
+        """
+        # If we're in a flow, only update flow memory
+        if self.current_flow and self.flow_context:
+            flow_memory = self.current_flow.get_memory()
+            if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
+                flow_memory.add_to_context(step_identifier)
+            # Don't update session memory while in flow
+        else:
+            # Only update session memory when not in a flow
+            self.memory.add(step_identifier)
+
+        log_debug(f"Step identifier added: {step_identifier.step_id}")
 
 
 class Agent:
