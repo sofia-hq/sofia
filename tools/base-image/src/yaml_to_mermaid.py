@@ -18,7 +18,7 @@ import datetime
 import json
 import re
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, List, Set
 
 import yaml
 
@@ -60,8 +60,16 @@ def format_description(description: str) -> str:
     description = re.sub(r"\s+", " ", description.strip())
 
     # Extract key concepts for better readability
-    if "greet" in description.lower():
-        return "Greet & Route User"
+    if "greet" in description.lower() and (
+        "customer" in description.lower() or "hello" in description.lower()
+    ):
+        return "Greet Customer"
+    elif "take" in description.lower() and "order" in description.lower():
+        return "Take Coffee Order"
+    elif "finalize" in description.lower() and "order" in description.lower():
+        return "Finalize Order"
+    elif "clear" in description.lower() and "cart" in description.lower():
+        return "Clear Cart & End"
     elif "budget" in description.lower():
         return "Budget Planning"
     elif "expense" in description.lower() and "track" in description.lower():
@@ -70,7 +78,10 @@ def format_description(description: str) -> str:
         return "Savings Goals"
     elif "financial health" in description.lower():
         return "Financial Health Check"
-    elif "end" in description.lower() or "summarize" in description.lower():
+    elif (
+        description.lower().strip().startswith("end ")
+        or "end the conversation" in description.lower()
+    ):
         return "End Session"
 
     # Fall back to first sentence
@@ -124,11 +135,9 @@ def generate_mermaid_flowchart(
 ) -> str:
     """Generate enhanced Mermaid flowchart from config."""
     steps = config.get("steps", [])
+    flows = config.get("flows", [])
     start_step = config.get("start_step_id", "start")
     agent_name = config.get("name", "Agent")
-
-    # Build step lookup
-    step_lookup = {step["step_id"]: step for step in steps}  # noqa
 
     mermaid_lines = [
         "flowchart TD",
@@ -141,49 +150,157 @@ def generate_mermaid_flowchart(
     mermaid_lines.append(f'    START(["🚀 Start"]) --> {start_node}')
     mermaid_lines.append("")
 
-    # Organize steps by category
-    categorized_steps: dict = {"start": [], "core": [], "end": []}
+    # Build flow mappings for step categorization
+    flow_step_mapping: Dict[str, List[str]] = {}
+    flow_info = {}
 
-    for step in steps:
-        node_class = get_node_class(step)
-        if node_class in ["start"]:
-            categorized_steps["start"].append(step)
-        elif node_class in ["end"]:
-            categorized_steps["end"].append(step)
-        else:
-            categorized_steps["core"].append(step)
+    for flow in flows:
+        flow_id = flow["flow_id"]
+        flow_info[flow_id] = {
+            "description": flow.get("description", flow_id),
+            "enters": flow.get("enters", []),
+            "exits": flow.get("exits", []),
+        }
 
-    # Process steps by category
-    for category, category_steps in categorized_steps.items():
-        if not category_steps:
-            continue
+        # Map all steps that belong to this flow
+        enter_steps = flow.get("enters", [])
+        exit_steps = flow.get("exits", [])
 
-        if category == "start":
-            mermaid_lines.append("    %% Entry Point")
-        elif category == "core":
-            mermaid_lines.append("    %% Core Functions")
-        elif category == "end":
-            mermaid_lines.append("    %% Session End")
+        for step_id in enter_steps + exit_steps:
+            if step_id not in flow_step_mapping:
+                flow_step_mapping[step_id] = []
+            flow_step_mapping[step_id].append(flow_id)
 
-        for step in category_steps:
+    # If we have flows, organize by subgraphs
+    if flows:
+        # Track which steps have been added to avoid duplicates
+        added_steps = set()
+
+        # Create subgraphs for each flow
+        for flow_id, flow_data in flow_info.items():
+            flow_description = flow_data["description"]
+            mermaid_lines.append(f'    subgraph {flow_id}_flow ["{flow_description}"]')
+
+            # Find all steps that belong to this flow
+            flow_steps = []
+
+            # Add enter steps (these are unique to each flow)
+            for step in steps:
+                step_id = step["step_id"]
+                if step_id in flow_data["enters"] and step_id not in added_steps:
+                    flow_steps.append(step)
+                    added_steps.add(step_id)
+
+            # Add exit steps only if they haven't been added to another flow yet
+            for step in steps:
+                step_id = step["step_id"]
+                if step_id in flow_data["exits"] and step_id not in added_steps:
+                    flow_steps.append(step)
+                    added_steps.add(step_id)
+
+            # Add steps to subgraph
+            for step in flow_steps:
+                step_id = step["step_id"]
+                sanitized_id = sanitize_node_id(step_id)
+                description = format_description(step.get("description", ""))
+                tools = step.get("available_tools", [])
+                node_class = get_node_class(step)
+
+                # Create node definition with icons
+                if node_class == "endStyle":
+                    mermaid_lines.append(
+                        f'        {sanitized_id}(["🏁 {description}"])'
+                    )
+                elif node_class == "startStyle":
+                    mermaid_lines.append(f'        {sanitized_id}["👋 {description}"]')
+                elif tools:
+                    tool_icons = "🛠️" if tools else ""
+                    mermaid_lines.append(
+                        f'        {sanitized_id}["{tool_icons} {description}"]'
+                    )
+                else:
+                    mermaid_lines.append(f'        {sanitized_id}["{description}"]')
+
+            mermaid_lines.append("    end")
+            mermaid_lines.append("")
+
+        # Add any steps not in flows
+        orphan_steps = []
+        for step in steps:
             step_id = step["step_id"]
-            sanitized_id = sanitize_node_id(step_id)
-            description = format_description(step.get("description", ""))
-            tools = step.get("available_tools", [])
+            if step_id not in flow_step_mapping and step_id not in added_steps:
+                orphan_steps.append(step)
+
+        if orphan_steps:
+            mermaid_lines.append("    %% Independent Steps")
+            for step in orphan_steps:
+                step_id = step["step_id"]
+                sanitized_id = sanitize_node_id(step_id)
+                description = format_description(step.get("description", ""))
+                tools = step.get("available_tools", [])
+                node_class = get_node_class(step)
+
+                # Create node definition with icons
+                if node_class == "endStyle":
+                    mermaid_lines.append(f'    {sanitized_id}(["🏁 {description}"])')
+                elif node_class == "startStyle":
+                    mermaid_lines.append(f'    {sanitized_id}["👋 {description}"]')
+                elif tools:
+                    tool_icons = "🛠️" if tools else ""
+                    mermaid_lines.append(
+                        f'    {sanitized_id}["{tool_icons} {description}"]'
+                    )
+                else:
+                    mermaid_lines.append(f'    {sanitized_id}["{description}"]')
+            mermaid_lines.append("")
+
+    else:
+        # Fallback to original categorization when no flows are defined
+        # Organize steps by category
+        categorized_steps: dict = {"start": [], "core": [], "end": []}
+
+        for step in steps:
             node_class = get_node_class(step)
-
-            # Create node definition with icons
-            if node_class == "end":
-                mermaid_lines.append(f'    {sanitized_id}(["🏁 {description}"])')
-            elif node_class == "start":
-                mermaid_lines.append(f'    {sanitized_id}["👋 {description}"]')
-            elif tools:
-                tool_text = " ".join([f"🛠️ {tool}" for tool in tools])
-                mermaid_lines.append(f'    {sanitized_id}["{tool_text} {description}"]')
+            if node_class in ["start"]:
+                categorized_steps["start"].append(step)
+            elif node_class in ["end"]:
+                categorized_steps["end"].append(step)
             else:
-                mermaid_lines.append(f'    {sanitized_id}["{description}"]')
+                categorized_steps["core"].append(step)
 
-        mermaid_lines.append("")
+        # Process steps by category
+        for category, category_steps in categorized_steps.items():
+            if not category_steps:
+                continue
+
+            if category == "start":
+                mermaid_lines.append("    %% Entry Point")
+            elif category == "core":
+                mermaid_lines.append("    %% Core Functions")
+            elif category == "end":
+                mermaid_lines.append("    %% Session End")
+
+            for step in category_steps:
+                step_id = step["step_id"]
+                sanitized_id = sanitize_node_id(step_id)
+                description = format_description(step.get("description", ""))
+                tools = step.get("available_tools", [])
+                node_class = get_node_class(step)
+
+                # Create node definition with icons
+                if node_class == "end":
+                    mermaid_lines.append(f'    {sanitized_id}(["🏁 {description}"])')
+                elif node_class == "start":
+                    mermaid_lines.append(f'    {sanitized_id}["👋 {description}"]')
+                elif tools:
+                    tool_text = " ".join([f"🛠️ {tool}" for tool in tools])
+                    mermaid_lines.append(
+                        f'    {sanitized_id}["{tool_text} {description}"]'
+                    )
+                else:
+                    mermaid_lines.append(f'    {sanitized_id}["{description}"]')
+
+            mermaid_lines.append("")
 
     # Add routing connections
     mermaid_lines.append("    %% Flow Connections")
@@ -233,8 +350,7 @@ def generate_mermaid_flowchart(
         for step in steps:
             step_id = sanitize_node_id(step["step_id"])
             node_class = get_node_class(step)
-            class_name = f"{node_class}Style"
-            mermaid_lines.append(f"    class {step_id} {class_name}")
+            mermaid_lines.append(f"    class {step_id} {node_class}")
 
     return "\n".join(mermaid_lines)
 
@@ -244,6 +360,7 @@ def generate_summary(config: Dict[str, Any]) -> str:
     name = config.get("name", "Unknown Agent")
     persona = config.get("persona", "No persona defined")
     steps = config.get("steps", [])
+    flows = config.get("flows", [])
 
     # Count tools and routes
     all_tools = set()
@@ -259,6 +376,7 @@ def generate_summary(config: Dict[str, Any]) -> str:
         "## 📋 Overview",
         f"- **Agent Name**: {name}",
         f"- **Total Steps**: {len(steps)}",
+        f"- **Total Flows**: {len(flows)}",
         f"- **Start Step**: {config.get('start_step_id', 'Not specified')}",
         f"- **Total Routes**: {total_routes}",
         f"- **Available Tools**: {len(all_tools)}",
@@ -266,8 +384,28 @@ def generate_summary(config: Dict[str, Any]) -> str:
         "## 👤 Persona",
         persona.strip(),
         "",
-        "## 🛠️ Tools",
     ]
+
+    # Add flows section if flows exist
+    if flows:
+        summary_lines.extend(["## 🔄 Flows"])
+        for flow in flows:
+            flow_id = flow["flow_id"]
+            description = flow.get("description", "No description")
+            enters = ", ".join(flow.get("enters", []))
+            exits = ", ".join(flow.get("exits", []))
+
+            summary_lines.extend(
+                [
+                    f"### {flow_id}",
+                    f"**Description**: {description}",
+                    f"**Enter Steps**: {enters or 'None'}",
+                    f"**Exit Steps**: {exits or 'None'}",
+                    "",
+                ]
+            )
+
+    summary_lines.extend(["## 🛠️ Tools"])
 
     if all_tools:
         for tool in sorted(all_tools):
@@ -302,12 +440,13 @@ def generate_summary(config: Dict[str, Any]) -> str:
 def generate_config_json(config: Dict[str, Any]) -> Dict[str, Any]:
     """Generate a JSON representation of the agent configuration with enhanced metadata."""
     steps = config.get("steps", [])
+    flows = config.get("flows", [])
     start_step = config.get("start_step_id", "start")
     name = config.get("name", "Unknown Agent")
     persona = config.get("persona", "No persona defined")
 
     # Count tools and routes
-    all_tools = set()
+    all_tools: Set[str] = set()
     total_routes = 0
     step_categories = {}
 
@@ -316,6 +455,19 @@ def generate_config_json(config: Dict[str, Any]) -> Dict[str, Any]:
         all_tools.update(tools)
         total_routes += len(step.get("routes", []))
         step_categories[step["step_id"]] = get_node_class(step)
+
+    # Process flows information
+    flows_info = []
+    for flow in flows:
+        flow_info = {
+            "flow_id": flow["flow_id"],
+            "description": flow.get("description", ""),
+            "enters": flow.get("enters", []),
+            "exits": flow.get("exits", []),
+            "components": flow.get("components", {}),
+            "metadata": flow.get("metadata", {}),
+        }
+        flows_info.append(flow_info)
 
     # Process steps with enhanced metadata
     enhanced_steps = []
@@ -344,6 +496,7 @@ def generate_config_json(config: Dict[str, Any]) -> Dict[str, Any]:
         "total_steps": len(steps),
         "total_routes": total_routes,
         "total_tools": len(all_tools),
+        "total_flows": len(flows),
         "categories": {},
     }
 
@@ -362,6 +515,7 @@ def generate_config_json(config: Dict[str, Any]) -> Dict[str, Any]:
             "version": "1.0",
         },
         "flow": {"steps": enhanced_steps, "statistics": flow_stats},
+        "flows": flows_info,
         "tools": {"available_tools": sorted(list(all_tools)), "tool_usage": {}},  # noqa
         "visualization": {
             "mermaid_flowchart": generate_mermaid_flowchart(
@@ -376,7 +530,7 @@ def generate_config_json(config: Dict[str, Any]) -> Dict[str, Any]:
         tool_steps = [
             s["step_id"] for s in steps if tool in s.get("available_tools", [])
         ]
-        config_json["tools"]["tool_usage"][tool] = {
+        config_json["tools"]["tool_usage"][tool] = {  # type: ignore
             "used_in_steps": tool_steps,
             "usage_count": len(tool_steps),
         }
