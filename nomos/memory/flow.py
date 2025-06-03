@@ -15,7 +15,7 @@ class Retriver:
 
     def __init__(self) -> None:
         """Initialize retriever."""
-        self.context = []
+        self.context: list[str] = []
 
     def index(self, items: List[str], **kwargs) -> None:
         """Index items for retrieval."""
@@ -39,12 +39,12 @@ class BM25Retriever(Retriver):
         super().__init__()
         self.retriever = bm25s.BM25(**kwargs)
 
-    def index(self, items: List[str]) -> None:
+    def index(self, items: List[str], **kwargs) -> None:
         """Index items using BM25."""
         self.context.extend(items)
         self.retriever.index(self.context)
 
-    def update(self, items: List[str]) -> None:
+    def update(self, items: List[str], **kwargs) -> None:
         """Update indexed items."""
         self.context.extend(items)
         self.retriever.index(self.context)
@@ -90,7 +90,9 @@ class FlowMemory(Memory):
         self.retriever = retriever.get_retriever()
         self.context = []
 
-    def _enter(self, previous_context: List[Union[Message, Summary]] = []) -> None:
+    def _enter(
+        self, previous_context: Optional[List[Union[Message, Summary]]] = None
+    ) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
             self.context.extend(self._generate_summary(previous_context))
