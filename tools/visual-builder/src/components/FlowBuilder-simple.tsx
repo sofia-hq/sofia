@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -6,6 +6,7 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
+  useReactFlow,
   type OnConnect,
   type Node,
   type Edge,
@@ -13,14 +14,24 @@ import {
 import { Toolbar } from './Toolbar';
 import { StepNode } from './nodes/StepNode-v2';
 import { ToolNode } from './nodes/ToolNode-simple';
+import { RouteEdge } from './edges/RouteEdge';
+import { ToolEdge } from './edges/ToolEdge';
+import { ContextMenu } from './context-menu/ContextMenu';
 import { FlowProvider } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
+import { autoArrangeNodes } from '../utils/autoArrange';
 import type { StepNodeData, ToolNodeData } from '../types';
 
 // Define custom node types
 const nodeTypes = {
   step: StepNode,
   tool: ToolNode,
+};
+
+// Define custom edge types
+const edgeTypes = {
+  route: RouteEdge,
+  tool: ToolEdge,
 };
 
 const initialNodes: Node[] = [
@@ -91,38 +102,99 @@ const initialEdges: Edge[] = [
     id: 'start-take_coffee_order',
     source: 'start',
     target: 'take_coffee_order',
-    type: 'smoothstep',
-    style: { stroke: '#374151', strokeWidth: 2 },
+    sourceHandle: 'step-output',
+    targetHandle: 'step-input',
+    type: 'route',
+    data: { condition: 'Customer is ready to place a new order' },
   },
   {
     id: 'start-get_available_coffee_options',
     source: 'start',
     target: 'get_available_coffee_options',
-    type: 'smoothstep',
-    style: { stroke: '#3b82f6', strokeWidth: 1 },
-    animated: true,
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
   },
   {
     id: 'take_coffee_order-add_to_cart',
     source: 'take_coffee_order',
     target: 'add_to_cart',
-    type: 'smoothstep',
-    style: { stroke: '#3b82f6', strokeWidth: 1 },
-    animated: true,
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
   },
 ];
 
 export default function FlowBuilder() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    visible: boolean;
+    nodeId?: string;
+  }>({
+    x: 0,
+    y: 0,
+    visible: false,
+  });
+
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const { screenToFlowPosition } = useReactFlow();
+
+  const isValidConnection = useCallback((connection: any) => {
+    const { source, target, sourceHandle, targetHandle } = connection;
+    
+    // Prevent self-connections
+    if (source === target) return false;
+    
+    // Prevent duplicate connections
+    const existingConnection = edges.find(
+      (edge) => edge.source === source && edge.target === target && 
+                edge.sourceHandle === sourceHandle && edge.targetHandle === targetHandle
+    );
+    if (existingConnection) return false;
+    
+    // Validate connection types
+    if (sourceHandle === 'step-output' && targetHandle === 'step-input') {
+      return true; // Step to step connection
+    }
+    if (sourceHandle === 'tool-output' && targetHandle === 'tool-input') {
+      return true; // Step to tool connection
+    }
+    
+    // Invalid connection type
+    return false;
+  }, [edges]);
 
   const onConnect: OnConnect = useCallback(
-    (params) => setEdges((eds) => addEdge({
-      ...params,
-      type: 'smoothstep',
-      style: { stroke: '#374151', strokeWidth: 2 },
-    }, eds)),
-    [setEdges]
+    (params) => {
+      // Validate connection before creating edge
+      if (!isValidConnection(params)) {
+        return;
+      }
+
+      let edgeType: string;
+      let edgeData: any = {};
+
+      // Determine edge type based on source and target handles
+      if (params.sourceHandle === 'step-output' && params.targetHandle === 'step-input') {
+        edgeType = 'route';
+        edgeData = { condition: 'Add condition...' };
+      } else if (params.sourceHandle === 'tool-output' && params.targetHandle === 'tool-input') {
+        edgeType = 'tool';
+      } else {
+        // Default fallback
+        edgeType = 'route';
+      }
+
+      setEdges((eds) => addEdge({
+        ...params,
+        type: edgeType,
+        data: edgeData,
+      }, eds));
+    },
+    [setEdges, isValidConnection]
   );
 
   const handleUpdateNode = useCallback((nodeId: string, data: Partial<StepNodeData | ToolNodeData>) => {
@@ -135,26 +207,139 @@ export default function FlowBuilder() {
     );
   }, [setNodes]);
 
+  const handleContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    const target = event.target as HTMLElement;
+    const nodeElement = target.closest('[data-id]');
+    const nodeId = nodeElement?.getAttribute('data-id');
+
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      visible: true,
+      nodeId: nodeId || undefined,
+    });
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  const handleAutoArrange = useCallback(() => {
+    const arrangedNodes = autoArrangeNodes(nodes, edges);
+    setNodes(arrangedNodes);
+  }, [nodes, edges, setNodes]);
+
+  const addStepNode = useCallback(() => {
+    const id = `step-${Date.now()}`;
+    const position = screenToFlowPosition({
+      x: contextMenu.x - 100,
+      y: contextMenu.y - 50,
+    });
+
+    const newNode: Node = {
+      id,
+      type: 'step',
+      position,
+      data: {
+        step_id: `step_${nodes.length + 1}`,
+        description: 'New step description',
+        available_tools: [],
+        routes: [],
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes.length, setNodes]);
+
+  const addToolNode = useCallback(() => {
+    const id = `tool-${Date.now()}`;
+    const position = screenToFlowPosition({
+      x: contextMenu.x - 90,
+      y: contextMenu.y - 50,
+    });
+
+    const newNode: Node = {
+      id,
+      type: 'tool',
+      position,
+      data: {
+        name: `tool_${nodes.length + 1}`,
+        description: 'New tool description',
+        parameters: {},
+      },
+    };
+
+    setNodes((nds) => [...nds, newNode]);
+  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes.length, setNodes]);
+
+  const deleteNode = useCallback(() => {
+    if (contextMenu.nodeId) {
+      setNodes((nds) => nds.filter((node) => node.id !== contextMenu.nodeId));
+      setEdges((eds) => eds.filter((edge) => 
+        edge.source !== contextMenu.nodeId && edge.target !== contextMenu.nodeId
+      ));
+    }
+  }, [contextMenu.nodeId, setNodes, setEdges]);
+
   return (
     <FlowProvider onUpdateNode={handleUpdateNode}>
-      <div className="h-full w-full relative">
-        <Toolbar />
+      <div className="h-full w-full relative" ref={reactFlowWrapper}>
+        <Toolbar onAutoArrange={handleAutoArrange} />
         <ReactFlow
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onContextMenu={handleContextMenu}
+          isValidConnection={isValidConnection}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           minZoom={0.3}
           maxZoom={1.0}
           defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+          snapToGrid={true}
+          snapGrid={[20, 20]}
           fitView
           fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
         >
-          <Background />
+          <Background/>
           <Controls />
+          
+          {/* Arrow marker definition */}
+          <svg style={{ position: 'absolute', top: 0, left: 0 }}>
+            <defs>
+              <marker
+                id="arrow-marker"
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <path
+                  d="M0,0 L0,6 L9,3 z"
+                  fill="#374151"
+                />
+              </marker>
+            </defs>
+          </svg>
         </ReactFlow>
+        
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          visible={contextMenu.visible}
+          onClose={closeContextMenu}
+          onAddStepNode={addStepNode}
+          onAddToolNode={addToolNode}
+          onDelete={contextMenu.nodeId ? deleteNode : undefined}
+          isOnNode={!!contextMenu.nodeId}
+        />
+        
         <NodeEditDialogs />
       </div>
     </FlowProvider>

@@ -14,7 +14,7 @@ export const StepNode = memo((props: NodeProps) => {
   };
 
   return (
-    <div className="bg-white border border-gray-300 rounded shadow-sm min-w-[200px] hover:border-gray-400 transition-colors">
+    <div className="bg-white border border-gray-300 rounded shadow-sm w-[280px] hover:border-gray-400 transition-colors">
       {/* Header */}
       <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 rounded-t flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -66,15 +66,28 @@ export const StepNode = memo((props: NodeProps) => {
       </div>
 
       {/* Handles */}
+      {/* Top handle for incoming step connections */}
       <Handle
         type="target"
         position={Position.Top}
-        className="w-3 h-3 !bg-gray-400 border-2 border-white"
+        id="step-input"
+        className="w-3 h-3 !bg-gray-600 border-2 border-white"
       />
+      
+      {/* Bottom handle for outgoing step connections */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="w-3 h-3 !bg-gray-400 border-2 border-white"
+        id="step-output"
+        className="w-3 h-3 !bg-gray-600 border-2 border-white"
+      />
+      
+      {/* Right handle for tool connections */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="tool-output"
+        className="w-2 h-2 !bg-blue-500 border-2 border-white"
       />
     </div>
   );

@@ -10,7 +10,11 @@ import {
   Play
 } from 'lucide-react';
 
-export function Toolbar() {
+interface ToolbarProps {
+  onAutoArrange?: () => void;
+}
+
+export function Toolbar({ onAutoArrange }: ToolbarProps) {
   return (
     <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
       {/* File Operations */}
@@ -41,7 +45,13 @@ export function Toolbar() {
 
       {/* Layout */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0"
+          onClick={onAutoArrange}
+          title="Auto-arrange nodes"
+        >
           <Layers className="w-4 h-4" />
         </Button>
       </div>

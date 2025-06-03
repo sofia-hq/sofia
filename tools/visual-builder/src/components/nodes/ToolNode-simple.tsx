@@ -16,7 +16,7 @@ export const ToolNode = memo((props: NodeProps) => {
   const paramCount = data.parameters ? Object.keys(data.parameters).length : 0;
 
   return (
-    <div className="bg-blue-50 border border-blue-300 rounded shadow-sm min-w-[180px] hover:border-blue-400 transition-colors">
+    <div className="bg-blue-50 border border-blue-300 rounded shadow-sm w-[200px] hover:border-blue-400 transition-colors">
       {/* Header */}
       <div className="bg-blue-100 px-3 py-2 border-b border-blue-200 rounded-t flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -47,7 +47,8 @@ export const ToolNode = memo((props: NodeProps) => {
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 !bg-blue-400 border-2 border-white"
+        id="tool-input"
+        className="w-2 h-2 !bg-blue-500 border-2 border-white"
       />
     </div>
   );
