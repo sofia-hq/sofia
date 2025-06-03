@@ -1,0 +1,131 @@
+"""Flow-specific memory module that preserves complete information within an specified flow."""
+
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import BaseModel
+
+from .base import Memory
+from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
+from ..llms import LLMConfig
+from ..models.flow import Message, Summary
+
+
+class Retriver:
+    """Base class for retrievers."""
+
+    def __init__(self) -> None:
+        """Initialize retriever."""
+        self.context = []
+
+    def index(self, items: List[str], **kwargs) -> None:
+        """Index items for retrieval."""
+        raise NotImplementedError("Subclasses should implement this method.")
+
+    def update(self, items: List[str], **kwargs) -> None:
+        """Update indexed items."""
+        raise NotImplementedError("Subclasses should implement this method.")
+
+    def retrieve(self, query: str, **kwargs) -> list:
+        """Retrieve items from memory based on a query."""
+        raise NotImplementedError("Subclasses should implement this method.")
+
+
+class BM25Retriever(Retriver):
+
+    def __init__(self, **kwargs) -> None:
+        """Initialize BM25 retriever."""
+        import bm25s
+
+        super().__init__()
+        self.retriever = bm25s.BM25(**kwargs)
+
+    def index(self, items: List[str]) -> None:
+        """Index items using BM25."""
+        self.context.extend(items)
+        self.retriever.index(self.context)
+
+    def update(self, items: List[str]) -> None:
+        """Update indexed items."""
+        self.context.extend(items)
+        self.retriever.index(self.context)
+
+    def retrieve(self, query: str, **kwargs) -> list:
+        """Retrieve items using BM25 based on a query."""
+        import bm25s
+
+        if not self.context:
+            return []
+        query_tokens = bm25s.tokenize(query)
+        results = self.retriever.retrieve(query_tokens, corpus=self.context, **kwargs)
+        return results
+
+
+class RetrieverConfig(BaseModel):
+    """Configuration for a retriever."""
+
+    method: str
+    kwargs: Dict[str, Any] = {}
+
+    def get_retriever(self) -> Retriver:
+        """Get an instance of the retriever based on the configuration."""
+        if self.method == "bm25":
+            return BM25Retriever(**self.kwargs)
+        else:
+            raise ValueError(f"Unsupported retriever method: {self.method}")
+
+
+class FlowMemory(Memory):
+    """Memory that preserves complete information within an flow."""
+
+    def __init__(
+        self,
+        llm: Optional[LLMConfig] = None,
+        retriever: Optional[RetrieverConfig] = None,
+    ) -> None:
+        """Initialize FlowMemory."""
+        super().__init__()
+        retriever = retriever or RetrieverConfig(method="bm25")
+        llm = llm or LLMConfig(provider="openai", model="gpt-4o-mini")
+        self.llm = llm.get_llm()
+        self.retriever = retriever.get_retriever()
+        self.context = []
+
+    def _enter(self, previous_context: List[Union[Message, Summary]] = []) -> None:
+        """Enter the flow memory, optionally using previous context."""
+        if previous_context:
+            self.context.extend(self._generate_summary(previous_context))
+            self._index()
+
+    def _exit(self) -> Summary:
+        """Exit the flow memory and return a summary of the context."""
+        return self._generate_summary(
+            [item for item in self.context if isinstance(item, (Message, Summary))]
+        )
+
+    def _index(self) -> None:
+        """Index the current context for retrieval."""
+        context_items = [str(item) for item in self.context]
+        self.retriever.index(context_items)
+
+    def _generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
+        """Generate a summary from a list of items."""
+        items_str = "\n".join([str(item) for item in items])
+        summary = self.llm.get_output(
+            messages=[
+                Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
+                Message(
+                    role="user",
+                    content=f"Summarize the following Context:\n\n{items_str}",
+                ),
+            ],
+            response_format=Summary,
+        )
+        assert isinstance(summary, Summary), "Summary generation failed."
+        return summary
+
+    def _search(self, query: str, **kwargs) -> list:
+        """Search for items in memory that match the query."""
+        return self.retriever.retrieve(query, **kwargs)
+
+
+__all__ = ["FlowMemory", "RetrieverConfig"]

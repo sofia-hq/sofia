@@ -62,6 +62,15 @@ steps:
     available_tools:
       - clear_cart
 
+# Flows (optional)
+flows:
+  - flow_id: take_coffee_order
+    enters:
+      - take_coffee_order
+    exits:
+      - finalize_order
+
+
 # Additional meanimg to tool's arguments
 tool_arg_descriptions:
   add_to_cart:
