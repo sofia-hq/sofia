@@ -5,7 +5,7 @@ from typing import List
 from pydantic import BaseModel
 
 from .base import LLMBase
-from ..models.flow import Message
+from ..models.agent import Message
 
 
 class Gemini(LLMBase):

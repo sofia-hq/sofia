@@ -62,6 +62,41 @@ steps:
     available_tools:
       - clear_cart
 
+# Enhanced flows configuration
+flows:
+  - flow_id: take_coffee_order
+    description: "Complete coffee ordering process"
+    enters:
+      - take_coffee_order
+    exits:
+      - finalize_order
+      - end
+    components:
+      memory:
+        llm:
+          provider: openai
+          model: gpt-4o-mini
+        retriever:
+          method: bm25
+          kwargs:
+            k: 5
+    metadata:
+      max_context_size: 50
+      summary_threshold: 20
+
+  - flow_id: customer_service
+    description: "Handle customer service inquiries"
+    enters:
+      - start
+    exits:
+      - end
+    components:
+      memory:
+        llm:
+          provider: openai
+          model: gpt-4o-mini
+
+
 # Additional meanimg to tool's arguments
 tool_arg_descriptions:
   add_to_cart:

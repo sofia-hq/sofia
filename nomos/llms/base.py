@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
-from ..models.flow import Message, Step, StepIdentifier, Summary
+from ..models.agent import Message, Step, StepIdentifier, Summary
 from ..models.tool import Tool
 from ..utils.logging import log_error
 

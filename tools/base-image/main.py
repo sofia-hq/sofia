@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from nomos.models.flow import Message as FlowMessage, StepIdentifier, Summary
+from nomos.models.agent import Message as FlowMessage, StepIdentifier, Summary
 
 from src.agent import agent
 from src.db import init_db
