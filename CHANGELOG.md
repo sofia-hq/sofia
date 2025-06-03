@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
+## [0.2.0] - 2025-06-06
+
+### Added
+- Ability to create groups of steps (Flows) such that when entering a flow, steps will have seperate context/memory with summary of the parent context. Allowing for longer running workflows and more complex workflows to be created.
+
 ## [0.1.15] - 2025-05-28
 
 ### Added
