@@ -8,22 +8,7 @@ from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMConfig
 from ..models.agent import Message, Summary
-
-# Import for FlowComponent integration
-try:
-    from ..models.flow import FlowComponent, FlowContext
-except ImportError:
-    # Handle case where flow_construct is not available yet
-    FlowComponent = object
-    FlowContext = object
-
-# Type aliases for proper type checking
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..models.flow import FlowContext as FlowContextType
-else:
-    FlowContextType = object
+from ..models.flow import FlowComponent, FlowContext
 
 
 class Retriver:
@@ -166,20 +151,21 @@ class FlowMemoryComponent(FlowComponent):
         llm: Optional[Dict[str, Any]] = None,
         retriever: Optional[Dict[str, Any]] = None,
         **kwargs,
-    ):
+    ) -> None:
+        """Initialize FlowMemoryComponent."""
         llm = LLMConfig(**llm) if llm else None
         retriever = RetrieverConfig(**retriever) if retriever else None
         self.memory = FlowMemory(llm=llm, retriever=retriever)
 
-    def enter(self, context: "FlowContextType") -> None:
+    def enter(self, context: FlowContext) -> None:
         """Initialize memory when entering flow."""
         self.memory._enter(context.previous_context)
 
-    def exit(self, context: "FlowContextType") -> Summary:
+    def exit(self, context: FlowContext) -> Summary:
         """Generate summary when exiting flow."""
         return self.memory._exit()
 
-    def cleanup(self, context: "FlowContextType") -> None:
+    def cleanup(self, context: FlowContext) -> None:
         """Clean up memory resources."""
         # Clear context or perform other cleanup
         self.memory.context.clear()

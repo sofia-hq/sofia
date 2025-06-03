@@ -1,10 +1,11 @@
 """Flow construct for encapsulating sets of steps with shared context and components."""
 
-from typing import Dict, List, Optional, Any, Callable, Union
-from pydantic import BaseModel, Field
 from abc import ABC, abstractmethod
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from .agent import Message, Summary, Step
+from pydantic import BaseModel, Field
+
+from .agent import Message, Step, Summary
 
 
 class FlowContext(BaseModel):
@@ -13,7 +14,7 @@ class FlowContext(BaseModel):
     flow_id: str
     entry_step: str
     previous_context: Optional[List[Union[Message, Summary]]] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)  # noqa: ANN401
 
 
 class FlowComponent(ABC):
@@ -25,12 +26,12 @@ class FlowComponent(ABC):
         pass
 
     @abstractmethod
-    def exit(self, context: FlowContext) -> Any:
+    def exit(self, context: FlowContext) -> Any:  # noqa: ANN401
         """Called when flow is exited. Returns data to pass to next flow."""
         pass
 
     @abstractmethod
-    def cleanup(self, context: FlowContext) -> None:
+    def cleanup(self, context: FlowContext) -> None:  # noqa: ANN401
         """Called for cleanup when flow terminates."""
         pass
 
@@ -61,7 +62,14 @@ class Flow:
         config: FlowConfig,
         steps: List[Step],
         component_registry: Optional[Dict[str, Callable[..., FlowComponent]]] = None,
-    ):
+    ) -> None:
+        """
+        Initialize the flow with configuration and steps.
+
+        :param config: Flow configuration containing entry/exit steps and components.
+        :param steps: List of steps that belong to this flow.
+        :param component_registry: Optional registry of components to initialize.
+        """
         self.config = config
         self.flow_id = config.flow_id
         self.entry_steps = set(config.enters)
@@ -165,7 +173,7 @@ class Flow:
         """Get a flow component by name."""
         return self.components.get(name)
 
-    def get_memory(self):
+    def get_memory(self) -> Optional[FlowComponent]:
         """Convenience method to get flow memory."""
         return self.get_component("memory")
 
@@ -173,7 +181,8 @@ class Flow:
 class FlowManager:
     """Manages multiple flows and their interactions."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize the flow manager."""
         self.flows: Dict[str, Flow] = {}
         self.step_to_flows: Dict[str, List[str]] = {}
 

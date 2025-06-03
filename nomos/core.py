@@ -1,5 +1,6 @@
 """Core models and logic for the SOFIA package, including flow management, session handling."""
 
+import contextlib
 import pickle
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -10,6 +11,7 @@ from .config import AgentConfig
 from .constants import ACTION_ENUMS
 from .llms import LLMBase
 from .memory.base import Memory
+from .memory.flow import FlowMemoryComponent
 from .models.agent import (
     Message,
     Step,
@@ -17,8 +19,8 @@ from .models.agent import (
     Summary,
     create_decision_model,
 )
+from .models.flow import Flow, FlowContext, FlowManager
 from .models.tool import FallbackError, Tool
-from .models.flow import FlowManager, FlowContext, Flow
 from .utils.flow_utils import (
     create_flows_from_config,
     should_enter_flow,
@@ -132,7 +134,7 @@ class Session:
             log_debug(f"Session {session_id} loaded from disk.")
             return pickle.load(f)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the session to a dictionary representation.
 
@@ -149,7 +151,7 @@ class Session:
             session_dict["flow_state"] = {
                 "flow_id": self.current_flow.flow_id,
                 "flow_context": self.flow_context.model_dump(mode="json"),
-            }
+            }  # type: ignore
 
         return session_dict
 
@@ -197,7 +199,7 @@ class Session:
         # Add to flow memory if we're in a flow
         if self.current_flow and self.flow_context:
             flow_memory = self.current_flow.get_memory()
-            if flow_memory:
+            if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory.add_to_context(Message(role=role, content=message))
 
         log_debug(f"{role.title()} added: {message}")
@@ -270,10 +272,8 @@ class Session:
             log_error(f"Failed to exit flow: {e}")
             # Clean up flow state even if exit fails
             if self.current_flow and self.flow_context:
-                try:
+                with contextlib.suppress(Exception):
                     self.current_flow.cleanup(self.flow_context)
-                except Exception:
-                    pass
             self.current_flow = None
             self.flow_context = None
 
@@ -294,8 +294,8 @@ class Session:
 
         if self.current_flow and self.flow_context:
             flow_memory = self.current_flow.get_memory()
-            if flow_memory:
-                flow_memory_context = flow_memory.memory.get_context_summary()
+            if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
+                flow_memory_context = flow_memory.memory.context
 
         decision = self.llm._get_output(
             steps=self.steps,
