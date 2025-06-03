@@ -9,13 +9,13 @@ from ..models.agent import Step
 def create_flows_from_config(config: AgentConfig) -> FlowManager:
     """Create flows from agent configuration."""
     flow_manager = FlowManager()
-    
+
     if not config.flows:
         return flow_manager
-    
+
     # Create step lookup
     steps_by_id = {step.step_id: step for step in config.steps}
-    
+
     for flow_config in config.flows:
         # Get steps that belong to this flow
         flow_steps = []
@@ -25,11 +25,11 @@ def create_flows_from_config(config: AgentConfig) -> FlowManager:
                 # Update step to reference this flow
                 step.flow_id = flow_config.flow_id
                 flow_steps.append(step)
-        
+
         # Create flow instance
         flow = Flow(config=flow_config, steps=flow_steps)
         flow_manager.register_flow(flow)
-    
+
     return flow_manager
 
 
@@ -53,7 +53,7 @@ def should_exit_flow(flow_manager: FlowManager, step_id: str) -> List[Flow]:
 
 __all__ = [
     "create_flows_from_config",
-    "get_flow_for_step", 
+    "get_flow_for_step",
     "should_enter_flow",
-    "should_exit_flow"
+    "should_exit_flow",
 ]

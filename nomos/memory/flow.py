@@ -19,6 +19,7 @@ except ImportError:
 
 # Type aliases for proper type checking
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from ..models.flow import FlowContext as FlowContextType
 else:
@@ -153,38 +154,38 @@ class FlowMemory(Memory):
         """Get a summary of the current context."""
         if not self.context:
             return "No context available."
-        
+
         return "\n".join([str(item) for item in self.context[-10:]])  # Last 10 items
 
 
 class FlowMemoryComponent(FlowComponent):
     """Flow-specific memory component."""
-    
+
     def __init__(
         self,
         llm: Optional[LLMConfig] = None,
         retriever: Optional[RetrieverConfig] = None,
-        **kwargs
+        **kwargs,
     ):
         self.memory = FlowMemory(llm=llm, retriever=retriever)
-    
+
     def enter(self, context: "FlowContextType") -> None:
         """Initialize memory when entering flow."""
         self.memory._enter(context.previous_context)
-    
+
     def exit(self, context: "FlowContextType") -> Summary:
         """Generate summary when exiting flow."""
         return self.memory._exit()
-    
+
     def cleanup(self, context: "FlowContextType") -> None:
         """Clean up memory resources."""
         # Clear context or perform other cleanup
         self.memory.context.clear()
-    
+
     def search(self, query: str, **kwargs) -> list:
         """Search in flow memory."""
         return self.memory._search(query, **kwargs)
-    
+
     def add_to_context(self, item: Union[Message, Summary]) -> None:
         """Add item to flow memory context."""
         self.memory.context.append(item)

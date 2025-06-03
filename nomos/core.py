@@ -18,6 +18,12 @@ from .models.agent import (
     create_decision_model,
 )
 from .models.tool import FallbackError, Tool
+from .models.flow import FlowManager, FlowContext, Flow
+from .utils.flow_utils import (
+    create_flows_from_config,
+    should_enter_flow,
+    should_exit_flow,
+)
 from .utils.logging import log_debug, log_error, log_info
 
 
@@ -73,6 +79,18 @@ class Session:
         self.max_iter = max_iter
         self.verbose = verbose
         self.config = config
+
+        # Flow management
+        self.flow_manager: Optional[FlowManager] = None
+        self.current_flow: Optional[Flow] = None
+        self.flow_context: Optional[FlowContext] = None
+
+        if config and config.flows:
+            self.flow_manager = create_flows_from_config(config)
+            log_debug(
+                f"Flow manager initialized with {len(self.flow_manager.flows)} flows"
+            )
+
         tool_arg_descs = (
             self.config.tool_arg_descriptions
             if self.config and self.config.tool_arg_descriptions
@@ -120,11 +138,20 @@ class Session:
 
         :return: Dictionary representation of the session.
         """
-        return {
+        session_dict = {
             "session_id": self.session_id,
             "current_step_id": self.current_step.step_id,
             "history": [msg.model_dump(mode="json") for msg in self.memory.context],
         }
+
+        # Include flow state if active
+        if self.current_flow and self.flow_context:
+            session_dict["flow_state"] = {
+                "flow_id": self.current_flow.flow_id,
+                "flow_context": self.flow_context.model_dump(mode="json"),
+            }
+
+        return session_dict
 
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
         """
@@ -166,7 +193,89 @@ class Session:
         :param message: The message content.
         """
         self.memory.add(Message(role=role, content=message))
+
+        # Add to flow memory if we're in a flow
+        if self.current_flow and self.flow_context:
+            flow_memory = self.current_flow.get_memory()
+            if flow_memory:
+                flow_memory.add_to_context(Message(role=role, content=message))
+
         log_debug(f"{role.title()} added: {message}")
+
+    def _handle_flow_transitions(self) -> None:
+        """Handle flow entry and exit based on current step."""
+        if not self.flow_manager:
+            return
+
+        current_step_id = self.current_step.step_id
+
+        # Check if we should enter any flows
+        entry_flows = should_enter_flow(self.flow_manager, current_step_id)
+        if entry_flows and not self.current_flow:
+            # Enter the first matching flow
+            flow_to_enter = entry_flows[0]
+            self._enter_flow(flow_to_enter, current_step_id)
+
+        # Check if we should exit current flow
+        if self.current_flow and self.flow_context:
+            exit_flows = should_exit_flow(self.flow_manager, current_step_id)
+            if self.current_flow in exit_flows:
+                self._exit_flow(current_step_id)
+
+    def _enter_flow(self, flow: Flow, entry_step: str) -> None:
+        """Enter a flow at the specified step."""
+        try:
+            # Get recent conversation history for flow context
+            recent_history = (
+                self.memory.get_history()[-10:] if self.memory.get_history() else []
+            )
+            previous_context = [
+                msg for msg in recent_history if isinstance(msg, (Message, Summary))
+            ]
+
+            self.flow_context = flow.enter(
+                entry_step=entry_step,
+                previous_context=previous_context,
+                metadata={
+                    "session_id": self.session_id,
+                    "entry_time": str(uuid.uuid4()),  # Simple timestamp alternative
+                },
+            )
+            self.current_flow = flow
+            log_debug(f"Entered flow '{flow.flow_id}' at step '{entry_step}'")
+
+        except Exception as e:
+            log_error(f"Failed to enter flow '{flow.flow_id}': {e}")
+
+    def _exit_flow(self, exit_step: str) -> None:
+        """Exit the current flow at the specified step."""
+        if not self.current_flow or not self.flow_context:
+            return
+
+        try:
+            exit_data = self.current_flow.exit(exit_step, self.flow_context)
+
+            # Store flow summary in main memory if available
+            if "memory" in exit_data and exit_data["memory"]:
+                self.memory.add(exit_data["memory"])
+
+            log_debug(
+                f"Exited flow '{self.current_flow.flow_id}' at step '{exit_step}'"
+            )
+
+            self.current_flow = None
+            self.flow_context = None
+
+        except Exception as e:
+            log_error(f"Failed to exit flow: {e}")
+            # Clean up flow state even if exit fails
+            if self.current_flow and self.flow_context:
+                try:
+                    self.current_flow.cleanup(self.flow_context)
+                except Exception:
+                    pass
+            self.current_flow = None
+            self.flow_context = None
 
     def _get_next_decision(self) -> BaseModel:
         """
@@ -178,11 +287,21 @@ class Session:
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
         )
+
+        # Get memory context - use flow memory if available, otherwise use session memory
+        memory_context = self.memory.get_history()
+        flow_memory_context = None
+
+        if self.current_flow and self.flow_context:
+            flow_memory = self.current_flow.get_memory()
+            if flow_memory:
+                flow_memory_context = flow_memory.memory.get_context_summary()
+
         decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
-            history=self.memory.get_history(),
+            history=flow_memory_context if flow_memory_context else memory_context,
             response_format=route_decision_model,
             system_message=self.system_message,
             persona=self.persona,
@@ -230,6 +349,9 @@ class Session:
         log_debug(f"User input received: {user_input}")
         self._add_message("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
+
+        # Check for flow transitions
+        self._handle_flow_transitions()
 
         decision = self._get_next_decision()
         log_info(str(decision)) if self.verbose else log_debug(str(decision))
@@ -279,9 +401,23 @@ class Session:
         elif action == ACTION_ENUMS["MOVE"]:
             _error = None
             if response in self.current_step.get_available_routes():
+                # Check if we need to exit current flow before moving
+                if self.current_flow and self.flow_context:
+                    exit_flows = (
+                        should_exit_flow(self.flow_manager, self.current_step.step_id)
+                        if self.flow_manager
+                        else []
+                    )
+                    if self.current_flow in exit_flows:
+                        self._exit_flow(self.current_step.step_id)
+
                 self.current_step = self.steps[response]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
                 self.memory.add(self.current_step.get_step_identifier())
+
+                # Check if we need to enter a new flow after moving
+                self._handle_flow_transitions()
+
             else:
                 self._add_message(
                     "error",
@@ -297,6 +433,19 @@ class Session:
                 next_count=next_count + 1,
             )
         elif action == ACTION_ENUMS["END"]:
+            # Clean up any active flows before ending
+            if self.current_flow and self.flow_context:
+                try:
+                    self.current_flow.cleanup(self.flow_context)
+                    log_debug(
+                        f"Cleaned up flow '{self.current_flow.flow_id}' on session end"
+                    )
+                except Exception as e:
+                    log_error(f"Error cleaning up flow on session end: {e}")
+                finally:
+                    self.current_flow = None
+                    self.flow_context = None
+
             self._add_message("end", "Session ended.")
             return decision, None
         else:
@@ -357,6 +506,12 @@ class Agent:
             tool_set.update(_pkg_tools)
         self.tools = list(tool_set)
         self.config = config
+
+        # Initialize flow manager if flows are configured
+        self.flow_manager: Optional[FlowManager] = None
+        if config and config.flows:
+            self.flow_manager = create_flows_from_config(config)
+            log_debug(f"Agent initialized with {len(self.flow_manager.flows)} flows")
 
         # Validate start step ID
         if start_step_id not in self.steps:
@@ -497,7 +652,8 @@ class Agent:
             if self.config and self.config.memory
             else Memory()
         )
-        return Session(
+
+        session = Session(
             name=self.name,
             llm=self.llm,
             memory=memory,
@@ -512,6 +668,21 @@ class Agent:
             max_iter=self.max_iter,
             **new_session_data,
         )
+
+        # Restore flow state if present
+        if "flow_state" in session_data and session.flow_manager:
+            flow_state = session_data["flow_state"]
+            flow_id = flow_state.get("flow_id")
+            flow_context_data = flow_state.get("flow_context")
+
+            if flow_id in session.flow_manager.flows and flow_context_data:
+                from .models.flow import FlowContext
+
+                session.current_flow = session.flow_manager.flows[flow_id]
+                session.flow_context = FlowContext(**flow_context_data)
+                log_debug(f"Restored flow state for flow '{flow_id}'")
+
+        return session
 
     def next(
         self,
