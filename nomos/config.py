@@ -6,7 +6,8 @@ from pydantic_settings import BaseSettings
 
 from .llms import LLMConfig
 from .memory import MemoryConfig
-from .models.flow import Step
+from .models.agent import Step
+from .models.flow import FlowConfig
 
 
 class AgentConfig(BaseSettings):
@@ -44,6 +45,8 @@ class AgentConfig(BaseSettings):
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
 
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
+
+    flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
     # Loading from YAML file
     @classmethod

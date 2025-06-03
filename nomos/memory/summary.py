@@ -3,7 +3,7 @@
 import math
 from typing import List, Optional, Union
 
-from nomos.models.flow import Message, Step, Summary
+from nomos.models.agent import Message, Step, Summary
 
 import tiktoken
 

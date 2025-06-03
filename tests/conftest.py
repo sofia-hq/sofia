@@ -4,7 +4,7 @@ import pytest
 from typing import List
 from pydantic import BaseModel
 
-from nomos.models.flow import Message, Step, Route
+from nomos.models.agent import Message, Step, Route
 from nomos.llms import LLMBase
 from nomos.core import Agent
 from nomos.utils.logging import log_error

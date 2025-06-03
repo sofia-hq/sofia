@@ -10,7 +10,7 @@ from .config import AgentConfig
 from .constants import ACTION_ENUMS
 from .llms import LLMBase
 from .memory.base import Memory
-from .models.flow import (
+from .models.agent import (
     Message,
     Step,
     StepIdentifier,

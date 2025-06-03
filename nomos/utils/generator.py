@@ -10,7 +10,7 @@ from rich.prompt import Confirm, Prompt
 import yaml
 
 from ..llms import LLMConfig
-from ..models.flow import Message, Route
+from ..models.agent import Message, Route
 
 
 REASONING_PROMPT = """
