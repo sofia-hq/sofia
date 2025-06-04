@@ -28,6 +28,10 @@ interface ToolbarProps {
   onBulkDelete?: () => void;
   onBulkDuplicate?: () => void;
   onBulkGroup?: () => void;
+  // Import/Export functionality
+  onExportYaml?: () => void;
+  onImportYaml?: () => void;
+  onNewConfig?: () => void;
 }
 
 export function Toolbar({
@@ -42,18 +46,39 @@ export function Toolbar({
   onBulkDelete,
   onBulkDuplicate,
   onBulkGroup,
+  onExportYaml,
+  onImportYaml,
+  onNewConfig,
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
       {/* File Operations */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onNewConfig}
+          title="New configuration"
+        >
           <FileText className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onImportYaml}
+          title="Import YAML"
+        >
           <Upload className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onExportYaml}
+          title="Export YAML"
+        >
           <Download className="w-4 h-4" />
         </Button>
         <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

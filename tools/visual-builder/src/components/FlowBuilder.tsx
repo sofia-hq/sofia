@@ -21,6 +21,7 @@ import { ContextMenu } from './context-menu/ContextMenu';
 import { FlowProvider } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
 import { FlowGroupEditDialog } from './dialogs/FlowGroupEditDialog';
+import { ExportImportDialog } from './dialogs/ExportImportDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SearchFilter } from './SearchFilter';
 import { autoArrangeNodes } from '../utils/autoArrange';
@@ -592,6 +593,9 @@ export default function FlowBuilder() {
     id: string;
     data: FlowGroupData;
   } | null>(null);
+  const [showExportImportDialog, setShowExportImportDialog] = useState(false);
+  const [agentName, setAgentName] = useState('my-agent');
+  const [persona, setPersona] = useState('A helpful assistant');
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -717,6 +721,38 @@ export default function FlowBuilder() {
       setNodesWithUndo(result.nodes, `Group ${selectedNodeIds.length} nodes into flow`);
     }
   }, [nodes, edges, setNodesWithUndo]);
+
+  // Export/Import handlers
+  const handleExportYaml = useCallback(() => {
+    setShowExportImportDialog(true);
+  }, []);
+
+  const handleImportYaml = useCallback(() => {
+    setShowExportImportDialog(true);
+  }, []);
+
+  const handleNewConfig = useCallback(() => {
+    // Clear current flow and reset to empty state
+    setNodesWithUndo([], 'New configuration');
+    setEdges([]);
+    setAgentName('my-agent');
+    setPersona('A helpful assistant');
+  }, [setNodesWithUndo, setEdges]);
+
+  const handleImportFlow = useCallback((mergeResult: any) => {
+    // Add imported nodes alongside existing ones using merge import
+    setNodesWithUndo([...nodes, ...mergeResult.nodes], 'Merge import YAML configuration');
+    setEdges([...edges, ...mergeResult.edges]);
+
+    // Update agent configuration if provided
+    if (mergeResult.config.name) setAgentName(mergeResult.config.name);
+    if (mergeResult.config.persona) setPersona(mergeResult.config.persona);
+  }, [nodes, edges, setNodesWithUndo, setEdges]);
+
+  const handleAgentConfigChange = useCallback((name: string, newPersona: string) => {
+    setAgentName(name);
+    setPersona(newPersona);
+  }, []);
 
   // Custom onNodesChange handler that auto-resizes groups when children move
   const onNodesChange = useCallback((changes: any[]) => {
@@ -1253,6 +1289,9 @@ export default function FlowBuilder() {
               onBulkDelete={handleBulkDelete}
               onBulkDuplicate={handleBulkDuplicate}
               onBulkGroup={handleBulkGroup}
+              onExportYaml={handleExportYaml}
+              onImportYaml={handleImportYaml}
+              onNewConfig={handleNewConfig}
             />
           </div>
 
@@ -1339,6 +1378,17 @@ export default function FlowBuilder() {
             availableStepIds={nodes.filter(node => node.type === 'step').map(node => node.id)}
           />
         )}
+
+        <ExportImportDialog
+          open={showExportImportDialog}
+          onClose={() => setShowExportImportDialog(false)}
+          nodes={nodes}
+          edges={edges}
+          onImport={handleImportFlow}
+          agentName={agentName}
+          persona={persona}
+          onAgentConfigChange={handleAgentConfigChange}
+        />
 
         <KeyboardShortcuts />
         </div>
