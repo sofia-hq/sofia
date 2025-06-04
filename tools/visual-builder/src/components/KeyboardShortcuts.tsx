@@ -1,6 +1,6 @@
 import { memo, useState } from 'react';
 import { Button } from './ui/button';
-import { HelpCircle, X } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,23 +17,27 @@ interface KeyboardShortcut {
 const shortcuts: KeyboardShortcut[] = [
   {
     keys: ['Cmd/Ctrl', 'C'],
-    description: 'Copy selected node'
+    description: 'Copy selected node(s)'
   },
   {
     keys: ['Cmd/Ctrl', 'V'],
-    description: 'Paste copied node'
+    description: 'Paste copied node(s)'
+  },
+  {
+    keys: ['Cmd/Ctrl', 'A'],
+    description: 'Select all nodes'
+  },
+  {
+    keys: ['Del/Backspace'],
+    description: 'Delete selected node(s)'
+  },
+  {
+    keys: ['Escape'],
+    description: 'Deselect all nodes'
   },
   {
     keys: ['Right Click'],
     description: 'Open context menu'
-  },
-  {
-    keys: ['Del/Backspace'],
-    description: 'Delete selected node (coming soon)'
-  },
-  {
-    keys: ['Space'],
-    description: 'Pan canvas (coming soon)'
   },
   {
     keys: ['Mouse Wheel'],
@@ -59,16 +63,8 @@ export const KeyboardShortcuts = memo(() => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
+            <DialogTitle>
               Keyboard Shortcuts
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0"
-                onClick={() => setOpen(false)}
-              >
-                <X className="w-4 h-4" />
-              </Button>
             </DialogTitle>
             <DialogDescription>
               Use these shortcuts to work more efficiently with the visual builder.

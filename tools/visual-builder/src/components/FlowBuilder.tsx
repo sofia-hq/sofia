@@ -20,12 +20,15 @@ import { ContextMenu } from './context-menu/ContextMenu';
 import { FlowProvider } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
+import { SearchFilter } from './SearchFilter';
 import { autoArrangeNodes } from '../utils/autoArrange';
 import { 
   copyNodeToClipboard, 
   getClipboardData, 
   hasClipboardData, 
-  cloneNodeWithNewId 
+  cloneNodeWithNewId,
+  copyNodesToClipboard,
+  cloneNodesWithNewIds,
 } from '../utils/clipboard';
 import type { StepNodeData, ToolNodeData } from '../types';
 
@@ -135,6 +138,7 @@ const initialEdges: Edge[] = [
 export default function FlowBuilder() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -262,23 +266,52 @@ export default function FlowBuilder() {
           if (selectedNodes.length === 1) {
             copyNodeToClipboard(selectedNodes[0]);
             event.preventDefault();
+          } else if (selectedNodes.length > 1) {
+            copyNodesToClipboard(selectedNodes);
+            event.preventDefault();
           }
         } else if (event.key === 'v') {
           // Paste node
           const clipboardData = getClipboardData();
-          if (clipboardData && clipboardData.type === 'node') {
-            const originalNode = clipboardData.data as Node;
-            const newNode = cloneNodeWithNewId(originalNode, 50, 50);
-            setNodes((nds) => [...nds, newNode]);
-            event.preventDefault();
+          if (clipboardData) {
+            if (clipboardData.type === 'node') {
+              const originalNode = clipboardData.data as Node;
+              const newNode = cloneNodeWithNewId(originalNode, 50, 50);
+              setNodes((nds) => [...nds, newNode]);
+              event.preventDefault();
+            } else if (clipboardData.type === 'nodes') {
+              const originalNodes = clipboardData.data as Node[];
+              const newNodes = cloneNodesWithNewIds(originalNodes, 50, 50);
+              setNodes((nds) => [...nds, ...newNodes]);
+              event.preventDefault();
+            }
           }
+        } else if (event.key === 'a') {
+          // Select all nodes
+          setNodes((nds) => nds.map(node => ({ ...node, selected: true })));
+          event.preventDefault();
         }
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        // Delete selected nodes
+        const selectedNodes = nodes.filter(node => node.selected);
+        if (selectedNodes.length > 0) {
+          const selectedNodeIds = selectedNodes.map(node => node.id);
+          setNodes((nds) => nds.filter(node => !node.selected));
+          setEdges((eds) => eds.filter(edge => 
+            !selectedNodeIds.includes(edge.source) && !selectedNodeIds.includes(edge.target)
+          ));
+          event.preventDefault();
+        }
+      } else if (event.key === 'Escape') {
+        // Deselect all nodes
+        setNodes((nds) => nds.map(node => ({ ...node, selected: false })));
+        event.preventDefault();
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [nodes, setNodes]);
+  }, [nodes, setNodes, setEdges]);
 
   const addStepNode = useCallback(() => {
     const id = `step-${Date.now()}`;
@@ -341,6 +374,23 @@ export default function FlowBuilder() {
     }
   }, [contextMenu.nodeId, nodes]);
 
+  // Search and filter handlers
+  const handleFilter = useCallback((nodeIds: string[]) => {
+    setFilteredNodeIds(nodeIds);
+  }, []);
+
+  const handleClearFilter = useCallback(() => {
+    setFilteredNodeIds(null);
+  }, []);
+
+  // Get visible nodes based on filter
+  const visibleNodes = filteredNodeIds 
+    ? nodes.map(node => ({
+        ...node,
+        hidden: !filteredNodeIds.includes(node.id)
+      }))
+    : nodes;
+
   const pasteNode = useCallback(() => {
     const clipboardData = getClipboardData();
     if (clipboardData && clipboardData.type === 'node') {
@@ -359,26 +409,45 @@ export default function FlowBuilder() {
 
   return (
     <FlowProvider onUpdateNode={handleUpdateNode}>
-      <div className="h-full w-full relative" ref={reactFlowWrapper}>
-        <Toolbar onAutoArrange={handleAutoArrange} />
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onContextMenu={handleContextMenu}
-          isValidConnection={isValidConnection}
-          nodeTypes={nodeTypes}
-          edgeTypes={edgeTypes}
-          minZoom={0.3}
-          maxZoom={1.0}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
-          snapToGrid={true}
-          snapGrid={[20, 20]}
-          fitView
-          fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
-        >
+      <div className="h-full w-full relative">
+        {/* Flow Builder */}
+        <div className="h-full w-full" ref={reactFlowWrapper}>
+          {/* Floating Toolbar */}
+          <div className="absolute top-4 left-4 z-10">
+            <Toolbar onAutoArrange={handleAutoArrange} />
+          </div>
+          
+          {/* Floating Search Filter */}
+          <div className="absolute top-4 right-4 z-10">
+            <SearchFilter 
+              nodes={nodes}
+              onFilter={handleFilter}
+              onClearFilter={handleClearFilter}
+            />
+          </div>
+          
+          <ReactFlow
+            nodes={visibleNodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onContextMenu={handleContextMenu}
+            isValidConnection={isValidConnection}
+            nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
+            minZoom={0.3}
+            maxZoom={1.0}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
+            snapToGrid={true}
+            snapGrid={[20, 20]}
+            fitView
+            fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
+            multiSelectionKeyCode={["Meta", "Control"]}
+            selectionKeyCode={null}
+            deleteKeyCode={["Delete", "Backspace"]}
+            selectNodesOnDrag={false}
+          >
           <Background gap={20}/>
           <Controls />
           
@@ -418,6 +487,7 @@ export default function FlowBuilder() {
         
         <NodeEditDialogs />
         <KeyboardShortcuts />
+        </div>
       </div>
     </FlowProvider>
   );
