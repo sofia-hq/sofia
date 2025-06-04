@@ -14,11 +14,13 @@ import {
 import { Toolbar } from './Toolbar';
 import { StepNode } from './nodes/StepNode';
 import { ToolNode } from './nodes/ToolNode';
+import { GroupNode } from './nodes/GroupNode';
 import { RouteEdge } from './edges/RouteEdge';
 import { ToolEdge } from './edges/ToolEdge';
 import { ContextMenu } from './context-menu/ContextMenu';
 import { FlowProvider } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
+import { FlowGroupEditDialog } from './dialogs/FlowGroupEditDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SearchFilter } from './SearchFilter';
 import { autoArrangeNodes } from '../utils/autoArrange';
@@ -27,15 +29,95 @@ import {
   getClipboardData,
   hasClipboardData,
   cloneNodeWithNewId,
-  copyNodesToClipboard,
-  cloneNodesWithNewIds,
 } from '../utils/clipboard';
-import type { StepNodeData, ToolNodeData } from '../types';
+import type { StepNodeData, ToolNodeData, FlowGroupData } from '../types';
+
+// Utility function to calculate group bounds based on child nodes
+const calculateGroupBounds = (groupNode: Node, childNodes: Node[]) => {
+  if (childNodes.length === 0) {
+    return {
+      position: groupNode.position,
+      size: { width: groupNode.style?.width as number || 400, height: groupNode.style?.height as number || 300 }
+    };
+  }
+
+  // Debug logging to verify all child nodes are being considered
+  console.log(`Calculating bounds for group ${groupNode.id}:`, {
+    groupPosition: groupNode.position,
+    groupSize: { width: groupNode.style?.width, height: groupNode.style?.height },
+    childNodes: childNodes.map(child => ({ 
+      id: child.id, 
+      type: child.type, 
+      position: child.position,
+      parentId: child.parentId 
+    }))
+  });
+
+  // Calculate absolute positions of child nodes with proper dimensions
+  const childAbsolutePositions = childNodes.map(child => ({
+    x: groupNode.position.x + child.position.x,
+    y: groupNode.position.y + child.position.y,
+    width: child.type === 'step' ? 280 : 200, // step node width : tool node width
+    height: child.type === 'step' ? 140 : 100, // step node height : tool node height
+  }));
+
+  const padding = 60; // Consistent padding
+  const minX = Math.min(...childAbsolutePositions.map(pos => pos.x));
+  const minY = Math.min(...childAbsolutePositions.map(pos => pos.y));
+  const maxX = Math.max(...childAbsolutePositions.map(pos => pos.x + pos.width));
+  const maxY = Math.max(...childAbsolutePositions.map(pos => pos.y + pos.height));
+
+  // Calculate required bounds
+  const requiredPosition = { x: minX - padding, y: minY - padding };
+
+  // Current group bounds
+  const currentPosition = groupNode.position;
+  const currentSize = {
+    width: groupNode.style?.width as number || 400,
+    height: groupNode.style?.height as number || 300
+  };
+
+  // Calculate final bounds ensuring consistent padding on all sides
+  // If we need to expand the group, ensure the padding is consistent
+  const finalPosition = {
+    x: Math.min(currentPosition.x, requiredPosition.x),
+    y: Math.min(currentPosition.y, requiredPosition.y),
+  };
+
+  // Calculate the size based on the final position to ensure consistent padding
+  const finalSize = {
+    width: Math.max(currentSize.width, (maxX - finalPosition.x) + padding),
+    height: Math.max(currentSize.height, (maxY - finalPosition.y) + padding),
+  };
+
+  // Debug: Calculate actual padding on each side
+  const actualPadding = {
+    left: minX - finalPosition.x,
+    top: minY - finalPosition.y,
+    right: (finalPosition.x + finalSize.width) - maxX,
+    bottom: (finalPosition.y + finalSize.height) - maxY
+  };
+  
+  console.log(`🔍 Group ${groupNode.id} padding analysis:`, {
+    expectedPadding: padding,
+    actualPadding,
+    childBounds: { minX, minY, maxX, maxY },
+    finalPosition,
+    finalSize,
+    groupStyle: groupNode.style
+  });
+
+  return {
+    position: finalPosition,
+    size: finalSize
+  };
+};
 
 // Define custom node types
 const nodeTypes = {
   step: StepNode,
   tool: ToolNode,
+  group: GroupNode,
 };
 
 // Define custom edge types
@@ -136,14 +218,19 @@ const initialEdges: Edge[] = [
 ];
 
 export default function FlowBuilder() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
+  const [editingFlowGroup, setEditingFlowGroup] = useState<{
+    id: string;
+    data: FlowGroupData;
+  } | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
     visible: boolean;
     nodeId?: string;
+    nodeType?: string;
   }>({
     x: 0,
     y: 0,
@@ -152,6 +239,129 @@ export default function FlowBuilder() {
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
+
+  // Custom onNodesChange handler that auto-resizes groups when children move
+  const onNodesChange = useCallback((changes: any[]) => {
+    onNodesChangeBase(changes);
+
+    // Check if any changes involve moving nodes that are children of groups
+    const moveChanges = changes.filter(change => change.type === 'position' && change.position);
+    
+    if (moveChanges.length > 0) {
+      // Use setTimeout to update group sizes after the position changes are applied
+      setTimeout(() => {
+        setNodes(currentNodes => {
+          const updatedNodes = [...currentNodes];
+          const groupNodes = updatedNodes.filter(node => node.type === 'group');
+          
+          groupNodes.forEach(groupNode => {
+            const childNodes = updatedNodes.filter(node => node.parentId === groupNode.id);
+            if (childNodes.length > 0) {
+              const bounds = calculateGroupBounds(groupNode, childNodes);
+              
+              // Update group size and position if they changed significantly
+              const currentWidth = groupNode.style?.width as number || 0;
+              const currentHeight = groupNode.style?.height as number || 0;
+              const currentX = groupNode.position.x;
+              const currentY = groupNode.position.y;
+              
+              const sizeChanged = Math.abs(bounds.size.width - currentWidth) > 10 || 
+                                Math.abs(bounds.size.height - currentHeight) > 10;
+              const positionChanged = Math.abs(bounds.position.x - currentX) > 5 || 
+                                    Math.abs(bounds.position.y - currentY) > 5;
+              
+              if (sizeChanged || positionChanged) {
+                const groupIndex = updatedNodes.findIndex(n => n.id === groupNode.id);
+                if (groupIndex !== -1) {
+                  // Calculate the position delta to adjust child nodes
+                  const deltaX = bounds.position.x - currentX;
+                  const deltaY = bounds.position.y - currentY;
+                  
+                  // Update group node
+                  updatedNodes[groupIndex] = {
+                    ...groupNode,
+                    position: bounds.position,
+                    style: {
+                      ...groupNode.style,
+                      width: bounds.size.width,
+                      height: bounds.size.height,
+                    },
+                  };
+                  
+                  // Adjust child node positions if group position changed
+                  if (deltaX !== 0 || deltaY !== 0) {
+                    childNodes.forEach(childNode => {
+                      const childIndex = updatedNodes.findIndex(n => n.id === childNode.id);
+                      if (childIndex !== -1) {
+                        updatedNodes[childIndex] = {
+                          ...childNode,
+                          position: {
+                            x: childNode.position.x - deltaX,
+                            y: childNode.position.y - deltaY,
+                          },
+                        };
+                      }
+                    });
+                  }
+                }
+              }
+            }
+          });
+          
+          return updatedNodes;
+        });
+      }, 0);
+    }
+  }, [onNodesChangeBase, setNodes]);
+
+  // Auto-arrange on startup - only run once when component mounts with initial data
+  useEffect(() => {
+    // Only run if we have initial data and haven't arranged yet
+    if (nodes.length > 0 && edges.length > 0) {
+      const arrangedNodes = autoArrangeNodes(nodes, edges);
+      setNodes(arrangedNodes);
+    }
+  }, []); // Empty dependency array - only run once on mount
+
+  // Context menu handlers
+  const handleContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (reactFlowBounds) {
+      setContextMenu({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+        visible: true,
+      });
+    }
+  }, []);
+
+  const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+    event.preventDefault();
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (reactFlowBounds) {
+      setContextMenu({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+        visible: true,
+        nodeId: node.id,
+        nodeType: node.type,
+      });
+    }
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
+
+  // Auto arrange handler
+  const handleAutoArrange = useCallback(() => {
+    const arrangedNodes = autoArrangeNodes(nodes, edges);
+    
+    // The autoArrangeNodes function now handles group optimization internally,
+    // so we can directly set the arranged nodes
+    setNodes(arrangedNodes);
+  }, [nodes, edges, setNodes]);
 
   const isValidConnection = useCallback((connection: any) => {
     const { source, target, sourceHandle, targetHandle } = connection;
@@ -218,100 +428,195 @@ export default function FlowBuilder() {
     );
   }, [setNodes]);
 
-  const handleContextMenu = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
+  const handleUpdateFlow = useCallback((flowId: string, data: Partial<FlowGroupData>) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === flowId && node.type === 'group') {
+          // Update group node data and visual properties
+          const updatedNode = { 
+            ...node, 
+            data: { ...node.data, ...data },
+          };
+          
+          // Update visual properties if provided
+          if (data.color) {
+            updatedNode.style = {
+              ...node.style,
+              backgroundColor: `${data.color}0D`, // 5% opacity
+              border: `2px dashed ${data.color}4D`, // 30% opacity
+            };
+          }
+          
+          return updatedNode;
+        }
+        return node;
+      })
+    );
+  }, [setNodes]);
 
-    const target = event.target as HTMLElement;
-    const nodeElement = target.closest('[data-id]');
-    const nodeId = nodeElement?.getAttribute('data-id');
-
-    setContextMenu({
-      x: event.clientX,
-      y: event.clientY,
-      visible: true,
-      nodeId: nodeId || undefined,
-    });
-  }, []);
-
-  const closeContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, visible: false }));
-  }, []);
-
-  const handleAutoArrange = useCallback(() => {
-    const arrangedNodes = autoArrangeNodes(nodes, edges);
-    setNodes(arrangedNodes);
-  }, [nodes, edges, setNodes]);
-
-  // Auto-arrange nodes when the component mounts
-  useEffect(() => {
-    // Only auto-arrange if we have nodes (to avoid running on empty state)
-    if (nodes.length > 0) {
-      const arrangedNodes = autoArrangeNodes(nodes, edges);
-      setNodes(arrangedNodes);
+  const handleNodeDoubleClick = useCallback((_event: React.MouseEvent, node: Node) => {
+    if (node.type === 'group') {
+      // Create FlowGroupData from group node
+      const nodeData = node.data as any;
+      const flowGroupData: FlowGroupData = {
+        flow_id: nodeData.flow_id || node.id,
+        description: nodeData.description || '',
+        enters: nodeData.enters || [],
+        exits: nodeData.exits || [],
+        nodeIds: nodes.filter(n => n.parentId === node.id).map(n => n.id),
+        components: nodeData.components || {},
+        metadata: nodeData.metadata || {},
+        color: nodeData.color || '#3B82F6',
+        position: node.position,
+        size: {
+          width: node.style?.width as number || 400,
+          height: node.style?.height as number || 300,
+        },
+      };
+      
+      setEditingFlowGroup({
+        id: node.id,
+        data: flowGroupData,
+      });
     }
-  }, []); // Empty dependency array means this runs only once on mount
+  }, [nodes]);
 
-  // Keyboard shortcuts for copy/paste
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Check if we're in an input field
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return;
-      }
+  const createFlowGroup = useCallback((selectedNodeIds: string[]) => {
+    if (selectedNodeIds.length === 0) return;
 
-      if (event.metaKey || event.ctrlKey) {
-        if (event.key === 'c') {
-          // Copy selected nodes
-          const selectedNodes = nodes.filter(node => node.selected);
-          if (selectedNodes.length === 1) {
-            copyNodeToClipboard(selectedNodes[0]);
-            event.preventDefault();
-          } else if (selectedNodes.length > 1) {
-            copyNodesToClipboard(selectedNodes);
-            event.preventDefault();
-          }
-        } else if (event.key === 'v') {
-          // Paste node
-          const clipboardData = getClipboardData();
-          if (clipboardData) {
-            if (clipboardData.type === 'node') {
-              const originalNode = clipboardData.data as Node;
-              const newNode = cloneNodeWithNewId(originalNode, 50, 50);
-              setNodes((nds) => [...nds, newNode]);
-              event.preventDefault();
-            } else if (clipboardData.type === 'nodes') {
-              const originalNodes = clipboardData.data as Node[];
-              const newNodes = cloneNodesWithNewIds(originalNodes, 50, 50);
-              setNodes((nds) => [...nds, ...newNodes]);
-              event.preventDefault();
-            }
-          }
-        } else if (event.key === 'a') {
-          // Select all nodes
-          setNodes((nds) => nds.map(node => ({ ...node, selected: true })));
-          event.preventDefault();
-        }
-      } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        // Delete selected nodes
-        const selectedNodes = nodes.filter(node => node.selected);
-        if (selectedNodes.length > 0) {
-          const selectedNodeIds = selectedNodes.map(node => node.id);
-          setNodes((nds) => nds.filter(node => !node.selected));
-          setEdges((eds) => eds.filter(edge =>
-            !selectedNodeIds.includes(edge.source) && !selectedNodeIds.includes(edge.target)
-          ));
-          event.preventDefault();
-        }
-      } else if (event.key === 'Escape') {
-        // Deselect all nodes
-        setNodes((nds) => nds.map(node => ({ ...node, selected: false })));
-        event.preventDefault();
-      }
+    const selectedNodes = nodes.filter(node => selectedNodeIds.includes(node.id));
+    
+    // Filter for step nodes only - tools cannot be grouped
+    const stepNodes = selectedNodes.filter(node => node.type === 'step');
+    
+    if (stepNodes.length < 2) {
+      console.warn('Flow groups can only contain step nodes. At least 2 step nodes are required.');
+      return;
+    }
+
+    const flowId = `flow_${Date.now()}`;
+    const stepNodeIds = stepNodes.map(node => node.id);
+    
+    // Calculate bounding box for the group
+    const padding = 60; // Padding around the nodes
+    const minX = Math.min(...stepNodes.map(n => n.position.x));
+    const minY = Math.min(...stepNodes.map(n => n.position.y));
+    const maxX = Math.max(...stepNodes.map(n => n.position.x + 280)); // step node width
+    const maxY = Math.max(...stepNodes.map(n => n.position.y + 140)); // step node height
+    
+    // Group position and size
+    const groupPosition = { x: minX - padding, y: minY - padding };
+    const groupSize = { 
+      width: (maxX - minX) + (padding * 2), 
+      height: (maxY - minY) + (padding * 2) 
     };
+    
+    // Create group node
+    const groupNode: Node = {
+      id: flowId,
+      type: 'group',
+      position: groupPosition,
+      style: {
+        width: groupSize.width,
+        height: groupSize.height,
+        backgroundColor: 'rgba(59, 130, 246, 0.05)',
+        border: '2px dashed rgba(59, 130, 246, 0.3)',
+        borderRadius: 8,
+      },
+      data: {
+        label: `Flow Group (${stepNodes.length} steps)`,
+        flow_id: flowId,
+        description: '',
+        enters: [],
+        exits: [],
+        nodeIds: stepNodeIds,
+        components: {},
+        metadata: {},
+        color: '#3B82F6',
+      },
+      zIndex: -1, // Ensure group node is rendered behind children
+      selectable: true, // Allow selection for ungrouping
+      draggable: true, // Allow dragging the entire group
+    };
+    
+    // Update child nodes to be relative to parent
+    const updatedNodes = nodes.map(node => {
+      if (stepNodeIds.includes(node.id)) {
+        return {
+          ...node,
+          parentId: flowId,
+          extent: 'parent' as const,
+          position: {
+            x: node.position.x - groupPosition.x,
+            y: node.position.y - groupPosition.y,
+          },
+        };
+      }
+      return node;
+    });
+    
+    // Add group node FIRST, then updated children (order is crucial for React Flow)
+    setNodes([groupNode, ...updatedNodes]);
+    
+    // Deselect nodes after grouping
+    setNodes(nds => nds.map(node => ({ ...node, selected: false })));
+  }, [nodes, setNodes]);
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [nodes, setNodes, setEdges]);
+  const handleUngroupFlow = useCallback(() => {
+    const selectedGroupNodes = nodes.filter(node => node.selected && node.type === 'group');
+    
+    if (selectedGroupNodes.length === 0) {
+      console.log('No group nodes selected');
+      return;
+    }
+    
+    selectedGroupNodes.forEach(groupNode => {
+      // Find all child nodes of this group
+      const childNodes = nodes.filter(node => node.parentId === groupNode.id);
+      
+      // Update child nodes to have absolute positions and remove parent relationship
+      const updatedChildNodes = childNodes.map(childNode => ({
+        ...childNode,
+        parentId: undefined,
+        extent: undefined,
+        position: {
+          x: groupNode.position.x + childNode.position.x,
+          y: groupNode.position.y + childNode.position.y,
+        },
+      }));
+      
+      // Remove group node and update children
+      setNodes(nds => 
+        nds.filter(node => node.id !== groupNode.id)
+           .map(node => {
+             const updatedChild = updatedChildNodes.find(child => child.id === node.id);
+             return updatedChild || node;
+           })
+      );
+    });
+  }, [nodes, setNodes]);
+  const handleCreateFlowGroup = useCallback(() => {
+    const selectedNodes = nodes.filter(node => node.selected);
+    const selectedStepNodes = selectedNodes.filter(node => node.type === 'step');
+    
+    if (selectedStepNodes.length >= 2) {
+      createFlowGroup(selectedStepNodes.map(node => node.id));
+    }
+  }, [nodes, createFlowGroup]);
+
+  const handleSaveFlowGroup = useCallback((data: FlowGroupData) => {
+    if (editingFlowGroup) {
+      handleUpdateFlow(editingFlowGroup.id, data);
+      setEditingFlowGroup(null);
+    }
+  }, [editingFlowGroup, handleUpdateFlow]);
+
+  const handleCloseFlowGroupDialog = useCallback(() => {
+    setEditingFlowGroup(null);
+  }, []);
+
+  // Get count of selected step nodes (only step nodes can be grouped)
+  const selectedStepNodesCount = nodes.filter(node => node.selected && node.type === 'step').length;
 
   const addStepNode = useCallback(() => {
     const id = `step-${Date.now()}`;
@@ -365,6 +670,20 @@ export default function FlowBuilder() {
     }
   }, [contextMenu.nodeId, setNodes, setEdges]);
 
+  const editNode = useCallback(() => {
+    if (contextMenu.nodeId && contextMenu.nodeType) {
+      const node = nodes.find(n => n.id === contextMenu.nodeId);
+      if (node) {
+        if (node.type === 'group') {
+          // Handle group node editing
+          handleNodeDoubleClick(null as any, node);
+        }
+        // For step/tool nodes, editing is handled by clicking the edit button within the node
+        // We could potentially trigger it here as well if needed
+      }
+    }
+  }, [contextMenu.nodeId, contextMenu.nodeType, nodes, handleNodeDoubleClick]);
+
   const copyNode = useCallback(() => {
     if (contextMenu.nodeId) {
       const node = nodes.find(n => n.id === contextMenu.nodeId);
@@ -408,13 +727,18 @@ export default function FlowBuilder() {
   }, [contextMenu.x, contextMenu.y, screenToFlowPosition, setNodes]);
 
   return (
-    <FlowProvider onUpdateNode={handleUpdateNode}>
+    <FlowProvider onUpdateNode={handleUpdateNode} onUpdateFlow={handleUpdateFlow}>
       <div className="h-full w-full relative">
         {/* Flow Builder */}
         <div className="h-full w-full" ref={reactFlowWrapper}>
           {/* Floating Toolbar */}
           <div className="absolute top-4 left-4 z-10">
-            <Toolbar onAutoArrange={handleAutoArrange} />
+            <Toolbar 
+              onAutoArrange={handleAutoArrange}
+              onCreateFlowGroup={handleCreateFlowGroup}
+              onUngroupFlow={handleUngroupFlow}
+              selectedNodesCount={selectedStepNodesCount}
+            />
           </div>
 
           {/* Floating Search Filter */}
@@ -433,6 +757,8 @@ export default function FlowBuilder() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onContextMenu={handleContextMenu}
+            onNodeContextMenu={handleNodeContextMenu}
+            onNodeDoubleClick={handleNodeDoubleClick}
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
@@ -479,13 +805,26 @@ export default function FlowBuilder() {
           onClose={closeContextMenu}
           onAddStepNode={addStepNode}
           onAddToolNode={addToolNode}
+          onEdit={contextMenu.nodeId ? editNode : undefined}
           onCopy={contextMenu.nodeId ? copyNode : undefined}
           onPaste={hasClipboardData() ? pasteNode : undefined}
           onDelete={contextMenu.nodeId ? deleteNode : undefined}
           isOnNode={!!contextMenu.nodeId}
+          nodeType={contextMenu.nodeType}
         />
 
         <NodeEditDialogs />
+        
+        {editingFlowGroup && (
+          <FlowGroupEditDialog
+            open={true}
+            onClose={handleCloseFlowGroupDialog}
+            onSave={handleSaveFlowGroup}
+            flowData={editingFlowGroup.data as FlowGroupData}
+            availableStepIds={nodes.filter(node => node.type === 'step').map(node => node.id)}
+          />
+        )}
+        
         <KeyboardShortcuts />
         </div>
       </div>

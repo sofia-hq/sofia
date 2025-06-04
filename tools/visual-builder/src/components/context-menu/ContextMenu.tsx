@@ -14,6 +14,7 @@ interface ContextMenuProps {
   onCopy?: () => void;
   onPaste?: () => void;
   isOnNode?: boolean;
+  nodeType?: string;
 }
 
 export const ContextMenu = memo(({
@@ -28,12 +29,21 @@ export const ContextMenu = memo(({
   onCopy,
   onPaste,
   isOnNode = false,
+  nodeType,
 }: ContextMenuProps) => {
   if (!visible) return null;
 
   const handleAction = (action: () => void) => {
     action();
     onClose();
+  };
+
+  // Determine the edit label based on node type
+  const getEditLabel = () => {
+    if (nodeType === 'group') {
+      return 'Edit Configuration';
+    }
+    return 'Edit Node';
   };
 
   return (
@@ -99,7 +109,7 @@ export const ContextMenu = memo(({
                 onClick={() => handleAction(onEdit)}
               >
                 <Edit className="w-4 h-4 mr-2" />
-                Edit Node
+                {getEditLabel()}
               </Button>
             )}
             {onCopy && (

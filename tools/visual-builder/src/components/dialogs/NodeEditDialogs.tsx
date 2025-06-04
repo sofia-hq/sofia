@@ -1,13 +1,28 @@
 import { useFlowContext } from '../../context/FlowContext';
 import { StepEditDialog } from './StepEditDialog';
 import { ToolEditDialog } from './ToolEditDialog';
-import type { StepNodeData, ToolNodeData } from '../../types';
+import { FlowEditDialog } from './FlowEditDialog';
+import type { StepNodeData, ToolNodeData, FlowGroupData } from '../../types';
 
 export function NodeEditDialogs() {
-  const { editingNode, editingNodeType, editingNodeData, setEditingNode, updateNodeData } = useFlowContext();
+  const { 
+    editingNode, 
+    editingNodeType, 
+    editingNodeData, 
+    editingFlow,
+    editingFlowData,
+    setEditingNode, 
+    setEditingFlow,
+    updateNodeData,
+    updateFlowData
+  } = useFlowContext();
 
-  const handleClose = () => {
+  const handleNodeClose = () => {
     setEditingNode(null, null, null);
+  };
+
+  const handleFlowClose = () => {
+    setEditingFlow(null, null);
   };
 
   const handleStepSave = (data: StepNodeData) => {
@@ -22,12 +37,21 @@ export function NodeEditDialogs() {
     }
   };
 
+  const handleFlowSave = (data: FlowGroupData) => {
+    if (editingFlow) {
+      updateFlowData(editingFlow, data);
+    }
+  };
+
+  // TODO: Get available step IDs from the flow builder context
+  const availableStepIds: string[] = [];
+
   return (
     <>
       {editingNodeType === 'step' && editingNodeData && (
         <StepEditDialog
           open={!!editingNode}
-          onClose={handleClose}
+          onClose={handleNodeClose}
           stepData={editingNodeData as StepNodeData}
           onSave={handleStepSave}
         />
@@ -36,9 +60,19 @@ export function NodeEditDialogs() {
       {editingNodeType === 'tool' && editingNodeData && (
         <ToolEditDialog
           open={!!editingNode}
-          onClose={handleClose}
+          onClose={handleNodeClose}
           toolData={editingNodeData as ToolNodeData}
           onSave={handleToolSave}
+        />
+      )}
+
+      {editingFlow && editingFlowData && (
+        <FlowEditDialog
+          open={!!editingFlow}
+          onClose={handleFlowClose}
+          flowData={editingFlowData}
+          onSave={handleFlowSave}
+          availableStepIds={availableStepIds}
         />
       )}
     </>

@@ -60,8 +60,35 @@ export interface LLMConfig {
   model: string;
 }
 
+// Flow grouping types for Phase 4
+export interface FlowGroupData {
+  flow_id: string;
+  description: string;
+  enters: string[]; // Step IDs that can enter this flow
+  exits: string[];  // Step IDs that can exit this flow
+  nodeIds: string[]; // IDs of nodes contained in this flow group
+  components?: {
+    memory?: {
+      llm?: LLMConfig;
+      retriever?: {
+        method: string;
+        kwargs?: Record<string, any>;
+      };
+    };
+  };
+  metadata?: Record<string, any>;
+  // Visual properties
+  collapsed?: boolean;
+  color?: string;
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
+}
+
 export interface FlowContext {
   editingNode: string | null;
+  editingFlow: string | null;
   setEditingNode: (nodeId: string | null) => void;
+  setEditingFlow: (flowId: string | null) => void;
   updateNodeData: (nodeId: string, data: Partial<StepNodeData | ToolNodeData>) => void;
+  updateFlowData: (flowId: string, data: Partial<FlowGroupData>) => void;
 }

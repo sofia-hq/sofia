@@ -7,14 +7,24 @@ import {
   RotateCcw,
   RotateCw,
   Layers,
-  Play
+  Play,
+  Group,
+  Ungroup
 } from 'lucide-react';
 
 interface ToolbarProps {
   onAutoArrange?: () => void;
+  onCreateFlowGroup?: () => void;
+  onUngroupFlow?: () => void;
+  selectedNodesCount?: number;
 }
 
-export function Toolbar({ onAutoArrange }: ToolbarProps) {
+export function Toolbar({ 
+  onAutoArrange, 
+  onCreateFlowGroup, 
+  onUngroupFlow, 
+  selectedNodesCount = 0 
+}: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
       {/* File Operations */}
@@ -53,6 +63,25 @@ export function Toolbar({ onAutoArrange }: ToolbarProps) {
           title="Auto-arrange nodes"
         >
           <Layers className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onCreateFlowGroup}
+          disabled={selectedNodesCount < 2}
+          title={selectedNodesCount < 2 ? "Select 2+ step nodes to group" : "Group selected step nodes into flow"}
+        >
+          <Group className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={onUngroupFlow}
+          title="Ungroup flow"
+        >
+          <Ungroup className="w-4 h-4" />
         </Button>
       </div>
 
