@@ -10,7 +10,7 @@ import {
 export const RouteEdge = memo((props: EdgeProps) => {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props;
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(data?.condition || '');
+  const [editValue, setEditValue] = useState(String(data?.condition || ''));
   const { setEdges } = useReactFlow();
 
   const [edgePath, labelX, labelY] = getSmoothStepPath({
@@ -24,7 +24,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
 
   const handleLabelClick = useCallback(() => {
     setIsEditing(true);
-    setEditValue(data?.condition || '');
+    setEditValue(String(data?.condition || ''));
   }, [data?.condition]);
 
   const handleSave = useCallback(() => {
@@ -40,7 +40,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
 
   const handleCancel = useCallback(() => {
     setIsEditing(false);
-    setEditValue(data?.condition || '');
+    setEditValue(String(data?.condition || ''));
   }, [data?.condition]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -87,7 +87,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
                 className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 shadow-sm cursor-pointer hover:border-gray-400 hover:bg-gray-50"
                 title="Click to edit condition"
               >
-                {data?.condition || 'Add condition...'}
+                {String(data?.condition || 'Add condition...')}
               </div>
             )}
           </div>

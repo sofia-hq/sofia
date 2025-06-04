@@ -4,18 +4,16 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import type { Node } from '@xyflow/react';
 import type { StepNodeData, ToolNodeData } from '../../models/nomos';
 
 interface NodeEditPanelProps {
-  nodeId: string;
   node: Node | null;
   onClose: () => void;
   onSave: (data: Partial<StepNodeData | ToolNodeData>) => void;
 }
 
-export function NodeEditPanel({ nodeId, node, onClose, onSave }: NodeEditPanelProps) {
+export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
   const [formData, setFormData] = useState<any>({});
 
   useEffect(() => {

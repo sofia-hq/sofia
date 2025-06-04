@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Button } from '../ui/button';
-import { Settings, Tool, Plus } from 'lucide-react';
+import { Settings, Wrench, Plus } from 'lucide-react';
 
 interface FlowContextMenuProps {
   position: { x: number; y: number };
@@ -69,7 +69,7 @@ export function FlowContextMenu({
         className="w-full justify-start h-8 px-2"
         onClick={handleAddTool}
       >
-        <Tool className="w-4 h-4 mr-2" />
+        <Wrench className="w-4 h-4 mr-2" />
         Tool Node
       </Button>
       

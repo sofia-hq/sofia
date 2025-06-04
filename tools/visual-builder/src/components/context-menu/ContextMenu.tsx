@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Button } from '../ui/button';
-import { Plus, Play, Wrench, Trash2, Copy, Edit } from 'lucide-react';
+import { Play, Wrench, Trash2, Copy, Edit } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;

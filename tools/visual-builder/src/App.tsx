@@ -1,5 +1,5 @@
 import { ReactFlowProvider } from '@xyflow/react';
-import FlowBuilder from './components/FlowBuilder-simple';
+import FlowBuilder from './components/FlowBuilder';
 import '@xyflow/react/dist/style.css';
 
 export default function App() {
