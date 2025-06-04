@@ -41,15 +41,8 @@ export function useUndoRedo(
   const saveState = useCallback((nodes: Node[], edges: Edge[], description?: string) => {
     // Don't save if we're currently applying history
     if (isApplyingHistoryRef.current) {
-      console.log('🔄 Skipping state save (applying history)');
       return;
     }
-
-    console.log('🔄 Saving state:', {
-      nodesCount: nodes.length,
-      edgesCount: edges.length,
-      description
-    });
 
     const newState: HistoryState = {
       nodes: JSON.parse(JSON.stringify(nodes)), // Deep clone
@@ -64,31 +57,21 @@ export function useUndoRedo(
       if (newStack.length > maxHistorySize) {
         return newStack.slice(-maxHistorySize);
       }
-      console.log('🔄 New undo stack length:', newStack.length);
       return newStack;
     });
 
     // Clear redo stack when new action is performed
     setRedoStack([]);
-    console.log('🔄 Cleared redo stack');
   }, [maxHistorySize, saveDescription]);
 
   // Undo operation
   const undo = useCallback((currentNodes: Node[], currentEdges: Edge[]): { nodes: Node[], edges: Edge[] } | null => {
-    console.log('🔄 Undo called, stack length:', undoStack.length);
     if (undoStack.length === 0) {
-      console.log('🔄 Undo stack is empty');
       return null;
     }
 
     const stateToRestore = undoStack[undoStack.length - 1];
     const newUndoStack = undoStack.slice(0, -1);
-
-    console.log('🔄 Undoing to state:', {
-      nodesCount: stateToRestore.nodes.length,
-      edgesCount: stateToRestore.edges.length,
-      description: stateToRestore.description
-    });
 
     // Save current state to redo stack
     const currentState: HistoryState = {
@@ -116,20 +99,12 @@ export function useUndoRedo(
 
   // Redo operation
   const redo = useCallback((currentNodes: Node[], currentEdges: Edge[]): { nodes: Node[], edges: Edge[] } | null => {
-    console.log('🔄 Redo called, stack length:', redoStack.length);
     if (redoStack.length === 0) {
-      console.log('🔄 Redo stack is empty');
       return null;
     }
 
     const stateToRestore = redoStack[redoStack.length - 1];
     const newRedoStack = redoStack.slice(0, -1);
-
-    console.log('🔄 Redoing to state:', {
-      nodesCount: stateToRestore.nodes.length,
-      edgesCount: stateToRestore.edges.length,
-      description: stateToRestore.description
-    });
 
     // Save current state to undo stack
     const currentState: HistoryState = {

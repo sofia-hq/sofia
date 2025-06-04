@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
+import type { Node, Edge } from '@xyflow/react';
 import type { StepNodeData, ToolNodeData, FlowGroupData } from '../types';
 
 interface FlowContextType {
@@ -7,6 +8,8 @@ interface FlowContextType {
   editingNodeData: StepNodeData | ToolNodeData | null;
   editingFlow: string | null;
   editingFlowData: FlowGroupData | null;
+  nodes: Node[];
+  edges: Edge[];
   setEditingNode: (nodeId: string | null, nodeType: 'step' | 'tool' | null, nodeData: StepNodeData | ToolNodeData | null) => void;
   setEditingFlow: (flowId: string | null, flowData: FlowGroupData | null) => void;
   updateNodeData: (nodeId: string, data: Partial<StepNodeData | ToolNodeData>) => void;
@@ -17,11 +20,13 @@ const FlowContext = createContext<FlowContextType | undefined>(undefined);
 
 interface FlowProviderProps {
   children: ReactNode;
+  nodes: Node[];
+  edges: Edge[];
   onUpdateNode: (nodeId: string, data: Partial<StepNodeData | ToolNodeData>) => void;
   onUpdateFlow?: (flowId: string, data: Partial<FlowGroupData>) => void;
 }
 
-export function FlowProvider({ children, onUpdateNode, onUpdateFlow }: FlowProviderProps) {
+export function FlowProvider({ children, nodes, edges, onUpdateNode, onUpdateFlow }: FlowProviderProps) {
   const [editingNode, setEditingNodeId] = useState<string | null>(null);
   const [editingNodeType, setEditingNodeType] = useState<'step' | 'tool' | null>(null);
   const [editingNodeData, setEditingNodeData] = useState<StepNodeData | ToolNodeData | null>(null);
@@ -58,6 +63,8 @@ export function FlowProvider({ children, onUpdateNode, onUpdateFlow }: FlowProvi
       editingNodeData,
       editingFlow,
       editingFlowData,
+      nodes,
+      edges,
       setEditingNode,
       setEditingFlow,
       updateNodeData,

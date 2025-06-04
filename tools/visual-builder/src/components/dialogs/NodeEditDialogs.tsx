@@ -11,6 +11,8 @@ export function NodeEditDialogs() {
     editingNodeData,
     editingFlow,
     editingFlowData,
+    nodes,
+    edges,
     setEditingNode,
     setEditingFlow,
     updateNodeData,
@@ -54,6 +56,9 @@ export function NodeEditDialogs() {
           onClose={handleNodeClose}
           stepData={editingNodeData as StepNodeData}
           onSave={handleStepSave}
+          nodeId={editingNode || ''}
+          nodes={nodes}
+          edges={edges}
         />
       )}
 

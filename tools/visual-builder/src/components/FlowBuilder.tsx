@@ -49,16 +49,7 @@ const calculateGroupBounds = (groupNode: Node, childNodes: Node[]) => {
   }
 
   // Debug logging to verify all child nodes are being considered
-  console.log(`Calculating bounds for group ${groupNode.id}:`, {
-    groupPosition: groupNode.position,
-    groupSize: { width: groupNode.style?.width, height: groupNode.style?.height },
-    childNodes: childNodes.map(child => ({
-      id: child.id,
-      type: child.type,
-      position: child.position,
-      parentId: child.parentId
-    }))
-  });
+  // Debug: Calculate bounds for group with child nodes
 
   // Calculate absolute positions of child nodes with proper dimensions
   const childAbsolutePositions = childNodes.map(child => ({
@@ -97,23 +88,7 @@ const calculateGroupBounds = (groupNode: Node, childNodes: Node[]) => {
     height: Math.max(currentSize.height, (maxY - finalPosition.y) + padding),
   };
 
-  // Debug: Calculate actual padding on each side
-  const actualPadding = {
-    left: minX - finalPosition.x,
-    top: minY - finalPosition.y,
-    right: (finalPosition.x + finalSize.width) - maxX,
-    bottom: (finalPosition.y + finalSize.height) - maxY
-  };
-
-  console.log(`🔍 Group ${groupNode.id} padding analysis:`, {
-    expectedPadding: padding,
-    actualPadding,
-    childBounds: { minX, minY, maxX, maxY },
-    finalPosition,
-    finalSize,
-    groupStyle: groupNode.style
-  });
-
+  // Calculate final bounds ensuring consistent padding
   return {
     position: finalPosition,
     size: finalSize
@@ -625,27 +600,19 @@ export default function FlowBuilder() {
 
   // Undo handler that integrates with React Flow state
   const handleUndo = useCallback(() => {
-    console.log('🔄 Undo triggered');
     const result = undo(nodes, edges);
     if (result) {
-      console.log('🔄 Undo result:', { nodesCount: result.nodes.length, edgesCount: result.edges.length });
       setNodes(result.nodes);
       setEdges(result.edges);
-    } else {
-      console.log('🔄 No undo state available');
     }
   }, [undo, nodes, edges, setNodes, setEdges]);
 
   // Redo handler that integrates with React Flow state
   const handleRedo = useCallback(() => {
-    console.log('🔄 Redo triggered');
     const result = redo(nodes, edges);
     if (result) {
-      console.log('🔄 Redo result:', { nodesCount: result.nodes.length, edgesCount: result.edges.length });
       setNodes(result.nodes);
       setEdges(result.edges);
-    } else {
-      console.log('🔄 No redo state available');
     }
   }, [redo, nodes, edges, setNodes, setEdges]);
 
@@ -1102,7 +1069,6 @@ export default function FlowBuilder() {
     const selectedGroupNodes = nodes.filter(node => node.selected && node.type === 'group');
 
     if (selectedGroupNodes.length === 0) {
-      console.log('No group nodes selected');
       return;
     }
 
@@ -1271,7 +1237,12 @@ export default function FlowBuilder() {
   }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
 
   return (
-    <FlowProvider onUpdateNode={handleUpdateNode} onUpdateFlow={handleUpdateFlow}>
+    <FlowProvider
+      nodes={nodes}
+      edges={edges}
+      onUpdateNode={handleUpdateNode}
+      onUpdateFlow={handleUpdateFlow}
+    >
       <div className="h-full w-full relative">
         {/* Flow Builder */}
         <div className="h-full w-full" ref={reactFlowWrapper}>

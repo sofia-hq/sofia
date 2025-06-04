@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,25 +12,63 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { X, Plus, AlertCircle, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Link, ArrowRight } from 'lucide-react';
 import { validateStepNode } from '../../utils/validation';
-import type { StepNodeData } from '../../types';
+import type { StepNodeData, ToolNodeData } from '../../types';
+import type { Node, Edge } from '@xyflow/react';
 
 interface StepEditDialogProps {
   open: boolean;
   onClose: () => void;
   stepData: StepNodeData;
   onSave: (data: StepNodeData) => void;
+  nodeId: string;
+  nodes: Node[];
+  edges: Edge[];
 }
 
-export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDialogProps) {
+export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes, edges }: StepEditDialogProps) {
   const [formData, setFormData] = useState<StepNodeData>(stepData);
-  const [newTool, setNewTool] = useState('');
-  const [newRouteTarget, setNewRouteTarget] = useState('');
-  const [newRouteCondition, setNewRouteCondition] = useState('');
 
-  // Real-time validation
-  const validation = validateStepNode(formData);
+  // Compute current connections from edges in real-time
+  const currentConnections = useMemo(() => {
+    const connectedTools = edges
+      .filter(edge => edge.source === nodeId && edge.type === 'tool')
+      .map(edge => {
+        const toolNode = nodes.find(n => n.id === edge.target);
+        return toolNode?.data as ToolNodeData;
+      })
+      .filter(Boolean);
+
+    const outgoingRoutes = edges
+      .filter(edge => edge.source === nodeId && edge.type === 'route')
+      .map(edge => {
+        const targetNode = nodes.find(n => n.id === edge.target);
+        const targetStepData = targetNode?.data as StepNodeData;
+        return {
+          target: targetStepData?.step_id || 'unknown',
+          condition: (edge.data as any)?.condition || 'Default',
+          targetNodeId: edge.target
+        };
+      });
+
+    const toolNames = connectedTools.map(tool => tool.name);
+    const routes = outgoingRoutes.map(route => ({
+      target: route.target,
+      condition: route.condition
+    }));
+
+    return { connectedTools, outgoingRoutes, toolNames, routes };
+  }, [edges, nodeId, nodes]);
+
+  // Real-time validation using current connections
+  const formDataWithConnections = useMemo(() => ({
+    ...formData,
+    available_tools: currentConnections.toolNames,
+    routes: currentConnections.routes
+  }), [formData, currentConnections]);
+
+  const validation = validateStepNode(formDataWithConnections);
   const hasErrors = !validation.isValid;
 
   useEffect(() => {
@@ -39,50 +77,10 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
 
   const handleSave = () => {
     if (!hasErrors) {
-      onSave(formData);
+      // Use the computed connections from formDataWithConnections
+      onSave(formDataWithConnections);
       onClose();
     }
-  };
-
-  const addTool = () => {
-    if (newTool.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        available_tools: [...(prev.available_tools || []), newTool.trim()]
-      }));
-      setNewTool('');
-    }
-  };
-
-  const removeTool = (tool: string) => {
-    setFormData(prev => ({
-      ...prev,
-      available_tools: prev.available_tools?.filter(t => t !== tool)
-    }));
-  };
-
-  const addRoute = () => {
-    if (newRouteTarget.trim() && newRouteCondition.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        routes: [
-          ...(prev.routes || []),
-          {
-            target: newRouteTarget.trim(),
-            condition: newRouteCondition.trim()
-          }
-        ]
-      }));
-      setNewRouteTarget('');
-      setNewRouteCondition('');
-    }
-  };
-
-  const removeRoute = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      routes: prev.routes?.filter((_, i) => i !== index)
-    }));
   };
 
   return (
@@ -150,65 +148,50 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
             <Label htmlFor="auto-flow">Auto Flow (automatically proceed to next step)</Label>
           </div>
 
-          {/* Available Tools */}
+          {/* Connected Tools (Read-only) */}
           <div className="space-y-2">
-            <Label>Available Tools</Label>
-            <div className="flex gap-2">
-              <Input
-                value={newTool}
-                onChange={(e) => setNewTool(e.target.value)}
-                placeholder="Add tool name"
-                onKeyPress={(e) => e.key === 'Enter' && addTool()}
-              />
-              <Button type="button" onClick={addTool} size="sm">
-                <Plus className="w-4 h-4" />
-              </Button>
+            <div className="flex items-center gap-2">
+              <Label>Connected Tools</Label>
+              <Link className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-500">Based on visual connections</span>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {formData.available_tools?.map(tool => (
-                <Badge key={tool} variant="secondary" className="flex items-center gap-1">
-                  {tool}
-                  <button onClick={() => removeTool(tool)} className="hover:text-red-600">
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
+            {currentConnections.toolNames && currentConnections.toolNames.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {currentConnections.toolNames.map(toolName => (
+                  <Badge key={toolName} variant="secondary" className="flex items-center gap-1">
+                    {toolName}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500 italic">
+                No tools connected. Connect tool nodes to this step to add tools.
+              </div>
+            )}
           </div>
 
-          {/* Routes */}
+          {/* Outgoing Routes (Read-only) */}
           <div className="space-y-2">
-            <Label>Routes</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                value={newRouteTarget}
-                onChange={(e) => setNewRouteTarget(e.target.value)}
-                placeholder="Target step"
-              />
-              <div className="flex gap-2">
-                <Input
-                  value={newRouteCondition}
-                  onChange={(e) => setNewRouteCondition(e.target.value)}
-                  placeholder="Condition"
-                  onKeyPress={(e) => e.key === 'Enter' && addRoute()}
-                />
-                <Button type="button" onClick={addRoute} size="sm">
-                  <Plus className="w-4 h-4" />
-                </Button>
+            <div className="flex items-center gap-2">
+              <Label>Outgoing Routes</Label>
+              <ArrowRight className="w-4 h-4 text-gray-500" />
+              <span className="text-xs text-gray-500">Based on visual connections</span>
+            </div>
+            {currentConnections.routes && currentConnections.routes.length > 0 ? (
+              <div className="space-y-1">
+                {currentConnections.routes.map((route, index) => (
+                  <div key={index} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
+                    <span className="font-medium">{route.target}</span>
+                    <ArrowRight className="w-3 h-3 text-gray-400" />
+                    <span className="flex-1 text-gray-600">{route.condition}</span>
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="space-y-1">
-              {formData.routes?.map((route, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
-                  <span className="font-medium">{route.target}</span>
-                  <span>←</span>
-                  <span className="flex-1">{route.condition}</span>
-                  <button onClick={() => removeRoute(index)} className="hover:text-red-600">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            ) : (
+              <div className="text-sm text-gray-500 italic">
+                No routes defined. Connect this step to other steps to create routes.
+              </div>
+            )}
           </div>
         </div>
 
