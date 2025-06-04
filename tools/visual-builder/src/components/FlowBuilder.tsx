@@ -314,7 +314,7 @@ export default function FlowBuilder() {
           fitView
           fitViewOptions={{ padding: 0.2, maxZoom: 0.8 }}
         >
-          <Background gap={20} size={1} color="#e5e7eb" />
+          <Background gap={20}/>
           <Controls />
           
           {/* Arrow marker definition */}
