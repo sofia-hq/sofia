@@ -71,7 +71,7 @@ export function ExportImportDialog({
   // Import functionality
   const handleImport = useCallback(() => {
     if (!importText.trim()) return;
-    
+
     const result = mergeImportFromYaml(importText, nodes, edges);
     setImportResult(result);
   }, [importText, nodes, edges]);
@@ -80,7 +80,7 @@ export function ExportImportDialog({
   const handleApplyImport = useCallback(() => {
     if (importResult && importResult.nodes.length > 0 && onImport) {
       onImport(importResult);
-      
+
       // Update agent config if available
       if (importResult.config && onAgentConfigChange) {
         onAgentConfigChange(
@@ -88,7 +88,7 @@ export function ExportImportDialog({
           importResult.config.persona || currentPersona
         );
       }
-      
+
       onClose();
     }
   }, [importResult, onImport, onClose, currentAgentName, currentPersona, onAgentConfigChange]);
@@ -370,7 +370,7 @@ export function ExportImportDialog({
             Cancel
           </Button>
           {activeTab === 'import' && importResult && importResult.nodes.length > 0 && (
-            <Button 
+            <Button
               onClick={handleApplyImport}
               disabled={importResult.errors.some(e => e.type === 'error')}
             >

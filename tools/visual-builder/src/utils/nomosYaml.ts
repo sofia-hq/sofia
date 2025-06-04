@@ -5,10 +5,10 @@
 
 import * as yaml from 'js-yaml';
 import { Node, Edge } from '@xyflow/react';
-import type { 
-  StepNodeData, 
-  ToolNodeData, 
-  FlowGroupData, 
+import type {
+  StepNodeData,
+  ToolNodeData,
+  FlowGroupData,
   AgentConfig,
   StepConfig,
   FlowConfig
@@ -104,8 +104,8 @@ export function exportToYaml(
         const targetNode = stepNodes.find(n => n.id === edge.target);
         if (targetNode) {
           const targetData = targetNode.data as StepNodeData;
-          const condition = (edge.data?.condition && typeof edge.data.condition === 'string') 
-            ? edge.data.condition 
+          const condition = (edge.data?.condition && typeof edge.data.condition === 'string')
+            ? edge.data.condition
             : 'Always';
           routes.push({
             target: targetData.step_id,
@@ -142,7 +142,7 @@ export function exportToYaml(
     const flows: FlowConfig[] = [];
     groupNodes.forEach(node => {
       const data = node.data as unknown as FlowGroupData;
-      
+
       const flowConfig: FlowConfig = {
         flow_id: data.flow_id,
         description: data.description || `Flow ${data.flow_id}`,
@@ -349,7 +349,7 @@ export function importFromYaml(yamlContent: string): ImportResult {
     if (parsedConfig.flows) {
       parsedConfig.flows.forEach((flow, index) => {
         const groupId = `group-${Date.now()}-${index}`;
-        
+
         // Find nodes that belong to this flow
         const flowNodeIds: string[] = [];
         [...flow.enters, ...flow.exits].forEach(stepId => {
@@ -462,17 +462,17 @@ export function importFromYaml(yamlContent: string): ImportResult {
  * This function adds imported nodes alongside existing ones and handles conflicts
  */
 export function mergeImportFromYaml(
-  yamlContent: string, 
-  existingNodes: Node[], 
+  yamlContent: string,
+  existingNodes: Node[],
   existingEdges: Edge[]
 ): MergeImportResult {
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
   const conflicts = { stepIds: [] as string[], toolNames: [] as string[] };
-  
+
   // First, import the YAML normally
   const importResult = importFromYaml(yamlContent);
-  
+
   if (importResult.errors.length > 0) {
     return {
       nodes: existingNodes,
@@ -487,7 +487,7 @@ export function mergeImportFromYaml(
   // Collect existing step IDs and tool names
   const existingStepIds = new Set<string>();
   const existingToolNames = new Set<string>();
-  
+
   existingNodes.forEach(node => {
     if (node.type === 'step') {
       const stepData = node.data as StepNodeData;
@@ -518,20 +518,20 @@ export function mergeImportFromYaml(
         const originalStepId = stepData.step_id;
         let counter = 1;
         let newStepId = `${originalStepId}_imported_${counter}`;
-        
+
         while (existingStepIds.has(newStepId) || stepIdMapping.has(newStepId)) {
           counter++;
           newStepId = `${originalStepId}_imported_${counter}`;
         }
-        
+
         stepIdMapping.set(originalStepId, newStepId);
         conflicts.stepIds.push(originalStepId);
-        
+
         processedNode.data = {
           ...stepData,
           step_id: newStepId
         };
-        
+
         warnings.push({
           type: 'warning',
           message: `Step ID '${originalStepId}' already exists, renamed to '${newStepId}'`
@@ -544,20 +544,20 @@ export function mergeImportFromYaml(
         const originalToolName = toolData.name;
         let counter = 1;
         let newToolName = `${originalToolName}_imported_${counter}`;
-        
+
         while (existingToolNames.has(newToolName) || toolNameMapping.has(newToolName)) {
           counter++;
           newToolName = `${originalToolName}_imported_${counter}`;
         }
-        
+
         toolNameMapping.set(originalToolName, newToolName);
         conflicts.toolNames.push(originalToolName);
-        
+
         processedNode.data = {
           ...toolData,
           name: newToolName
         };
-        
+
         warnings.push({
           type: 'warning',
           message: `Tool name '${originalToolName}' already exists, renamed to '${newToolName}'`
@@ -568,12 +568,12 @@ export function mergeImportFromYaml(
     // Generate new unique node ID
     const originalNodeId = importedNode.id;
     let newNodeId = `${importedNode.type}_imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Ensure uniqueness
     while (processedNodes.some(n => n.id === newNodeId)) {
       newNodeId = `${importedNode.type}_imported_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    
+
     nodeIdMapping.set(originalNodeId, newNodeId);
     processedNode.id = newNodeId;
 
@@ -585,7 +585,7 @@ export function mergeImportFromYaml(
     };
 
     processedNodes.push(processedNode);
-    
+
     // Update tracking sets
     if (importedNode.type === 'step') {
       const stepData = processedNode.data as StepNodeData;
@@ -610,10 +610,10 @@ export function mergeImportFromYaml(
           target: stepIdMapping.get(route.target) || route.target
         }));
       }
-      
+
       // Update available tools to use new tool names if they were renamed
       if (stepData.available_tools) {
-        stepData.available_tools = stepData.available_tools.map(toolName => 
+        stepData.available_tools = stepData.available_tools.map(toolName =>
           toolNameMapping.get(toolName) || toolName
         );
       }
@@ -622,11 +622,11 @@ export function mergeImportFromYaml(
 
   // Process imported edges with updated node IDs and step IDs
   const processedEdges: Edge[] = [...existingEdges];
-  
+
   importResult.edges.forEach(importedEdge => {
     const newSourceId = nodeIdMapping.get(importedEdge.source);
     const newTargetId = nodeIdMapping.get(importedEdge.target);
-    
+
     if (newSourceId && newTargetId) {
       const newEdge: Edge = {
         ...importedEdge,
@@ -634,7 +634,7 @@ export function mergeImportFromYaml(
         source: newSourceId,
         target: newTargetId
       };
-      
+
       processedEdges.push(newEdge);
     }
   });
@@ -698,10 +698,10 @@ function validateConfig(config: AgentConfig, errors: ValidationError[], warnings
  * Validate imported data consistency
  */
 function validateImportedData(
-  nodes: Node[], 
-  _edges: Edge[], 
-  _config: AgentConfig, 
-  _errors: ValidationError[], 
+  nodes: Node[],
+  _edges: Edge[],
+  _config: AgentConfig,
+  _errors: ValidationError[],
   _warnings: ValidationError[]
 ): void {
   const stepNodes = nodes.filter(n => n.type === 'step');
@@ -772,7 +772,7 @@ function calculateGroupPosition(index: number, _total: number): { x: number; y: 
  * Get tool parameters from tool_arg_descriptions
  */
 function getToolParameters(
-  toolName: string, 
+  toolName: string,
   toolArgDescriptions?: Record<string, Record<string, string>>
 ): Record<string, { type: string; description?: string }> {
   if (!toolArgDescriptions || !toolArgDescriptions[toolName]) {
