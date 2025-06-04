@@ -32,6 +32,8 @@
   <br />
   <br />
   <a href="#usage"><strong>Explore examples »</strong></a>
+  ·
+  <a href="https://nomos-builder.vercel.app"><strong>🎨 Try Visual Builder »</strong></a>
   <br />
   <br />
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
@@ -120,7 +122,7 @@ The framework allows you to move from no-code to low-code development, making it
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
 - **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses.
-- **Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface.
+- **🎨 Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface. **[Try it live at nomos-builder.vercel.app](https://nomos-builder.vercel.app)**
 - **OpenAI, Mistral, and Gemini LLM support**
 - **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
 - **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
@@ -137,6 +139,43 @@ The framework allows you to move from no-code to low-code development, making it
 - Redis/PostgreSQL (optional for storage)
 - OpenTelemetry and Elastic APM (optional for tracing)
 - FastAPI & Docker (optional for deployment)
+
+## Visual Flow Builder
+
+For those who prefer a no-code approach, NOMOS includes a powerful Visual Flow Builder - an interactive web-based tool that lets you design agent flows using drag-and-drop.
+
+### 🚀 Try It Now
+
+**Live hosted version**: [nomos-builder.vercel.app](https://nomos-builder.vercel.app)
+
+### Key Features
+
+- **Drag & Drop Interface**: Create conversation flows visually without writing code
+- **Real-time Integration**: Visual connections automatically update step configurations
+- **Flow Grouping**: Organize related steps into logical flow groups
+- **Tool Connections**: Visually connect steps to available tools
+- **YAML Export/Import**: Generate Nomos-compatible configuration files
+- **Auto-layout**: Intelligent positioning for clean flow visualization
+- **Undo/Redo Support**: Full history management for editing operations
+
+### Local Development
+
+To run the Visual Flow Builder locally:
+
+```bash
+cd tools/visual-builder
+npm install
+npm run dev
+```
+
+Or use Docker:
+
+```bash
+cd tools/visual-builder
+npm run docker:build-and-run
+```
+
+See [`tools/visual-builder/README.md`](tools/visual-builder/README.md) for detailed setup instructions.
 
 ## Getting Started
 
@@ -177,6 +216,10 @@ pip install nomos[traces]
 ## Usage
 
 NOMOS supports a spectrum of implementation approaches from no-code to low-code to full-code development.
+
+### 🎨 No-Code: Visual Flow Builder
+
+The easiest way to get started is with our Visual Flow Builder at [nomos-builder.vercel.app](https://nomos-builder.vercel.app). Simply drag and drop to create your agent flows, then export the configuration.
 
 ### CLI Usage
 
