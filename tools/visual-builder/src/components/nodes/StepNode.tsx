@@ -1,25 +1,53 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Button } from '../ui/button';
-import { Edit, Play } from 'lucide-react';
+import { Edit, Play, AlertTriangle, AlertCircle } from 'lucide-react';
 import { useFlowContext } from '../../context/FlowContext';
+import { validateStepNode } from '../../utils/validation';
 import type { StepNodeData } from '../../types';
 
 export const StepNode = memo((props: NodeProps) => {
   const { setEditingNode } = useFlowContext();
   const data = props.data as StepNodeData;
+  
+  // Validate the node data
+  const validation = validateStepNode(data);
+  const hasErrors = !validation.isValid;
+  const hasWarnings = validation.warnings.length > 0;
 
   const handleEdit = () => {
     setEditingNode(props.id, 'step', data);
   };
 
   return (
-    <div className="bg-white border border-gray-300 rounded shadow-sm w-[280px] hover:border-gray-400 transition-colors">
+    <div className={`bg-white border rounded shadow-sm w-[280px] hover:border-gray-400 transition-colors ${
+      hasErrors 
+        ? 'border-red-300 bg-red-50' 
+        : hasWarnings 
+        ? 'border-yellow-300 bg-yellow-50' 
+        : 'border-gray-300'
+    }`}>
       {/* Header */}
-      <div className="bg-gray-50 px-3 py-2 border-b border-gray-200 rounded-t flex items-center justify-between">
+      <div className={`px-3 py-2 border-b rounded-t flex items-center justify-between ${
+        hasErrors 
+          ? 'bg-red-100 border-red-200' 
+          : hasWarnings 
+          ? 'bg-yellow-100 border-yellow-200' 
+          : 'bg-gray-50 border-gray-200'
+      }`}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <Play className="w-4 h-4 text-gray-600 flex-shrink-0" />
           <span className="font-medium text-sm text-gray-700 truncate">{data.step_id}</span>
+          {hasErrors && (
+            <div title="Node has validation errors">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            </div>
+          )}
+          {hasWarnings && !hasErrors && (
+            <div title="Node has validation warnings">
+              <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+            </div>
+          )}
         </div>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-gray-200 flex-shrink-0" onClick={handleEdit}>
           <Edit className="w-3 h-3" />

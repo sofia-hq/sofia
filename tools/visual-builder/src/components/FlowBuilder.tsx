@@ -19,7 +19,14 @@ import { ToolEdge } from './edges/ToolEdge';
 import { ContextMenu } from './context-menu/ContextMenu';
 import { FlowProvider } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { autoArrangeNodes } from '../utils/autoArrange';
+import { 
+  copyNodeToClipboard, 
+  getClipboardData, 
+  hasClipboardData, 
+  cloneNodeWithNewId 
+} from '../utils/clipboard';
 import type { StepNodeData, ToolNodeData } from '../types';
 
 // Define custom node types
@@ -240,6 +247,39 @@ export default function FlowBuilder() {
     }
   }, []); // Empty dependency array means this runs only once on mount
 
+  // Keyboard shortcuts for copy/paste
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check if we're in an input field
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (event.metaKey || event.ctrlKey) {
+        if (event.key === 'c') {
+          // Copy selected nodes
+          const selectedNodes = nodes.filter(node => node.selected);
+          if (selectedNodes.length === 1) {
+            copyNodeToClipboard(selectedNodes[0]);
+            event.preventDefault();
+          }
+        } else if (event.key === 'v') {
+          // Paste node
+          const clipboardData = getClipboardData();
+          if (clipboardData && clipboardData.type === 'node') {
+            const originalNode = clipboardData.data as Node;
+            const newNode = cloneNodeWithNewId(originalNode, 50, 50);
+            setNodes((nds) => [...nds, newNode]);
+            event.preventDefault();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [nodes, setNodes]);
+
   const addStepNode = useCallback(() => {
     const id = `step-${Date.now()}`;
     const position = screenToFlowPosition({
@@ -291,6 +331,31 @@ export default function FlowBuilder() {
       ));
     }
   }, [contextMenu.nodeId, setNodes, setEdges]);
+
+  const copyNode = useCallback(() => {
+    if (contextMenu.nodeId) {
+      const node = nodes.find(n => n.id === contextMenu.nodeId);
+      if (node) {
+        copyNodeToClipboard(node);
+      }
+    }
+  }, [contextMenu.nodeId, nodes]);
+
+  const pasteNode = useCallback(() => {
+    const clipboardData = getClipboardData();
+    if (clipboardData && clipboardData.type === 'node') {
+      const originalNode = clipboardData.data as Node;
+      const position = screenToFlowPosition({
+        x: contextMenu.x - 100,
+        y: contextMenu.y - 50,
+      });
+      
+      const newNode = cloneNodeWithNewId(originalNode);
+      newNode.position = position;
+      
+      setNodes((nds) => [...nds, newNode]);
+    }
+  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, setNodes]);
 
   return (
     <FlowProvider onUpdateNode={handleUpdateNode}>
@@ -345,11 +410,14 @@ export default function FlowBuilder() {
           onClose={closeContextMenu}
           onAddStepNode={addStepNode}
           onAddToolNode={addToolNode}
+          onCopy={contextMenu.nodeId ? copyNode : undefined}
+          onPaste={hasClipboardData() ? pasteNode : undefined}
           onDelete={contextMenu.nodeId ? deleteNode : undefined}
           isOnNode={!!contextMenu.nodeId}
         />
         
         <NodeEditDialogs />
+        <KeyboardShortcuts />
       </div>
     </FlowProvider>
   );

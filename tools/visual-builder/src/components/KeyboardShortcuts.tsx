@@ -1,0 +1,105 @@
+import { memo, useState } from 'react';
+import { Button } from './ui/button';
+import { HelpCircle, X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog';
+
+interface KeyboardShortcut {
+  keys: string[];
+  description: string;
+}
+
+const shortcuts: KeyboardShortcut[] = [
+  {
+    keys: ['Cmd/Ctrl', 'C'],
+    description: 'Copy selected node'
+  },
+  {
+    keys: ['Cmd/Ctrl', 'V'],
+    description: 'Paste copied node'
+  },
+  {
+    keys: ['Right Click'],
+    description: 'Open context menu'
+  },
+  {
+    keys: ['Del/Backspace'],
+    description: 'Delete selected node (coming soon)'
+  },
+  {
+    keys: ['Space'],
+    description: 'Pan canvas (coming soon)'
+  },
+  {
+    keys: ['Mouse Wheel'],
+    description: 'Zoom in/out'
+  }
+];
+
+export const KeyboardShortcuts = memo(() => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="fixed bottom-4 right-4 bg-white border border-gray-200 shadow-sm hover:shadow-md z-50"
+        onClick={() => setOpen(true)}
+        title="Keyboard Shortcuts"
+      >
+        <HelpCircle className="w-4 h-4" />
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              Keyboard Shortcuts
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0"
+                onClick={() => setOpen(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </DialogTitle>
+            <DialogDescription>
+              Use these shortcuts to work more efficiently with the visual builder.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {shortcuts.map((shortcut, index) => (
+              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                <span className="text-sm text-gray-600">{shortcut.description}</span>
+                <div className="flex gap-1">
+                  {shortcut.keys.map((key, keyIndex) => (
+                    <kbd
+                      key={keyIndex}
+                      className="px-2 py-1 text-xs font-mono bg-gray-100 border border-gray-200 rounded"
+                    >
+                      {key}
+                    </kbd>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-xs text-gray-500 mt-4">
+            Tip: Right-click on nodes or empty canvas for more options.
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+});
+
+KeyboardShortcuts.displayName = 'KeyboardShortcuts';

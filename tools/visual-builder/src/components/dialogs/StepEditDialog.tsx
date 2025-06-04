@@ -12,7 +12,8 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Textarea } from '../ui/textarea';
 import { Badge } from '../ui/badge';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, AlertCircle, AlertTriangle } from 'lucide-react';
+import { validateStepNode } from '../../utils/validation';
 import type { StepNodeData } from '../../types';
 
 interface StepEditDialogProps {
@@ -27,14 +28,20 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
   const [newTool, setNewTool] = useState('');
   const [newRouteTarget, setNewRouteTarget] = useState('');
   const [newRouteCondition, setNewRouteCondition] = useState('');
+  
+  // Real-time validation
+  const validation = validateStepNode(formData);
+  const hasErrors = !validation.isValid;
 
   useEffect(() => {
     setFormData(stepData);
   }, [stepData]);
 
   const handleSave = () => {
-    onSave(formData);
-    onClose();
+    if (!hasErrors) {
+      onSave(formData);
+      onClose();
+    }
   };
 
   const addTool = () => {
@@ -89,6 +96,24 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Validation Summary */}
+          {(validation.errors.length > 0 || validation.warnings.length > 0) && (
+            <div className="space-y-2">
+              {validation.errors.map((error, index) => (
+                <div key={`error-${index}`} className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{error.message}</span>
+                </div>
+              ))}
+              {validation.warnings.map((warning, index) => (
+                <div key={`warning-${index}`} className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                  <span>{warning.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Step ID */}
           <div className="space-y-2">
             <Label htmlFor="step-id">Step ID</Label>
@@ -97,6 +122,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
               value={formData.step_id}
               onChange={(e) => setFormData(prev => ({ ...prev, step_id: e.target.value }))}
               placeholder="Enter step ID"
+              className={validation.errors.some(e => e.field === 'step_id') ? 'border-red-300' : ''}
             />
           </div>
 
@@ -188,7 +214,9 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave} disabled={hasErrors}>
+            Save {hasErrors && '(Fix errors first)'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

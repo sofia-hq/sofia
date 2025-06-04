@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Button } from '../ui/button';
-import { Play, Wrench, Trash2, Copy, Edit } from 'lucide-react';
+import { Play, Wrench, Trash2, Copy, Edit, Clipboard } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;
@@ -12,6 +12,7 @@ interface ContextMenuProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onCopy?: () => void;
+  onPaste?: () => void;
   isOnNode?: boolean;
 }
 
@@ -25,6 +26,7 @@ export const ContextMenu = memo(({
   onEdit,
   onDelete,
   onCopy,
+  onPaste,
   isOnNode = false,
 }: ContextMenuProps) => {
   if (!visible) return null;
@@ -71,6 +73,20 @@ export const ContextMenu = memo(({
               <Wrench className="w-4 h-4 mr-2" />
               Add Tool Node
             </Button>
+            {onPaste && (
+              <>
+                <div className="border-t border-gray-100 my-1" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start px-3 py-2 h-auto"
+                  onClick={() => handleAction(onPaste)}
+                >
+                  <Clipboard className="w-4 h-4 mr-2" />
+                  Paste Node
+                </Button>
+              </>
+            )}
           </>
         ) : (
           // Menu for existing node
@@ -95,6 +111,17 @@ export const ContextMenu = memo(({
               >
                 <Copy className="w-4 h-4 mr-2" />
                 Copy Node
+              </Button>
+            )}
+            {onPaste && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start px-3 py-2 h-auto"
+                onClick={() => handleAction(onPaste)}
+              >
+                <Clipboard className="w-4 h-4 mr-2" />
+                Paste Node
               </Button>
             )}
             <div className="border-t border-gray-100 my-1" />
