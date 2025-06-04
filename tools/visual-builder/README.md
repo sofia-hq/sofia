@@ -1,54 +1,132 @@
-![](https://github.com/xyflow/web/blob/main/assets/codesandbox-header-ts.png?raw=true)
+# Nomos Visual Flow Builder
 
-# React Flow starter (Vite + TS)
+A powerful visual interface for building and configuring Nomos AI agent workflows. This tool provides an intuitive drag-and-drop interface for creating complex conversational flows with integrated tools and step-by-step routing logic.
 
-We've put together this template to serve as a starting point for folks
-interested in React Flow. You can use this both as a base for your own React
-Flow applications, or for small experiments or bug reports.
+## Features
 
-**TypeScript not your thing?** We also have a vanilla JavaScript starter template,
-just for you!
+- **Visual Flow Design**: Drag-and-drop interface for creating agent conversation flows
+- **Step-based Architecture**: Define conversation steps with descriptions, tools, and routing conditions
+- **Tool Integration**: Visual connections between steps and available tools with automatic configuration
+- **Flow Grouping**: Organize related steps into logical groups for better workflow management
+- **Real-time Validation**: Automatic validation of flow connections and configurations
+- **YAML Export/Import**: Export flows to Nomos-compatible YAML configuration files
+- **Undo/Redo Support**: Full history management for flow editing operations
+- **Auto-arrangement**: Intelligent layout algorithms for clean flow visualization
 
-## Getting up and running
+## Getting Started
 
-You can get this template without forking/cloning the repo using `degit`:
+### Prerequisites
+
+- Node.js 16+ and npm/yarn/pnpm
+- Modern web browser with ES6+ support
+
+### Installation
 
 ```bash
-npx degit xyflow/vite-react-flow-template your-app-name
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
 ```
 
-The template contains mostly the minimum dependencies to get up and running, but
-also includes eslint and some additional rules to help you write React code that
-is less likely to run into issues:
+### Development
 
 ```bash
-npm install # or `pnpm install` or `yarn install`
-```
-
-Vite is a great development server and build tool that we recommend our users to
-use. You can start a development server with:
-
-```bash
+# Start development server with hot reload
 npm run dev
 ```
 
-While the development server is running, changes you make to the code will be
-automatically reflected in the browser!
+The application will be available at `http://localhost:5173`
 
-## Things to try:
+## Usage
 
-- Create a new custom node inside `src/nodes/` (don't forget to export it from `src/nodes/index.ts`).
-- Change how things look by [overriding some of the built-in classes](https://reactflow.dev/learn/customization/theming#overriding-built-in-classes).
-- Add a layouting library to [position your nodes automatically](https://reactflow.dev/learn/layouting/layouting)
+### Creating Flows
 
-## Resources
+1. **Add Step Nodes**: Right-click on the canvas and select "Add Step Node" to create conversation steps
+2. **Add Tool Nodes**: Add tools that your agent can use during conversations
+3. **Create Connections**:
+   - Connect steps to other steps using route edges (purple) to define conversation flow
+   - Connect steps to tools using tool edges (blue) to make tools available to specific steps
+4. **Configure Steps**: Double-click nodes or use the edit button to configure step details
+5. **Group Related Steps**: Select multiple steps and use the group function to organize them into flows
 
-Links:
+### Real-time Integration
 
-- [React Flow - Docs](https://reactflow.dev)
-- [React Flow - Discord](https://discord.com/invite/Bqt6xrs)
+The visual builder features automatic integration between visual connections and step configurations:
 
-Learn:
+- **Tool Connections**: When you connect a step to a tool visually, the tool is automatically added to the step's `available_tools` list
+- **Route Connections**: Visual route connections automatically populate the step's `routes` configuration
+- **Live Updates**: Changes to visual connections immediately reflect in the step edit dialogs
 
-- [React Flow – Custom Nodes](https://reactflow.dev/learn/customization/custom-nodes)
-- [React Flow – Layouting](https://reactflow.dev/learn/layouting/layouting)
+### Export and Import
+
+- **Export**: Use the export function to generate Nomos-compatible YAML configuration files
+- **Import**: Import existing YAML configurations to continue editing flows visually
+- **Agent Configuration**: Set agent name, persona, and other metadata through the export dialog
+
+## Project Structure
+
+## Project Structure
+
+```
+src/
+├── components/           # React components
+│   ├── FlowBuilder.tsx  # Main flow builder component
+│   ├── nodes/           # Custom node types
+│   ├── edges/           # Custom edge types
+│   ├── dialogs/         # Edit dialogs for nodes
+│   └── ui/              # Reusable UI components
+├── context/             # React context providers
+├── hooks/               # Custom React hooks
+├── types/               # TypeScript type definitions
+├── utils/               # Utility functions
+└── models/              # Data models and validation
+```
+
+## Key Components
+
+- **FlowBuilder**: Main application component managing the flow canvas
+- **StepNode**: Visual representation of conversation steps
+- **ToolNode**: Visual representation of available tools
+- **RouteEdge**: Connections between steps showing conversation flow
+- **ToolEdge**: Connections between steps and tools
+- **StepEditDialog**: Configuration interface for step properties
+- **FlowProvider**: Context provider for sharing flow state
+
+## Development Notes
+
+### Architecture
+
+The application is built with:
+- **React Flow**: Core flow visualization and interaction
+- **TypeScript**: Type safety and development experience
+- **Vite**: Fast development server and build tool
+- **Tailwind CSS**: Utility-first styling
+- **Radix UI**: Accessible component primitives
+
+### Key Features Implementation
+
+- **Real-time Integration**: Uses React Context and useMemo for automatic updates between visual connections and step configurations
+- **Undo/Redo**: Custom hook with deep cloning for reliable history management
+- **Auto-layout**: Dagre-based algorithm for intelligent node positioning
+- **YAML Integration**: Bidirectional conversion between visual flows and Nomos configuration format
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Integration with Nomos
+
+This visual builder generates configuration files compatible with the Nomos AI agent framework. The exported YAML files can be used directly with Nomos to run the designed conversational flows.
+
+## License
+
+This project is part of the Nomos ecosystem. See the main Nomos repository for license information.
