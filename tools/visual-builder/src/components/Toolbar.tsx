@@ -63,20 +63,20 @@ export function Toolbar({
 
       {/* Undo/Redo */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 w-8 p-0" 
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
           onClick={onUndo}
           disabled={!canUndo}
           title="Undo"
         >
           <RotateCcw className="w-4 h-4" />
         </Button>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 w-8 p-0" 
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
           onClick={onRedo}
           disabled={!canRedo}
           title="Redo"

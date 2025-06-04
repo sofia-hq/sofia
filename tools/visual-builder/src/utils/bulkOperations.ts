@@ -28,7 +28,7 @@ export interface BulkEditFieldOptions extends BulkEditOptions {
  */
 export function bulkDeleteNodes(options: BulkEditOptions): BulkOperationResult {
   const { selectedNodeIds, nodes, edges } = options;
-  
+
   if (selectedNodeIds.length === 0) {
     return {
       nodes,
@@ -39,9 +39,9 @@ export function bulkDeleteNodes(options: BulkEditOptions): BulkOperationResult {
 
   // Remove selected nodes
   const newNodes = nodes.filter(node => !selectedNodeIds.includes(node.id));
-  
+
   // Remove edges connected to deleted nodes
-  const newEdges = edges.filter(edge => 
+  const newEdges = edges.filter(edge =>
     !selectedNodeIds.includes(edge.source) && !selectedNodeIds.includes(edge.target)
   );
 
@@ -77,7 +77,7 @@ export function bulkDeleteNodes(options: BulkEditOptions): BulkOperationResult {
  */
 export function bulkMoveNodes(options: BulkMoveOptions): BulkOperationResult {
   const { selectedNodeIds, nodes, edges, deltaX, deltaY } = options;
-  
+
   if (selectedNodeIds.length === 0) {
     return {
       nodes,
@@ -111,7 +111,7 @@ export function bulkMoveNodes(options: BulkMoveOptions): BulkOperationResult {
  */
 export function bulkEditStepNodes(options: BulkEditFieldOptions): BulkOperationResult {
   const { selectedNodeIds, nodes, edges, field, value } = options;
-  
+
   const stepNodeIds = selectedNodeIds.filter(id => {
     const node = nodes.find(n => n.id === id);
     return node?.type === 'step';
@@ -151,7 +151,7 @@ export function bulkEditStepNodes(options: BulkEditFieldOptions): BulkOperationR
  */
 export function bulkEditToolNodes(options: BulkEditFieldOptions): BulkOperationResult {
   const { selectedNodeIds, nodes, edges, field, value } = options;
-  
+
   const toolNodeIds = selectedNodeIds.filter(id => {
     const node = nodes.find(n => n.id === id);
     return node?.type === 'tool';
@@ -191,7 +191,7 @@ export function bulkEditToolNodes(options: BulkEditFieldOptions): BulkOperationR
  */
 export function bulkDuplicateNodes(options: BulkEditOptions): BulkOperationResult {
   const { selectedNodeIds, nodes, edges } = options;
-  
+
   if (selectedNodeIds.length === 0) {
     return {
       nodes,
@@ -274,7 +274,7 @@ export function bulkDuplicateNodes(options: BulkEditOptions): BulkOperationResul
  */
 export function bulkGroupNodes(options: BulkEditOptions): BulkOperationResult {
   const { selectedNodeIds, nodes, edges } = options;
-  
+
   // Filter for only step nodes
   const stepNodeIds = selectedNodeIds.filter(id => {
     const node = nodes.find(n => n.id === id);
@@ -365,7 +365,7 @@ export function bulkGroupNodes(options: BulkEditOptions): BulkOperationResult {
  */
 export function bulkCopyNodes(options: BulkEditOptions): { clipboardData: any, message: string } {
   const { selectedNodeIds, nodes, edges } = options;
-  
+
   if (selectedNodeIds.length === 0) {
     return {
       clipboardData: null,
@@ -374,7 +374,7 @@ export function bulkCopyNodes(options: BulkEditOptions): { clipboardData: any, m
   }
 
   const selectedNodes = nodes.filter(node => selectedNodeIds.includes(node.id));
-  const selectedEdges = edges.filter(edge => 
+  const selectedEdges = edges.filter(edge =>
     selectedNodeIds.includes(edge.source) && selectedNodeIds.includes(edge.target)
   );
 
@@ -398,7 +398,7 @@ export function bulkCopyNodes(options: BulkEditOptions): { clipboardData: any, m
  */
 export function getSelectedNodesByType(selectedNodeIds: string[], nodes: Node[]) {
   const selectedNodes = nodes.filter(node => selectedNodeIds.includes(node.id));
-  
+
   return {
     stepNodes: selectedNodes.filter(node => node.type === 'step'),
     toolNodes: selectedNodes.filter(node => node.type === 'tool'),

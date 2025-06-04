@@ -632,7 +632,7 @@ export default function FlowBuilder() {
     }
   }, [undo, nodes, edges, setNodes, setEdges]);
 
-  // Redo handler that integrates with React Flow state  
+  // Redo handler that integrates with React Flow state
   const handleRedo = useCallback(() => {
     console.log('🔄 Redo triggered');
     const result = redo(nodes, edges);
@@ -649,10 +649,10 @@ export default function FlowBuilder() {
   const setNodesWithUndo = useCallback((nodesOrFn: Node[] | ((prev: Node[]) => Node[]), description?: string) => {
     const prevNodes = nodes;
     const prevEdges = edges;
-    
+
     // Save state before change
     saveState(prevNodes, prevEdges, description);
-    
+
     // Apply the change
     if (typeof nodesOrFn === 'function') {
       setNodes(nodesOrFn);
@@ -664,10 +664,10 @@ export default function FlowBuilder() {
   const setEdgesWithUndo = useCallback((edgesOrFn: Edge[] | ((prev: Edge[]) => Edge[]), description?: string) => {
     const prevNodes = nodes;
     const prevEdges = edges;
-    
+
     // Save state before change
     saveState(prevNodes, prevEdges, description);
-    
+
     // Apply the change
     if (typeof edgesOrFn === 'function') {
       setEdges(edgesOrFn);

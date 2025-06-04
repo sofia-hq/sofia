@@ -33,7 +33,7 @@ export function useUndoRedo(
   // History stacks
   const [undoStack, setUndoStack] = useState<HistoryState[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryState[]>([]);
-  
+
   // Ref to track if we should ignore the next state change (to prevent undo/redo from triggering saves)
   const isApplyingHistoryRef = useRef(false);
 
@@ -45,10 +45,10 @@ export function useUndoRedo(
       return;
     }
 
-    console.log('🔄 Saving state:', { 
-      nodesCount: nodes.length, 
-      edgesCount: edges.length, 
-      description 
+    console.log('🔄 Saving state:', {
+      nodesCount: nodes.length,
+      edgesCount: edges.length,
+      description
     });
 
     const newState: HistoryState = {
@@ -84,10 +84,10 @@ export function useUndoRedo(
     const stateToRestore = undoStack[undoStack.length - 1];
     const newUndoStack = undoStack.slice(0, -1);
 
-    console.log('🔄 Undoing to state:', { 
-      nodesCount: stateToRestore.nodes.length, 
+    console.log('🔄 Undoing to state:', {
+      nodesCount: stateToRestore.nodes.length,
       edgesCount: stateToRestore.edges.length,
-      description: stateToRestore.description 
+      description: stateToRestore.description
     });
 
     // Save current state to redo stack
@@ -102,7 +102,7 @@ export function useUndoRedo(
 
     // Set flag to prevent saving this state change
     isApplyingHistoryRef.current = true;
-    
+
     // Schedule flag reset for next tick
     setTimeout(() => {
       isApplyingHistoryRef.current = false;
@@ -114,7 +114,7 @@ export function useUndoRedo(
     };
   }, [undoStack]);
 
-  // Redo operation  
+  // Redo operation
   const redo = useCallback((currentNodes: Node[], currentEdges: Edge[]): { nodes: Node[], edges: Edge[] } | null => {
     console.log('🔄 Redo called, stack length:', redoStack.length);
     if (redoStack.length === 0) {
@@ -125,10 +125,10 @@ export function useUndoRedo(
     const stateToRestore = redoStack[redoStack.length - 1];
     const newRedoStack = redoStack.slice(0, -1);
 
-    console.log('🔄 Redoing to state:', { 
-      nodesCount: stateToRestore.nodes.length, 
+    console.log('🔄 Redoing to state:', {
+      nodesCount: stateToRestore.nodes.length,
       edgesCount: stateToRestore.edges.length,
-      description: stateToRestore.description 
+      description: stateToRestore.description
     });
 
     // Save current state to undo stack
@@ -143,7 +143,7 @@ export function useUndoRedo(
 
     // Set flag to prevent saving this state change
     isApplyingHistoryRef.current = true;
-    
+
     // Schedule flag reset for next tick
     setTimeout(() => {
       isApplyingHistoryRef.current = false;
@@ -168,7 +168,7 @@ export function useUndoRedo(
 
   return {
     undo,
-    redo, 
+    redo,
     canUndo: undoStack.length > 0,
     canRedo: redoStack.length > 0,
     saveState,
