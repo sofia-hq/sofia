@@ -30,6 +30,12 @@ import {
   hasClipboardData,
   cloneNodeWithNewId,
 } from '../utils/clipboard';
+import { useUndoRedo } from '../hooks/useUndoRedo';
+import {
+  bulkDeleteNodes,
+  bulkDuplicateNodes,
+  bulkGroupNodes,
+} from '../utils/bulkOperations';
 import type { StepNodeData, ToolNodeData, FlowGroupData } from '../types';
 
 // Utility function to calculate group bounds based on child nodes
@@ -601,6 +607,117 @@ export default function FlowBuilder() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition } = useReactFlow();
 
+  // Initialize undo/redo system
+  const {
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    saveState,
+  } = useUndoRedo(initialNodes, initialEdges, {
+    maxHistorySize: 50,
+    saveDescription: true,
+  });
+
+  // Undo handler that integrates with React Flow state
+  const handleUndo = useCallback(() => {
+    console.log('🔄 Undo triggered');
+    const result = undo(nodes, edges);
+    if (result) {
+      console.log('🔄 Undo result:', { nodesCount: result.nodes.length, edgesCount: result.edges.length });
+      setNodes(result.nodes);
+      setEdges(result.edges);
+    } else {
+      console.log('🔄 No undo state available');
+    }
+  }, [undo, nodes, edges, setNodes, setEdges]);
+
+  // Redo handler that integrates with React Flow state  
+  const handleRedo = useCallback(() => {
+    console.log('🔄 Redo triggered');
+    const result = redo(nodes, edges);
+    if (result) {
+      console.log('🔄 Redo result:', { nodesCount: result.nodes.length, edgesCount: result.edges.length });
+      setNodes(result.nodes);
+      setEdges(result.edges);
+    } else {
+      console.log('🔄 No redo state available');
+    }
+  }, [redo, nodes, edges, setNodes, setEdges]);
+
+  // Enhanced state setters that save undo states
+  const setNodesWithUndo = useCallback((nodesOrFn: Node[] | ((prev: Node[]) => Node[]), description?: string) => {
+    const prevNodes = nodes;
+    const prevEdges = edges;
+    
+    // Save state before change
+    saveState(prevNodes, prevEdges, description);
+    
+    // Apply the change
+    if (typeof nodesOrFn === 'function') {
+      setNodes(nodesOrFn);
+    } else {
+      setNodes(nodesOrFn);
+    }
+  }, [nodes, edges, saveState, setNodes]);
+
+  const setEdgesWithUndo = useCallback((edgesOrFn: Edge[] | ((prev: Edge[]) => Edge[]), description?: string) => {
+    const prevNodes = nodes;
+    const prevEdges = edges;
+    
+    // Save state before change
+    saveState(prevNodes, prevEdges, description);
+    
+    // Apply the change
+    if (typeof edgesOrFn === 'function') {
+      setEdges(edgesOrFn);
+    } else {
+      setEdges(edgesOrFn);
+    }
+  }, [nodes, edges, saveState, setEdges]);
+
+  // Bulk operations handlers
+  const handleBulkDelete = useCallback(() => {
+    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
+    if (selectedNodeIds.length === 0) return;
+
+    const result = bulkDeleteNodes({
+      selectedNodeIds,
+      nodes,
+      edges,
+    });
+
+    setNodesWithUndo(result.nodes, `Delete ${selectedNodeIds.length} nodes`);
+    setEdges(result.edges);
+  }, [nodes, edges, setNodesWithUndo, setEdges]);
+
+  const handleBulkDuplicate = useCallback(() => {
+    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
+    if (selectedNodeIds.length === 0) return;
+
+    const result = bulkDuplicateNodes({
+      selectedNodeIds,
+      nodes,
+      edges,
+    });
+
+    setNodesWithUndo(result.nodes, `Duplicate ${selectedNodeIds.length} nodes`);
+    setEdges(result.edges);
+  }, [nodes, edges, setNodesWithUndo, setEdges]);
+
+  const handleBulkGroup = useCallback(() => {
+    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
+    const result = bulkGroupNodes({
+      selectedNodeIds,
+      nodes,
+      edges,
+    });
+
+    if (result.nodes !== nodes) {
+      setNodesWithUndo(result.nodes, `Group ${selectedNodeIds.length} nodes into flow`);
+    }
+  }, [nodes, edges, setNodesWithUndo]);
+
   // Custom onNodesChange handler that auto-resizes groups when children move
   const onNodesChange = useCallback((changes: any[]) => {
     onNodesChangeBase(changes);
@@ -684,6 +801,28 @@ export default function FlowBuilder() {
     }
   }, []); // Empty dependency array - only run once on mount
 
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Check for Cmd+Z (undo) or Ctrl+Z (undo)
+      if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        handleUndo();
+      }
+      // Check for Cmd+Shift+Z (redo) or Ctrl+Shift+Z (redo) or Ctrl+Y (redo)
+      else if (
+        ((event.metaKey || event.ctrlKey) && event.key === 'z' && event.shiftKey) ||
+        (event.ctrlKey && event.key === 'y')
+      ) {
+        event.preventDefault();
+        handleRedo();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
   // Context menu handlers
   const handleContextMenu = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -721,8 +860,8 @@ export default function FlowBuilder() {
 
     // The autoArrangeNodes function now handles group optimization internally,
     // so we can directly set the arranged nodes
-    setNodes(arrangedNodes);
-  }, [nodes, edges, setNodes]);
+    setNodesWithUndo(arrangedNodes, 'Auto-arrange nodes');
+  }, [nodes, edges, setNodesWithUndo]);
 
   const isValidConnection = useCallback((connection: any) => {
     const { source, target, sourceHandle, targetHandle } = connection;
@@ -917,7 +1056,7 @@ export default function FlowBuilder() {
     });
 
     // Add group node FIRST, then updated children (order is crucial for React Flow)
-    setNodes([groupNode, ...updatedNodes]);
+    setNodesWithUndo([groupNode, ...updatedNodes], `Create flow group with ${stepNodes.length} steps`);
 
     // Deselect nodes after grouping
     setNodes(nds => nds.map(node => ({ ...node, selected: false })));
@@ -947,12 +1086,14 @@ export default function FlowBuilder() {
       }));
 
       // Remove group node and update children
-      setNodes(nds =>
-        nds.filter(node => node.id !== groupNode.id)
-           .map(node => {
-             const updatedChild = updatedChildNodes.find(child => child.id === node.id);
-             return updatedChild || node;
-           })
+      setNodesWithUndo(
+        nds =>
+          nds.filter(node => node.id !== groupNode.id)
+             .map(node => {
+               const updatedChild = updatedChildNodes.find(child => child.id === node.id);
+               return updatedChild || node;
+             }),
+        `Ungroup flow ${groupNode.id}`
       );
     });
   }, [nodes, setNodes]);
@@ -998,8 +1139,8 @@ export default function FlowBuilder() {
       },
     };
 
-    setNodes((nds) => [...nds, newNode]);
-  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes.length, setNodes]);
+    setNodesWithUndo([...nodes, newNode], 'Add step node');
+  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
 
   const addToolNode = useCallback(() => {
     const id = `tool-${Date.now()}`;
@@ -1019,17 +1160,23 @@ export default function FlowBuilder() {
       },
     };
 
-    setNodes((nds) => [...nds, newNode]);
-  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes.length, setNodes]);
+    setNodesWithUndo([...nodes, newNode], 'Add tool node');
+  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
 
   const deleteNode = useCallback(() => {
     if (contextMenu.nodeId) {
-      setNodes((nds) => nds.filter((node) => node.id !== contextMenu.nodeId));
-      setEdges((eds) => eds.filter((edge) =>
-        edge.source !== contextMenu.nodeId && edge.target !== contextMenu.nodeId
-      ));
+      setNodesWithUndo(
+        nodes.filter((node) => node.id !== contextMenu.nodeId),
+        'Delete node'
+      );
+      setEdgesWithUndo(
+        edges.filter((edge) =>
+          edge.source !== contextMenu.nodeId && edge.target !== contextMenu.nodeId
+        ),
+        'Delete node edges'
+      );
     }
-  }, [contextMenu.nodeId, setNodes, setEdges]);
+  }, [contextMenu.nodeId, nodes, edges, setNodesWithUndo, setEdgesWithUndo]);
 
   const editNode = useCallback(() => {
     if (contextMenu.nodeId && contextMenu.nodeType) {
@@ -1083,9 +1230,9 @@ export default function FlowBuilder() {
       const newNode = cloneNodeWithNewId(originalNode);
       newNode.position = position;
 
-      setNodes((nds) => [...nds, newNode]);
+      setNodesWithUndo([...nodes, newNode], 'Paste node');
     }
-  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, setNodes]);
+  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
 
   return (
     <FlowProvider onUpdateNode={handleUpdateNode} onUpdateFlow={handleUpdateFlow}>
@@ -1099,6 +1246,13 @@ export default function FlowBuilder() {
               onCreateFlowGroup={handleCreateFlowGroup}
               onUngroupFlow={handleUngroupFlow}
               selectedNodesCount={selectedStepNodesCount}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onBulkDelete={handleBulkDelete}
+              onBulkDuplicate={handleBulkDuplicate}
+              onBulkGroup={handleBulkGroup}
             />
           </div>
 

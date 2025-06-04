@@ -9,7 +9,9 @@ import {
   Layers,
   Play,
   Group,
-  Ungroup
+  Ungroup,
+  Copy,
+  Trash2
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -17,13 +19,29 @@ interface ToolbarProps {
   onCreateFlowGroup?: () => void;
   onUngroupFlow?: () => void;
   selectedNodesCount?: number;
+  // Undo/Redo functionality
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
+  // Bulk operations
+  onBulkDelete?: () => void;
+  onBulkDuplicate?: () => void;
+  onBulkGroup?: () => void;
 }
 
 export function Toolbar({
   onAutoArrange,
   onCreateFlowGroup,
   onUngroupFlow,
-  selectedNodesCount = 0
+  selectedNodesCount = 0,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false,
+  onBulkDelete,
+  onBulkDuplicate,
+  onBulkGroup,
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
@@ -45,13 +63,51 @@ export function Toolbar({
 
       {/* Undo/Redo */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0" 
+          onClick={onUndo}
+          disabled={!canUndo}
+          title="Undo"
+        >
           <RotateCcw className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="h-8 w-8 p-0" 
+          onClick={onRedo}
+          disabled={!canRedo}
+          title="Redo"
+        >
           <RotateCw className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Selection Operations */}
+      {selectedNodesCount > 0 && (
+        <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={onBulkDuplicate}
+            title={`Duplicate ${selectedNodesCount} selected nodes`}
+          >
+            <Copy className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={onBulkDelete}
+            title={`Delete ${selectedNodesCount} selected nodes`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Layout */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
@@ -68,7 +124,7 @@ export function Toolbar({
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0"
-          onClick={onCreateFlowGroup}
+          onClick={onBulkGroup || onCreateFlowGroup}
           disabled={selectedNodesCount < 2}
           title={selectedNodesCount < 2 ? "Select 2+ step nodes to group" : "Group selected step nodes into flow"}
         >

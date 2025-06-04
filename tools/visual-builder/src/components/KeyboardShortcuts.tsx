@@ -16,6 +16,14 @@ interface KeyboardShortcut {
 
 const shortcuts: KeyboardShortcut[] = [
   {
+    keys: ['Cmd/Ctrl', 'Z'],
+    description: 'Undo last action'
+  },
+  {
+    keys: ['Cmd/Ctrl', 'Shift', 'Z'],
+    description: 'Redo last action'
+  },
+  {
     keys: ['Cmd/Ctrl', 'C'],
     description: 'Copy selected node(s)'
   },
