@@ -1,15 +1,11 @@
-import type { Edge } from '@xyflow/react';
-import { SofiaEdgeType } from '../models/sofia';
-import { RouteEdge as RouteEdgeComponent } from './RouteEdge';
-import { ToolUsageEdge as ToolUsageEdgeComponent } from './ToolUsageEdge';
+import type { Edge, EdgeTypes } from '@xyflow/react';
 
-export const initialEdges: Edge[] = [];
+export const initialEdges: Edge[] = [
+  { id: 'a->c', source: 'a', target: 'c', animated: true },
+  { id: 'b->d', source: 'b', target: 'd' },
+  { id: 'c->d', source: 'c', target: 'd', animated: true },
+];
 
-type ReactFlowEdgeTypes = {
-  [key in SofiaEdgeType]: React.ComponentType<any>;
-};
-
-export const edgeTypes: ReactFlowEdgeTypes = {
-  [SofiaEdgeType.ROUTE]: RouteEdgeComponent,
-  [SofiaEdgeType.TOOL_USAGE]: ToolUsageEdgeComponent,
-};
+export const edgeTypes = {
+  // Add your custom edge types here!
+} satisfies EdgeTypes;
