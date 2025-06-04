@@ -1,10 +1,10 @@
 import { Button } from './ui/button';
-import { 
-  Download, 
-  Upload, 
-  Save, 
-  FileText, 
-  RotateCcw, 
+import {
+  Download,
+  Upload,
+  Save,
+  FileText,
+  RotateCcw,
   RotateCw,
   Layers,
   Play
@@ -45,9 +45,9 @@ export function Toolbar({ onAutoArrange }: ToolbarProps) {
 
       {/* Layout */}
       <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-8 w-8 p-0"
           onClick={onAutoArrange}
           title="Auto-arrange nodes"

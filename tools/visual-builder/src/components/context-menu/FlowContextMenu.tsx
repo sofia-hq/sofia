@@ -9,11 +9,11 @@ interface FlowContextMenuProps {
   onAddNode: (type: 'step' | 'tool', position: { x: number; y: number }) => void;
 }
 
-export function FlowContextMenu({ 
-  position, 
-  visible, 
-  onClose, 
-  onAddNode 
+export function FlowContextMenu({
+  position,
+  visible,
+  onClose,
+  onAddNode
 }: FlowContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +52,7 @@ export function FlowContextMenu({
       <div className="text-xs text-gray-500 px-2 py-1 border-b border-gray-100">
         Add Node
       </div>
-      
+
       <Button
         variant="ghost"
         size="sm"
@@ -62,7 +62,7 @@ export function FlowContextMenu({
         <Settings className="w-4 h-4 mr-2" />
         Step Node
       </Button>
-      
+
       <Button
         variant="ghost"
         size="sm"
@@ -72,7 +72,7 @@ export function FlowContextMenu({
         <Wrench className="w-4 h-4 mr-2" />
         Tool Node
       </Button>
-      
+
       <div className="border-t border-gray-100 mt-1 pt-1">
         <Button
           variant="ghost"

@@ -10,7 +10,7 @@ export const StepNode = memo((props: NodeProps) => {
   const { setEditingNode } = useFlowContext();
   const data = props.data as StepNodeData;
   const isSelected = props.selected;
-  
+
   // Validate the node data
   const validation = validateStepNode(data);
   const hasErrors = !validation.isValid;
@@ -22,22 +22,22 @@ export const StepNode = memo((props: NodeProps) => {
 
   return (
     <div className={`bg-white border rounded shadow-sm w-[280px] hover:border-gray-400 transition-colors ${
-      isSelected 
-        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
-        : hasErrors 
-        ? 'border-red-300 bg-red-50' 
-        : hasWarnings 
-        ? 'border-yellow-300 bg-yellow-50' 
+      isSelected
+        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+        : hasErrors
+        ? 'border-red-300 bg-red-50'
+        : hasWarnings
+        ? 'border-yellow-300 bg-yellow-50'
         : 'border-gray-300'
     }`}>
       {/* Header */}
       <div className={`px-3 py-2 border-b rounded-t flex items-center justify-between ${
         isSelected
           ? 'bg-blue-100 border-blue-200'
-          : hasErrors 
-          ? 'bg-red-100 border-red-200' 
-          : hasWarnings 
-          ? 'bg-yellow-100 border-yellow-200' 
+          : hasErrors
+          ? 'bg-red-100 border-red-200'
+          : hasWarnings
+          ? 'bg-yellow-100 border-yellow-200'
           : 'bg-gray-50 border-gray-200'
       }`}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -107,7 +107,7 @@ export const StepNode = memo((props: NodeProps) => {
         id="step-input"
         className="w-3 h-3 !bg-gray-600 border-2 border-white"
       />
-      
+
       {/* Bottom handle for outgoing step connections */}
       <Handle
         type="source"
@@ -115,7 +115,7 @@ export const StepNode = memo((props: NodeProps) => {
         id="step-output"
         className="w-3 h-3 !bg-gray-600 border-2 border-white"
       />
-      
+
       {/* Right handle for tool connections */}
       <Handle
         type="source"

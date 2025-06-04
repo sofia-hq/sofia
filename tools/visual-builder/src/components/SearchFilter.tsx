@@ -55,7 +55,7 @@ export const SearchFilter = memo(({ nodes, onFilter, onClearFilter }: SearchFilt
       const searchLower = searchTerm.toLowerCase();
       filteredNodes = filteredNodes.filter(node => {
         const data = node.data as any;
-        
+
         // Search in different fields based on node type
         if (node.type === 'step') {
           return (
@@ -71,13 +71,13 @@ export const SearchFilter = memo(({ nodes, onFilter, onClearFilter }: SearchFilt
             Object.keys(data.parameters || {}).some(param => param.toLowerCase().includes(searchLower))
           );
         }
-        
+
         return false;
       });
     }
 
     const filteredNodeIds = filteredNodes.map(node => node.id);
-    
+
     // Only call onFilter if we have actual filters applied
     if (searchTerm.trim() || !filterOptions.showStepNodes || !filterOptions.showToolNodes || filterOptions.showSelectedOnly) {
       onFilter(filteredNodeIds);
@@ -147,7 +147,7 @@ export const SearchFilter = memo(({ nodes, onFilter, onClearFilter }: SearchFilt
         <PopoverContent className="w-56" align="end">
           <div className="space-y-3">
             <div className="font-medium text-sm">Filter Options</div>
-            
+
             {/* Node Type Filters */}
             <div className="space-y-2">
               <div className="text-xs font-medium text-gray-600">Node Types</div>

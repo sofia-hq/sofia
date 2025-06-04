@@ -32,7 +32,7 @@ export function NodeEditDialogs() {
           onSave={handleStepSave}
         />
       )}
-      
+
       {editingNodeType === 'tool' && editingNodeData && (
         <ToolEditDialog
           open={!!editingNode}

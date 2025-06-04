@@ -5,9 +5,9 @@
 Create a no-code + low-code visual builder for Nomos agents using React Flow, featuring drag-and-drop nodes, directional connections, and YAML export/import capabilities.
 
 ## 📚 Technology Stack
-- **Frontend**: Vite + React + TypeScript  
+- **Frontend**: Vite + React + TypeScript
 - **Flow Library**: React Flow (@xyflow/react)
-- **UI Components**: Shadcn/ui  
+- **UI Components**: Shadcn/ui
 - **Styling**: Tailwind CSS
 - **Color Palette**: Black & white shades only
 
@@ -146,7 +146,7 @@ interface StepNodeData {
 }
 ```
 
-#### ToolNode  
+#### ToolNode
 ```typescript
 interface ToolNodeData {
   name: string;
@@ -185,7 +185,7 @@ interface ToolNodeData {
   /* Pure colors */
   --pure-white: #ffffff;
   --pure-black: #000000;
-  
+
   /* Greys */
   --grey-50: #fafafa;
   --grey-100: #f5f5f5;

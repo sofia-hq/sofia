@@ -53,14 +53,14 @@ export const RouteEdge = memo((props: EdgeProps) => {
 
   return (
     <>
-      <BaseEdge 
-        id={id} 
-        path={edgePath} 
-        style={{ 
-          stroke: '#374151', 
+      <BaseEdge
+        id={id}
+        path={edgePath}
+        style={{
+          stroke: '#374151',
           strokeWidth: 2,
           markerEnd: 'url(#arrow-marker)'
-        }} 
+        }}
       />
       {(data?.condition || isEditing) && (
         <EdgeLabelRenderer>

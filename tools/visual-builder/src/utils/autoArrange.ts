@@ -39,9 +39,9 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
 
   // Add step nodes to the graph
   stepNodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { 
-      width: STEP_NODE_WIDTH, 
-      height: STEP_NODE_HEIGHT 
+    dagreGraph.setNode(node.id, {
+      width: STEP_NODE_WIDTH,
+      height: STEP_NODE_HEIGHT
     });
   });
 
@@ -58,13 +58,13 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
   // Apply the new positions to step nodes
   const arrangedStepNodes = stepNodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
-    
+
     // Dagre centers the nodes, so we need to adjust for top-left positioning
     const position = {
       x: nodeWithPosition.x - STEP_NODE_WIDTH / 2,
       y: nodeWithPosition.y - STEP_NODE_HEIGHT / 2,
     };
-    
+
     return {
       ...node,
       position: snapToGrid(position),
@@ -78,18 +78,18 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     const connectedStepEdges = edges.filter(
       (edge) => edge.type === 'tool' && edge.target === toolNode.id
     );
-    
+
     if (connectedStepEdges.length === 0) {
       // If no connections, place in a grid pattern to the right
       const col = Math.floor(toolNodeOffsetIndex / 3);
       const row = toolNodeOffsetIndex % 3;
       toolNodeOffsetIndex++;
-      
-      const position = { 
-        x: 50 + (col * (TOOL_NODE_WIDTH + 100)), 
+
+      const position = {
+        x: 50 + (col * (TOOL_NODE_WIDTH + 100)),
         y: 50 + (row * (TOOL_NODE_HEIGHT + 50))
       };
-      
+
       return {
         ...toolNode,
         position: snapToGrid(position),
@@ -114,7 +114,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       x: primaryStepNode.position.x + STEP_NODE_WIDTH + 120, // More space to the right
       y: primaryStepNode.position.y + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40)), // Stagger vertically
     };
-    
+
     return {
       ...toolNode,
       position: snapToGrid(position),
@@ -127,7 +127,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     const overlappingNodes = arrangedToolNodes.slice(0, index).filter((otherNode) => {
       const xOverlap = Math.abs(toolNode.position.x - otherNode.position.x) < TOOL_NODE_WIDTH + 40;
       const yOverlap = Math.abs(toolNode.position.y - otherNode.position.y) < TOOL_NODE_HEIGHT + 40;
-      
+
       return xOverlap && yOverlap;
     });
 
@@ -137,7 +137,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
         x: toolNode.position.x,
         y: toolNode.position.y + (overlappingNodes.length * (TOOL_NODE_HEIGHT + 60)),
       };
-      
+
       return {
         ...toolNode,
         position: snapToGrid(position),

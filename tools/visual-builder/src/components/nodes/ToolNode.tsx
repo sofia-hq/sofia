@@ -10,7 +10,7 @@ export const ToolNode = memo((props: NodeProps) => {
   const { setEditingNode } = useFlowContext();
   const data = props.data as ToolNodeData;
   const isSelected = props.selected;
-  
+
   // Validate the node data
   const validation = validateToolNode(data);
   const hasErrors = !validation.isValid;
@@ -26,20 +26,20 @@ export const ToolNode = memo((props: NodeProps) => {
     <div className={`border rounded shadow-sm w-[200px] hover:border-blue-400 transition-colors ${
       isSelected
         ? 'bg-blue-100 border-blue-500 ring-2 ring-blue-200'
-        : hasErrors 
-        ? 'bg-red-50 border-red-300' 
-        : hasWarnings 
-        ? 'bg-yellow-50 border-yellow-300' 
+        : hasErrors
+        ? 'bg-red-50 border-red-300'
+        : hasWarnings
+        ? 'bg-yellow-50 border-yellow-300'
         : 'bg-blue-50 border-blue-300'
     }`}>
       {/* Header */}
       <div className={`px-3 py-2 border-b rounded-t flex items-center justify-between ${
         isSelected
           ? 'bg-blue-200 border-blue-300'
-          : hasErrors 
-          ? 'bg-red-100 border-red-200' 
-          : hasWarnings 
-          ? 'bg-yellow-100 border-yellow-200' 
+          : hasErrors
+          ? 'bg-red-100 border-red-200'
+          : hasWarnings
+          ? 'bg-yellow-100 border-yellow-200'
           : 'bg-blue-100 border-blue-200'
       }`}>
         <div className="flex items-center gap-2 min-w-0 flex-1">

@@ -18,14 +18,14 @@ export const ToolEdge = memo((props: EdgeProps) => {
   });
 
   return (
-    <BaseEdge 
-      id={id} 
-      path={edgePath} 
-      style={{ 
-        stroke: '#3b82f6', 
+    <BaseEdge
+      id={id}
+      path={edgePath}
+      style={{
+        stroke: '#3b82f6',
         strokeWidth: 1.5,
         strokeDasharray: '5,5'
-      }} 
+      }}
     />
   );
 });

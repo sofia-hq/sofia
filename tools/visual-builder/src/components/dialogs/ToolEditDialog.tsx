@@ -27,7 +27,7 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
   const [formData, setFormData] = useState<ToolNodeData>(toolData);
   const [newParamKey, setNewParamKey] = useState('');
   const [newParamType, setNewParamType] = useState('string');
-  
+
   // Real-time validation
   const validation = validateToolNode(formData);
   const hasErrors = !validation.isValid;
@@ -136,7 +136,7 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
           {/* Parameters */}
           <div className="space-y-2">
             <Label>Parameters</Label>
-            
+
             {/* Add new parameter */}
             <div className="grid grid-cols-3 gap-2">
               <Input

@@ -28,7 +28,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave }: StepEditDial
   const [newTool, setNewTool] = useState('');
   const [newRouteTarget, setNewRouteTarget] = useState('');
   const [newRouteCondition, setNewRouteCondition] = useState('');
-  
+
   // Real-time validation
   const validation = validateStepNode(formData);
   const hasErrors = !validation.isValid;

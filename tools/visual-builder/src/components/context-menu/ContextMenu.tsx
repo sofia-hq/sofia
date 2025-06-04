@@ -43,7 +43,7 @@ export const ContextMenu = memo(({
         className="fixed inset-0 z-40"
         onClick={onClose}
       />
-      
+
       {/* Context menu */}
       <div
         className="fixed z-50 bg-white border border-gray-200 rounded-md shadow-lg py-1 min-w-[160px]"

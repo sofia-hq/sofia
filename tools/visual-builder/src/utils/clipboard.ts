@@ -15,7 +15,7 @@ export function copyNodeToClipboard(node: Node): void {
     data: node,
     timestamp: Date.now()
   };
-  
+
   try {
     localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(clipboardData));
   } catch (error) {
@@ -29,7 +29,7 @@ export function copyNodesToClipboard(nodes: Node[]): void {
     data: nodes,
     timestamp: Date.now()
   };
-  
+
   try {
     localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(clipboardData));
   } catch (error) {
@@ -41,16 +41,16 @@ export function getClipboardData(): ClipboardData | null {
   try {
     const data = localStorage.getItem(CLIPBOARD_KEY);
     if (!data) return null;
-    
+
     const clipboardData = JSON.parse(data) as ClipboardData;
-    
+
     // Check if data is not too old (24 hours)
     const twentyFourHours = 24 * 60 * 60 * 1000;
     if (Date.now() - clipboardData.timestamp > twentyFourHours) {
       localStorage.removeItem(CLIPBOARD_KEY);
       return null;
     }
-    
+
     return clipboardData;
   } catch (error) {
     console.error('Failed to get clipboard data:', error);
@@ -76,7 +76,7 @@ export function generateUniqueId(prefix: string = 'node'): string {
 
 export function cloneNodeWithNewId(node: Node, offsetX: number = 50, offsetY: number = 50): Node {
   const newId = generateUniqueId(node.type || 'node');
-  
+
   return {
     ...node,
     id: newId,

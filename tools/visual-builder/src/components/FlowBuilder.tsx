@@ -22,10 +22,10 @@ import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SearchFilter } from './SearchFilter';
 import { autoArrangeNodes } from '../utils/autoArrange';
-import { 
-  copyNodeToClipboard, 
-  getClipboardData, 
-  hasClipboardData, 
+import {
+  copyNodeToClipboard,
+  getClipboardData,
+  hasClipboardData,
   cloneNodeWithNewId,
   copyNodesToClipboard,
   cloneNodesWithNewIds,
@@ -49,7 +49,7 @@ const initialNodes: Node[] = [
     id: 'start',
     type: 'step',
     position: { x: 100, y: 100 },
-    data: { 
+    data: {
       step_id: 'start',
       description: 'Greet the customer and ask how can I help them.',
       available_tools: ['get_available_coffee_options'],
@@ -65,7 +65,7 @@ const initialNodes: Node[] = [
     id: 'take_coffee_order',
     type: 'step',
     position: { x: 350, y: 200 },
-    data: { 
+    data: {
       step_id: 'take_coffee_order',
       description: 'Ask the customer for their coffee preference and size.',
       available_tools: ['get_available_coffee_options', 'add_to_cart', 'remove_item', 'clear_cart'],
@@ -93,12 +93,12 @@ const initialNodes: Node[] = [
   },
   {
     id: 'add_to_cart',
-    type: 'tool', 
+    type: 'tool',
     position: { x: 250, y: 300 },
     data: {
       name: 'add_to_cart',
       description: 'Adds an item to the cart',
-      parameters: { 
+      parameters: {
         coffee_type: { type: 'string', description: 'Coffee type (e.g., Espresso, Latte)' },
         size: { type: 'string', description: 'Size of the coffee (Small, Medium, Large)' },
         price: { type: 'number', description: 'Price of the coffee' }
@@ -155,17 +155,17 @@ export default function FlowBuilder() {
 
   const isValidConnection = useCallback((connection: any) => {
     const { source, target, sourceHandle, targetHandle } = connection;
-    
+
     // Prevent self-connections
     if (source === target) return false;
-    
+
     // Prevent duplicate connections
     const existingConnection = edges.find(
-      (edge) => edge.source === source && edge.target === target && 
+      (edge) => edge.source === source && edge.target === target &&
                 edge.sourceHandle === sourceHandle && edge.targetHandle === targetHandle
     );
     if (existingConnection) return false;
-    
+
     // Validate connection types
     if (sourceHandle === 'step-output' && targetHandle === 'step-input') {
       return true; // Step to step connection
@@ -173,7 +173,7 @@ export default function FlowBuilder() {
     if (sourceHandle === 'tool-output' && targetHandle === 'tool-input') {
       return true; // Step to tool connection
     }
-    
+
     // Invalid connection type
     return false;
   }, [edges]);
@@ -220,7 +220,7 @@ export default function FlowBuilder() {
 
   const handleContextMenu = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
-    
+
     const target = event.target as HTMLElement;
     const nodeElement = target.closest('[data-id]');
     const nodeId = nodeElement?.getAttribute('data-id');
@@ -297,7 +297,7 @@ export default function FlowBuilder() {
         if (selectedNodes.length > 0) {
           const selectedNodeIds = selectedNodes.map(node => node.id);
           setNodes((nds) => nds.filter(node => !node.selected));
-          setEdges((eds) => eds.filter(edge => 
+          setEdges((eds) => eds.filter(edge =>
             !selectedNodeIds.includes(edge.source) && !selectedNodeIds.includes(edge.target)
           ));
           event.preventDefault();
@@ -359,7 +359,7 @@ export default function FlowBuilder() {
   const deleteNode = useCallback(() => {
     if (contextMenu.nodeId) {
       setNodes((nds) => nds.filter((node) => node.id !== contextMenu.nodeId));
-      setEdges((eds) => eds.filter((edge) => 
+      setEdges((eds) => eds.filter((edge) =>
         edge.source !== contextMenu.nodeId && edge.target !== contextMenu.nodeId
       ));
     }
@@ -384,7 +384,7 @@ export default function FlowBuilder() {
   }, []);
 
   // Get visible nodes based on filter
-  const visibleNodes = filteredNodeIds 
+  const visibleNodes = filteredNodeIds
     ? nodes.map(node => ({
         ...node,
         hidden: !filteredNodeIds.includes(node.id)
@@ -399,10 +399,10 @@ export default function FlowBuilder() {
         x: contextMenu.x - 100,
         y: contextMenu.y - 50,
       });
-      
+
       const newNode = cloneNodeWithNewId(originalNode);
       newNode.position = position;
-      
+
       setNodes((nds) => [...nds, newNode]);
     }
   }, [contextMenu.x, contextMenu.y, screenToFlowPosition, setNodes]);
@@ -416,16 +416,16 @@ export default function FlowBuilder() {
           <div className="absolute top-4 left-4 z-10">
             <Toolbar onAutoArrange={handleAutoArrange} />
           </div>
-          
+
           {/* Floating Search Filter */}
           <div className="absolute top-4 right-4 z-10">
-            <SearchFilter 
+            <SearchFilter
               nodes={nodes}
               onFilter={handleFilter}
               onClearFilter={handleClearFilter}
             />
           </div>
-          
+
           <ReactFlow
             nodes={visibleNodes}
             edges={edges}
@@ -450,7 +450,7 @@ export default function FlowBuilder() {
           >
           <Background gap={20}/>
           <Controls />
-          
+
           {/* Arrow marker definition */}
           <svg style={{ position: 'absolute', top: 0, left: 0 }}>
             <defs>
@@ -471,7 +471,7 @@ export default function FlowBuilder() {
             </defs>
           </svg>
         </ReactFlow>
-        
+
         <ContextMenu
           x={contextMenu.x}
           y={contextMenu.y}
@@ -484,7 +484,7 @@ export default function FlowBuilder() {
           onDelete={contextMenu.nodeId ? deleteNode : undefined}
           isOnNode={!!contextMenu.nodeId}
         />
-        
+
         <NodeEditDialogs />
         <KeyboardShortcuts />
         </div>
