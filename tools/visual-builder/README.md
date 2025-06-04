@@ -20,7 +20,24 @@ A powerful visual interface for building and configuring Nomos AI agent workflow
 - Node.js 16+ and npm/yarn/pnpm
 - Modern web browser with ES6+ support
 
-### Installation
+### Quick Start with Docker
+
+The fastest way to get started is using Docker:
+
+```bash
+# Pull and run from Docker Hub (when available)
+docker run -p 3000:80 nomos/visual-builder
+
+# Or build locally
+git clone <repository-url>
+cd tools/visual-builder
+npm run docker:build
+npm run docker:run
+```
+
+The application will be available at `http://localhost:3000`
+
+### Local Development
 
 ```bash
 # Install dependencies
@@ -96,6 +113,40 @@ src/
 - **ToolEdge**: Connections between steps and tools
 - **StepEditDialog**: Configuration interface for step properties
 - **FlowProvider**: Context provider for sharing flow state
+
+## Docker Deployment
+
+### Building the Docker Image
+
+```bash
+# Build the application and Docker image
+npm run docker:build
+
+# Or manually
+npm run build
+docker build -t nomos-visual-builder .
+```
+
+### Running with Docker
+
+```bash
+# Run locally
+docker run -p 3000:80 nomos-visual-builder
+
+# Run in background
+docker run -d -p 3000:80 --name visual-builder nomos-visual-builder
+
+# Stop the container
+docker stop visual-builder
+```
+
+### Docker Hub
+
+```bash
+# Pull from Docker Hub (when published)
+docker pull nomos/visual-builder
+docker run -p 3000:80 nomos/visual-builder
+```
 
 ## Development Notes
 
