@@ -5,10 +5,10 @@ import type { FlowGroupData } from '../../types';
 export const GroupNode = memo((props: NodeProps) => {
   const data = props.data as unknown as FlowGroupData;
   const isSelected = props.selected;
-  
+
   // Get the color from the flow group data, fallback to default blue
   const groupColor = data.color || '#3B82F6';
-  
+
   // Convert hex to rgba for text colors
   const hexToRgba = (hex: string, alpha: number) => {
     const r = parseInt(hex.slice(1, 3), 16);

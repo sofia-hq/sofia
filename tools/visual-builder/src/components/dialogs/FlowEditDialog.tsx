@@ -23,12 +23,12 @@ interface FlowEditDialogProps {
   availableStepIds: string[];
 }
 
-export function FlowEditDialog({ 
-  open, 
-  onClose, 
-  flowData, 
+export function FlowEditDialog({
+  open,
+  onClose,
+  flowData,
   onSave,
-  availableStepIds: _ 
+  availableStepIds: _
 }: FlowEditDialogProps) {
   const [formData, setFormData] = useState<FlowGroupData>(flowData);
   const [newEntryStep, setNewEntryStep] = useState('');
@@ -116,7 +116,7 @@ export function FlowEditDialog({
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Basic Information</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="flow_id">Flow ID *</Label>
               <Input
@@ -150,7 +150,7 @@ export function FlowEditDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Entry Points *</h3>
             <p className="text-xs text-gray-500">Steps that can enter this flow</p>
-            
+
             <div className="flex gap-2">
               <Input
                 value={newEntryStep}
@@ -178,7 +178,7 @@ export function FlowEditDialog({
                 </Badge>
               ))}
             </div>
-            
+
             {errors.enters && (
               <p className="text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -191,7 +191,7 @@ export function FlowEditDialog({
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Exit Points *</h3>
             <p className="text-xs text-gray-500">Steps that can exit this flow</p>
-            
+
             <div className="flex gap-2">
               <Input
                 value={newExitStep}
@@ -219,7 +219,7 @@ export function FlowEditDialog({
                 </Badge>
               ))}
             </div>
-            
+
             {errors.exits && (
               <p className="text-sm text-red-600 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -231,10 +231,10 @@ export function FlowEditDialog({
           {/* Flow Components */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-700">Flow Components</h3>
-            
+
             <div className="space-y-3 border border-gray-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-gray-600">Memory Configuration</h4>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="llm_provider">LLM Provider</Label>
@@ -257,7 +257,7 @@ export function FlowEditDialog({
                     placeholder="openai"
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="llm_model">LLM Model</Label>
                   <Input

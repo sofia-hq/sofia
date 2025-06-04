@@ -19,11 +19,11 @@ interface ToolbarProps {
   selectedNodesCount?: number;
 }
 
-export function Toolbar({ 
-  onAutoArrange, 
-  onCreateFlowGroup, 
-  onUngroupFlow, 
-  selectedNodesCount = 0 
+export function Toolbar({
+  onAutoArrange,
+  onCreateFlowGroup,
+  onUngroupFlow,
+  selectedNodesCount = 0
 }: ToolbarProps) {
   return (
     <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">

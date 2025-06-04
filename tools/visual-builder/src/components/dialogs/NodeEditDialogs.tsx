@@ -5,13 +5,13 @@ import { FlowEditDialog } from './FlowEditDialog';
 import type { StepNodeData, ToolNodeData, FlowGroupData } from '../../types';
 
 export function NodeEditDialogs() {
-  const { 
-    editingNode, 
-    editingNodeType, 
-    editingNodeData, 
+  const {
+    editingNode,
+    editingNodeType,
+    editingNodeData,
     editingFlow,
     editingFlowData,
-    setEditingNode, 
+    setEditingNode,
     setEditingFlow,
     updateNodeData,
     updateFlowData

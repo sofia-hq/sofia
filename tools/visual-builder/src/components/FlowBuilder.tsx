@@ -45,11 +45,11 @@ const calculateGroupBounds = (groupNode: Node, childNodes: Node[]) => {
   console.log(`Calculating bounds for group ${groupNode.id}:`, {
     groupPosition: groupNode.position,
     groupSize: { width: groupNode.style?.width, height: groupNode.style?.height },
-    childNodes: childNodes.map(child => ({ 
-      id: child.id, 
-      type: child.type, 
+    childNodes: childNodes.map(child => ({
+      id: child.id,
+      type: child.type,
       position: child.position,
-      parentId: child.parentId 
+      parentId: child.parentId
     }))
   });
 
@@ -97,7 +97,7 @@ const calculateGroupBounds = (groupNode: Node, childNodes: Node[]) => {
     right: (finalPosition.x + finalSize.width) - maxX,
     bottom: (finalPosition.y + finalSize.height) - maxY
   };
-  
+
   console.log(`🔍 Group ${groupNode.id} padding analysis:`, {
     expectedPadding: padding,
     actualPadding,
@@ -127,6 +127,7 @@ const edgeTypes = {
 };
 
 const initialNodes: Node[] = [
+  // Ungrouped step nodes
   {
     id: 'start',
     type: 'step',
@@ -144,29 +145,169 @@ const initialNodes: Node[] = [
     },
   },
   {
-    id: 'take_coffee_order',
+    id: 'finalize_order',
     type: 'step',
-    position: { x: 350, y: 200 },
+    position: { x: 800, y: 100 },
     data: {
-      step_id: 'take_coffee_order',
-      description: 'Ask the customer for their coffee preference and size.',
-      available_tools: ['get_available_coffee_options', 'add_to_cart', 'remove_item', 'clear_cart'],
+      step_id: 'finalize_order',
+      description: 'Confirm order details and process payment.',
+      available_tools: ['process_payment', 'send_receipt'],
       routes: [
         {
-          target: 'finalize_order',
-          condition: 'User wants to finalize the order'
-        },
-        {
           target: 'end',
-          condition: 'Customer wants to cancel the order'
+          condition: 'Payment successful'
         }
       ]
     },
   },
   {
+    id: 'end',
+    type: 'step',
+    position: { x: 1100, y: 100 },
+    data: {
+      step_id: 'end',
+      description: 'Thank the customer and end the conversation.',
+      available_tools: [],
+      routes: []
+    },
+  },
+
+  // Group 1: Order Management (will contain grouped step nodes)
+  {
+    id: 'group_order_management',
+    type: 'group',
+    position: { x: 300, y: 200 },
+    style: {
+      width: 500,
+      height: 300,
+      backgroundColor: 'rgba(59, 130, 246, 0.05)',
+      border: '2px dashed rgba(59, 130, 246, 0.3)',
+      borderRadius: 8,
+    },
+    data: {
+      label: 'Order Management Flow',
+      flow_id: 'group_order_management',
+      description: 'Handles customer order taking and modifications',
+      enters: [],
+      exits: [],
+      nodeIds: ['take_coffee_order', 'modify_order'],
+      components: {},
+      metadata: {},
+      color: '#3B82F6',
+    },
+    zIndex: -1,
+    selectable: true,
+    draggable: true,
+  },
+
+  // Grouped step nodes (children of group_order_management)
+  {
+    id: 'take_coffee_order',
+    type: 'step',
+    parentId: 'group_order_management',
+    extent: 'parent' as const,
+    position: { x: 60, y: 60 },  // Relative to parent group
+    data: {
+      step_id: 'take_coffee_order',
+      description: 'Ask the customer for their coffee preference and size.',
+      available_tools: ['get_available_coffee_options', 'add_to_cart'],
+      routes: [
+        {
+          target: 'modify_order',
+          condition: 'Customer wants to modify order'
+        },
+        {
+          target: 'finalize_order',
+          condition: 'User wants to finalize the order'
+        }
+      ]
+    },
+  },
+  {
+    id: 'modify_order',
+    type: 'step',
+    parentId: 'group_order_management',
+    extent: 'parent' as const,
+    position: { x: 60, y: 180 },  // Relative to parent group
+    data: {
+      step_id: 'modify_order',
+      description: 'Allow customer to modify their order (add/remove items).',
+      available_tools: ['add_to_cart', 'remove_item', 'clear_cart'],
+      routes: [
+        {
+          target: 'finalize_order',
+          condition: 'Customer is satisfied with changes'
+        }
+      ]
+    },
+  },
+
+  // Group 2: Customer Support (will contain grouped step nodes)
+  {
+    id: 'group_customer_support',
+    type: 'group',
+    position: { x: 100, y: 600 },
+    style: {
+      width: 400,
+      height: 250,
+      backgroundColor: 'rgba(34, 197, 94, 0.05)',
+      border: '2px dashed rgba(34, 197, 94, 0.3)',
+      borderRadius: 8,
+    },
+    data: {
+      label: 'Customer Support Flow',
+      flow_id: 'group_customer_support',
+      description: 'Handles customer inquiries and complaints',
+      enters: [],
+      exits: [],
+      nodeIds: ['handle_complaint', 'provide_info'],
+      components: {},
+      metadata: {},
+      color: '#22C55E',
+    },
+    zIndex: -1,
+    selectable: true,
+    draggable: true,
+  },
+
+  // Grouped step nodes (children of group_customer_support)
+  {
+    id: 'handle_complaint',
+    type: 'step',
+    parentId: 'group_customer_support',
+    extent: 'parent' as const,
+    position: { x: 60, y: 60 },
+    data: {
+      step_id: 'handle_complaint',
+      description: 'Listen to customer complaint and offer solutions.',
+      available_tools: ['escalate_to_manager', 'offer_discount'],
+      routes: [
+        {
+          target: 'provide_info',
+          condition: 'Need to provide additional information'
+        }
+      ]
+    },
+  },
+  {
+    id: 'provide_info',
+    type: 'step',
+    parentId: 'group_customer_support',
+    extent: 'parent' as const,
+    position: { x: 60, y: 150 },
+    data: {
+      step_id: 'provide_info',
+      description: 'Provide information about policies, hours, etc.',
+      available_tools: ['get_store_hours', 'get_policies'],
+      routes: []
+    },
+  },
+
+  // Tool nodes (not grouped)
+  {
     id: 'get_available_coffee_options',
     type: 'tool',
-    position: { x: 50, y: 300 },
+    position: { x: 50, y: 350 },
     data: {
       name: 'get_available_coffee_options',
       description: 'Gets the available coffee options',
@@ -176,7 +317,7 @@ const initialNodes: Node[] = [
   {
     id: 'add_to_cart',
     type: 'tool',
-    position: { x: 250, y: 300 },
+    position: { x: 250, y: 350 },
     data: {
       name: 'add_to_cart',
       description: 'Adds an item to the cart',
@@ -187,9 +328,102 @@ const initialNodes: Node[] = [
       },
     },
   },
+  {
+    id: 'remove_item',
+    type: 'tool',
+    position: { x: 450, y: 350 },
+    data: {
+      name: 'remove_item',
+      description: 'Removes an item from the cart',
+      parameters: {
+        item_id: { type: 'string', description: 'ID of the item to remove' }
+      },
+    },
+  },
+  {
+    id: 'clear_cart',
+    type: 'tool',
+    position: { x: 650, y: 350 },
+    data: {
+      name: 'clear_cart',
+      description: 'Clears all items from the cart',
+      parameters: {},
+    },
+  },
+  {
+    id: 'process_payment',
+    type: 'tool',
+    position: { x: 950, y: 350 },
+    data: {
+      name: 'process_payment',
+      description: 'Processes customer payment',
+      parameters: {
+        amount: { type: 'number', description: 'Payment amount' },
+        payment_method: { type: 'string', description: 'Payment method (card, cash, etc.)' }
+      },
+    },
+  },
+  {
+    id: 'send_receipt',
+    type: 'tool',
+    position: { x: 1150, y: 350 },
+    data: {
+      name: 'send_receipt',
+      description: 'Sends receipt to customer',
+      parameters: {
+        email: { type: 'string', description: 'Customer email' },
+        order_details: { type: 'object', description: 'Order details' }
+      },
+    },
+  },
+  {
+    id: 'escalate_to_manager',
+    type: 'tool',
+    position: { x: 650, y: 650 },
+    data: {
+      name: 'escalate_to_manager',
+      description: 'Escalates issue to manager',
+      parameters: {
+        issue_description: { type: 'string', description: 'Description of the issue' }
+      },
+    },
+  },
+  {
+    id: 'offer_discount',
+    type: 'tool',
+    position: { x: 650, y: 750 },
+    data: {
+      name: 'offer_discount',
+      description: 'Offers discount to customer',
+      parameters: {
+        discount_percentage: { type: 'number', description: 'Discount percentage' }
+      },
+    },
+  },
+  {
+    id: 'get_store_hours',
+    type: 'tool',
+    position: { x: 650, y: 850 },
+    data: {
+      name: 'get_store_hours',
+      description: 'Gets store operating hours',
+      parameters: {},
+    },
+  },
+  {
+    id: 'get_policies',
+    type: 'tool',
+    position: { x: 650, y: 950 },
+    data: {
+      name: 'get_policies',
+      description: 'Gets store policies information',
+      parameters: {},
+    },
+  },
 ];
 
 const initialEdges: Edge[] = [
+  // Route edges (step-to-step connections)
   {
     id: 'start-take_coffee_order',
     source: 'start',
@@ -200,8 +434,63 @@ const initialEdges: Edge[] = [
     data: { condition: 'Customer is ready to place a new order' },
   },
   {
+    id: 'take_coffee_order-modify_order',
+    source: 'take_coffee_order',
+    target: 'modify_order',
+    sourceHandle: 'step-output',
+    targetHandle: 'step-input',
+    type: 'route',
+    data: { condition: 'Customer wants to modify order' },
+  },
+  {
+    id: 'take_coffee_order-finalize_order',
+    source: 'take_coffee_order',
+    target: 'finalize_order',
+    sourceHandle: 'step-output',
+    targetHandle: 'step-input',
+    type: 'route',
+    data: { condition: 'User wants to finalize the order' },
+  },
+  {
+    id: 'modify_order-finalize_order',
+    source: 'modify_order',
+    target: 'finalize_order',
+    sourceHandle: 'step-output',
+    targetHandle: 'step-input',
+    type: 'route',
+    data: { condition: 'Customer is satisfied with changes' },
+  },
+  {
+    id: 'finalize_order-end',
+    source: 'finalize_order',
+    target: 'end',
+    sourceHandle: 'step-output',
+    targetHandle: 'step-input',
+    type: 'route',
+    data: { condition: 'Payment successful' },
+  },
+  {
+    id: 'handle_complaint-provide_info',
+    source: 'handle_complaint',
+    target: 'provide_info',
+    sourceHandle: 'step-output',
+    targetHandle: 'step-input',
+    type: 'route',
+    data: { condition: 'Need to provide additional information' },
+  },
+
+  // Tool edges (step-to-tool connections)
+  {
     id: 'start-get_available_coffee_options',
     source: 'start',
+    target: 'get_available_coffee_options',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'take_coffee_order-get_available_coffee_options',
+    source: 'take_coffee_order',
     target: 'get_available_coffee_options',
     sourceHandle: 'tool-output',
     targetHandle: 'tool-input',
@@ -211,6 +500,78 @@ const initialEdges: Edge[] = [
     id: 'take_coffee_order-add_to_cart',
     source: 'take_coffee_order',
     target: 'add_to_cart',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'modify_order-add_to_cart',
+    source: 'modify_order',
+    target: 'add_to_cart',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'modify_order-remove_item',
+    source: 'modify_order',
+    target: 'remove_item',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'modify_order-clear_cart',
+    source: 'modify_order',
+    target: 'clear_cart',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'finalize_order-process_payment',
+    source: 'finalize_order',
+    target: 'process_payment',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'finalize_order-send_receipt',
+    source: 'finalize_order',
+    target: 'send_receipt',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'handle_complaint-escalate_to_manager',
+    source: 'handle_complaint',
+    target: 'escalate_to_manager',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'handle_complaint-offer_discount',
+    source: 'handle_complaint',
+    target: 'offer_discount',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'provide_info-get_store_hours',
+    source: 'provide_info',
+    target: 'get_store_hours',
+    sourceHandle: 'tool-output',
+    targetHandle: 'tool-input',
+    type: 'tool',
+  },
+  {
+    id: 'provide_info-get_policies',
+    source: 'provide_info',
+    target: 'get_policies',
     sourceHandle: 'tool-output',
     targetHandle: 'tool-input',
     type: 'tool',
@@ -246,37 +607,37 @@ export default function FlowBuilder() {
 
     // Check if any changes involve moving nodes that are children of groups
     const moveChanges = changes.filter(change => change.type === 'position' && change.position);
-    
+
     if (moveChanges.length > 0) {
       // Use setTimeout to update group sizes after the position changes are applied
       setTimeout(() => {
         setNodes(currentNodes => {
           const updatedNodes = [...currentNodes];
           const groupNodes = updatedNodes.filter(node => node.type === 'group');
-          
+
           groupNodes.forEach(groupNode => {
             const childNodes = updatedNodes.filter(node => node.parentId === groupNode.id);
             if (childNodes.length > 0) {
               const bounds = calculateGroupBounds(groupNode, childNodes);
-              
+
               // Update group size and position if they changed significantly
               const currentWidth = groupNode.style?.width as number || 0;
               const currentHeight = groupNode.style?.height as number || 0;
               const currentX = groupNode.position.x;
               const currentY = groupNode.position.y;
-              
-              const sizeChanged = Math.abs(bounds.size.width - currentWidth) > 10 || 
+
+              const sizeChanged = Math.abs(bounds.size.width - currentWidth) > 10 ||
                                 Math.abs(bounds.size.height - currentHeight) > 10;
-              const positionChanged = Math.abs(bounds.position.x - currentX) > 5 || 
+              const positionChanged = Math.abs(bounds.position.x - currentX) > 5 ||
                                     Math.abs(bounds.position.y - currentY) > 5;
-              
+
               if (sizeChanged || positionChanged) {
                 const groupIndex = updatedNodes.findIndex(n => n.id === groupNode.id);
                 if (groupIndex !== -1) {
                   // Calculate the position delta to adjust child nodes
                   const deltaX = bounds.position.x - currentX;
                   const deltaY = bounds.position.y - currentY;
-                  
+
                   // Update group node
                   updatedNodes[groupIndex] = {
                     ...groupNode,
@@ -287,7 +648,7 @@ export default function FlowBuilder() {
                       height: bounds.size.height,
                     },
                   };
-                  
+
                   // Adjust child node positions if group position changed
                   if (deltaX !== 0 || deltaY !== 0) {
                     childNodes.forEach(childNode => {
@@ -307,7 +668,7 @@ export default function FlowBuilder() {
               }
             }
           });
-          
+
           return updatedNodes;
         });
       }, 0);
@@ -357,7 +718,7 @@ export default function FlowBuilder() {
   // Auto arrange handler
   const handleAutoArrange = useCallback(() => {
     const arrangedNodes = autoArrangeNodes(nodes, edges);
-    
+
     // The autoArrangeNodes function now handles group optimization internally,
     // so we can directly set the arranged nodes
     setNodes(arrangedNodes);
@@ -433,11 +794,11 @@ export default function FlowBuilder() {
       nds.map((node) => {
         if (node.id === flowId && node.type === 'group') {
           // Update group node data and visual properties
-          const updatedNode = { 
-            ...node, 
+          const updatedNode = {
+            ...node,
             data: { ...node.data, ...data },
           };
-          
+
           // Update visual properties if provided
           if (data.color) {
             updatedNode.style = {
@@ -446,7 +807,7 @@ export default function FlowBuilder() {
               border: `2px dashed ${data.color}4D`, // 30% opacity
             };
           }
-          
+
           return updatedNode;
         }
         return node;
@@ -473,7 +834,7 @@ export default function FlowBuilder() {
           height: node.style?.height as number || 300,
         },
       };
-      
+
       setEditingFlowGroup({
         id: node.id,
         data: flowGroupData,
@@ -485,10 +846,10 @@ export default function FlowBuilder() {
     if (selectedNodeIds.length === 0) return;
 
     const selectedNodes = nodes.filter(node => selectedNodeIds.includes(node.id));
-    
+
     // Filter for step nodes only - tools cannot be grouped
     const stepNodes = selectedNodes.filter(node => node.type === 'step');
-    
+
     if (stepNodes.length < 2) {
       console.warn('Flow groups can only contain step nodes. At least 2 step nodes are required.');
       return;
@@ -496,21 +857,21 @@ export default function FlowBuilder() {
 
     const flowId = `flow_${Date.now()}`;
     const stepNodeIds = stepNodes.map(node => node.id);
-    
+
     // Calculate bounding box for the group
     const padding = 60; // Padding around the nodes
     const minX = Math.min(...stepNodes.map(n => n.position.x));
     const minY = Math.min(...stepNodes.map(n => n.position.y));
     const maxX = Math.max(...stepNodes.map(n => n.position.x + 280)); // step node width
     const maxY = Math.max(...stepNodes.map(n => n.position.y + 140)); // step node height
-    
+
     // Group position and size
     const groupPosition = { x: minX - padding, y: minY - padding };
-    const groupSize = { 
-      width: (maxX - minX) + (padding * 2), 
-      height: (maxY - minY) + (padding * 2) 
+    const groupSize = {
+      width: (maxX - minX) + (padding * 2),
+      height: (maxY - minY) + (padding * 2)
     };
-    
+
     // Create group node
     const groupNode: Node = {
       id: flowId,
@@ -538,7 +899,7 @@ export default function FlowBuilder() {
       selectable: true, // Allow selection for ungrouping
       draggable: true, // Allow dragging the entire group
     };
-    
+
     // Update child nodes to be relative to parent
     const updatedNodes = nodes.map(node => {
       if (stepNodeIds.includes(node.id)) {
@@ -554,26 +915,26 @@ export default function FlowBuilder() {
       }
       return node;
     });
-    
+
     // Add group node FIRST, then updated children (order is crucial for React Flow)
     setNodes([groupNode, ...updatedNodes]);
-    
+
     // Deselect nodes after grouping
     setNodes(nds => nds.map(node => ({ ...node, selected: false })));
   }, [nodes, setNodes]);
 
   const handleUngroupFlow = useCallback(() => {
     const selectedGroupNodes = nodes.filter(node => node.selected && node.type === 'group');
-    
+
     if (selectedGroupNodes.length === 0) {
       console.log('No group nodes selected');
       return;
     }
-    
+
     selectedGroupNodes.forEach(groupNode => {
       // Find all child nodes of this group
       const childNodes = nodes.filter(node => node.parentId === groupNode.id);
-      
+
       // Update child nodes to have absolute positions and remove parent relationship
       const updatedChildNodes = childNodes.map(childNode => ({
         ...childNode,
@@ -584,9 +945,9 @@ export default function FlowBuilder() {
           y: groupNode.position.y + childNode.position.y,
         },
       }));
-      
+
       // Remove group node and update children
-      setNodes(nds => 
+      setNodes(nds =>
         nds.filter(node => node.id !== groupNode.id)
            .map(node => {
              const updatedChild = updatedChildNodes.find(child => child.id === node.id);
@@ -598,7 +959,7 @@ export default function FlowBuilder() {
   const handleCreateFlowGroup = useCallback(() => {
     const selectedNodes = nodes.filter(node => node.selected);
     const selectedStepNodes = selectedNodes.filter(node => node.type === 'step');
-    
+
     if (selectedStepNodes.length >= 2) {
       createFlowGroup(selectedStepNodes.map(node => node.id));
     }
@@ -733,7 +1094,7 @@ export default function FlowBuilder() {
         <div className="h-full w-full" ref={reactFlowWrapper}>
           {/* Floating Toolbar */}
           <div className="absolute top-4 left-4 z-10">
-            <Toolbar 
+            <Toolbar
               onAutoArrange={handleAutoArrange}
               onCreateFlowGroup={handleCreateFlowGroup}
               onUngroupFlow={handleUngroupFlow}
@@ -814,7 +1175,7 @@ export default function FlowBuilder() {
         />
 
         <NodeEditDialogs />
-        
+
         {editingFlowGroup && (
           <FlowGroupEditDialog
             open={true}
@@ -824,7 +1185,7 @@ export default function FlowBuilder() {
             availableStepIds={nodes.filter(node => node.type === 'step').map(node => node.id)}
           />
         )}
-        
+
         <KeyboardShortcuts />
         </div>
       </div>

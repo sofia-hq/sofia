@@ -226,7 +226,7 @@ export function FlowGroupEditDialog({
                 <p className="text-sm text-gray-600 mb-3">
                   Configure memory settings for this flow group
                 </p>
-                
+
                 <div className="space-y-3">
                   <div>
                     <Label htmlFor="llm_provider">LLM Provider</Label>

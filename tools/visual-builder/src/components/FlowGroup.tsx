@@ -14,18 +14,18 @@ interface FlowGroupProps {
   style?: React.CSSProperties;
 }
 
-export const FlowGroup = memo(({ 
-  id: _, 
-  data, 
-  nodes, 
-  onEdit, 
-  onToggleCollapse, 
+export const FlowGroup = memo(({
+  id: _,
+  data,
+  nodes,
+  onEdit,
+  onToggleCollapse,
   onToggleVisibility,
   selected = false,
-  style 
+  style
 }: FlowGroupProps) => {
   const [isVisible, setIsVisible] = useState(true);
-  
+
   const handleToggleVisibility = () => {
     setIsVisible(!isVisible);
     onToggleVisibility();
@@ -56,10 +56,10 @@ export const FlowGroup = memo(({
   return (
     <div
       className={`absolute border-2 border-dashed rounded-lg bg-gray-50/20 ${
-        selected 
-          ? 'border-blue-400 bg-blue-50/10' 
-          : isVisible 
-            ? 'border-gray-300' 
+        selected
+          ? 'border-blue-400 bg-blue-50/10'
+          : isVisible
+            ? 'border-gray-300'
             : 'border-gray-200'
       } ${!isVisible ? 'opacity-40' : ''}`}
       style={{
@@ -73,13 +73,13 @@ export const FlowGroup = memo(({
       }}
     >
       {/* Flow Header */}
-      <div 
+      <div
         className={`absolute flex items-center gap-2 px-3 py-1 rounded-lg shadow-sm border ${
-          selected 
-            ? 'bg-blue-100 border-blue-400' 
+          selected
+            ? 'bg-blue-100 border-blue-400'
             : 'bg-white border-gray-300'
         }`}
-        style={{ 
+        style={{
           left: 8,
           top: -32,
           pointerEvents: 'auto',
@@ -132,9 +132,9 @@ export const FlowGroup = memo(({
 
       {/* Flow Description */}
       {data.description && (
-        <div 
+        <div
           className="absolute text-xs text-gray-500 bg-white px-2 py-1 rounded border max-w-sm truncate"
-          style={{ 
+          style={{
             left: 8,
             bottom: -24,
             pointerEvents: 'auto',
