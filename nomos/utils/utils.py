@@ -47,7 +47,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
         if is_optional:
             field_type = Optional[field_type]
 
-        if description is not None or description != "":
+        if description is not None and description != "":
             field_info = Field(default=default_val, description=description)
         else:
             field_info = default_val
