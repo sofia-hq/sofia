@@ -5,7 +5,7 @@ import os
 import pathlib
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, List, Optional
+from typing import AsyncGenerator, List, Optional, Union
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -128,7 +128,9 @@ async def get_session_history(session_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Assuming session.history() returns a list of messages
-    history: List[FlowMessage | StepIdentifier | Summary] = session.memory.get_history()
+    history: List[Union[FlowMessage, StepIdentifier, Summary]] = (
+        session.memory.get_history()
+    )
     history_json = [
         msg.model_dump(mode="json")
         for msg in history
