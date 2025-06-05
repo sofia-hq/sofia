@@ -28,6 +28,8 @@ SOFIA is designed around a modular, step-based architecture for building robust,
       LLMProvider <--> OpenAI[OpenAI]
       LLMProvider <--> Mistral[Mistral]
       LLMProvider <--> Gemini[Gemini]
+      LLMProvider <--> Ollama[Ollama]
+      LLMProvider <--> HuggingFace[HuggingFace]
       LLMProvider <--> CustomLLM[Custom LLM]
       ToolRegistry <--> BuiltInTools[Built-in Tools]
       ToolRegistry <--> CustomTools[Custom Tools]
@@ -48,7 +50,7 @@ SOFIA is designed around a modular, step-based architecture for building robust,
 - **Route**: Defines transitions between steps, based on conditions.
 - **FlowSession**: Manages the state and history of a single agent session.
 - **AgentConfig**: Handles configuration (YAML or Python) for agent setup.
-- **LLMBase**: Abstracts the LLM provider (OpenAI, Mistral, Gemini, etc.).
+- **LLMBase**: Abstracts the LLM provider (OpenAI, Mistral, Gemini, Ollama, HuggingFace, etc.).
 - **Tools**: Python functions or package references that the agent can call.
 
 **How it works:**

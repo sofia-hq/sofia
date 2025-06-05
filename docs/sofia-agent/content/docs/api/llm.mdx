@@ -27,9 +27,19 @@ SOFIA's LLM integration uses a base class and provider-specific subclasses:
           +__init__()
           +get_output()
       }
+      class Ollama {
+          +__init__()
+          +get_output()
+      }
+      class HuggingFace {
+          +__init__()
+          +get_output()
+      }
       LLMBase <|-- OpenAI
       LLMBase <|-- Mistral
       LLMBase <|-- Gemini
+      LLMBase <|-- Ollama
+      LLMBase <|-- HuggingFace
   "
 />
 

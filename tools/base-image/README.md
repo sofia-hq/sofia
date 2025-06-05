@@ -6,7 +6,7 @@ Official base image for building Nomos (Simple Orchestrated Flow Intelligence Ag
 
 - Pre-installed Nomos agent framework
 - Configurable via environment variables or mounted config files
-- Built-in support for OpenAI, Mistral, and Gemini LLMs
+- Built-in support for OpenAI, Mistral, Gemini, Ollama, and HuggingFace LLMs
 - FastAPI-based HTTP and WebSocket endpoints
 - Redis support for session management
 - SQLModel-based persistent storage

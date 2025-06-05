@@ -6,11 +6,13 @@ from pydantic import BaseModel
 
 from .base import LLMBase
 from .google import Gemini
+from .huggingface import HuggingFace
 from .mistral import Mistral
+from .ollama import Ollama
 from .openai import OpenAI
 
 
-LLMS = [OpenAI, Mistral, Gemini]
+LLMS = [OpenAI, Mistral, Gemini, Ollama, HuggingFace]
 
 
 class LLMConfig(BaseModel):
@@ -23,7 +25,7 @@ class LLMConfig(BaseModel):
         kwargs (dict): Additional parameters for the LLM API.
     """
 
-    provider: Literal["openai", "mistral", "google"]
+    provider: Literal["openai", "mistral", "google", "ollama", "huggingface"]
     model: str
     kwargs: Dict[str, str] = {}
 
@@ -39,4 +41,12 @@ class LLMConfig(BaseModel):
         raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
 
-__all__ = ["LLMConfig", "LLMBase", "OpenAI", "Gemini", "Mistral"]
+__all__ = [
+    "LLMConfig",
+    "LLMBase",
+    "OpenAI",
+    "Gemini",
+    "Mistral",
+    "Ollama",
+    "HuggingFace",
+]
