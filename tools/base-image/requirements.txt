@@ -1,4 +1,4 @@
-nomos[openai,traces]==0.2.0
+nomos[openai,traces]==0.2.1
 fastapi==0.115.12
 uvicorn==0.34.2
 redis==6.0.0

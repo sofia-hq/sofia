@@ -10,7 +10,7 @@ from .models.agent import Action, Route, Step
 from .models.flow import Flow, FlowComponent, FlowConfig, FlowContext, FlowManager
 from .utils.flow_utils import create_flows_from_config
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __author__ = "Chandra Irugalbandara"
 
 __all__ = [
