@@ -12,7 +12,7 @@ from .ollama import Ollama
 from .openai import OpenAI
 
 
-LLMS = [OpenAI, Mistral, Gemini, Ollama, HuggingFace]
+LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace]
 
 
 class LLMConfig(BaseModel):
