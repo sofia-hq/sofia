@@ -1,6 +1,6 @@
 [project]
 name = "nomos"
-version = "0.1.15"
+version = "0.2.0"
 description = "Configurable multi-step agent framework for building advanced LLM-powered assistants"
 authors = [
     {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}
