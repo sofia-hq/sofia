@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from .base import LLMBase
 from ..models.agent import Message
-import tiktoken
 
 
 class OpenAI(LLMBase):
@@ -78,6 +77,8 @@ class OpenAI(LLMBase):
 
     def token_counter(self, text: str) -> int:
         """Count tokens using tiktoken for the current model."""
+        import tiktoken
+
         enc = tiktoken.encoding_for_model(self.model)
         return len(enc.encode(text))
 

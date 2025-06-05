@@ -10,8 +10,10 @@ from nomos.llms.base import LLMBase
 class StubRetriever(Retriver):
     def index(self, items, **kwargs):
         pass
+
     def update(self, items, **kwargs):
         pass
+
     def retrieve(self, query, **kwargs):
         return []
 
@@ -19,10 +21,13 @@ class StubRetriever(Retriver):
 class CounterLLM(LLMBase):
     def __init__(self):
         self.counted = []
+
     def get_output(self, messages, response_format, **kwargs):
         raise NotImplementedError
+
     def generate(self, messages, **kwargs):
         raise NotImplementedError
+
     def token_counter(self, text: str) -> int:
         self.counted.append(text)
         return 42
