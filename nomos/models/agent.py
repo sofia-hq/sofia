@@ -1,4 +1,4 @@
-"""Flow models for Sofia's decision-making process."""
+"""Flow models for Nomos's decision-making process."""
 
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, Union

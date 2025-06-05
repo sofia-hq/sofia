@@ -1,4 +1,4 @@
-"""Models for Sofia."""
+"""Models for Nomos."""
 
 from .agent import *  # noqa
 from .flow import *  # noqa

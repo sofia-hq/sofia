@@ -1,4 +1,4 @@
-"""Memory Management Modules for Sofia Agent."""
+"""Memory management modules for the Nomos Agent."""
 
 from typing import Any, Dict, Literal, Optional
 
@@ -11,7 +11,7 @@ from ..llms import LLMConfig
 
 class MemoryConfig(BaseModel):
     """
-    Configuration class for memory management in Sofia Agent.
+    Configuration class for memory management in Nomos Agent.
 
     Attributes:
         type (str): Type of memory management (e.g., "memory", "no_memory").
