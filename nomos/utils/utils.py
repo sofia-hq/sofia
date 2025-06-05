@@ -40,7 +40,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
                     params=item.get("params", {}),
                 )
                 field_types.append(nested_field_type)
-            field_type = Union[*field_types]
+            field_type = Union.__getitem__(tuple(field_types))
 
         if is_list:
             field_type = List[field_type]  # type: ignore
