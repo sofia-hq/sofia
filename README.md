@@ -123,7 +123,7 @@ The framework allows you to move from no-code to low-code development, making it
 - **YAML or Python config**: Configure agents via code or declarative YAML.
 - **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses.
 - **🎨 Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface. **[Try it live at nomos-builder.vercel.app](https://nomos-builder.vercel.app)**
-- **OpenAI, Mistral, and Gemini LLM support**
+- **OpenAI, Mistral, Gemini, Ollama, and HuggingFace LLM support**
 - **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
 - **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
 - **API integration**: Ready-to-use FastAPI endpoints for web and WebSocket interaction.
@@ -135,7 +135,7 @@ The framework allows you to move from no-code to low-code development, making it
 ### Built With
 
 - Python
-- OpenAI, Mistral, and Gemini LLMs
+- OpenAI, Mistral, Gemini, Ollama, and HuggingFace LLMs
 - Redis/PostgreSQL (optional for storage)
 - OpenTelemetry and Elastic APM (optional for tracing)
 - FastAPI & Docker (optional for deployment)
@@ -205,6 +205,8 @@ pip install nomos[cli]
 pip install nomos[openai]      # For OpenAI support
 pip install nomos[mistralai]   # For Mistral AI support
 pip install nomos[gemini]      # For Google Gemini support
+pip install nomos[ollama]      # For Ollama support
+pip install nomos[huggingface] # For HuggingFace support
 ```
 
 #### With tracing support
@@ -575,12 +577,14 @@ This flow ensures that all order-related context (customer preferences, cart con
 ### Choose Your LLM (We are adding more soon!)
 
 ```python
-from nomos.llms import OpenAI, Mistral, Gemini
+from nomos.llms import OpenAI, Mistral, Gemini, Ollama, HuggingFace
 
 # Choose your LLM provider
 llm = OpenAI(model="gpt-4o-mini")
 llm = Mistral(model="mistral-medium")
 llm = Gemini(model="gemini-pro")
+llm = Ollama(model="llama3")
+llm = HuggingFace(model="meta-llama/Meta-Llama-3-8B-Instruct")
 ```
 
 Or You can also specify LLM configuration in your YAML config:

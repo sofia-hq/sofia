@@ -117,7 +117,7 @@ def init(
     )
 
     # Choose LLM provider
-    llm_choices = ["OpenAI", "Mistral", "Gemini", "Custom"]
+    llm_choices = ["OpenAI", "Mistral", "Gemini", "Ollama", "HuggingFace", "Custom"]
     llm_table = Table(title="Choose LLM Provider")
     llm_table.add_column("Option", style=PRIMARY_COLOR)
     llm_table.add_column("Provider")
@@ -178,7 +178,7 @@ def init(
     if generate:
         provider = Prompt.ask(
             "Choose one of the following LLM providers you would like to use for generation",
-            choices=["openai", "mistral", "google"],
+            choices=["openai", "mistral", "google", "ollama", "huggingface"],
             default=None,
         )
         model = Prompt.ask(

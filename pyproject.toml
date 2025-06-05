@@ -37,6 +37,12 @@ mistralai = [
 gemini = [
     "google-genai (>=1.12.1,<2.0.0)",
 ]
+ollama = [
+    "ollama (>=0.5.1)",
+]
+huggingface = [
+    "huggingface_hub (>=0.32.0)",
+]
 traces = [
     "opentelemetry-api (>=1.33.0,<2.0.0)",
     "opentelemetry-sdk (>=1.33.0,<2.0.0)",
