@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/try/:path*",
+      "destination": "/:path*"
+    }
+  ]
+}
