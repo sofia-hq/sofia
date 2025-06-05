@@ -226,7 +226,9 @@ def create_decision_model(
                 },
                 "tool_kwargs": {
                     "type": (
-                        tool_models[0] if len(tool_models) == 1 else Union.__getitem__(tuple(tool_models))
+                        tool_models[0]
+                        if len(tool_models) == 1
+                        else Union.__getitem__(tuple(tool_models))
                     ),
                     "description": "Corresponding Tool arguments for TOOL_CALL.",
                 },
