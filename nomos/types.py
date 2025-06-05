@@ -1,4 +1,4 @@
-"""Types for Sofia Agent."""
+"""Types for the Nomos Agent."""
 
 from .core import Agent, Session
 from .models.agent import Action, Route, Step

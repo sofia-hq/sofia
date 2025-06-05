@@ -1,4 +1,4 @@
-"""Common test fixtures for Sofia agent tests."""
+"""Common test fixtures for Nomos agent tests."""
 
 import pytest
 from typing import List
@@ -85,7 +85,7 @@ def test_tool_1():
 
 @pytest.fixture
 def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1):
-    """Fixture providing a basic Sofia agent instance."""
+    """Fixture providing a basic Nomos agent instance."""
     return Agent(
         name="test_agent",
         llm=mock_llm,

@@ -213,7 +213,7 @@ agent_config = AgentConfig(
     flows=[ordering_flow_config, checkout_flow_config],
 )
 
-# Initialize the LLM and Sofia agent
+# Initialize the LLM and Nomos agent
 llm = OpenAI()
 barista = Agent.from_config(config=agent_config, llm=llm, tools=tools)
 

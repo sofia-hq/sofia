@@ -1,4 +1,4 @@
-"""Constants for Sofia."""
+"""Constants for Nomos."""
 
 DEFAULT_SYSTEM_MESSAGE = "Your task is to decide the next action based on the current step, user input and history."
 

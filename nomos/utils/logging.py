@@ -1,4 +1,4 @@
-"""Logging Utilities for Sofia."""
+"""Logging utilities for Nomos."""
 
 import os
 

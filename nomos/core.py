@@ -1,4 +1,4 @@
-"""Core models and logic for the SOFIA package, including flow management, session handling."""
+"""Core models and logic for the Nomos package, including flow management and session handling."""
 
 import contextlib
 import pickle
@@ -579,7 +579,7 @@ class Agent:
         :param llm: LLMBase instance.
         :param config: AgentConfig instance.
         :param tools: List of tool callables.
-        :return: Sofia instance.
+        :return: Nomos instance.
         """
         if not llm:
             if not config.llm:

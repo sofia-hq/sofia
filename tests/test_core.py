@@ -1,4 +1,4 @@
-"""Tests for core Sofia agent functionality."""
+"""Tests for core Nomos agent functionality."""
 
 import pytest
 from nomos.models.agent import Action, create_decision_model, Message
