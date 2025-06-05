@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Ability to create groups of steps (Flows) such that when entering a flow, steps will have seperate context/memory with summary of the parent context. Allowing for longer running workflows and more complex workflows to be created.
+- Support for Huggingface and Ollama LLM providers.
+- New Visual Builder is available [here](https://nomos.dowhile.dev/try) to create agents visually.
+
+### Fixed
+- Added few minor fixes to the Memory modules.
 
 ## [0.1.15] - 2025-05-28
 
