@@ -67,7 +67,7 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
-    answer_model: Optional[Dict[str, Dict[str, Any]] | BaseModel] = None
+    answer_model: Optional[Union[Dict[str, Dict[str, Any]], BaseModel]] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
@@ -140,7 +140,7 @@ class Message(BaseModel):
         content (str): The message content.
     """
 
-    role: Literal["user", "tool", "error", "fallback"] | str
+    role: Union[Literal["user", "tool", "error", "fallback"], str]
     content: str
 
     def __str__(self) -> str:
@@ -214,19 +214,19 @@ def create_decision_model(
             }
     if len(available_step_ids) > 0:
         response_desc.append("Step Id (String) if MOVE.")
-        response_types.append(Literal[*available_step_ids])
+        response_types.append(Literal.__getitem__(tuple(available_step_ids)))
 
     if len(tool_ids) > 0 and len(tool_models) > 0:
         tool_call_model = create_base_model(
             "ToolCall",
             {
                 "tool_name": {
-                    "type": Literal[*tool_ids],
+                    "type": Literal.__getitem__(tuple(tool_ids)),
                     "description": "Tool name for TOOL_CALL.",
                 },
                 "tool_kwargs": {
                     "type": (
-                        tool_models[0] if len(tool_models) == 1 else Union[*tool_models]
+                        tool_models[0] if len(tool_models) == 1 else Union.__getitem__(tuple(tool_models))
                     ),
                     "description": "Corresponding Tool arguments for TOOL_CALL.",
                 },
@@ -237,7 +237,7 @@ def create_decision_model(
     assert (
         len(response_desc) > 0 and len(response_types) > 0
     ), "Something went wrong, Please check the step configuration."
-    params["response"]["type"] = Union[*response_types]
+    params["response"]["type"] = Union.__getitem__(tuple(response_types))
     params["response"]["description"] = " | ".join(response_desc)
 
     return create_base_model(

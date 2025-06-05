@@ -41,7 +41,7 @@ class Session:
         start_step_id: str,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
-        tools: Optional[List[Callable | str]] = None,
+        tools: Optional[List[Union[Callable, str]]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -492,7 +492,7 @@ class Agent:
         start_step_id: str,
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
-        tools: Optional[List[Callable | str]] = None,
+        tools: Optional[List[Union[Callable, str]]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -571,7 +571,7 @@ class Agent:
         cls,
         config: AgentConfig,
         llm: Optional[LLMBase] = None,
-        tools: Optional[List[Callable | str]] = None,
+        tools: Optional[List[Union[Callable, str]]] = None,
     ) -> "Agent":
         """
         Create an Agent from an AgentConfig object.
