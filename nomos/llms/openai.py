@@ -75,5 +75,12 @@ class OpenAI(LLMBase):
         )
         return comp.choices[0].message.content if comp.choices else ""  # type: ignore
 
+    def token_counter(self, text: str) -> int:
+        """Count tokens using tiktoken for the current model."""
+        import tiktoken
+
+        enc = tiktoken.encoding_for_model(self.model)
+        return len(enc.encode(text))
+
 
 __all__ = ["OpenAI"]

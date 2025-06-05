@@ -5,12 +5,9 @@ from typing import List, Optional, Union
 
 from nomos.models.agent import Message, Step, Summary
 
-import tiktoken
-
 from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
 from ..llms import LLMBase
-from ..llms.openai import OpenAI
 from ..utils.logging import log_debug
 
 
@@ -61,14 +58,8 @@ class PeriodicalSummarizationMemory(Memory):
         self.preserve_history = preserve_history
 
     def token_counter(self, text: str) -> int:
-        """Count the number of tokens in a string."""
-        enc = (
-            tiktoken.encoding_for_model(self.llm.model)
-            if isinstance(self.llm, OpenAI)
-            else tiktoken.get_encoding("cl100k_base")
-        )
-        tokens = enc.encode(text)
-        return len(tokens)
+        """Count tokens using the underlying LLM's tokenizer."""
+        return self.llm.token_counter(text)
 
     def generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""

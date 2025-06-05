@@ -96,7 +96,7 @@ class FlowMemory(Memory):
     ) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
-            self.context.extend(self._generate_summary(previous_context))
+            self.context.append(self._generate_summary(previous_context))
             self._index()
 
     def _exit(self) -> Summary:

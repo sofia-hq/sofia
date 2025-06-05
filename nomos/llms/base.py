@@ -197,5 +197,9 @@ class LLMBase:
         """
         raise NotImplementedError("Subclasses should implement this method.")
 
+    def token_counter(self, text: str) -> int:
+        """Count the number of tokens in a string."""
+        return len(text.split())
+
 
 __all__ = ["LLMBase"]
