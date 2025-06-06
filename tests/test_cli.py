@@ -345,4 +345,3 @@ MULTI_LINE=line1\\nline2
         """Test parsing non-existent .env file."""
         with pytest.raises(FileNotFoundError):
             _parse_env_file(Path("/non/existent/.env"))
-

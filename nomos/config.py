@@ -1,24 +1,28 @@
 """AgentConfig class for managing agent configurations."""
 
+import os
 from typing import Dict, List, Optional
 
-from pydantic_settings import BaseSettings
 from pydantic import BaseModel
+
+from pydantic_settings import BaseSettings
+
+
+from .llms import LLMBase, LLMConfig, OpenAI
+from .memory import MemoryConfig
+from .models.agent import Step
+from .models.flow import FlowConfig
 
 
 class ServerConfig(BaseModel):
     """Configuration for the FastAPI server."""
+
     openai_api_key: Optional[str] = None
     redis_url: Optional[str] = None
     database_url: Optional[str] = None
     enable_tracing: bool = False
     port: int = 8000
     workers: int = 1
-
-from .llms import LLMBase, LLMConfig, OpenAI
-from .memory import MemoryConfig
-from .models.agent import Step
-from .models.flow import FlowConfig
 
 
 class AgentConfig(BaseSettings):
@@ -51,7 +55,7 @@ class AgentConfig(BaseSettings):
     )
     show_steps_desc: bool = False
     max_errors: int = 3
-    max_iter: int = 3
+    max_iter: int = 10
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
 
@@ -60,6 +64,7 @@ class AgentConfig(BaseSettings):
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
     server: ServerConfig = ServerConfig()
+
     @classmethod
     def from_yaml(cls, file_path: str) -> "AgentConfig":
         """
@@ -74,9 +79,17 @@ class AgentConfig(BaseSettings):
             data = yaml.safe_load(file)
         server_data = data.get("server", {})
         if isinstance(server_data, dict):
-            expanded = {k: (os.getenv(v[1:], v) if isinstance(v, str) and v.startswith("$") else v) for k,v in server_data.items()}
+            expanded = {
+                k: (
+                    os.getenv(v[1:], v)
+                    if isinstance(v, str) and v.startswith("$")
+                    else v
+                )
+                for k, v in server_data.items()
+            }
             data["server"] = expanded
         return cls(**data)
+
     def to_yaml(self, file_path: str) -> None:
         """
         Save configuration to a YAML file.

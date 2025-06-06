@@ -14,12 +14,12 @@ from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
-from .config import AgentConfig
-from .server import run_server
 
 import typer
 
+from .config import AgentConfig
 from .llms import LLMConfig
+from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
 
@@ -298,8 +298,12 @@ def serve(
         "-t",
         help="Python files containing tool definitions (can be used multiple times)",
     ),
-    port: Optional[int] = typer.Option(None, "--port", "-p", help="Port to bind the server"),
-    workers: Optional[int] = typer.Option(None, "--workers", "-w", help="Number of uvicorn workers"),
+    port: Optional[int] = typer.Option(
+        None, "--port", "-p", help="Port to bind the server"
+    ),
+    workers: Optional[int] = typer.Option(
+        None, "--workers", "-w", help="Number of uvicorn workers"
+    ),
 ) -> None:
     """Serve the Nomos agent using FastAPI and Uvicorn."""
     print_banner()
@@ -314,7 +318,7 @@ def serve(
         raise typer.Exit(1)
 
     # Validate tool files exist
-    tool_files = []
+    tool_files: list[Path] = []
     if tools:
         for tool_file in tools:
             tool_path = Path(tool_file)
@@ -337,8 +341,8 @@ def serve(
     temp_tools_dir = None
     if tool_files:
         temp_tools_dir = Path(tempfile.mkdtemp())
-        for tool_file in tool_files:
-            shutil.copy2(tool_file, temp_tools_dir / tool_file.name)
+        for tool_file in tool_files:  # type: ignore
+            shutil.copy2(tool_file, temp_tools_dir / tool_file.name)  # type: ignore
         os.environ["TOOLS_PATH"] = str(temp_tools_dir)
 
     cfg = AgentConfig.from_yaml(str(config_path))
@@ -849,7 +853,6 @@ if __name__ == "__main__":
             console.print(
                 f"🧹 Cleaned up temporary tools directory: [dim]{tools_dir}[/dim]"
             )
-
 
 
 def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
