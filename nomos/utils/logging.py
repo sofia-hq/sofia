@@ -4,15 +4,8 @@ import os
 
 from loguru import logger
 
-_log_level_env = os.getenv("NOMOS_LOG_LEVEL")
-if _log_level_env is None:
-    _log_level_env = os.getenv("SOFIA_LOG_LEVEL", "INFO")
-LOG_LEVEL: str = _log_level_env.upper()
-
-_enable_logging_env = os.getenv("NOMOS_ENABLE_LOGGING")
-if _enable_logging_env is None:
-    _enable_logging_env = os.getenv("SOFIA_ENABLE_LOGGING", "false")
-ENABLE_LOGGING: bool = _enable_logging_env.lower() == "true"
+LOG_LEVEL: str = os.getenv("NOMOS_LOG_LEVEL", "INFO").upper()
+ENABLE_LOGGING: bool = os.getenv("NOMOS_ENABLE_LOGGING", "false").lower() == "true"
 
 if ENABLE_LOGGING:
     logger.info(f"Logging is enabled. Log level set to {LOG_LEVEL}.")
