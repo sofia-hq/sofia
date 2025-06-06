@@ -1,7 +1,6 @@
 """Command Line Interface for Nomos."""
 
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -256,8 +255,7 @@ def run(
         )
         raise typer.Exit(1)
 
-    # Validate tool files exist
-    tool_files = []
+    tool_paths = []
     if tools:
         for tool_file in tools:
             tool_path = Path(tool_file)
@@ -267,7 +265,7 @@ def run(
                     style=ERROR_COLOR,
                 )
                 raise typer.Exit(1)
-            tool_files.append(tool_path)
+            tool_paths.append(tool_path)
 
     console.print(
         Panel(
@@ -278,8 +276,7 @@ def run(
     )
 
     try:
-        # Setup temporary tools directory and run the agent
-        _run_development_server(config_path, tool_files, port, verbose)
+        _run_development_server(config_path, tool_paths, port, verbose)
     except KeyboardInterrupt:
         console.print("\n👋 Development server stopped.", style=WARNING_COLOR)
     except Exception as e:
@@ -317,8 +314,7 @@ def serve(
         )
         raise typer.Exit(1)
 
-    # Validate tool files exist
-    tool_files: list[Path] = []
+    tool_paths: list[Path] = []
     if tools:
         for tool_file in tools:
             tool_path = Path(tool_file)
@@ -328,7 +324,7 @@ def serve(
                     style=ERROR_COLOR,
                 )
                 raise typer.Exit(1)
-            tool_files.append(tool_path)
+            tool_paths.append(tool_path)
 
     console.print(
         Panel(
@@ -338,22 +334,22 @@ def serve(
         )
     )
 
-    temp_tools_dir = None
-    if tool_files:
-        temp_tools_dir = Path(tempfile.mkdtemp())
-        for tool_file in tool_files:  # type: ignore
-            shutil.copy2(tool_file, temp_tools_dir / tool_file.name)  # type: ignore
-        os.environ["TOOLS_PATH"] = str(temp_tools_dir)
+    tool_dirs: set[str] = set()
+    for p in tool_paths:
+        tool_dirs.add(str(p if p.is_dir() else p.parent))
+
+    default_tool_dir = Path.cwd() / "tools"
+    if not tool_dirs and default_tool_dir.exists():
+        tool_dirs.add(str(default_tool_dir))
+
+    if tool_dirs:
+        os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
 
     cfg = AgentConfig.from_yaml(str(config_path))
     run_port = port if port is not None else cfg.server.port
     worker_count = workers if workers is not None else cfg.server.workers
 
-    try:
-        run_server(config_path, port=run_port, workers=worker_count)
-    finally:
-        if temp_tools_dir and temp_tools_dir.exists():
-            shutil.rmtree(temp_tools_dir)
+    run_server(config_path, port=run_port, workers=worker_count)
 
 
 @app.command()
@@ -697,86 +693,37 @@ def _run_development_server(
 ) -> None:
     """Run the agent in development mode."""
     current_dir = Path.cwd()
-    tools_dir = current_dir / "tools"
 
-    # Check if tools directory already exists to avoid conflicts
-    tools_existed = tools_dir.exists()
-    temp_tools_created = False
+    # Collect tool directories
+    tool_dirs: set[str] = set(
+        str(p if p.is_dir() else p.parent) for p in tool_files
+    )
+    default_tool_dir = current_dir / "tools"
+    if default_tool_dir.exists():
+        tool_dirs.add(str(default_tool_dir))
 
-    try:
-        # If no tool files provided and no tools directory exists, proceed without tools
-        if not tool_files and not tools_existed:
-            console.print(
-                "⚠️  No tool files provided and no tools directory found. Running without tools.",
-                style=WARNING_COLOR,
-            )
-            tool_files = []
+    if tool_dirs:
+        os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
+    else:
+        console.print(
+            "⚠️  No tool files provided and no tools directory found. Running without tools.",
+            style=WARNING_COLOR,
+        )
 
-        # Create temporary tools directory if we have tool files to process
-        if tool_files:
-            if tools_existed:
-                console.print(
-                    f"❌ Tools directory already exists at [bold]{tools_dir}[/bold]. Please remove it or use a different directory.",
-                    style=ERROR_COLOR,
-                )
-                raise typer.Exit(1)
-
-            # Create tools directory
-            tools_dir.mkdir()
-            temp_tools_created = True
-
-            # Create __init__.py for tools module
-            init_content = '''"""This module imports all tools from the tools directory and makes them available in a list."""
-
-import os
-
-tool_list: list = []
-
-for filename in os.listdir(os.path.dirname(__file__)):
-    if filename.endswith(".py") and filename != "__init__.py":
-        module_name = filename[:-3]  # Remove the .py extension
-        try:
-            module = __import__(f"tools.{module_name}", fromlist=[""])
-            tool_list.extend(getattr(module, "tools", []))
-        except ImportError as e:
-            print(f"Warning: Could not import {module_name}: {e}")
-
-__all__ = ["tool_list"]
-'''
-            (tools_dir / "__init__.py").write_text(init_content)
-
-            # Copy tool files to tools directory
-            for _, tool_file in enumerate(tool_files):
-                dest_file = tools_dir / tool_file.name
-                shutil.copy2(tool_file, dest_file)
-                console.print(
-                    f"📄 Copied [dim]{tool_file}[/dim] → [dim]{dest_file}[/dim]"
-                )
-
-        # Create development server script
-        dev_server_code = f"""import sys
+    # Create development server script
+    dev_server_code = f"""import sys
 import os
 from pathlib import Path
 
-# Add current directory to Python path
 sys.path.insert(0, str(Path.cwd()))
 
 import nomos as n
-
-try:
-    from tools import tool_list
-    print(f"✅ Loaded {{len(tool_list)}} tools")
-except ImportError as e:
-    print(f"⚠️  Warning: Could not import tools: {{e}}")
-    tool_list = []
+from nomos.api.tools import tool_list
 
 def main():
     try:
         config = n.AgentConfig.from_yaml("{config_path}")
-
-        # Initialize LLM (you may need to set API keys)
         llm = config.get_llm()
-
         agent = n.Agent.from_config(config, llm, tool_list)
         session = agent.create_session(verbose={verbose})
 
@@ -787,72 +734,46 @@ def main():
 
         while True:
             try:
-                user_input = input("You: ").strip()
+                user_input = input('You: ').strip()
                 if user_input.lower() in ['quit', 'exit', 'bye']:
                     break
-
                 if not user_input:
                     continue
-
                 decision, _ = session.next(user_input)
-                print(f"Agent: {{decision.response}}")
-
+                print(f'Agent: {{decision.response}}')
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                print(f"Error: {{e}}")
+                print(f'Error: {{e}}')
                 if {verbose}:
                     import traceback
                     traceback.print_exc()
-
     except Exception as e:
-        print(f"❌ Failed to start agent: {{e}}")
+        print(f'❌ Failed to start agent: {{e}}')
         if {verbose}:
             import traceback
             traceback.print_exc()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
 """
 
-        # Write the script to a temporary file and execute it
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as temp_script:
-            temp_script.write(dev_server_code)
-            temp_script_path = temp_script.name
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_script:
+        temp_script.write(dev_server_code)
+        temp_script_path = temp_script.name
 
-        try:
-            console.print(f"📂 Working directory: [dim]{current_dir}[/dim]")
-            if temp_tools_created:
-                console.print(
-                    f"🔧 Created temporary tools directory: [dim]{tools_dir}[/dim]"
-                )
-
-            # Run the development server
-            result = subprocess.run(
-                [sys.executable, temp_script_path], cwd=current_dir, check=False
-            )
-
-            if (
-                result.returncode != 0 and result.returncode != 130
-            ):  # 130 is KeyboardInterrupt
-                console.print(
-                    f"❌ Development server exited with code {result.returncode}",
-                    style=ERROR_COLOR,
-                )
-
-        finally:
-            # Clean up temporary script
-            os.unlink(temp_script_path)
-
-    finally:
-        # Clean up temporary tools directory if we created it
-        if temp_tools_created and tools_dir.exists():
-            shutil.rmtree(tools_dir)
+    try:
+        console.print(f"📂 Working directory: [dim]{current_dir}[/dim]")
+        result = subprocess.run(
+            [sys.executable, temp_script_path], cwd=current_dir, check=False
+        )
+        if result.returncode not in (0, 130):
             console.print(
-                f"🧹 Cleaned up temporary tools directory: [dim]{tools_dir}[/dim]"
+                f"❌ Development server exited with code {result.returncode}",
+                style=ERROR_COLOR,
             )
+    finally:
+        os.unlink(temp_script_path)
 
 
 def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
