@@ -708,6 +708,8 @@ The base image supports configuration via environment variables:
 | `ELASTIC_APM_TOKEN` | Elastic APM Token | If tracing enabled |
 | `SERVICE_NAME` | Service name for tracing | No (default: `nomos-agent`) |
 | `SERVICE_VERSION` | Service version for tracing | No (default: `1.0.0`) |
+| `NOMOS_LOG_LEVEL` | Logging level (`DEBUG`, `INFO`, etc.) | No (default: `INFO`) |
+| `NOMOS_ENABLE_LOGGING` | Enable logging (`true`/`false`) | No (default: `false`) |
 
 ### Tracing and Elastic APM Integration
 

@@ -1,8 +1,8 @@
 import os
 
 # Enable Debugging
-os.environ["SOFIA_LOG_LEVEL"] = "DEBUG"
-os.environ["SOFIA_ENABLE_LOGGING"] = "true"
+os.environ["NOMOS_LOG_LEVEL"] = "DEBUG"
+os.environ["NOMOS_ENABLE_LOGGING"] = "true"
 
 from nomos import *
 from nomos.llms import OpenAI
