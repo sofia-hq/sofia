@@ -24,6 +24,9 @@ FROM chandralegend/nomos-base:latest
 COPY config.agent.yaml /app/config.agent.yaml
 ```
 
+The base image automatically launches the FastAPI server provided by the
+`nomos` package, so no additional server code is required.
+
 ## Configuration Options
 
 ### Using URL Configuration
@@ -48,6 +51,7 @@ docker run -e OPENAI_API_KEY=your-key \
 | `CONFIG_URL` | URL to download agent configuration | No |
 | `CONFIG_PATH` | Path to mounted configuration file | No |
 | `PORT` | Server port (default: 8000) | No |
+| `WORKERS` | Number of Uvicorn workers (default: 1) | No |
 | `DATABASE_URL` | PostgreSQL connection URL | No |
 | `REDIS_URL` | Redis connection URL | No |
 | `ENABLE_TRACING` | Enable OpenTelemetry tracing (`true`/`false`) | No |
