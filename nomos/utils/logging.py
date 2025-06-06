@@ -4,8 +4,8 @@ import os
 
 from loguru import logger
 
-LOG_LEVEL = os.getenv("SOFIA_LOG_LEVEL", "INFO").upper()
-ENABLE_LOGGING = os.getenv("SOFIA_ENABLE_LOGGING", "false").lower() == "true"
+LOG_LEVEL: str = os.getenv("NOMOS_LOG_LEVEL", "INFO").upper()
+ENABLE_LOGGING: bool = os.getenv("NOMOS_ENABLE_LOGGING", "false").lower() == "true"
 
 if ENABLE_LOGGING:
     logger.info(f"Logging is enabled. Log level set to {LOG_LEVEL}.")
