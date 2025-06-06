@@ -24,7 +24,7 @@ from nomos.llms.openai import OpenAI
 
 from .tools import tool_list
 
-config = nomos.AgentConfig.from_yaml("config.agent.yaml")
+config = nomos.AgentConfig.from_yaml(os.getenv("CONFIG_PATH", "config.agent.yaml"))
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
 agent = nomos.Agent.from_config(config, llm, tool_list)
 

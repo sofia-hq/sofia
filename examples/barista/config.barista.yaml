@@ -79,7 +79,7 @@ flows:
         retriever:
           method: bm25
           kwargs:
-            k: 5
+            k1: 5
     metadata:
       max_context_size: 50
       summary_threshold: 20

@@ -12,14 +12,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+
+from nomos.api.agent import agent
+from nomos.api.db import init_db
+from nomos.api.models import ChatRequest, ChatResponse, Message, SessionResponse
+from nomos.api.session_store import SessionStore, create_session_store
+from nomos.api.yaml_to_mermaid import generate_config_json, parse_yaml_config
 from nomos.models.agent import Message as FlowMessage, StepIdentifier, Summary
-
-from src.agent import agent
-from src.db import init_db
-from src.models import ChatRequest, ChatResponse, Message, SessionResponse
-from src.session_store import SessionStore, create_session_store
-from src.yaml_to_mermaid import generate_config_json, parse_yaml_config
-
 
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 SERVICE_NAME = os.getenv("SERVICE_NAME", "nomos-agent")
@@ -155,7 +154,9 @@ async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
 @app.get("/config", response_class=JSONResponse)
 async def get_agent_config() -> JSONResponse:
     """Get the agent configuration as JSON with enhanced metadata."""
-    config_path = BASE_DIR / "config.agent.yaml"
+    config_path = pathlib.Path(
+        os.getenv("CONFIG_PATH", str(BASE_DIR / "config.agent.yaml"))
+    )
     if not config_path.exists():
         raise HTTPException(
             status_code=404, detail="Agent configuration file not found"
@@ -182,4 +183,5 @@ if __name__ == "__main__":
     import uvicorn
 
     reload = "--reload" in sys.argv
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=reload)
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("nomos.api.app:app", host="0.0.0.0", port=port, reload=reload)
