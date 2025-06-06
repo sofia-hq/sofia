@@ -26,7 +26,11 @@ def test_agent_generator_generate(monkeypatch, mock_llm):
     config = AgentConfiguration(
         name="demo",
         persona="p",
-        steps=[Step(step_id="s", description="d", routes=[Route(target="s", condition="c")])],
+        steps=[
+            Step(
+                step_id="s", description="d", routes=[Route(target="s", condition="c")]
+            )
+        ],
         start_step_id="s",
     )
     mock_llm.set_response(config)
@@ -37,4 +41,3 @@ def test_agent_generator_generate(monkeypatch, mock_llm):
     assert result.name == "demo"
     # Ensure the LLM received messages for both generate and get_output
     assert len(mock_llm.messages_received) > 0
-

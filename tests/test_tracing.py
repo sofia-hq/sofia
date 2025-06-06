@@ -36,8 +36,14 @@ def _load_tracing(monkeypatch):
     monkeypatch.setitem(sys.modules, "opentelemetry", root_mod)
     monkeypatch.setitem(sys.modules, "opentelemetry.trace", trace_mod)
     monkeypatch.setitem(sys.modules, "opentelemetry.exporter", root_mod.exporter)
-    monkeypatch.setitem(sys.modules, "opentelemetry.exporter.otlp", types.ModuleType("op.exp.otlp"))
-    monkeypatch.setitem(sys.modules, "opentelemetry.exporter.otlp.proto", types.ModuleType("op.exp.otlp.proto"))
+    monkeypatch.setitem(
+        sys.modules, "opentelemetry.exporter.otlp", types.ModuleType("op.exp.otlp")
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "opentelemetry.exporter.otlp.proto",
+        types.ModuleType("op.exp.otlp.proto"),
+    )
     monkeypatch.setitem(
         sys.modules,
         "opentelemetry.exporter.otlp.proto.http",
@@ -49,8 +55,12 @@ def _load_tracing(monkeypatch):
         exporter_mod,
     )
     root_mod.instrumentation.instrumentor = instr_mod
-    monkeypatch.setitem(sys.modules, "opentelemetry.instrumentation", root_mod.instrumentation)
-    monkeypatch.setitem(sys.modules, "opentelemetry.instrumentation.instrumentor", instr_mod)
+    monkeypatch.setitem(
+        sys.modules, "opentelemetry.instrumentation", root_mod.instrumentation
+    )
+    monkeypatch.setitem(
+        sys.modules, "opentelemetry.instrumentation.instrumentor", instr_mod
+    )
     root_mod.sdk.trace = sdk_trace
     root_mod.sdk.trace.export = sdk_export
     monkeypatch.setitem(sys.modules, "opentelemetry.sdk", root_mod.sdk)
@@ -79,10 +89,11 @@ def test_initialize_and_shutdown_tracing(monkeypatch):
     trace_mod.set_tracer_provider.assert_called_once()
     sdk_trace.TracerProvider.assert_called_once_with(tp=1)
     exporter_mod.OTLPSpanExporter.assert_called_once()
-    sdk_export.BatchSpanProcessor.assert_called_once_with(exporter_mod.OTLPSpanExporter.return_value, sp=3)
+    sdk_export.BatchSpanProcessor.assert_called_once_with(
+        exporter_mod.OTLPSpanExporter.return_value, sp=3
+    )
     tracer_instance.add_span_processor.assert_called_once_with(processor)
     instrumentor.instrument.assert_called_once()
 
     tracing.shutdown_tracing()
     instrumentor.uninstrument.assert_called_once()
-

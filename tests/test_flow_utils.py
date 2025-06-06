@@ -44,4 +44,3 @@ def test_get_flow_for_step():
 
     flow = flow_utils.get_flow_for_step(manager, "s2")
     assert flow.flow_id == "f1"
-
