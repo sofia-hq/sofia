@@ -52,9 +52,10 @@ files = [
 name = "asyncpg"
 version = "0.30.0"
 description = "An asyncio PostgreSQL driver"
-optional = false
+optional = true
 python-versions = ">=3.8.0"
 groups = ["main"]
+markers = "extra == \"serve\""
 files = [
     {file = "asyncpg-0.30.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:bfb4dd5ae0699bad2b233672c8fc5ccbd9ad24b89afded02341786887e37927e"},
     {file = "asyncpg-0.30.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:dc1f62c792752a49f88b7e6f774c26077091b44caceb1983509edc18a2222ec0"},
@@ -1605,9 +1606,10 @@ files = [
 name = "psycopg2-binary"
 version = "2.9.10"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
-optional = false
+optional = true
 python-versions = ">=3.8"
 groups = ["main"]
+markers = "extra == \"serve\""
 files = [
     {file = "psycopg2-binary-2.9.10.tar.gz", hash = "sha256:4b3df0e6990aa98acda57d983942eff13d824135fe2250e6522edaa782a06de2"},
     {file = "psycopg2_binary-2.9.10-cp310-cp310-macosx_12_0_x86_64.whl", hash = "sha256:0ea8e3d0ae83564f2fc554955d327fa081d065c8ca5cc6d2abb643e2c9c1200f"},
@@ -2964,9 +2966,10 @@ huggingface = ["huggingface_hub"]
 mistralai = ["mistralai"]
 ollama = ["ollama"]
 openai = ["openai", "tiktoken"]
+serve = ["asyncpg", "fastapi", "psycopg2-binary", "redis", "sqlmodel", "uvicorn"]
 traces = ["opentelemetry-api", "opentelemetry-exporter-otlp", "opentelemetry-instrumentation", "opentelemetry-sdk"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "7761206e91dc7ad799e990bba671c41d4e3d9bebb37f38ebf3762bb19dc60de2"
+content-hash = "c2fede6e7b2fdda8a75385c11a11a9bfdbefd19c13c70969f8d3f347b589e517"
