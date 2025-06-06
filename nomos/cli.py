@@ -8,14 +8,14 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-import docker
-from docker.errors import BuildError, DockerException
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from rich.text import Text
+from .config import AgentConfig
+from .server import run_server
 
 import typer
 
@@ -298,29 +298,10 @@ def serve(
         "-t",
         help="Python files containing tool definitions (can be used multiple times)",
     ),
-    dockerfile: Optional[str] = typer.Option(
-        None, "--dockerfile", "-f", help="Path to custom Dockerfile"
-    ),
-    env_file: Optional[str] = typer.Option(
-        None, "--env-file", "-e", help="Path to .env file to load environment variables"
-    ),
-    tag: Optional[str] = typer.Option("nomos-agent", "--tag", help="Docker image tag"),
-    port: int = typer.Option(8000, "--port", "-p", help="Host port to bind to"),
-    build: bool = typer.Option(
-        True, "--build/--no-build", help="Build Docker image before running"
-    ),
-    detach: bool = typer.Option(
-        False,
-        "--detach/--no-detach",
-        help="Run container in detached mode (background)",
-    ),
+    port: Optional[int] = typer.Option(None, "--port", "-p", help="Port to bind the server"),
+    workers: Optional[int] = typer.Option(None, "--workers", "-w", help="Number of uvicorn workers"),
 ) -> None:
-    """Serve the Nomos agent using Docker.
-
-    This command builds and runs the agent in a Docker container. By default,
-    the container runs in the foreground, but you can use --detach to run it
-    in the background.
-    """
+    """Serve the Nomos agent using FastAPI and Uvicorn."""
     print_banner()
 
     config_path = Path(config)  # type: ignore
@@ -345,32 +326,30 @@ def serve(
                 raise typer.Exit(1)
             tool_files.append(tool_path)
 
-    # Validate env file exists if provided
-    env_file_path = None
-    if env_file:
-        env_file_path = Path(env_file)
-        if not env_file_path.exists():
-            console.print(
-                f"❌ Environment file not found: [bold]{env_file_path}[/bold]",
-                style=ERROR_COLOR,
-            )
-            raise typer.Exit(1)
-
     console.print(
         Panel(
-            f"🐳 Serving agent with Docker on port [bold]{port}[/bold]",
-            title="Docker Serve",
+            f"🚀 Starting server on port [bold]{port or 'config'}[/bold]",
+            title="Serve",
             border_style=PRIMARY_COLOR,
         )
     )
 
+    temp_tools_dir = None
+    if tool_files:
+        temp_tools_dir = Path(tempfile.mkdtemp())
+        for tool_file in tool_files:
+            shutil.copy2(tool_file, temp_tools_dir / tool_file.name)
+        os.environ["TOOLS_PATH"] = str(temp_tools_dir)
+
+    cfg = AgentConfig.from_yaml(str(config_path))
+    run_port = port if port is not None else cfg.server.port
+    worker_count = workers if workers is not None else cfg.server.workers
+
     try:
-        _serve_with_docker(config_path, tool_files, dockerfile, env_file_path, tag, port, build, detach)  # type: ignore
-    except KeyboardInterrupt:
-        console.print("\n👋 Docker serve stopped.", style=WARNING_COLOR)
-    except Exception as e:
-        console.print(f"❌ Error serving with Docker: {e}", style=ERROR_COLOR)
-        raise typer.Exit(1)
+        run_server(config_path, port=run_port, workers=worker_count)
+    finally:
+        if temp_tools_dir and temp_tools_dir.exists():
+            shutil.rmtree(temp_tools_dir)
 
 
 @app.command()
@@ -871,170 +850,6 @@ if __name__ == "__main__":
                 f"🧹 Cleaned up temporary tools directory: [dim]{tools_dir}[/dim]"
             )
 
-
-def _serve_with_docker(
-    config_path: Path,
-    tool_files: List[Path],
-    dockerfile: Optional[str],
-    env_file_path: Optional[Path],
-    tag: str,
-    port: int,
-    build: bool,
-    detach: bool,
-) -> None:
-    """Serve the agent using Docker."""
-    try:
-        client = docker.from_env()
-    except DockerException as e:
-        console.print(
-            f"❌ Could not connect to Docker daemon: {e}",
-            style=ERROR_COLOR,
-        )
-        raise typer.Exit(1)
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-
-        # Create build context
-        build_context = temp_path / "build"
-        build_context.mkdir()
-
-        # Copy config file
-        shutil.copy2(config_path, build_context / "config.agent.yaml")
-        console.print(
-            f"📄 Copied config: [dim]{config_path}[/dim] → [dim]build/config.agent.yaml[/dim]"
-        )
-
-        # Create tools directory structure
-        tools_dir = build_context / "tools"
-        tools_dir.mkdir()
-
-        # Copy tool files to tools directory
-        for tool_file in tool_files:
-            dest_file = tools_dir / tool_file.name
-            shutil.copy2(tool_file, dest_file)
-            console.print(
-                f"📄 Copied tool: [dim]{tool_file}[/dim] → [dim]build/tools/{tool_file.name}[/dim]"
-            )
-
-        # Create Dockerfile if not provided (use nomos-base:latest)
-        if not dockerfile:
-            dockerfile_content = """FROM chandralegend/nomos-base:latest
-
-# Copy configuration and tools
-COPY config.agent.yaml /app/config.agent.yaml
-COPY tools/ /app/src/tools/
-
-# Expose port
-EXPOSE 8000
-
-# The base image already has the entrypoint configured
-"""
-            dockerfile_path = build_context / "Dockerfile"
-            dockerfile_path.write_text(dockerfile_content)
-            console.print("📄 Created Dockerfile using nomos-base:latest")
-        else:
-            # Copy custom Dockerfile
-            shutil.copy2(dockerfile, build_context / "Dockerfile")
-            console.print(f"📄 Copied custom Dockerfile: [dim]{dockerfile}[/dim]")
-
-        if build:
-            console.print("🔨 Building Docker image...", style=PRIMARY_COLOR)
-
-            try:
-                # Build the Docker image using the docker library
-                image, build_logs = client.images.build(
-                    path=str(build_context), tag=tag, rm=True, pull=False
-                )
-
-                # Print build logs (optional, for debugging)
-                for log in build_logs:
-                    if "stream" in log:
-                        # Remove the newline to avoid double spacing
-                        stream_msg = log["stream"].rstrip("\n")
-                        if stream_msg:  # Only print non-empty messages
-                            console.print(f"🔧 {stream_msg}", style="dim")
-
-                console.print("✅ Docker image built successfully", style=SUCCESS_COLOR)
-
-            except BuildError as e:
-                console.print("❌ Docker build failed:", style=ERROR_COLOR)
-                for log in e.build_log:
-                    if "stream" in log:
-                        console.print(log["stream"].rstrip("\n"), style=ERROR_COLOR)
-                raise typer.Exit(1)
-            except DockerException as e:
-                console.print(f"❌ Docker build error: {e}", style=ERROR_COLOR)
-                raise typer.Exit(1)
-
-        mode_text = "in detached mode" if detach else "in foreground"
-        console.print(
-            f"🚀 Starting Docker container on port {port} {mode_text}...",
-            style=PRIMARY_COLOR,
-        )
-        console.print(f"📁 Build context: [dim]{build_context}[/dim]")
-
-        # Prepare environment variables
-        environment = {}
-        if env_file_path:
-            env_vars = _parse_env_file(env_file_path)
-            console.print(
-                f"🔧 Loading {len(env_vars)} environment variables from [dim]{env_file_path}[/dim]"
-            )
-            environment.update(env_vars)
-
-        try:
-            if detach:
-                # Run the Docker container in detached mode
-                container = client.containers.run(
-                    tag,
-                    detach=True,  # Run in background
-                    remove=True,  # Equivalent to --rm
-                    ports={"8000/tcp": port},  # Port mapping
-                    environment=environment,
-                    name=f"{tag}-{port}",  # Give it a predictable name
-                )
-
-                console.print(
-                    "✅ Container started in detached mode", style=SUCCESS_COLOR
-                )
-                console.print(f"🐳 Container ID: [dim]{container.short_id}[/dim]")
-                console.print(
-                    f"🌐 Agent accessible at: [bold]http://localhost:{port}[/bold]"
-                )
-                console.print(
-                    f"📋 To view logs: [dim]docker logs -f {container.short_id}[/dim]"
-                )
-                console.print(
-                    f"🛑 To stop: [dim]docker stop {container.short_id}[/dim]"
-                )
-
-            else:
-                # Run the Docker container in foreground mode
-                container = client.containers.run(
-                    tag,
-                    detach=False,  # Run in foreground to see output
-                    remove=True,  # Equivalent to --rm
-                    ports={"8000/tcp": port},  # Port mapping
-                    environment=environment,
-                    stdout=True,
-                    stderr=True,
-                    stream=True,
-                )
-
-                # Since we're running with detach=False and stream=True,
-                # the container.run() will block and stream output
-
-        except DockerException as e:
-            console.print(f"❌ Docker run failed: {e}", style=ERROR_COLOR)
-            raise typer.Exit(1)
-        except KeyboardInterrupt:
-            if not detach:
-                console.print("\n👋 Docker container stopped.", style=WARNING_COLOR)
-            else:
-                console.print(
-                    "\n👋 Detached container continues running.", style=WARNING_COLOR
-                )
 
 
 def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
