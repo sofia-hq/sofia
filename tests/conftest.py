@@ -17,11 +17,23 @@ class MockLLM(LLMBase):
         """Initialize mock LLM."""
         self.response = None
         self.messages_received = []
+        self._generate_response = None
 
     def set_response(self, response: BaseModel):
         """Set the responses that the mock LLM will return."""
         log_error(f"Setting mock response: {response}")
         self.response = response
+
+    def set_generate_response(self, response: str) -> None:
+        """Set the response returned by ``generate``."""
+        self._generate_response = response
+
+    def generate(self, messages: List[Message], **kwargs: dict) -> str:
+        """Return a preset string response and capture messages."""
+        self.messages_received = messages
+        if self._generate_response is None:
+            raise ValueError("No generate response available")
+        return self._generate_response
 
     def get_output(
         self, messages: List[Message], response_format: BaseModel, **kwargs: dict
