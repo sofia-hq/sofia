@@ -695,9 +695,7 @@ def _run_development_server(
     current_dir = Path.cwd()
 
     # Collect tool directories
-    tool_dirs: set[str] = set(
-        str(p if p.is_dir() else p.parent) for p in tool_files
-    )
+    tool_dirs: set[str] = {str(p if p.is_dir() else p.parent) for p in tool_files}
     default_tool_dir = current_dir / "tools"
     if default_tool_dir.exists():
         tool_dirs.add(str(default_tool_dir))
@@ -758,7 +756,9 @@ if __name__ == '__main__':
     main()
 """
 
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_script:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".py", delete=False
+    ) as temp_script:
         temp_script.write(dev_server_code)
         temp_script_path = temp_script.name
 

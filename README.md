@@ -623,7 +623,7 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 ## Custom Tool Files
 
-You can organize your own tools in Python modules or keep them inside a `tools/` directory.  
+You can organize your own tools in Python modules or keep them inside a `tools/` directory.
 Each module should export a list named `tools` containing the functions you want
 the agent to use.
 
