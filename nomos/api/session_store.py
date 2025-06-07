@@ -255,9 +255,9 @@ async def create_session_store() -> SessionStore:
     # Try to initialize database connection
     if os.getenv("DATABASE_URL"):
         try:
-            from db import get_session as get_db_session
+            from .db import get_session
 
-            db_session = await get_db_session()
+            db_session = await get_session()
         except Exception as e:
             logger.warning(f"Failed to initialize database: {e}")
 
