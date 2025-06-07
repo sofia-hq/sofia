@@ -25,6 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
+## [Unreleased]
+
+### Added
+- Included `py.typed` marker for type checking support.
+
 ## [0.2.1] - 2025-06-06
 
 ### Added

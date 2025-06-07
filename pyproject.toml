@@ -68,6 +68,10 @@ testpaths = [
     "tests",
 ]
 
+[tool.poetry]
+packages = [{ include = "nomos" }]
+include = ["nomos/py.typed"]
+
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.5"
