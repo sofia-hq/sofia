@@ -71,3 +71,27 @@ def get_weather(location: str) -> str:
             fallback="Tell the user that the weather service is currently unavailable."
         )
 ```
+
+### Tool Files
+
+Nomos discovers tools from Python modules. When using the CLI you can supply one
+or more files with `--tools`. Each file must export a list named `tools`:
+
+```python
+# tools/my_tools.py
+def greet(name: str) -> str:
+    return f"Hello {name}!"
+
+tools = [greet]
+```
+
+Run the agent with your custom tools:
+
+```bash
+nomos run --config config.agent.yaml --tools tools/my_tools.py
+```
+
+The CLI sets the `TOOLS_PATH` environment variable so the API server loads these
+modules in place. If you're embedding Nomos in another application, set
+`TOOLS_PATH` yourself to a colon-separated list of directories containing tool
+modules.

@@ -621,6 +621,33 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 > **NOTE**: Make sure the package is installed in your environment and function returns an output that is string representable.
 
+## Custom Tool Files
+
+You can organize your own tools in Python modules or keep them inside a `tools/` directory.
+Each module should export a list named `tools` containing the functions you want
+the agent to use.
+
+```python
+# tools/my_tools.py
+def greet(name: str) -> str:
+    """Return a simple greeting."""
+    return f"Hello {name}!"
+
+tools = [greet]
+```
+
+Run the CLI and provide the tool file with `--tools` (you can specify multiple
+files):
+
+```bash
+nomos run --config config.agent.yaml --tools tools/my_tools.py
+```
+
+The command sets the `TOOLS_PATH` environment variable so the API server loads
+your modules directly. When embedding Nomos in your own application, set
+`TOOLS_PATH` to a colon-separated list of directories containing your tool
+modules.
+
 ## Examples
 
 ### Example: Barista Agent
