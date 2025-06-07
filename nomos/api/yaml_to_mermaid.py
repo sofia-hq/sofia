@@ -17,7 +17,6 @@ import argparse
 import datetime
 import json
 import re
-import sys
 from typing import Any, Dict, List, Set
 
 from nomos.utils.logging import log_error, log_info
@@ -612,9 +611,7 @@ Examples:
         try:
             with open(args.output, "w", encoding="utf-8") as f:
                 f.write(final_output)
-            log_info(
-                f"✅ Enhanced flowchart generated successfully: {args.output}"
-            )
+            log_info(f"✅ Enhanced flowchart generated successfully: {args.output}")
         except IOError as e:
             log_error(f"❌ Error writing to file: {e}")
             raise
