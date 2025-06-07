@@ -54,7 +54,7 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
 
         fields[field_name] = (field_type, field_info)
 
-    return create_model(name, **fields, __config__=ConfigDict(extra="forbid"))
+    return create_model(name, **fields, __config__=ConfigDict(extra="ignore"))
 
 
 def create_enum(name: str, values: Dict[str, Any]) -> Enum:

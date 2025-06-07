@@ -4,10 +4,10 @@ import datetime
 import os
 import pathlib
 import uuid
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import AsyncGenerator, List, Optional, Union
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -136,6 +136,80 @@ async def get_session_history(session_id: str) -> dict:
         if isinstance(msg, FlowMessage) and msg.role not in ["error", "fallback"]
     ]
     return {"session_id": session_id, "history": history_json}
+
+
+async def _handle_websocket(
+    websocket: WebSocket,
+    session_id: Optional[str],
+    initiate: bool,
+    verbose: bool,
+) -> None:
+    """Handle real-time chat via WebSocket."""
+    assert session_store is not None, "Session store not initialized"
+    await websocket.accept()
+
+    created = session_id is None
+    if created:
+        sid = str(uuid.uuid4())
+        session = agent.create_session()
+        await session_store.set(sid, session)
+    else:
+        assert session_id is not None
+        sid = session_id
+        session_opt = await session_store.get(sid)
+        if session_opt is None:
+            await websocket.send_json({"error": "Session not found"})
+            await websocket.close()
+            return
+        session = session_opt
+
+    if initiate:
+        decision, _ = session.next(None)
+        await session_store.set(sid, session)
+        await websocket.send_json(
+            {"session_id": sid, "message": decision.model_dump(mode="json")}
+        )
+    elif created:
+        await websocket.send_json({"session_id": sid})
+
+    with suppress(WebSocketDisconnect):
+        while True:
+            data = await websocket.receive_json()
+            if data.get("close"):
+                await websocket.close()
+                break
+
+            user_message = data.get("message")
+            if user_message is None:
+                await websocket.send_json({"error": "Invalid message"})
+                continue
+
+            decision, _ = session.next(user_message)
+            await session_store.set(sid, session)
+            await websocket.send_json(
+                {"session_id": sid, "message": decision.model_dump(mode="json")}
+            )
+
+
+@app.websocket("/ws")
+async def websocket_create(
+    websocket: WebSocket,
+    initiate: Optional[bool] = False,
+    verbose: Optional[bool] = False,
+) -> None:
+    """Create a new session and handle WebSocket communication."""
+    await _handle_websocket(websocket, None, bool(initiate), bool(verbose))
+
+
+@app.websocket("/ws/{session_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    session_id: str,
+    initiate: Optional[bool] = False,
+    verbose: Optional[bool] = False,
+) -> None:
+    """Continue an existing session over WebSocket."""
+    await _handle_websocket(websocket, session_id, bool(initiate), bool(verbose))
 
 
 @app.post("/chat")

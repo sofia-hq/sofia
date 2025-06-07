@@ -194,27 +194,37 @@ def create_decision_model(
         "action": {"type": ActionEnum, "description": "Next Action"},
     }
 
-    response_desc = []
-    response_types = []
-    params["response"] = {}
     if not current_step.auto_flow:
         if current_step.answer_model:
             answer_model = current_step.get_answer_model()
-            response_desc.append(f"Response ({answer_model.__name__}) if ANSWER.")
-            response_types.append(answer_model)
-            response_desc.append("Response (String) if ASK.")
-            response_types.append(str)
+            response_type = Union.__getitem__((str, answer_model))
+            response_desc = (
+                f"Response as string if ASK or {answer_model.__name__} if ANSWER."
+            )
         else:
-            response_desc.append("Response (String) if ASK or ANSWER.")
-            response_types.append(str)
+            response_type = str
+            response_desc = "Response (String) if ASK or ANSWER."
+        params["response"] = {
+            "type": response_type,
+            "description": response_desc,
+            "optional": True,
+            "default": None,
+        }
         if current_step.quick_suggestions:
             params["suggestions"] = {
                 "type": List[str],
                 "description": "Quick User Input Suggestions for the User to Choose if ASK.",
+                "optional": True,
+                "default": None,
             }
+
     if len(available_step_ids) > 0:
-        response_desc.append("Step Id (String) if MOVE.")
-        response_types.append(Literal.__getitem__(tuple(available_step_ids)))
+        params["step_transition"] = {
+            "type": Literal.__getitem__(tuple(available_step_ids)),
+            "description": "Step Id (String) if MOVE.",
+            "optional": True,
+            "default": None,
+        }
 
     if len(tool_ids) > 0 and len(tool_models) > 0:
         tool_call_model = create_base_model(
@@ -234,13 +244,14 @@ def create_decision_model(
                 },
             },
         )
-        response_desc.append("Tool Call (ToolCall) if TOOL_CALL.")
-        response_types.append(tool_call_model)
-    assert (
-        len(response_desc) > 0 and len(response_types) > 0
-    ), "Something went wrong, Please check the step configuration."
-    params["response"]["type"] = Union.__getitem__(tuple(response_types))
-    params["response"]["description"] = " | ".join(response_desc)
+        params["tool_call"] = {
+            "type": tool_call_model,
+            "description": "Tool Call (ToolCall) if TOOL_CALL.",
+            "optional": True,
+            "default": None,
+        }
+
+    assert len(params) > 2, "Something went wrong, Please check the step configuration."
 
     return create_base_model(
         "Decision",
