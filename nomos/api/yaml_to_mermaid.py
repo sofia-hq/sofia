@@ -20,6 +20,8 @@ import re
 import sys
 from typing import Any, Dict, List, Set
 
+from nomos.utils.logging import log_error, log_info
+
 import yaml
 
 
@@ -123,11 +125,11 @@ def parse_yaml_config(file_path: str) -> Dict[str, Any]:
         with open(file_path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
     except FileNotFoundError:
-        print(f"Error: File '{file_path}' not found.")
-        sys.exit(1)
+        log_error(f"Error: File '{file_path}' not found.")
+        raise
     except yaml.YAMLError as e:
-        print(f"Error parsing YAML: {e}")
-        sys.exit(1)
+        log_error(f"Error parsing YAML: {e}")
+        raise ValueError(f"Error parsing YAML: {e}")
 
 
 def generate_mermaid_flowchart(
@@ -610,12 +612,14 @@ Examples:
         try:
             with open(args.output, "w", encoding="utf-8") as f:
                 f.write(final_output)
-            print(f"✅ Enhanced flowchart generated successfully: {args.output}")
+            log_info(
+                f"✅ Enhanced flowchart generated successfully: {args.output}"
+            )
         except IOError as e:
-            print(f"❌ Error writing to file: {e}")
-            sys.exit(1)
+            log_error(f"❌ Error writing to file: {e}")
+            raise
     else:
-        print(final_output)
+        log_info(final_output)
 
 
 if __name__ == "__main__":
