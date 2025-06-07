@@ -112,7 +112,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     tool_response = tool_model(
         reasoning=["Need to use test tool"],
         action=Action.TOOL_CALL.value,
-        response={
+        tool_call={
             "tool_name": "test_tool",
             "tool_kwargs": {"arg0": "test_arg"},
         },
@@ -126,7 +126,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     assert session.llm.messages_received[1].role == "user"
     assert "Use the tool" in session.llm.messages_received[1].content
     assert decision.action.value == Action.TOOL_CALL.value
-    assert decision.response.tool_name == "test_tool"
+    assert decision.tool_call.tool_name == "test_tool"
     assert tool_result == "Test tool 0 response: test_arg"
 
     # Verify tool message in history
@@ -154,7 +154,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     tool_response = tool_model(
         reasoning=["Need to use combinations tool"],
         action=Action.TOOL_CALL.value,
-        response={
+        tool_call={
             "tool_name": "combinations",
             "tool_kwargs": {"iterable": "abc", "r": 2},
         },
@@ -188,7 +188,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
     invalid_response = tool_model(
         action=Action.TOOL_CALL.value,
         reasoning=["Testing invalid args"],
-        response={
+        tool_call={
             "tool_name": "test_tool",
             "tool_kwargs": {"arg1": "value"},  # Invalid argument
         },

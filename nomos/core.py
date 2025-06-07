@@ -363,7 +363,9 @@ class Session:
 
         self._add_step_identifier(self.current_step.get_step_identifier())
         action = decision.action.value
-        response: Union[str, BaseModel] = decision.response
+        response = getattr(decision, "response", None)
+        tool_call = getattr(decision, "tool_call", None)
+        step_transition = getattr(decision, "step_transition", None)
         if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
             self._add_message(self.name, str(response))
             return decision, None
@@ -371,10 +373,10 @@ class Session:
             _error: Optional[Exception] = None
             try:
                 assert (
-                    response.__class__.__name__ == "ToolCall"
+                    tool_call is not None and tool_call.__class__.__name__ == "ToolCall"
                 ), "Expected ToolCall response"
-                tool_name: str = response.tool_name  # type: ignore
-                tool_kwargs_model: BaseModel = response.tool_kwargs  # type: ignore
+                tool_name: str = tool_call.tool_name  # type: ignore
+                tool_kwargs_model: BaseModel = tool_call.tool_kwargs  # type: ignore
                 tool_kwargs: dict = tool_kwargs_model.model_dump()
                 log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
                 try:
@@ -404,7 +406,7 @@ class Session:
             )
         elif action == ACTION_ENUMS["MOVE"]:
             _error = None
-            if response in self.current_step.get_available_routes():
+            if step_transition in self.current_step.get_available_routes():
                 # Check if we need to exit current flow before moving
                 if self.current_flow and self.flow_context:
                     exit_flows = (
@@ -415,7 +417,7 @@ class Session:
                     if self.current_flow in exit_flows:
                         self._exit_flow(self.current_step.step_id)
 
-                self.current_step = self.steps[response]
+                self.current_step = self.steps[step_transition]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
@@ -425,10 +427,10 @@ class Session:
             else:
                 self._add_message(
                     "error",
-                    f"Invalid route: {response} not in {self.current_step.get_available_routes()}",
+                    f"Invalid route: {step_transition} not in {self.current_step.get_available_routes()}",
                 )
                 _error = ValueError(
-                    f"Invalid route: {response} not in {self.current_step.get_available_routes()}"
+                    f"Invalid route: {step_transition} not in {self.current_step.get_available_routes()}"
                 )
             if return_step_transition:
                 return decision, None

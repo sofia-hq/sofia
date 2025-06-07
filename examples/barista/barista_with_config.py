@@ -20,7 +20,7 @@ user_input = None
 while True:
     decision, _ = sess.next(user_input)
     if decision.action.value in [Action.ASK.value, Action.ANSWER.value]:
-        user_input = input(f"Assistant: {decision.input}\nYou: ")
+        user_input = input(f"Assistant: {decision.response}\nYou: ")
     elif decision.action.value == Action.END.value:
         print("Session ended.")
         break

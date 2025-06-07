@@ -54,7 +54,9 @@ Creates a new agent session.
   "session_id": "uuid-string",
   "message": {
     "action": "answer | ask | tool_call | move",
-    "input": "Agent's response text"
+    "response": "Agent's response text",
+    "tool_call": null,
+    "step_transition": null
   }
 }
 ```
@@ -115,7 +117,9 @@ Creates a new agent session.
 {
   "response": {
     "action": "answer | ask | tool_call | move",
-    "input": "Agent's response text"
+    "response": "Agent's response text",
+    "tool_call": null,
+    "step_transition": null
   },
   "tool_output": null,
   "session_data": {
