@@ -49,7 +49,7 @@ class Gemini(LLMBase):
         system_message = next(msg.content for msg in messages if msg.role == "system")
         user_message = next(msg.content for msg in messages if msg.role == "user")
 
-        comp = self.client.chat.parse(
+        comp = self.client.models.generate_content(
             model=self.model,
             contents=[user_message],
             config=types.GenerateContentConfig(
