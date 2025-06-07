@@ -1,0 +1,38 @@
+---
+title: TypeScript SDK
+description: Use Nomos from Node applications
+---
+
+Install the package from npm:
+
+```bash
+npm install nomos-sdk
+```
+
+### Stateless Chat
+
+```ts
+import { NomosClient } from 'nomos-sdk';
+const client = new NomosClient('http://localhost:8000');
+const { response, session_data } = await client.chat({ user_input: 'hello' });
+console.log(response);
+
+// use session_data to send follow up messages
+const again = await client.chat({
+  user_input: 'continue',
+  session_data,
+});
+console.log(again.response);
+```
+
+### Stateful Sessions
+
+```ts
+import { NomosClient } from 'nomos-sdk';
+
+const client = new NomosClient();
+const { session_id } = await client.createSession(true);
+await client.sendMessage(session_id, 'hi');
+const history = await client.getSessionHistory(session_id);
+await client.endSession(session_id);
+```

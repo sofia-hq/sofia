@@ -1,0 +1,24 @@
+{
+  "name": "nomos-sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts --max-warnings 0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "@typescript-eslint/eslint-plugin": "^6.20.0",
+    "@typescript-eslint/parser": "^6.20.0",
+    "eslint": "^8.56.0",
+    "vitest": "^1.1.0",
+    "nock": "^13.3.0",
+    "typescript": "^5.3.3"
+  }
+}
