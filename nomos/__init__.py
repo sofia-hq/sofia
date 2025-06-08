@@ -11,8 +11,8 @@ from .models.flow import Flow, FlowComponent, FlowConfig, FlowContext, FlowManag
 from .server import run_server
 from .utils.flow_utils import create_flows_from_config
 
-__version__ = "0.2.1"
-__author__ = "Chandra Irugalbandara"
+__version__ = "0.2.2"
+__author__ = "DoWhile"
 
 __all__ = [
     "Agent",
