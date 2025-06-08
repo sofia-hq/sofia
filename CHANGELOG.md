@@ -28,7 +28,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+## [0.2.2] - 2025-06-08
+
+### Added
+- Built-in FastAPI server with WebSocket support.
+- TypeScript Nomos SDK for REST integration.
+- Environment variables to configure logging.
 - Included `py.typed` marker for type checking support.
+
+### Changed
+- Base Docker image now uses the built-in server.
+- CLI loads tools without temporary directories.
+
+### Fixed
+- Gemini completion and session store import issues.
 
 ## [0.2.1] - 2025-06-06
 
