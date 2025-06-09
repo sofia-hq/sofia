@@ -28,4 +28,27 @@ describe('NomosClient', () => {
     const result = await client.chat(req);
     expect(result).toEqual(resp);
   });
+
+  it('sendMessage posts message content', async () => {
+    const resp: SessionResponse = { session_id: '1', message: { ok: true } };
+    nock(base)
+      .post('/session/1/message', { content: 'hello' } as unknown as DataMatcherMap)
+      .reply(200, resp);
+    const result = await client.sendMessage('1', 'hello');
+    expect(result).toEqual(resp);
+  });
+
+  it('endSession deletes session', async () => {
+    const resp = { message: 'ended' };
+    nock(base).delete('/session/1').reply(200, resp);
+    const result = await client.endSession('1');
+    expect(result).toEqual(resp);
+  });
+
+  it('getSessionHistory returns history', async () => {
+    const resp = { session_id: '1', history: [{ content: 'hi' }] };
+    nock(base).get('/session/1/history').reply(200, resp);
+    const result = await client.getSessionHistory('1');
+    expect(result).toEqual(resp);
+  });
 });
