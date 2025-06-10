@@ -20,7 +20,7 @@ from .models.agent import (
     create_decision_model,
 )
 from .models.flow import Flow, FlowContext, FlowManager
-from .models.tool import FallbackError, Tool
+from .models.tool import FallbackError, MCPServer, Tool
 from .utils.flow_utils import (
     create_flows_from_config,
     should_enter_flow,
@@ -42,6 +42,7 @@ class Session:
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
         tools: Optional[List[Union[Callable, str]]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -61,6 +62,7 @@ class Session:
         :param system_message: Optional system message.
         :param persona: Optional persona string.
         :param tools:  List of tool callables or package identifiers (e.g., "math:add").
+        :param mcp_servers: List of MCPServer instances for tool discovery.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -92,6 +94,9 @@ class Session:
             log_debug(
                 f"Flow manager initialized with {len(self.flow_manager.flows)} flows"
             )
+
+        # MCP servers management
+        self.mcp_servers = mcp_servers or []
 
         tool_arg_descs = (
             self.config.tool_arg_descriptions
@@ -169,6 +174,7 @@ class Session:
             raise ValueError(
                 f"Tool '{tool_name}' not found in session tools. Please check the tool name."
             )
+
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
         return tool.run(**kwargs)
 
@@ -495,6 +501,7 @@ class Agent:
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
         tools: Optional[List[Union[Callable, str]]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -510,6 +517,7 @@ class Agent:
         :param persona: Optional persona string.
         :param system_message: Optional system message.
         :param tools: List of tool callables.
+        :param mcp_servers: List of MCPServer instances for tool discovery.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -525,9 +533,12 @@ class Agent:
         self.max_errors = max_errors
         self.max_iter = max_iter
         tool_set = set(tools) if tools else set()
+        self.mcp_servers: List[MCPServer] = mcp_servers or []
+
         for step in self.steps.values():
             _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
             tool_set.update(_pkg_tools)
+
         self.tools = list(tool_set)
         self.config = config
 
@@ -574,6 +585,7 @@ class Agent:
         config: AgentConfig,
         llm: Optional[LLMBase] = None,
         tools: Optional[List[Union[Callable, str]]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
     ) -> "Agent":
         """
         Create an Agent from an AgentConfig object.
@@ -581,6 +593,7 @@ class Agent:
         :param llm: LLMBase instance.
         :param config: AgentConfig instance.
         :param tools: List of tool callables.
+        :param mcp_servers: List of MCPServer instances for tool discovery.
         :return: Nomos instance.
         """
         if not llm:
@@ -589,6 +602,7 @@ class Agent:
                     "No LLM provided. Please provide an LLM or a config with an LLM."
                 )
             llm = config.llm.get_llm()
+
         return cls(
             llm=llm,
             name=config.name,
@@ -597,6 +611,7 @@ class Agent:
             system_message=config.system_message,
             persona=config.persona,
             tools=tools or [],
+            mcp_servers=mcp_servers,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
             max_iter=config.max_iter,
@@ -620,6 +635,7 @@ class Agent:
                 if self.config and self.config.memory
                 else Memory()
             )
+
         return Session(
             name=self.name,
             llm=self.llm,
@@ -629,6 +645,7 @@ class Agent:
             system_message=self.system_message,
             persona=self.persona,
             tools=self.tools,
+            mcp_servers=self.mcp_servers,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
