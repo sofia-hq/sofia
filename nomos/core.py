@@ -20,7 +20,14 @@ from .models.agent import (
     create_decision_model,
 )
 from .models.flow import Flow, FlowContext, FlowManager
-from .models.tool import FallbackError, MCPServer, Tool
+from .models.tool import (
+    FallbackError,
+    MCPServer,
+    RemoteTool,
+    Tool,
+    is_package_tool,
+    is_remote_tool,
+)
 from .utils.flow_utils import (
     create_flows_from_config,
     should_enter_flow,
@@ -96,7 +103,9 @@ class Session:
             )
 
         # MCP servers management
-        self.mcp_servers = mcp_servers or []
+        self.mcp_servers = {
+            mcp.name: mcp for mcp in mcp_servers or []
+        }  # Ensure unique MCP servers
 
         tool_arg_descs = (
             self.config.tool_arg_descriptions
@@ -307,6 +316,7 @@ class Session:
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory_context = flow_memory.memory.context
 
+        remote_tools = self._get_remote_tools_for_step(self.current_step)
         decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
@@ -315,6 +325,7 @@ class Session:
             response_format=route_decision_model,
             system_message=self.system_message,
             persona=self.persona,
+            remote_tools=remote_tools,
         )
         log_debug(f"Model decision: {decision}")
         return decision
@@ -488,6 +499,29 @@ class Session:
 
         log_debug(f"Step identifier added: {step_identifier.step_id}")
 
+    def _get_remote_tools_for_step(self, step: Step) -> List[RemoteTool]:
+        """
+        Get the list of remote tools available in the given step.
+
+        :param step: The Step object to check.
+        :return: List of RemoteTool instances for remote tools.
+        """
+        remote_tools = []
+        for tool_name in step.remote_tools:
+            server_type, server_name, name = tool_name.split(":")
+            if server_type == RemoteTool.RemoteToolType.mcp.value:
+                mcp_server = self.mcp_servers.get(server_name)
+                if not mcp_server:
+                    log_error(
+                        f"MCP server '{server_name}' not found for step '{step.step_id}'."
+                    )
+                    continue
+                remote_tools.append(
+                    RemoteTool.from_mcp_server(server=mcp_server, tool_name=name)
+                )
+
+        return remote_tools
+
 
 class Agent:
     """Main interface for creating and managing Nomos Agents."""
@@ -536,7 +570,9 @@ class Agent:
         self.mcp_servers: List[MCPServer] = mcp_servers or []
 
         for step in self.steps.values():
-            _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
+            _pkg_tools = [
+                tool for tool in step.available_tools if is_package_tool(tool)
+            ]
             tool_set.update(_pkg_tools)
 
         self.tools = list(tool_set)
@@ -565,18 +601,31 @@ class Agent:
         # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
-                for tool in self.tools:
-                    if (callable(tool) and tool.__name__ == step_tool) or (
-                        isinstance(tool, str) and tool == step_tool
-                    ):
-                        break
+                if is_remote_tool(step_tool):
+                    mcp_server_name = step_tool.split(":")[1]
+                    for mcp_server in self.mcp_servers:
+                        if mcp_server.name == mcp_server_name:
+                            break
+                    else:
+                        log_error(
+                            f"MCP server {mcp_server_name} not found for step {step.step_id}"
+                        )
+                        raise ValueError(
+                            f"MCP server {mcp_server_name} not found for step {step.step_id}"
+                        )
                 else:
-                    log_error(
-                        f"Tool {step_tool} not found in tools for step {step.step_id}"
-                    )
-                    raise ValueError(
-                        f"Tool {step_tool} not found in tools for step {step.step_id}"
-                    )
+                    for tool in self.tools:
+                        if (callable(tool) and tool.__name__ == step_tool) or (
+                            isinstance(tool, str) and tool == step_tool
+                        ):
+                            break
+                    else:
+                        log_error(
+                            f"Tool {step_tool} not found in tools for step {step.step_id}"
+                        )
+                        raise ValueError(
+                            f"Tool {step_tool} not found in tools for step {step.step_id}"
+                        )
         log_debug(f"FlowManager initialized with start step '{start_step_id}'")
 
     @classmethod
@@ -585,7 +634,6 @@ class Agent:
         config: AgentConfig,
         llm: Optional[LLMBase] = None,
         tools: Optional[List[Union[Callable, str]]] = None,
-        mcp_servers: Optional[List[MCPServer]] = None,
     ) -> "Agent":
         """
         Create an Agent from an AgentConfig object.
@@ -611,7 +659,7 @@ class Agent:
             system_message=config.system_message,
             persona=config.persona,
             tools=tools or [],
-            mcp_servers=mcp_servers,
+            mcp_servers=config.mcp_servers,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
             max_iter=config.max_iter,
@@ -699,6 +747,7 @@ class Agent:
             llm=self.llm,
             memory=memory,
             tools=self.tools,
+            mcp_servers=self.mcp_servers,
             config=self.config,
             persona=self.persona,
             steps=self.steps,

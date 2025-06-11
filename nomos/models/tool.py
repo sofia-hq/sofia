@@ -1,13 +1,38 @@
 """Tool abstractions and related logic for the Nomos package."""
 
 import inspect
+from enum import Enum
 from typing import Any, Callable, Dict, Optional, Type
+
 
 from docstring_parser import parse
 
 from pydantic import BaseModel, HttpUrl, SecretStr, ValidationError
 
 from ..utils.utils import create_base_model
+
+
+def is_remote_tool(tool_name: str) -> bool:
+    """
+    Check if a tool name is an Remote tool.
+
+    :param tool_name: The name of the tool.
+    :return: True if it is an Remote tool, False otherwise.
+    """
+    if "mcp:" in tool_name:
+        return True
+
+    return False
+
+
+def is_package_tool(tool_name: str) -> bool:
+    """
+    Check if a tool name is a package tool.
+
+    :param tool_name: The name of the tool.
+    :return: True if it is a package tool, False otherwise.
+    """
+    return ":" in tool_name and not is_remote_tool(tool_name)
 
 
 class Tool(BaseModel):
@@ -227,4 +252,42 @@ class MCPServer(BaseModel):
     path: Optional[str] = ""
 
 
-__all__ = ["Tool", "FallbackError", "MCPServer", "MCPToolError"]
+class RemoteTool(BaseModel):
+    """
+    Represents a remote tool.
+
+    Attributes:
+        name (str): The function to be executed when the tool is called.
+        server (MCPServer): The MCP server that provides this tool.
+    """
+
+    class RemoteToolType(str, Enum):
+        """Enum for different types of remote tools."""
+
+        mcp = "mcp"
+
+    type: RemoteToolType
+    name: str
+    server: MCPServer
+
+    def is_type_mcp(self) -> bool:
+        """
+        Check if the remote tool is of type MCP.
+
+        :return: True if the tool is an MCP tool, False otherwise.
+        """
+        return self.type == self.RemoteToolType.mcp
+
+    @classmethod
+    def from_mcp_server(cls, server: MCPServer, tool_name: str) -> "RemoteTool":
+        """
+        Create a RemoteTool instance from an MCP server and tool name.
+
+        :param server: The MCP server that provides this tool.
+        :param tool_name: The name of the tool.
+        :return: An instance of RemoteTool.
+        """
+        return cls(type=cls.RemoteToolType.mcp, name=tool_name, server=server)
+
+
+__all__ = ["Tool", "FallbackError", "MCPServer", "MCPToolError", "RemoteTool"]
