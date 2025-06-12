@@ -1,6 +1,6 @@
 [project]
 name = "nomos"
-version = "0.2.1"
+version = "0.2.2"
 description = "Configurable multi-step agent framework for building advanced LLM-powered assistants"
 authors = [
     {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}
@@ -67,6 +67,10 @@ addopts = "-ra -q --cov=nomos --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
+
+[tool.poetry]
+packages = [{ include = "nomos" }]
+include = ["nomos/py.typed"]
 
 
 [tool.poetry.group.dev.dependencies]
