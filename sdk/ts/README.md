@@ -18,7 +18,7 @@ npm install nomos-sdk
 > ```javascript
 > // ES Module (recommended)
 > import { NomosClient } from 'nomos-sdk';
-> 
+>
 > // CommonJS (use dynamic import)
 > const { NomosClient } = await import('nomos-sdk');
 > ```

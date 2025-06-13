@@ -66,7 +66,7 @@ jobs:
           npm install ../sdk/ts
           echo "Testing ES Module import..."
           node -e "import('nomos-sdk').then(sdk => console.log('✅ ES Module SDK loaded successfully:', typeof sdk.NomosClient))"
-          
+
           # Test CommonJS compatibility (using dynamic import)
           cd ..
           mkdir -p test-install-cjs
