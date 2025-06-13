@@ -571,19 +571,53 @@
                             <span class="gradient-text">AI Agent Ready in Few Easy Steps</span>
                         </div>
 
-                        <!-- Command 1: Install -->
-                        <div class="group relative">
-                            <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('pip install nomos[cli,openai]', this)">
-                                <div class="flex items-center space-x-3">
-                                    <span class="text-gray-400">$</span>
-                                    <span class="text-green-400">pip install nomos[cli,openai]</span>
+                        <!-- Installation Options -->
+                        <div class="mb-4">
+                            <div class="text-gray-300 text-sm mb-3 font-medium">Choose your stack:</div>
+
+                            <!-- Python Installation -->
+                            <div class="mb-3">
+                                <div class="text-gray-400 text-xs mb-2 flex items-center">
+                                    <i data-lucide="terminal" class="w-3 h-3 mr-1"></i>
+                                    Python CLI & Server
                                 </div>
-                                <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
+                                <div class="group relative">
+                                    <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('pip install nomos[cli,openai]', this)">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-gray-400">$</span>
+                                            <span class="text-green-400">pip install nomos[cli,openai]</span>
+                                        </div>
+                                        <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TypeScript/JavaScript Installation -->
+                            <div class="mb-3">
+                                <div class="text-gray-400 text-xs mb-2 flex items-center">
+                                    <i data-lucide="package" class="w-3 h-3 mr-1"></i>
+                                    TypeScript/JavaScript SDK
+                                </div>
+                                <div class="group relative">
+                                    <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('npm install nomos-sdk', this)">
+                                        <div class="flex items-center space-x-3">
+                                            <span class="text-gray-400">$</span>
+                                            <span class="text-blue-400">npm install nomos-sdk</span>
+                                        </div>
+                                        <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
+                        <!-- Commands for Python CLI -->
+                        <div class="text-gray-400 text-xs mb-2 flex items-center">
+                            <i data-lucide="play" class="w-3 h-3 mr-1"></i>
+                            Quick Start (Python CLI)
+                        </div>
+
                         <!-- Command 2: Init -->
-                        <div class="group relative">
+                        <div class="group relative mb-3">
                             <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('nomos init --generate', this)">
                                 <div class="flex items-center space-x-3">
                                     <span class="text-gray-400">$</span>
@@ -594,7 +628,7 @@
                         </div>
 
                         <!-- Command 3: Serve -->
-                        <div class="group relative">
+                        <div class="group relative mb-3">
                             <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('nomos serve', this)">
                                 <div class="flex items-center space-x-3">
                                     <span class="text-gray-400">$</span>
@@ -698,7 +732,7 @@
                                 </div>
                                 <h3 class="text-2xl font-bold gradient-text">NOMOS Framework</h3>
                             </div>
-                            <ul class="space-y-4 text-gray-700">
+                            <ul class="space-y-4 text-gray-700 mb-6">
                                 <li class="flex items-start">
                                     <div class="w-6 h-6 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
                                         <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
@@ -730,6 +764,24 @@
                                     <span class="leading-relaxed">Consistent production behavior</span>
                                 </li>
                             </ul>
+
+                            <!-- npm Package Announcement -->
+                            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-200">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-semibold text-indigo-900 mb-1">🎉 TypeScript SDK Available</h4>
+                                        <p class="text-sm text-indigo-700">Build with our official npm package</p>
+                                    </div>
+                                    <a href="https://www.npmjs.com/package/nomos-sdk"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="inline-flex items-center px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors group">
+                                        <i data-lucide="package" class="w-4 h-4 mr-2"></i>
+                                        npm package
+                                        <i data-lucide="external-link" class="w-3 h-3 ml-1 group-hover:translate-x-0.5 transition-transform"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

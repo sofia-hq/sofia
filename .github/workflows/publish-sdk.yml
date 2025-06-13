@@ -70,28 +70,8 @@ jobs:
           echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
           echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release (manual trigger only)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.package_info.outputs.version }}
-          release_name: Release v${{ steps.package_info.outputs.version }}
-          body: |
-            🚀 **${{ steps.package_info.outputs.name }} v${{ steps.package_info.outputs.version }}**
-
-            Published to npm: https://www.npmjs.com/package/${{ steps.package_info.outputs.name }}
-
-            Install with:
-            ```bash
-            npm install ${{ steps.package_info.outputs.name }}
-            ```
-
-            ### Changes
-            - Updated via automated release workflow
-
-            ### Installation & Usage
-            See the [TypeScript SDK Examples](https://github.com/${{ github.repository }}/tree/main/examples/typescript-sdk-example) for usage examples.
-          draft: false
-          prerelease: false
+      - name: Display success message
+        run: |
+          echo "🎉 Successfully published ${{ steps.package_info.outputs.name }} v${{ steps.package_info.outputs.version }} to npm!"
+          echo "📦 Package URL: https://www.npmjs.com/package/${{ steps.package_info.outputs.name }}"
+          echo "📖 Install with: npm install ${{ steps.package_info.outputs.name }}"
