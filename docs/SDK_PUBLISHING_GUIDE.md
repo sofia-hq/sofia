@@ -216,6 +216,11 @@ To publish to a private registry:
 - Ensure `id-token: write` permission in workflow
 - Check GitHub Actions runner supports provenance
 
+**5. "ERR_REQUIRE_ESM" or import errors**
+- Package is published as ES module
+- CommonJS users need dynamic imports: `const sdk = await import('nomos-sdk')`
+- Or add `"type": "module"` to consuming project's package.json
+
 ### Debug Commands
 
 ```bash

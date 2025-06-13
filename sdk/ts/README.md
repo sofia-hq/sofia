@@ -14,6 +14,15 @@ A powerful TypeScript/JavaScript SDK for interacting with Nomos agents. Build co
 npm install nomos-sdk
 ```
 
+> **Note:** This package is published as an ES module. For CommonJS projects, use dynamic imports:
+> ```javascript
+> // ES Module (recommended)
+> import { NomosClient } from 'nomos-sdk';
+> 
+> // CommonJS (use dynamic import)
+> const { NomosClient } = await import('nomos-sdk');
+> ```
+
 ### Basic Usage
 
 ```typescript

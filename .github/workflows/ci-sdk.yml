@@ -57,13 +57,25 @@ jobs:
 
       - name: Test package installation
         run: |
-          # Create a test package.json to verify the built package can be installed
+          # Test ES Module installation (primary)
           cd ../..
-          mkdir -p test-install
-          cd test-install
+          mkdir -p test-install-esm
+          cd test-install-esm
           npm init -y
+          npm pkg set type=module
           npm install ../sdk/ts
-          node -e "const sdk = require('nomos-sdk'); console.log('SDK loaded successfully:', typeof sdk.NomosClient)"
+          echo "Testing ES Module import..."
+          node -e "import('nomos-sdk').then(sdk => console.log('✅ ES Module SDK loaded successfully:', typeof sdk.NomosClient))"
+          
+          # Test CommonJS compatibility (using dynamic import)
+          cd ..
+          mkdir -p test-install-cjs
+          cd test-install-cjs
+          npm init -y
+          # Keep as CommonJS (no type: module)
+          npm install ../sdk/ts
+          echo "Testing CommonJS dynamic import..."
+          node -e "import('nomos-sdk').then(sdk => console.log('✅ CommonJS dynamic import SDK loaded successfully:', typeof sdk.NomosClient))"
 
   validate-examples:
     runs-on: ubuntu-latest
