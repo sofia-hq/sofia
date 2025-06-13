@@ -147,7 +147,7 @@ async function multiSessionExample() {
     // Send different messages to each session
     const messages = [
       "I want a small latte",
-      "Do you have any tea options?", 
+      "Do you have any tea options?",
       "What's your most popular drink?"
     ];
 
@@ -186,17 +186,17 @@ async function resilientAgentExample() {
           return await this.sendMessage(message);
         } catch (error: any) {
           console.log(`⚠️  Attempt ${attempt} failed: ${error.message}`);
-          
+
           if (attempt === this.maxRetries) {
             throw error;
           }
-          
+
           console.log(`⏳ Retrying in ${this.retryDelay}ms...`);
           await new Promise(resolve => setTimeout(resolve, this.retryDelay));
           this.retryDelay *= 2; // Exponential backoff
         }
       }
-      
+
       throw new Error('Max retries exceeded');
     }
 
@@ -252,17 +252,17 @@ async function performanceExample() {
 
   try {
     await timeOperation('Session Creation', () => agent.startSession());
-    
-    await timeOperation('First Message', () => 
+
+    await timeOperation('First Message', () =>
       agent.sendMessage("What's your fastest coffee option?")
     );
-    
-    await timeOperation('Second Message', () => 
+
+    await timeOperation('Second Message', () =>
       agent.sendMessage("I'll take that please")
     );
-    
+
     await timeOperation('History Retrieval', () => agent.getHistory());
-    
+
     await timeOperation('Session Cleanup', () => agent.endSession());
 
   } catch (error: any) {
@@ -278,7 +278,7 @@ async function runAdvancedExamples() {
   console.log('===============================\n');
 
   await coffeeOrderingExample();
-  await multiSessionExample(); 
+  await multiSessionExample();
   await resilientAgentExample();
   await performanceExample();
 

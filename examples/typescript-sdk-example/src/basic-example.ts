@@ -34,11 +34,11 @@ async function basicExample() {
 
     for (const [index, message] of conversations.entries()) {
       console.log(`💬 Message ${index + 1}: "${message}"`);
-      
+
       const response = await client.sendMessage(session.session_id, message);
       console.log(`🤖 Agent response:`, formatMessage(response.message));
       console.log();
-      
+
       // Brief pause between messages
       await sleep(500);
     }
@@ -58,7 +58,7 @@ async function basicExample() {
     console.log('📜 Retrieving conversation history...');
     const history = await client.getSessionHistory(session.session_id);
     console.log(`📋 History for session ${history.session_id}:`);
-    
+
     if (history.history && Array.isArray(history.history)) {
       history.history.forEach((msg: AgentMessage, idx: number) => {
         const content = msg.content || JSON.stringify(msg);
@@ -90,20 +90,20 @@ function formatMessage(message: Record<string, unknown>): string {
   if (typeof message === 'string') {
     return message;
   }
-  
+
   // Try to extract content from common fields
   if (message.content && typeof message.content === 'string') {
     return message.content;
   }
-  
+
   if (message.text && typeof message.text === 'string') {
     return message.text;
   }
-  
+
   if (message.message && typeof message.message === 'string') {
     return message.message;
   }
-  
+
   // Fallback to JSON representation
   return JSON.stringify(message, null, 2);
 }
@@ -152,18 +152,18 @@ async function errorHandlingExample() {
  * Simple retry utility
  */
 async function withRetry<T>(
-  operation: () => Promise<T>, 
+  operation: () => Promise<T>,
   maxRetries: number = 3
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error: any) {
       lastError = error;
       console.log(`⚠️  Attempt ${attempt} failed: ${error.message}`);
-      
+
       if (attempt < maxRetries) {
         const delay = attempt * 1000; // Exponential backoff
         console.log(`⏳ Retrying in ${delay}ms...`);
@@ -171,7 +171,7 @@ async function withRetry<T>(
       }
     }
   }
-  
+
   throw lastError!;
 }
 

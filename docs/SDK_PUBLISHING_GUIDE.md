@@ -51,7 +51,7 @@ The SDK's `package.json` has been updated with:
   },
   "files": [
     "dist/**/*",
-    "README.md", 
+    "README.md",
     "LICENSE"
   ],
   "engines": {
@@ -109,7 +109,7 @@ The SDK's `package.json` has been updated with:
 
 ### Publish Workflow (`publish-sdk.yml`)
 
-**Triggers:** 
+**Triggers:**
 - GitHub releases (automatic)
 - Manual workflow dispatch
 

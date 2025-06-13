@@ -185,7 +185,7 @@ The example includes a `tsconfig.json` configured for:
 After running these examples, you can:
 
 1. **Modify the conversation flow** - Change the messages to test different scenarios
-2. **Add custom error handling** - Implement retry logic or fallback responses  
+2. **Add custom error handling** - Implement retry logic or fallback responses
 3. **Build a web interface** - Use the SDK in a React/Vue/Angular application
 4. **Create agent-specific clients** - Build specialized clients for different agents
 5. **Add authentication** - Extend the client to handle authentication if needed

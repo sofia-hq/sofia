@@ -26,10 +26,10 @@ class InteractiveChat {
     try {
       // Initialize the conversation
       await this.initializeChat();
-      
+
       // Start the interactive loop
       await this.chatLoop();
-      
+
     } catch (error) {
       console.error('❌ Error starting chat:', error);
     } finally {
@@ -39,14 +39,14 @@ class InteractiveChat {
 
   private async initializeChat() {
     console.log('🚀 Initializing chat session...');
-    
+
     const request: ChatRequest = {
       user_input: '', // Empty input to initialize
     };
 
     const response = await this.client.chat(request);
     this.sessionData = response.session_data;
-    
+
     console.log('🤖 Agent:', this.formatMessage(response.response));
     console.log();
   }
@@ -54,7 +54,7 @@ class InteractiveChat {
   private async chatLoop() {
     while (true) {
       const userInput = await this.getUserInput('👤 You: ');
-      
+
       if (userInput.toLowerCase() === 'quit' || userInput.toLowerCase() === 'exit') {
         console.log('👋 Goodbye!');
         break;
@@ -72,20 +72,20 @@ class InteractiveChat {
 
         console.log('🤔 Thinking...');
         const response = await this.client.chat(request);
-        
+
         // Update session data
         this.sessionData = response.session_data;
-        
+
         // Display response
         console.log('🤖 Agent:', this.formatMessage(response.response));
-        
+
         // Show tool output if any
         if (response.tool_output) {
           console.log('🔧 Tool Output:', response.tool_output);
         }
-        
+
         console.log();
-        
+
       } catch (error) {
         console.error('❌ Error sending message:', error);
         console.log('Please try again or type "quit" to exit.');
@@ -105,7 +105,7 @@ class InteractiveChat {
     if (typeof message === 'string') {
       return message;
     }
-    
+
     if (message && typeof message === 'object') {
       // Check common message content fields
       if ('content' in message && typeof message.content === 'string') {
@@ -117,11 +117,11 @@ class InteractiveChat {
       if ('message' in message && typeof message.message === 'string') {
         return message.message;
       }
-      
+
       // If no known field, stringify the object
       return JSON.stringify(message, null, 2);
     }
-    
+
     return String(message);
   }
 }

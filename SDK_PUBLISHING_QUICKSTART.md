@@ -96,7 +96,7 @@ npm test  # Verify examples still work
 
 ### For New Features (Minor)
 ```bash
-# Method 1: GitHub release with tag v1.1.0  
+# Method 1: GitHub release with tag v1.1.0
 # Method 2: Manual workflow with "minor" option
 ```
 

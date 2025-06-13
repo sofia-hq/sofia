@@ -8,15 +8,15 @@ echo "============================="
 echo "🔍 Checking if Nomos server is running..."
 if curl -s http://localhost:8000/health > /dev/null 2>&1; then
     echo "✅ Server is running!"
-    
+
     echo ""
     echo "🚀 Running JavaScript example..."
     npm run start:js
-    
+
     echo ""
     echo "🚀 Running TypeScript basic example..."
     npm run basic
-    
+
 else
     echo "❌ Nomos server is not running on http://localhost:8000"
     echo ""
@@ -26,7 +26,7 @@ else
     echo "   3. Run this script again: ./test-examples.sh"
     echo ""
     echo "🔍 For now, testing offline functionality..."
-    
+
     echo ""
     echo "🧪 Testing TypeScript compilation..."
     npm run build
@@ -35,7 +35,7 @@ else
     else
         echo "❌ TypeScript compilation failed"
     fi
-    
+
     echo ""
     echo "🧪 Testing error handling (expected errors)..."
     timeout 10s npm run basic > /dev/null 2>&1

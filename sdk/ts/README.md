@@ -79,7 +79,7 @@ await client.endSession(session_id);
 Check out the [complete examples](https://github.com/chandralegend/nomos/tree/main/examples/typescript-sdk-example) including:
 
 - **Basic Usage** - Simple request/response examples
-- **Advanced Patterns** - Production-ready patterns  
+- **Advanced Patterns** - Production-ready patterns
 - **Interactive Chat** - CLI chat interface
 - **Error Handling** - Comprehensive error recovery
 - **Multi-session Management** - Handle multiple conversations
@@ -118,6 +118,6 @@ This project is licensed under the MIT License.
 ## 🔗 Links
 
 - [Documentation](https://github.com/chandralegend/nomos)
-- [Examples](https://github.com/chandralegend/nomos/tree/main/examples/typescript-sdk-example) 
+- [Examples](https://github.com/chandralegend/nomos/tree/main/examples/typescript-sdk-example)
 - [Issues](https://github.com/chandralegend/nomos/issues)
 - [npm Package](https://www.npmjs.com/package/nomos-sdk)

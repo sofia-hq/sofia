@@ -33,7 +33,7 @@ async function runSimpleExample() {
       const response = await client.sendMessage(session.session_id, messages[i]);
       console.log(`🤖 Agent: ${JSON.stringify(response.message, null, 2)}`);
       console.log();
-      
+
       // Add a small delay to make it more realistic
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -73,7 +73,7 @@ async function runChatExample() {
   try {
     // Initialize chat
     let sessionData;
-    
+
     // First chat request to initialize
     console.log('🚀 Initializing chat...');
     let response = await client.chat({ user_input: '' });
@@ -94,10 +94,10 @@ async function runChatExample() {
         user_input: input,
         session_data: sessionData
       });
-      
+
       sessionData = response.session_data;
       console.log(`🤖 Agent: ${JSON.stringify(response.response, null, 2)}`);
-      
+
       if (response.tool_output) {
         console.log(`🔧 Tool Output: ${response.tool_output}`);
       }
