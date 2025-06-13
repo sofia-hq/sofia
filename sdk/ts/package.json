@@ -1,13 +1,48 @@
 {
   "name": "nomos-sdk",
   "version": "0.1.0",
+  "description": "TypeScript/JavaScript SDK for interacting with Nomos agents",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "lint": "eslint . --ext .ts --max-warnings 0",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "nomos",
+    "agent",
+    "ai",
+    "chatbot",
+    "conversation",
+    "typescript",
+    "sdk",
+    "api-client"
+  ],
+  "author": "Nomos Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chandralegend/nomos.git",
+    "directory": "sdk/ts"
+  },
+  "homepage": "https://github.com/chandralegend/nomos/tree/main/sdk/ts",
+  "bugs": {
+    "url": "https://github.com/chandralegend/nomos/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "dependencies": {
     "node-fetch": "^3.3.2"
