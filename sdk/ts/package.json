@@ -30,12 +30,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chandralegend/nomos.git",
+    "url": "git+https://github.com/dowhiledev/nomos.git",
     "directory": "sdk/ts"
   },
-  "homepage": "https://github.com/chandralegend/nomos/tree/main/sdk/ts",
+  "homepage": "https://github.com/dowhiledev/nomos/tree/main/sdk/ts",
   "bugs": {
-    "url": "https://github.com/chandralegend/nomos/issues"
+    "url": "https://github.com/dowhiledev/nomos/issues"
   },
   "engines": {
     "node": ">=16.0.0"

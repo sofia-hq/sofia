@@ -1,7 +1,7 @@
 # Nomos TypeScript/JavaScript SDK
 
 [![npm version](https://badge.fury.io/js/nomos-sdk.svg)](https://www.npmjs.com/package/nomos-sdk)
-[![CI](https://github.com/chandralegend/nomos/workflows/CI%20-%20TypeScript%20SDK/badge.svg)](https://github.com/chandralegend/nomos/actions)
+[![CI](https://github.com/dowhiledev/nomos/workflows/CI%20-%20TypeScript%20SDK/badge.svg)](https://github.com/dowhiledev/nomos/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A powerful TypeScript/JavaScript SDK for interacting with Nomos agents. Build conversational AI applications with ease.
@@ -85,7 +85,7 @@ await client.endSession(session_id);
 
 ## 📝 Complete Examples
 
-Check out the [complete examples](https://github.com/chandralegend/nomos/tree/main/examples/typescript-sdk-example) including:
+Check out the [complete examples](https://github.com/dowhiledev/nomos/tree/main/examples/typescript-sdk-example) including:
 
 - **Basic Usage** - Simple request/response examples
 - **Advanced Patterns** - Production-ready patterns
@@ -98,7 +98,7 @@ Check out the [complete examples](https://github.com/chandralegend/nomos/tree/ma
 ### Building from Source
 
 ```bash
-git clone https://github.com/chandralegend/nomos.git
+git clone https://github.com/dowhiledev/nomos.git
 cd nomos/sdk/ts
 npm install
 npm run build
@@ -118,7 +118,7 @@ npm run lint
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](https://github.com/chandralegend/nomos/blob/main/CONTRIBUTING.md) for details.
+Contributions are welcome! Please read our [Contributing Guide](https://github.com/dowhiledev/nomos/blob/main/CONTRIBUTING.md) for details.
 
 ## 📄 License
 
@@ -126,7 +126,7 @@ This project is licensed under the MIT License.
 
 ## 🔗 Links
 
-- [Documentation](https://github.com/chandralegend/nomos)
-- [Examples](https://github.com/chandralegend/nomos/tree/main/examples/typescript-sdk-example)
-- [Issues](https://github.com/chandralegend/nomos/issues)
+- [Documentation](https://github.com/dowhiledev/nomos)
+- [Examples](https://github.com/dowhiledev/nomos/tree/main/examples/typescript-sdk-example)
+- [Issues](https://github.com/dowhiledev/nomos/issues)
 - [npm Package](https://www.npmjs.com/package/nomos-sdk)
