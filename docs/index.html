@@ -14,103 +14,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
-    <!-- Three.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-    <!-- Three.js CanvasRenderer -->
-    <script>
-        // Simplified CanvasRenderer for particle waves
-        THREE.CanvasRenderer = function (parameters) {
-            parameters = parameters || {};
-
-            var _this = this;
-            var _canvas = parameters.canvas !== undefined ? parameters.canvas : document.createElement('canvas');
-            var _context = _canvas.getContext('2d', { alpha: parameters.alpha === true });
-            var _clearColor = new THREE.Color(0x000000);
-            var _clearAlpha = 0;
-
-            this.domElement = _canvas;
-            this.autoClear = true;
-
-            this.setSize = function (width, height, updateStyle) {
-                _canvas.width = width;
-                _canvas.height = height;
-
-                if (updateStyle !== false) {
-                    _canvas.style.width = width + 'px';
-                    _canvas.style.height = height + 'px';
-                }
-            };
-
-            this.setPixelRatio = function (value) {
-                // Handle pixel ratio if needed
-            };
-
-            this.setClearColor = function (color, alpha) {
-                _clearColor.set(color);
-                _clearAlpha = alpha !== undefined ? alpha : 1;
-            };
-
-            this.clear = function () {
-                if (_clearAlpha > 0) {
-                    _context.fillStyle = 'rgba(' +
-                        Math.floor(_clearColor.r * 255) + ',' +
-                        Math.floor(_clearColor.g * 255) + ',' +
-                        Math.floor(_clearColor.b * 255) + ',' + _clearAlpha + ')';
-                    _context.fillRect(0, 0, _canvas.width, _canvas.height);
-                } else {
-                    _context.clearRect(0, 0, _canvas.width, _canvas.height);
-                }
-            };
-
-            this.render = function (scene, camera) {
-                if (this.autoClear === true) {
-                    this.clear();
-                }
-
-                // Simple sprite rendering for particle wave
-                var canvasWidth = _canvas.width;
-                var canvasHeight = _canvas.height;
-                var canvasWidthHalf = canvasWidth / 2;
-                var canvasHeightHalf = canvasHeight / 2;
-
-                _context.save();
-                _context.translate(canvasWidthHalf, canvasHeightHalf);
-
-                scene.children.forEach(function (child) {
-                    if (child instanceof THREE.Sprite && child.material.isSpriteCanvasMaterial) {
-                        var position = child.position.clone();
-                        position.project(camera);
-
-                        var x = position.x * canvasWidthHalf;
-                        var y = -position.y * canvasHeightHalf;
-
-                        if (position.z > -1 && position.z < 1) {
-                            _context.save();
-                            _context.translate(x, y);
-                            _context.scale(child.scale.x, child.scale.y);
-
-                            // Set color
-                            var color = child.material.color;
-                            _context.fillStyle = 'rgb(' +
-                                Math.floor(color.r * 255) + ',' +
-                                Math.floor(color.g * 255) + ',' +
-                                Math.floor(color.b * 255) + ')';
-
-                            // Execute material program
-                            child.material.program(_context);
-
-                            _context.restore();
-                        }
-                    }
-                });
-
-                _context.restore();
-            };
-        };
-    </script>
-
-    <!-- Custom Fonts -->
+    <!-- Geist Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100;300&display=swap" rel="stylesheet">
@@ -472,31 +376,29 @@
             }
         }
 
-        /* Enhanced Particle Wave Background Styles */
-        #particle-canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0.7;
+        /* Enhanced loading animation */
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
         }
 
-        .hero-content {
-            position: relative;
-            z-index: 2;
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: loadingDots 1.4s ease-in-out infinite both;
         }
 
-        /* Additional modern enhancements */
-        .section-divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
-            margin: 0 auto;
-            width: 50%;
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingDots {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
         }
 
+        /* Scroll indicator */
         .scroll-indicator {
             position: absolute;
             bottom: 3rem;
@@ -531,28 +433,6 @@
         .btn-secondary:focus {
             outline: none;
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
-        }
-
-        /* Enhanced loading animation */
-        .loading-dots {
-            display: inline-flex;
-            gap: 4px;
-        }
-
-        .loading-dots span {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: currentColor;
-            animation: loadingDots 1.4s ease-in-out infinite both;
-        }
-
-        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
-        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes loadingDots {
-            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-            40% { opacity: 1; transform: scale(1); }
         }
     </style>
 </head>
@@ -605,7 +485,24 @@
 
     <!-- Hero Section -->
     <section class="hero-gradient pt-24 pb-24 min-h-screen flex items-center relative overflow-hidden">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content">
+        <!-- Video Background -->
+        <div class="absolute inset-0 z-0">
+            <video 
+                autoplay 
+                muted 
+                loop 
+                playsinline 
+                class="w-full h-full object-cover opacity-30"
+                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080'%3E%3Crect width='1920' height='1080' fill='%23f8fafc'/%3E%3C/svg%3E"
+            >
+                <source src="https://videos.pexels.com/video-files/29718232/12778084_1920_1080_30fps.mp4" type="video/mp4">
+                <!-- Fallback gradient background if video fails to load -->
+            </video>
+            <!-- Overlay for better text readability -->
+            <div class="absolute inset-0 bg-gradient-to-r from-white/80 via-white/60 to-white/80"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content relative z-10">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8 fade-in">
                     <!-- Announcement -->
@@ -723,8 +620,6 @@
                 <i data-lucide="chevron-down" class="w-5 h-5"></i>
             </div>
         </div>
-        
-        <canvas id="particle-canvas"></canvas>
     </section>
 
     <!-- Problem/Solution Section -->
@@ -1441,197 +1336,6 @@
     </button>
 
     <script>
-        // Three.js SpriteCanvasMaterial Implementation
-        THREE.SpriteCanvasMaterial = function (parameters) {
-            THREE.Material.call(this);
-            this.type = 'SpriteCanvasMaterial';
-            this.color = new THREE.Color(0xffffff);
-            this.program = function () { };
-            this.setValues(parameters);
-        };
-
-        THREE.SpriteCanvasMaterial.prototype = Object.create(THREE.Material.prototype);
-        THREE.SpriteCanvasMaterial.prototype.constructor = THREE.SpriteCanvasMaterial;
-        THREE.SpriteCanvasMaterial.prototype.isSpriteCanvasMaterial = true;
-
-        THREE.SpriteCanvasMaterial.prototype.clone = function () {
-            var material = new THREE.SpriteCanvasMaterial();
-            material.copy(this);
-            material.color.copy(this.color);
-            material.program = this.program;
-            return material;
-        };
-
-        // Particle Wave Variables - Enhanced modern version with performance optimization
-        var SEPARATION = 150, AMOUNTX = 50, AMOUNTY = 70;
-        var camera, scene, renderer;
-        var particles = [];
-        var count = 0;
-        var windowHalfX, windowHalfY;
-        var isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        function initParticleWave() {
-            const canvas = document.getElementById('particle-canvas');
-            const heroSection = document.querySelector('.hero-gradient');
-
-            if (!canvas || !heroSection || isReduced) return;
-
-            // Reduce particle count on mobile for better performance
-            const isMobile = window.innerWidth < 768;
-            if (isMobile) {
-                AMOUNTX = 30;
-                AMOUNTY = 40;
-            }
-
-            // Get hero section dimensions
-            const rect = heroSection.getBoundingClientRect();
-            windowHalfX = rect.width / 2;
-            windowHalfY = rect.height / 2;
-
-            // Setup camera for side profile view
-            camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 1, 10000);
-            camera.position.set(0, 0, 1000);
-
-            // Setup scene with subtle fog
-            scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0xfafafa, 1000, 4000);
-
-            // Create enhanced particle material with gradient colors
-            var PI2 = Math.PI * 2;
-            var materials = [
-                new THREE.SpriteCanvasMaterial({
-                    color: 0x6366f1, // Indigo
-                    program: function (context) {
-                        context.globalAlpha = 0.15;
-                        context.beginPath();
-                        context.arc(0, 0, 0.3, 0, PI2, true);
-                        context.fill();
-                    }
-                }),
-                new THREE.SpriteCanvasMaterial({
-                    color: 0x0ea5e9, // Blue
-                    program: function (context) {
-                        context.globalAlpha = 0.1;
-                        context.beginPath();
-                        context.arc(0, 0, 0.2, 0, PI2, true);
-                        context.fill();
-                    }
-                }),
-                new THREE.SpriteCanvasMaterial({
-                    color: 0x8b5cf6, // Purple
-                    program: function (context) {
-                        context.globalAlpha = 0.08;
-                        context.beginPath();
-                        context.arc(0, 0, 0.25, 0, PI2, true);
-                        context.fill();
-                    }
-                })
-            ];
-
-            // Create particles grid with varied materials
-            var i = 0;
-            for (var ix = 0; ix < AMOUNTX; ix++) {
-                for (var iy = 0; iy < AMOUNTY; iy++) {
-                    var materialIndex = Math.floor(Math.random() * materials.length);
-                    var particle = particles[i++] = new THREE.Sprite(materials[materialIndex]);
-                    
-                    particle.position.x = ix * SEPARATION - ((AMOUNTX * SEPARATION) / 2);
-                    particle.position.z = iy * SEPARATION - ((AMOUNTY * SEPARATION) / 2);
-                    particle.position.y = -900; // Start deeper
-                    
-                    // Add some randomness to initial positions
-                    particle.position.x += (Math.random() - 0.5) * 50;
-                    particle.position.z += (Math.random() - 0.5) * 50;
-                    
-                    scene.add(particle);
-                }
-            }
-
-            // Setup renderer with CanvasRenderer
-            renderer = new THREE.CanvasRenderer({
-                canvas: canvas,
-                alpha: true
-            });
-
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(rect.width, rect.height);
-            renderer.setClearColor(scene.fog.color);
-
-            // Handle resize
-            window.addEventListener('resize', onWindowResize, false);
-
-            // Start animation
-            animate();
-        }
-
-        function onWindowResize() {
-            const heroSection = document.querySelector('.hero-gradient');
-            if (!heroSection) return;
-
-            const rect = heroSection.getBoundingClientRect();
-            windowHalfX = rect.width / 2;
-            windowHalfY = rect.height / 2;
-
-            camera.aspect = rect.width / rect.height;
-            camera.updateProjectionMatrix();
-
-            renderer.setSize(rect.width, rect.height);
-        }
-
-        var isAnimating = true;
-
-        function animate() {
-            if (isAnimating) {
-                requestAnimationFrame(animate);
-                render();
-            }
-        }
-
-        // Pause animation when page is not visible for performance
-        document.addEventListener('visibilitychange', () => {
-            isAnimating = !document.hidden;
-            if (isAnimating) {
-                animate();
-            }
-        });
-
-        function render() {
-            // Enhanced camera position for dynamic perspective
-            camera.position.set(
-                Math.sin(count * 0.01) * 200,
-                0,
-                1000 + Math.cos(count * 0.01) * 100
-            );
-            camera.lookAt(0, -300, 0);
-
-            var i = 0;
-
-            for (var ix = 0; ix < AMOUNTX; ix++) {
-                for (var iy = 0; iy < AMOUNTY; iy++) {
-                    var particle = particles[i++];
-
-                    // Enhanced wave motion with multiple frequencies
-                    var waveY = -700 + 
-                        (Math.sin((ix + count) * 0.3) * 60) +
-                        (Math.sin((iy + count) * 0.5) * 40) +
-                        (Math.sin((ix + iy + count) * 0.2) * 30);
-
-                    particle.position.y = waveY;
-
-                    // Enhanced scaling with breathing effect
-                    var baseScale = (Math.sin((ix + count) * 0.3) + 1) * 2 +
-                        (Math.sin((iy + count) * 0.5) + 1) * 1.5;
-                    
-                    var breathingScale = 1 + Math.sin(count * 0.05) * 0.3;
-                    
-                    particle.scale.x = particle.scale.y = baseScale * breathingScale;
-                }
-            }
-
-            renderer.render(scene, camera);
-            count += 0.08; // Slightly faster animation
-        }
-
         // Initialize Lucide icons
         lucide.createIcons();
 
@@ -1658,12 +1362,6 @@
             });
         }
 
-        // Initialize particle wave when page loads
-        document.addEventListener('DOMContentLoaded', function () {
-            // Small delay to ensure canvas and hero section are ready
-            setTimeout(initParticleWave, 100);
-        });
-
         // Smooth scrolling
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
@@ -1677,25 +1375,6 @@
                 }
             });
         });
-
-        // Initialize particle system with intersection observer for performance
-        const heroSection = document.querySelector('.hero-gradient');
-        if (heroSection && 'IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        // Initialize particle system when hero section is visible
-                        setTimeout(initParticleWave, 100);
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1 });
-            
-            observer.observe(heroSection);
-        } else {
-            // Fallback for browsers without IntersectionObserver
-            setTimeout(initParticleWave, 500);
-        }
 
         // Scroll to top button
         const scrollToTopBtn = document.getElementById('scrollToTop');
