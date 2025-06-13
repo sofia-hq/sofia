@@ -20,7 +20,7 @@ from .models.agent import (
     create_decision_model,
 )
 from .models.flow import Flow, FlowContext, FlowManager
-from .models.tool import FallbackError, Tool
+from .models.tool import FallbackError, MCPServer, Tool
 from .utils.flow_utils import (
     create_flows_from_config,
     should_enter_flow,
@@ -42,6 +42,7 @@ class Session:
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
         tools: Optional[List[Union[Callable, str]]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -61,6 +62,7 @@ class Session:
         :param system_message: Optional system message.
         :param persona: Optional persona string.
         :param tools:  List of tool callables or package identifiers (e.g., "math:add").
+        :param mcp_servers: Optional list of MCPServer instances for tool discovery.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -93,19 +95,26 @@ class Session:
                 f"Flow manager initialized with {len(self.flow_manager.flows)} flows"
             )
 
+        self.mcp_servers = {mcp.name: mcp for mcp in mcp_servers or []}
+
         tool_arg_descs = (
             self.config.tool_arg_descriptions
             if self.config and self.config.tool_arg_descriptions
             else {}
         )
-        tools_list = [
-            (
-                Tool.from_function(tool, tool_arg_descs)
-                if callable(tool)
-                else Tool.from_pkg(tool, tool_arg_descs)
-            )
-            for tool in tools or []
-        ]
+
+        tools_list = []
+        for tool in tools or []:
+            if callable(tool):
+                tools_list.append(Tool.from_function(tool, tool_arg_descs))
+            elif Tool.is_package_tool(tool):
+                tools_list.append(Tool.from_pkg(tool, tool_arg_descs))
+            elif Tool.is_remote_tool(tool):
+                pass
+                # tools_list.append(Tool.from_mcp(tool, None))
+            else:
+                log_info(f"Invalid tool type: {type(tool)}. Must be callable or str.")
+
         self.tools = {tool.name: tool for tool in tools_list}
         # Variable
         self.memory = memory
@@ -495,6 +504,7 @@ class Agent:
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
         tools: Optional[List[Union[Callable, str]]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -510,6 +520,7 @@ class Agent:
         :param persona: Optional persona string.
         :param system_message: Optional system message.
         :param tools: List of tool callables.
+        :param mcp_servers: Optional list of MCPServer instances for tool discovery.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -526,10 +537,17 @@ class Agent:
         self.max_iter = max_iter
         tool_set = set(tools) if tools else set()
         for step in self.steps.values():
-            _pkg_tools = [tool for tool in step.available_tools if ":" in tool]
+            _pkg_tools = [
+                tool for tool in step.available_tools if Tool.is_package_tool(tool)
+            ]
             tool_set.update(_pkg_tools)
+            _remote_tools = [
+                tool for tool in step.available_tools if Tool.is_remote_tool(tool)
+            ]
+            tool_set.update(_remote_tools)
         self.tools = list(tool_set)
         self.config = config
+        self.mcp_servers: Optional[List[MCPServer]] = mcp_servers
 
         # Initialize flow manager if flows are configured
         self.flow_manager: Optional[FlowManager] = None
@@ -597,6 +615,7 @@ class Agent:
             system_message=config.system_message,
             persona=config.persona,
             tools=tools or [],
+            mcp_servers=config.mcp_servers,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
             max_iter=config.max_iter,
@@ -629,6 +648,7 @@ class Agent:
             system_message=self.system_message,
             persona=self.persona,
             tools=self.tools,
+            mcp_servers=self.mcp_servers,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,

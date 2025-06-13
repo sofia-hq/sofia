@@ -1,13 +1,61 @@
-"""Tool abstractions and related logic for the SOFIA package."""
+"""Tool abstractions and related logic for the NOMOS package."""
 
+import asyncio
 import inspect
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from docstring_parser import parse
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, HttpUrl, SecretStr, ValidationError
 
+from ..utils.url import join_urls
 from ..utils.utils import create_base_model
+
+
+class MCPServer(BaseModel):
+    """
+    Represents a Model Configuration Protocol (MCP) server that provides tools.
+
+    MCP servers expose tools that can be discovered and used by Nomos agents.
+    Each tool on the server is made available as a Tool object in Nomos.
+    Attributes:
+        url (HttpUrl): The base URL of the MCP server.
+        api_key (Optional[SecretStr]): API key for authentication with the MCP server.
+        name (str): Name of the MCP server.
+        endpoint_path (str): Path to the tools endpoint on the MCP server.
+    """
+
+    name: str
+    url: HttpUrl
+    api_key: Optional[SecretStr] = None
+    path: Optional[str] = ""
+
+    def get_url(self) -> str:
+        """
+        Get the full URL of the MCP server, including the endpoint path.
+
+        :return: The full URL as a string.
+        """
+        if self.path:
+            return join_urls(str(self.url), self.path)
+
+        return str(self.url)
+
+    def get_tools(self) -> List[str]:
+        """
+        Get a list of tool names available on the MCP server.
+
+        :return: A list of tool names.
+        """
+        return asyncio.run(self.get_tools_async())
+
+    async def get_tools_async(self) -> List[str]:
+        """
+        Asynchronously get a list of tool names available on the MCP server.
+
+        :return: A list of tool names.
+        """
+        return []
 
 
 class Tool(BaseModel):
@@ -114,6 +162,45 @@ class Tool(BaseModel):
             return cls.from_function(module, _tool_arg_descs)
         except Exception as e:
             raise ValueError(f"Could not load tool {identifier}: {e}")
+
+    @classmethod
+    def from_mcp(cls, identifier: str, mcp_server: MCPServer) -> "Tool":
+        """
+        Create a Tool instance from a Model Configuration Protocol (MCP) server.
+
+        :param identifier: The tool identifier in the format "mcp:tool_name".
+        :param mcp_server: The MCP server providing the tool.
+        :return: An instance of Tool.
+        """
+        return cls(
+            name=identifier,
+            description="testing",
+            function=str.lower,
+            parameters={},
+        )
+
+    @classmethod
+    def is_package_tool(cls, identifier: str) -> bool:
+        """
+        Check if a tool identifier corresponds to a package tool.
+
+        :param identifier: The tool identifier.
+        :return: True if the tool is a package tool, False otherwise.
+        """
+        return ":" in identifier and not cls.is_remote_tool(identifier)
+
+    @classmethod
+    def is_remote_tool(cls, identifier: str) -> bool:
+        """
+        Check if a tool identifier corresponds to a remote tool.
+
+        :param identifier: The tool identifier.
+        :return: True if the tool is a remote tool, False otherwise.
+        """
+        if "mcp:" in identifier:
+            return True
+
+        return False
 
     def get_args_model(self) -> Type[BaseModel]:
         """
