@@ -116,41 +116,221 @@
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100;300&display=swap" rel="stylesheet">
 
     <style>
+        /* CSS Variables for Consistent Design System */
+        :root {
+            --primary-black: #0a0a0a;
+            --primary-white: #fafafa;
+            --accent-purple: #6366f1;
+            --accent-blue: #0ea5e9;
+            --warm-gray-50: #fafaf9;
+            --warm-gray-100: #f5f5f4;
+            --warm-gray-200: #e7e5e4;
+            --warm-gray-300: #d6d3d1;
+            --warm-gray-600: #57534e;
+            --warm-gray-700: #44403c;
+            --warm-gray-800: #292524;
+            --warm-gray-900: #1c1917;
+        }
+
+        /* Global Base Styles */
         body {
             font-family: 'Geist', sans-serif;
             font-weight: 300;
+            background: var(--primary-white);
+            color: var(--primary-black);
+        }
+
+        /* Accessibility and Motion Preferences */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            
+            .stagger-fade-in, .bounce, .float, .gradient-text-shift {
+                animation: none !important;
+            }
+        }
+
+        /* Focus Management for Accessibility */
+        .btn-primary:focus-visible,
+        .btn-secondary:focus-visible,
+        .btn-secondary-dark:focus-visible {
+            outline: 2px solid var(--accent-purple);
+            outline-offset: 2px;
+        }
+
+        /* Responsive Typography */
+        @media (max-width: 640px) {
+            .text-6xl { font-size: 3rem; }
+            .text-5xl { font-size: 2.5rem; }
+            .text-4xl { font-size: 2rem; }
+            .text-3xl { font-size: 1.5rem; }
         }
 
         .gradient-text {
-            background: linear-gradient(135deg, #000000 0%, #4B5563 100%);
+            background: linear-gradient(135deg, var(--primary-black) 0%, var(--accent-purple) 50%, var(--accent-blue) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease-in-out infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         .hero-gradient {
-            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            background: linear-gradient(135deg, var(--primary-white) 0%, var(--warm-gray-50) 50%, #f8fafc 100%);
+            position: relative;
+        }
+
+        .hero-gradient::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(14, 165, 233, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .glass-nav {
+            background: rgba(250, 250, 250, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(250, 250, 249, 0.2);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         }
 
         .feature-card {
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(250, 250, 249, 0.5);
         }
 
         .feature-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-black) 0%, var(--warm-gray-800) 100%);
+            color: white;
+            border: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+            letter-spacing: 0.025em;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(0, 0, 0, 0.2);
+            color: var(--primary-black);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+            letter-spacing: 0.025em;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-black);
+            color: white;
+            border-color: var(--primary-black);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary-dark {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-weight: 500;
+            letter-spacing: 0.025em;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-secondary-dark:hover {
+            background: white;
+            color: var(--primary-black);
+            border-color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(255, 255, 255, 0.2);
+        }
+
+        .stagger-fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            animation: staggerFadeIn 0.8s ease-out forwards;
+        }
+
+        .stagger-fade-in:nth-child(1) { animation-delay: 0.1s; }
+        .stagger-fade-in:nth-child(2) { animation-delay: 0.2s; }
+        .stagger-fade-in:nth-child(3) { animation-delay: 0.3s; }
+        .stagger-fade-in:nth-child(4) { animation-delay: 0.4s; }
+        .stagger-fade-in:nth-child(5) { animation-delay: 0.5s; }
+        .stagger-fade-in:nth-child(6) { animation-delay: 0.6s; }
+
+        @keyframes staggerFadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .fade-in {
-            animation: fadeIn 0.8s ease-in-out;
+            animation: fadeIn 1s ease-out;
         }
 
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -158,27 +338,24 @@
         }
 
         .bounce-in {
-            animation: bounceIn 1s ease-out;
+            animation: bounceIn 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         @keyframes bounceIn {
             0% {
-                transform: scale(0.3);
+                transform: scale(0.3) translateY(50px);
                 opacity: 0;
             }
-
             50% {
-                transform: scale(1.05);
+                transform: scale(1.05) translateY(-10px);
                 opacity: 0.8;
             }
-
             70% {
-                transform: scale(0.9);
+                transform: scale(0.95) translateY(5px);
                 opacity: 0.9;
             }
-
             100% {
-                transform: scale(1);
+                transform: scale(1) translateY(0);
                 opacity: 1;
             }
         }
@@ -188,14 +365,90 @@
         }
 
         @keyframes float {
-
-            0%,
-            100% {
+            0%, 100% {
                 transform: translateY(0px);
             }
-
             50% {
                 transform: translateY(-20px);
+            }
+        }
+
+        .glow-on-hover {
+            transition: all 0.3s ease;
+        }
+
+        .glow-on-hover:hover {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .text-highlight {
+            background: linear-gradient(135deg, 
+                rgba(99, 102, 241, 0.1) 0%, 
+                rgba(99, 102, 241, 0.05) 100%);
+            color: var(--primary-black);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            border: 2px solid rgba(99, 102, 241, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .text-highlight:hover {
+            background: linear-gradient(135deg, 
+                rgba(99, 102, 241, 0.15) 0%, 
+                rgba(14, 165, 233, 0.1) 100%);
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+        }
+
+        .text-highlight-alt {
+            background: linear-gradient(135deg, 
+                rgba(14, 165, 233, 0.1) 0%, 
+                rgba(99, 102, 241, 0.05) 100%);
+            color: var(--primary-black);
+            padding: 0.4rem 0.8rem;
+            border-radius: 0.75rem;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            border: 2px solid rgba(14, 165, 233, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .text-highlight-alt:hover {
+            background: linear-gradient(135deg, 
+                rgba(14, 165, 233, 0.15) 0%, 
+                rgba(99, 102, 241, 0.1) 100%);
+            border-color: rgba(14, 165, 233, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(14, 165, 233, 0.15);
+        }
+
+        .terminal-glass {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .icon-float {
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            33% {
+                transform: translateY(-5px) rotate(1deg);
+            }
+            66% {
+                transform: translateY(3px) rotate(-1deg);
             }
         }
 
@@ -219,7 +472,7 @@
             }
         }
 
-        /* Particle Wave Background Styles */
+        /* Enhanced Particle Wave Background Styles */
         #particle-canvas {
             position: absolute;
             top: 0;
@@ -228,11 +481,78 @@
             height: 100%;
             z-index: 1;
             pointer-events: none;
+            opacity: 0.7;
         }
 
         .hero-content {
             position: relative;
             z-index: 2;
+        }
+
+        /* Additional modern enhancements */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+            margin: 0 auto;
+            width: 50%;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+            animation: bounce 2s infinite;
+            opacity: 0.8;
+        }
+
+        /* Hide scroll indicator on mobile to prevent overlap */
+        @media (max-width: 768px) {
+            .scroll-indicator {
+                display: none;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40%, 43% {
+                transform: translateX(-50%) translateY(-12px);
+            }
+            70% {
+                transform: translateX(-50%) translateY(-6px);
+            }
+        }
+
+        /* Improved focus states */
+        .btn-primary:focus,
+        .btn-secondary:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Enhanced loading animation */
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: loadingDots 1.4s ease-in-out infinite both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingDots {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1); }
         }
     </style>
 </head>
@@ -240,57 +560,74 @@
 <body class="bg-white text-black antialiased">
 
     <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 bg-white/90 backdrop-blur-md border-b border-gray-100 z-50">
+    <nav class="fixed top-0 left-0 right-0 glass-nav z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-2">
-                    <div class="text-2xl font-bold">NOMOS</div>
-                    <span class="bg-black text-white text-xs px-2 py-1 rounded-lg">v0.2.2</span>
+                    <div class="text-2xl font-bold gradient-text">NOMOS</div>
+                    <span class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-xs px-2 py-1 rounded-lg font-medium">v0.2.2</span>
                 </div>
 
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#features" class="text-gray-700 hover:text-black transition-colors">Features</a>
-                    <a href="#examples" class="text-gray-700 hover:text-black transition-colors">Examples</a>
-                    <a href="#ecosystem" class="text-gray-700 hover:text-black transition-colors">Ecosystem</a>
+                    <a href="#features" class="text-warm-gray-700 hover:text-black transition-all duration-300 hover:scale-105">Features</a>
+                    <a href="#examples" class="text-warm-gray-700 hover:text-black transition-all duration-300 hover:scale-105">Examples</a>
+                    <a href="#ecosystem" class="text-warm-gray-700 hover:text-black transition-all duration-300 hover:scale-105">Ecosystem</a>
                     <a href="https://github.com/dowhiledev/nomos"
-                        class="text-gray-700 hover:text-black transition-colors">GitHub</a>
+                        class="text-warm-gray-700 hover:text-black transition-all duration-300 hover:scale-105">GitHub</a>
                 </div>
 
                 <div class="flex items-center space-x-4">
-                    <a href="#get-started"
-                        class="bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors">
+                    <a href="#get-started" class="btn-primary">
                         Get Started
                     </a>
+                    
+                    <!-- Mobile Menu Button -->
+                    <button data-mobile-menu-toggle class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div data-mobile-menu class="hidden md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-lg">
+                <div class="px-4 py-6 space-y-4">
+                    <a href="#features" class="block text-gray-700 hover:text-black transition-colors py-2">Features</a>
+                    <a href="#examples" class="block text-gray-700 hover:text-black transition-colors py-2">Examples</a>
+                    <a href="#ecosystem" class="block text-gray-700 hover:text-black transition-colors py-2">Ecosystem</a>
+                    <a href="https://github.com/dowhiledev/nomos" class="block text-gray-700 hover:text-black transition-colors py-2">GitHub</a>
+                    <div class="pt-4 border-t border-gray-200">
+                        <a href="#get-started" class="btn-primary w-full">Get Started</a>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero-gradient pt-24 pb-16 min-h-screen flex items-center relative overflow-hidden">
-        <!-- Particle Wave Background -->
+    <section class="hero-gradient pt-24 pb-24 min-h-screen flex items-center relative overflow-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 hero-content">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="space-y-8 fade-in">
                     <!-- Announcement -->
-                    <div class="inline-flex items-center bg-gray-100 rounded-full px-4 py-2 text-sm">
-                        <span class="bg-black text-white text-xs px-2 py-1 rounded-full mr-3">COMING SOON</span>
-                        <span>Kosmos Studio & Production Suite</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+                    <div class="inline-flex items-center bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-full px-4 py-2 text-sm glow-on-hover">
+                        <span class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-xs px-2 py-1 rounded-full mr-3 font-medium">COMING SOON</span>
+                        <span class="text-gray-700">Kosmos Studio & Production Suite</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 ml-2 icon-float"></i>
                     </div>
 
                     <!-- Main Headline -->
                     <div class="space-y-10 lg:space-y-14">
-                        <h1 class="text-4xl lg:text-5xl font-bold leading-relaxed lg:leading-[1.15]">
-                            Build Intelligent<br>
-                            <span class="bg-black text-white rounded px-2 py-1">AI Agents</span> with<br>
-                            <span class="bg-black text-white rounded px-2 py-1 text-5xl lg:text-6xl font-bold leading-relaxed lg:leading-[1.4]">CONTROL</span>
-                            &amp;
-                            <span class="bg-black text-white rounded px-2 py-1 text-5xl lg:text-6xl font-bold leading-relaxed">RELIABILITY</span>
+                        <h1 class="text-4xl lg:text-6xl leading-tight lg:leading-[1.1]">
+                            <span class="font-thin text-gray-600">Build Intelligent</span><br>
+                            <span class="text-highlight font-semibold">AI Agents</span> <span class="font-thin text-gray-600">with</span><br>
+                            <span class="text-highlight-alt text-5xl lg:text-7xl font-bold">CONTROL</span>
+                            <span class="font-thin text-gray-400 text-4xl lg:text-5xl">&</span><br>
+                            <span class="text-highlight text-5xl lg:text-7xl font-bold">RELIABILITY</span>
                         </h1>
 
-                        <p class="text-xl text-gray-600 max-w-2xl leading-relaxed lg:mt-6">
-                            Unlike prompt-based frameworks, NOMOS gives developers full control over agent behavior,
+                        <p class="text-xl lg:text-2xl text-gray-600 max-w-2xl leading-relaxed font-light">
+                            Unlike prompt-based frameworks, <span class="font-medium text-gray-800">NOMOS</span> gives developers 
+                            <span class="gradient-text font-medium">full control</span> over agent behavior, 
                             tool access, and decision flow. Build sophisticated AI agents that work exactly as designed.
                         </p>
                     </div>
@@ -298,48 +635,50 @@
                     <!-- CTA Buttons -->
                     <div class="flex flex-col sm:flex-row gap-4">
                         <a href="#get-started"
-                            class="bg-black text-white px-8 py-4 rounded-lg hover:bg-gray-800 transition-all transform hover:scale-105 text-center font-medium">
+                            class="btn-primary text-lg">
                             Get Started Free
                         </a>
                         <a href="https://github.com/dowhiledev/nomos"
-                            class="border-2 border-black text-black px-8 py-4 rounded-lg hover:bg-black hover:text-white transition-all text-center font-medium">
+                            class="btn-secondary text-lg">
                             <i data-lucide="github" class="w-5 h-5 inline mr-2"></i>
                             View on GitHub
                         </a>
                     </div>
 
                     <!-- Quick Stats -->
-                    <div class="flex flex-wrap items-center gap-6 text-sm text-gray-600">
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
-                            <span>Open Source</span>
+                    <div class="flex flex-wrap items-center gap-6 text-sm">
+                        <div class="flex items-center space-x-2 stagger-fade-in">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-indigo-500"></i>
+                            <span class="text-gray-600">Open Source</span>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
-                            <span>Production Ready</span>
+                        <div class="flex items-center space-x-2 stagger-fade-in">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-indigo-500"></i>
+                            <span class="text-gray-600">Production Ready</span>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
-                            <span>Multi-LLM Support</span>
+                        <div class="flex items-center space-x-2 stagger-fade-in">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-indigo-500"></i>
+                            <span class="text-gray-600">Multi-LLM Support</span>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <i data-lucide="check-circle" class="w-5 h-5 text-black"></i>
-                            <span>Cloud Deployment</span>
+                        <div class="flex items-center space-x-2 stagger-fade-in">
+                            <i data-lucide="check-circle" class="w-5 h-5 text-indigo-500"></i>
+                            <span class="text-gray-600">Cloud Deployment</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right side content placeholder for lg screens -->
-                <div class="hidden lg:block">
-                    <!-- Click to Copy Component -->
-                    <div class="bg-black rounded-lg p-6 font-mono text-sm space-y-3 max-w-md">
-                        <div class="text-white transition-colors mb-4 text-xs uppercase tracking-wide cursor-default">AI Agent Ready in Few Easy Steps</div>
+                <!-- Right side content -->
+                <div class="hidden lg:block bounce-in">
+                    <!-- Enhanced Terminal -->
+                    <div class="terminal-glass rounded-xl p-6 font-mono text-sm space-y-3 max-w-md">
+                        <div class="text-white transition-colors mb-4 text-xs uppercase tracking-wide cursor-default font-light">
+                            <span class="gradient-text">AI Agent Ready in Few Easy Steps</span>
+                        </div>
 
                         <!-- Command 1: Install -->
                         <div class="group relative">
-                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors" onclick="copyCommand('pip install nomos[cli,openai]', this)">
+                            <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('pip install nomos[cli,openai]', this)">
                                 <div class="flex items-center space-x-3">
-                                    <span class="text-gray-500">$</span>
+                                    <span class="text-gray-400">$</span>
                                     <span class="text-green-400">pip install nomos[cli,openai]</span>
                                 </div>
                                 <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
@@ -348,21 +687,20 @@
 
                         <!-- Command 2: Init -->
                         <div class="group relative">
-                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors" onclick="copyCommand('nomos init', this)">
+                            <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('nomos init --generate', this)">
                                 <div class="flex items-center space-x-3">
-                                    <span class="text-gray-500">$</span>
+                                    <span class="text-gray-400">$</span>
                                     <span class="text-green-400">nomos init --generate</span>
                                 </div>
                                 <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
                             </div>
                         </div>
 
-
                         <!-- Command 3: Serve -->
                         <div class="group relative">
-                            <div class="flex items-center justify-between bg-gray-900 rounded-lg p-3 cursor-pointer hover:bg-gray-800 transition-colors" onclick="copyCommand('nomos serve', this)">
+                            <div class="flex items-center justify-between bg-gray-800/50 rounded-lg p-3 cursor-pointer hover:bg-gray-700/50 transition-all duration-300 border border-gray-700/50" onclick="copyCommand('nomos serve', this)">
                                 <div class="flex items-center space-x-3">
-                                    <span class="text-gray-500">$</span>
+                                    <span class="text-gray-400">$</span>
                                     <span class="text-green-400">nomos serve</span>
                                 </div>
                                 <i data-lucide="copy" class="w-4 h-4 text-gray-400 group-hover:text-white transition-colors"></i>
@@ -371,57 +709,82 @@
 
                         <!-- Copy feedback -->
                         <div id="copyFeedback" class="text-center text-xs text-gray-400 opacity-0 transition-opacity">
-                            Copied to clipboard!
+                            <span class="text-green-400">✓</span> Copied to clipboard!
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Scroll Indicator -->
+        <div class="scroll-indicator">
+            <div class="flex flex-col items-center text-gray-500">
+                <span class="text-sm font-light mb-2">Scroll to explore</span>
+                <i data-lucide="chevron-down" class="w-5 h-5"></i>
+            </div>
+        </div>
+        
         <canvas id="particle-canvas"></canvas>
-
-
     </section>
 
     <!-- Problem/Solution Section -->
-    <section class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                    Developer Control vs Prompt Chaos
+    <section class="py-20 bg-gradient-to-br from-gray-50 via-white to-red-50/30 relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute inset-0 bg-gradient-to-r from-red-500/10 to-orange-500/10 transform -rotate-12 scale-150"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl lg:text-6xl font-bold mb-6">
+                    <span class="font-thin">Developer Control vs</span><br>
+                    <span class="text-highlight">Prompt Chaos</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    Stop fighting unpredictable prompts. NOMOS gives you architectural control over your AI agents.
+                <p class="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
+                    Stop fighting unpredictable prompts. <span class="font-medium text-gray-800">NOMOS</span> gives you architectural control over your AI agents.
                 </p>
             </div>
 
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
+            <div class="grid lg:grid-cols-2 gap-12 items-stretch">
                 <!-- Other Frameworks -->
                 <div class="space-y-6">
-                    <div class="bg-white border border-gray-200 rounded-lg p-8">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="alert-circle" class="w-6 h-6 text-gray-600 mr-3"></i>
-                            <h3 class="text-xl font-semibold text-gray-800">Other Agent Frameworks</h3>
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-8 border border-red-200 hover:border-red-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full">
+                        <div class="flex items-center mb-6">
+                            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                                <i data-lucide="alert-circle" class="w-6 h-6 text-white"></i>
+                            </div>
+                            <h3 class="text-2xl font-bold text-gray-900">Other Agent Frameworks</h3>
                         </div>
-                        <ul class="space-y-3 text-gray-700">
-                            <li class="flex items-center">
-                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
-                                Agents controlled by prompts
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start">
+                                <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                    <i data-lucide="x" class="w-3 h-3 text-red-500"></i>
+                                </div>
+                                <span class="leading-relaxed">Agents controlled by prompts</span>
                             </li>
-                            <li class="flex items-center">
-                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
-                                Unpredictable tool access
+                            <li class="flex items-start">
+                                <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                    <i data-lucide="x" class="w-3 h-3 text-red-500"></i>
+                                </div>
+                                <span class="leading-relaxed">Unpredictable tool access</span>
                             </li>
-                            <li class="flex items-center">
-                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
-                                Hard to debug and test
+                            <li class="flex items-start">
+                                <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                    <i data-lucide="x" class="w-3 h-3 text-red-500"></i>
+                                </div>
+                                <span class="leading-relaxed">Hard to debug and test</span>
                             </li>
-                            <li class="flex items-center">
-                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
-                                Complex workflow management
+                            <li class="flex items-start">
+                                <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                    <i data-lucide="x" class="w-3 h-3 text-red-500"></i>
+                                </div>
+                                <span class="leading-relaxed">Complex workflow management</span>
                             </li>
-                            <li class="flex items-center">
-                                <i data-lucide="x" class="w-4 h-4 text-gray-400 mr-3"></i>
-                                Inconsistent behavior in production
+                            <li class="flex items-start">
+                                <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                    <i data-lucide="x" class="w-3 h-3 text-red-500"></i>
+                                </div>
+                                <span class="leading-relaxed">Inconsistent behavior in production</span>
                             </li>
                         </ul>
                     </div>
@@ -429,33 +792,50 @@
 
                 <!-- NOMOS -->
                 <div class="space-y-6">
-                    <div class="bg-white border-2 border-black rounded-lg p-8">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="shield-check" class="w-6 h-6 text-black mr-3"></i>
-                            <h3 class="text-xl font-semibold text-black">NOMOS Framework</h3>
+                    <div class="group bg-white/80 backdrop-blur-xl rounded-xl p-8 border-2 border-indigo-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 h-full relative overflow-hidden">
+                        <!-- Gradient Overlay -->
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-indigo-100/30 to-transparent rounded-full -mr-32 -mt-32"></div>
+                        
+                        <div class="relative z-10">
+                            <div class="flex items-center mb-6">
+                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="shield-check" class="w-6 h-6 text-white"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold gradient-text">NOMOS Framework</h3>
+                            </div>
+                            <ul class="space-y-4 text-gray-700">
+                                <li class="flex items-start">
+                                    <div class="w-6 h-6 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                                    </div>
+                                    <span class="leading-relaxed">Developers define agent behavior</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <div class="w-6 h-6 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                                    </div>
+                                    <span class="leading-relaxed">Controlled tool access per step</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <div class="w-6 h-6 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                                    </div>
+                                    <span class="leading-relaxed">Predictable and testable flows</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <div class="w-6 h-6 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                                    </div>
+                                    <span class="leading-relaxed">Step-by-step workflow control</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <div class="w-6 h-6 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center mr-4 mt-0.5 flex-shrink-0">
+                                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i>
+                                    </div>
+                                    <span class="leading-relaxed">Consistent production behavior</span>
+                                </li>
+                            </ul>
                         </div>
-                        <ul class="space-y-3 text-gray-700">
-                            <li class="flex items-center">
-                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
-                                Developers define agent behavior
-                            </li>
-                            <li class="flex items-center">
-                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
-                                Controlled tool access per step
-                            </li>
-                            <li class="flex items-center">
-                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
-                                Predictable and testable flows
-                            </li>
-                            <li class="flex items-center">
-                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
-                                Step-by-step workflow control
-                            </li>
-                            <li class="flex items-center">
-                                <i data-lucide="check" class="w-4 h-4 text-black mr-3"></i>
-                                Consistent production behavior
-                            </li>
-                        </ul>
                     </div>
                 </div>
             </div>
@@ -466,21 +846,22 @@
     <section id="features" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                    Built for Production AI Agents
+                <h2 class="text-4xl lg:text-6xl font-bold mb-6">
+                    <span class="font-thin">Built for</span> <span class="gradient-text">Production</span><br>
+                    <span class="text-highlight">AI Agents</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    From rapid prototyping to enterprise deployment. NOMOS scales with your needs.
+                <p class="text-xl lg:text-2xl text-gray-600 max-w-3xl mx-auto font-light">
+                    From rapid prototyping to enterprise deployment. <span class="font-medium text-gray-800">NOMOS</span> scales with your needs.
                 </p>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Feature 1: Step-based Architecture -->
-                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="feature-card rounded-xl p-8 text-center stagger-fade-in">
+                    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-6 icon-float">
                         <i data-lucide="workflow" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-4">Step-based Architecture</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Step-based Architecture</h3>
                     <p class="text-gray-600 leading-relaxed">
                         Define agent behavior as sequences of steps. Each step controls what tools are available and how
                         decisions flow.
@@ -488,58 +869,58 @@
                 </div>
 
                 <!-- Feature 2: Multi-LLM Support -->
-                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="feature-card rounded-xl p-8 text-center stagger-fade-in">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-6 icon-float">
                         <i data-lucide="brain" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-4">Multi-LLM Support</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Multi-LLM Support</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        OpenAI, Mistral, Gemini, Ollama, HuggingFace, and more. Switch providers with configuration changes, not code
+                        <span class="font-medium">OpenAI, Mistral, Gemini, Ollama, HuggingFace</span>, and more. Switch providers with configuration changes, not code
                         rewrites.
                     </p>
                 </div>
 
                 <!-- Feature 3: Tool Control -->
-                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="feature-card rounded-xl p-8 text-center stagger-fade-in">
+                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-6 icon-float">
                         <i data-lucide="wrench" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-4">Precise Tool Control</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Precise Tool Control</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        Control exactly which tools your agent can access at each step. No more unwanted function calls.
+                        Control exactly which tools your agent can access at each step. <span class="font-medium text-gray-800">No more unwanted function calls.</span>
                     </p>
                 </div>
 
                 <!-- Feature 4: Configuration-Driven -->
-                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="feature-card rounded-xl p-8 text-center stagger-fade-in">
+                    <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mx-auto mb-6 icon-float">
                         <i data-lucide="settings" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-4">Configuration-Driven</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Configuration-Driven</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        YAML or Python configuration. Change agent behavior without touching core logic.
+                        <span class="font-medium">YAML or Python</span> configuration. Change agent behavior without touching core logic.
                     </p>
                 </div>
 
                 <!-- Feature 5: Session Management -->
-                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="feature-card rounded-xl p-8 text-center stagger-fade-in">
+                    <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mx-auto mb-6 icon-float">
                         <i data-lucide="database" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-4">Session Management</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Session Management</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        Built-in persistence with Redis or PostgreSQL. Stateful conversations that survive restarts.
+                        Built-in persistence with <span class="font-medium">Redis or PostgreSQL</span>. Stateful conversations that survive restarts.
                     </p>
                 </div>
 
                 <!-- Feature 6: Cloud Ready -->
-                <div class="feature-card bg-white border border-gray-200 rounded-lg p-8 text-center">
-                    <div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center mx-auto mb-6">
+                <div class="feature-card rounded-xl p-8 text-center stagger-fade-in">
+                    <div class="w-16 h-16 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-6 icon-float">
                         <i data-lucide="cloud" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-4">Deploy Anywhere</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900">Deploy Anywhere</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        Docker containers, Kubernetes, AWS, Azure, GCP. Production-ready deployment options.
+                        <span class="font-medium">Docker, Kubernetes, AWS, Azure, GCP</span>. Production-ready deployment options.
                     </p>
                 </div>
             </div>
@@ -547,55 +928,64 @@
     </section>
 
     <!-- Architecture Visualization -->
-    <section class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                    Simple Configuration, Powerful Results
+    <section class="py-20 bg-gradient-to-br from-gray-50 via-white to-blue-50/30 relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 transform -rotate-12 scale-150"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl lg:text-6xl font-bold mb-6">
+                    <span class="font-thin">Simple</span> <span class="text-highlight">Configuration</span><br>
+                    <span class="gradient-text">Powerful Results</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    See how NOMOS transforms complex AI workflows into simple, manageable configurations.
+                <p class="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
+                    See how <span class="font-medium text-gray-800">NOMOS</span> transforms complex AI workflows into simple, manageable configurations.
                 </p>
             </div>
 
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <!-- Visual Flow -->
-                <div class="bg-white rounded-lg p-8 shadow-lg">
-                    <h3 class="text-xl font-semibold mb-6 text-center">Agent Flow Architecture</h3>
+                <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-8 lg:p-10 border border-gray-200 shadow-xl relative overflow-hidden">
+                    <!-- Gradient Overlay -->
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-100/30 to-transparent rounded-full -mr-32 -mt-32"></div>
+                    
+                    <div class="relative z-10">
+                        <h3 class="text-2xl font-bold mb-8 text-center gradient-text">Agent Flow Architecture</h3>
 
-                    <!-- Step Flow Visualization -->
-                    <div class="space-y-6">
-                        <div class="flex items-center space-x-4">
-                            <div class="w-12 h-12 bg-black rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="play" class="w-6 h-6 text-white"></i>
+                        <!-- Step Flow Visualization -->
+                        <div class="space-y-6">
+                            <div class="flex items-center space-x-4 group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="play" class="w-7 h-7 text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-lg text-gray-900">Step 1: Greeting</div>
+                                    <div class="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-lg inline-block">Tools: get_menu, take_order</div>
+                                </div>
+                                <i data-lucide="arrow-down" class="w-6 h-6 text-indigo-400"></i>
                             </div>
-                            <div class="flex-1">
-                                <div class="font-medium">Step 1: Greeting</div>
-                                <div class="text-sm text-gray-600">Tools: get_menu, take_order</div>
-                            </div>
-                            <i data-lucide="arrow-down" class="w-5 h-5 text-gray-400"></i>
-                        </div>
 
-                        <div class="flex items-center space-x-4">
-                            <div
-                                class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="credit-card" class="w-6 h-6 text-gray-700"></i>
+                            <div class="flex items-center space-x-4 group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="credit-card" class="w-7 h-7 text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-lg text-gray-900">Step 2: Payment</div>
+                                    <div class="text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-lg inline-block">Tools: process_payment, send_receipt</div>
+                                </div>
+                                <i data-lucide="arrow-down" class="w-6 h-6 text-indigo-400"></i>
                             </div>
-                            <div class="flex-1">
-                                <div class="font-medium">Step 2: Payment</div>
-                                <div class="text-sm text-gray-600">Tools: process_payment, send_receipt</div>
-                            </div>
-                            <i data-lucide="arrow-down" class="w-5 h-5 text-gray-400"></i>
-                        </div>
 
-                        <div class="flex items-center space-x-4">
-                            <div
-                                class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="check-circle" class="w-6 h-6 text-gray-600"></i>
-                            </div>
-                            <div class="flex-1">
-                                <div class="font-medium">Complete</div>
-                                <div class="text-sm text-gray-600">Order processed successfully</div>
+                            <div class="flex items-center space-x-4 group">
+                                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="check-circle" class="w-7 h-7 text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-lg text-gray-900">Complete</div>
+                                    <div class="text-sm text-gray-600 bg-green-50 px-3 py-1 rounded-lg inline-block">Order processed successfully</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -603,35 +993,33 @@
 
                 <!-- Benefits -->
                 <div class="space-y-6">
-                    <div class="bg-white rounded-lg p-6 border border-gray-200">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="shield" class="w-6 h-6 text-black mr-3"></i>
-                            <h4 class="font-semibold">Controlled Execution</h4>
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="shield" class="w-6 h-6 text-white"></i>
                         </div>
-                        <p class="text-gray-600">
-                            Each step defines exactly what tools are available. No more agents calling inappropriate
-                            functions.
+                        <h4 class="font-bold text-lg mb-2 text-gray-900">Controlled Execution</h4>
+                        <p class="text-gray-600 leading-relaxed">
+                            Each step defines exactly what tools are available. No more agents calling inappropriate functions.
                         </p>
                     </div>
 
-                    <div class="bg-white rounded-lg p-6 border border-gray-200">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="target" class="w-6 h-6 text-black mr-3"></i>
-                            <h4 class="font-semibold">Predictable Behavior</h4>
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="target" class="w-6 h-6 text-white"></i>
                         </div>
-                        <p class="text-gray-600">
+                        <h4 class="font-bold text-lg mb-2 text-gray-900">Predictable Behavior</h4>
+                        <p class="text-gray-600 leading-relaxed">
                             Clear step transitions and conditions ensure your agent behaves consistently every time.
                         </p>
                     </div>
 
-                    <div class="bg-white rounded-lg p-6 border border-gray-200">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="zap" class="w-6 h-6 text-black mr-3"></i>
-                            <h4 class="font-semibold">Easy Testing</h4>
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="zap" class="w-6 h-6 text-white"></i>
                         </div>
-                        <p class="text-gray-600">
-                            Test individual steps and transitions independently. Debug complex workflows with
-                            confidence.
+                        <h4 class="font-bold text-lg mb-2 text-gray-900">Easy Testing</h4>
+                        <p class="text-gray-600 leading-relaxed">
+                            Test individual steps and transitions independently. Debug complex workflows with confidence.
                         </p>
                     </div>
                 </div>
@@ -651,93 +1039,95 @@
                 </p>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <!-- Use Case 1: Customer Service -->
-                <div class="text-center group">
-                    <div
-                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                        <i data-lucide="headphones" class="w-10 h-10"></i>
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="headphones" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Customer Service</h3>
-                    <p class="text-gray-600">Intelligent support agents that escalate appropriately and access the right
-                        tools at the right time.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">Customer Service</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Intelligent support agents that escalate appropriately and access the right tools at the right time.</p>
                 </div>
 
-                <!-- Use Case 2: Workflow Automation -->
-                <div class="text-center group">
-                    <div
-                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                        <i data-lucide="repeat" class="w-10 h-10"></i>
+                <!-- Use Case 2: Process Automation -->
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="repeat" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Process Automation</h3>
-                    <p class="text-gray-600">Multi-step business processes with approvals, notifications, and data
-                        validation.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">Process Automation</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Multi-step business processes with approvals, notifications, and data validation.</p>
                 </div>
 
                 <!-- Use Case 3: Data Analysis -->
-                <div class="text-center group">
-                    <div
-                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                        <i data-lucide="bar-chart" class="w-10 h-10"></i>
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="bar-chart" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">Data Analysis</h3>
-                    <p class="text-gray-600">Intelligent analysis pipelines that know when to aggregate, visualize, or
-                        dive deeper.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">Data Analysis</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Intelligent analysis pipelines that know when to aggregate, visualize, or dive deeper.</p>
                 </div>
 
                 <!-- Use Case 4: API Orchestration -->
-                <div class="text-center group">
-                    <div
-                        class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-6 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                        <i data-lucide="network" class="w-10 h-10"></i>
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 text-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="network" class="w-8 h-8 text-white"></i>
                     </div>
-                    <h3 class="text-xl font-semibold mb-3">API Orchestration</h3>
-                    <p class="text-gray-600">Coordinate complex API calls across services with intelligent error
-                        handling and retries.</p>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">API Orchestration</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">Coordinate complex API calls across services with intelligent error handling and retries.</p>
                 </div>
             </div>
 
             <!-- Example Projects -->
-            <div class="mt-16">
-                <h3 class="text-2xl font-semibold text-center mb-8">Ready-to-Deploy Examples</h3>
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="coffee" class="w-6 h-6 mr-3"></i>
-                            <h4 class="font-semibold">Coffee Shop Assistant</h4>
+            <div class="mt-20">
+                <h3 class="text-2xl lg:text-3xl font-bold text-center mb-4">
+                    <span class="font-thin">Ready-to-Deploy</span> <span class="gradient-text">Examples</span>
+                </h3>
+                <p class="text-gray-600 text-lg text-center mb-12">Production-ready agent templates you can deploy in minutes</p>
+                
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="coffee" class="w-6 h-6 text-white"></i>
                         </div>
-                        <p class="text-gray-600 text-sm mb-4">Multi-step ordering process with menu recommendations and
-                            payment processing</p>
-                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/barista"
-                            class="text-black hover:underline text-sm font-medium">
-                            Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
-                        </a>
+                        <h4 class="font-bold text-lg mb-2">Coffee Shop Assistant</h4>
+                        <p class="text-gray-600 text-sm mb-4 leading-relaxed">Multi-step ordering process with menu recommendations and payment processing</p>
+                        <div class="flex items-center justify-between">
+                            <a href="https://github.com/dowhiledev/nomos/tree/main/examples/barista"
+                                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors">
+                                Deploy Example
+                            </a>
+                            <i data-lucide="external-link" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+                        </div>
                     </div>
 
-                    <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="trending-up" class="w-6 h-6 mr-3"></i>
-                            <h4 class="font-semibold">Financial Advisor</h4>
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="trending-up" class="w-6 h-6 text-white"></i>
                         </div>
-                        <p class="text-gray-600 text-sm mb-4">Investment analysis and portfolio recommendations with
-                            risk assessment</p>
-                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/financial-advisor"
-                            class="text-black hover:underline text-sm font-medium">
-                            Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
-                        </a>
+                        <h4 class="font-bold text-lg mb-2">Financial Advisor</h4>
+                        <p class="text-gray-600 text-sm mb-4 leading-relaxed">Investment analysis and portfolio recommendations with risk assessment</p>
+                        <div class="flex items-center justify-between">
+                            <a href="https://github.com/dowhiledev/nomos/tree/main/examples/financial-advisor"
+                                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors">
+                                Deploy Example
+                            </a>
+                            <i data-lucide="external-link" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+                        </div>
                     </div>
 
-                    <div class="bg-gray-50 rounded-lg p-6 hover:shadow-lg transition-shadow">
-                        <div class="flex items-center mb-4">
-                            <i data-lucide="map" class="w-6 h-6 mr-3"></i>
-                            <h4 class="font-semibold">Travel Planner</h4>
+                    <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                            <i data-lucide="map" class="w-6 h-6 text-white"></i>
                         </div>
-                        <p class="text-gray-600 text-sm mb-4">Intelligent itinerary planning with weather, budget, and
-                            preference considerations</p>
-                        <a href="https://github.com/dowhiledev/nomos/tree/main/examples/travel-itinery-planner"
-                            class="text-black hover:underline text-sm font-medium">
-                            Deploy Example <i data-lucide="external-link" class="w-3 h-3 inline ml-1"></i>
-                        </a>
+                        <h4 class="font-bold text-lg mb-2">Travel Planner</h4>
+                        <p class="text-gray-600 text-sm mb-4 leading-relaxed">Intelligent itinerary planning with weather, budget, and preference considerations</p>
+                        <div class="flex items-center justify-between">
+                            <a href="https://github.com/dowhiledev/nomos/tree/main/examples/travel-itinery-planner"
+                                class="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors">
+                                Deploy Example
+                            </a>
+                            <i data-lucide="external-link" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -745,177 +1135,233 @@
     </section>
 
     <!-- Ecosystem Section -->
-    <section id="ecosystem" class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                    Complete AI Agent Ecosystem
+    <section id="ecosystem" class="py-20 bg-gradient-to-br from-gray-50 via-white to-indigo-50/30 relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 transform rotate-12 scale-150"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl lg:text-6xl font-bold mb-6">
+                    <span class="font-thin">Complete</span> <span class="text-highlight">AI Agent</span><br>
+                    <span class="gradient-text">Ecosystem</span>
                 </h2>
-                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
-                    NOMOS is just the beginning. A complete suite of tools for production AI agent deployment.
+                <p class="text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto font-light">
+                    <span class="font-medium text-gray-800">NOMOS</span> is just the beginning. A complete suite of tools for production AI agent deployment.
                 </p>
             </div>
 
-            <!-- Current: NOMOS -->
-            <div class="mb-12">
-                <div class="bg-white rounded-lg p-8 border-2 border-black">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 bg-black rounded-lg flex items-center justify-center mr-4">
-                                <span class="text-white font-bold">N</span>
+            <!-- Current: NOMOS - Hero Card -->
+            <div class="mb-16">
+                <div class="bg-white/80 backdrop-blur-xl rounded-2xl p-8 lg:p-12 border-2 border-indigo-200 shadow-2xl relative overflow-hidden">
+                    <!-- Gradient Overlay -->
+                    <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-indigo-100/50 to-transparent rounded-full -mr-48 -mt-48"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="flex flex-col lg:flex-row items-center justify-between mb-8">
+                            <div class="flex items-center mb-6 lg:mb-0">
+                                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center mr-6 shadow-lg">
+                                    <span class="text-white font-bold text-2xl">N</span>
+                                </div>
+                                <div>
+                                    <h3 class="text-3xl lg:text-4xl font-bold gradient-text">NOMOS</h3>
+                                    <p class="text-gray-600 text-lg">AI Agent Framework</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 class="text-2xl font-bold">NOMOS</h3>
-                                <p class="text-gray-600">AI Agent Framework</p>
+                            <div class="flex items-center space-x-4">
+                                <span class="bg-gradient-to-r from-green-400 to-emerald-500 text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg">
+                                    ✓ Available Now
+                                </span>
+                                <div class="text-right">
+                                    <div class="text-2xl font-bold gradient-text">v0.2.2</div>
+                                    <div class="text-sm text-gray-500">Latest Release</div>
+                                </div>
                             </div>
                         </div>
-                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Available
-                            Now</span>
-                    </div>
-                    <p class="text-gray-700 mb-4">
-                        The core framework for building intelligent, step-based AI agents with full developer control.
-                    </p>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Step-based flows</span>
-                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Multi-LLM support</span>
-                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Tool control</span>
-                        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-lg text-sm">Session management</span>
+                        
+                        <p class="text-gray-700 text-lg mb-8 leading-relaxed">
+                            The core framework for building intelligent, step-based AI agents with full developer control. 
+                            Start building production-ready agents in minutes.
+                        </p>
+                        
+                        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-gradient-to-r from-indigo-50 to-blue-50 px-4 py-3 rounded-xl border border-indigo-100">
+                                <div class="font-medium text-gray-800">Step-based flows</div>
+                            </div>
+                            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-4 py-3 rounded-xl border border-purple-100">
+                                <div class="font-medium text-gray-800">Multi-LLM support</div>
+                            </div>
+                            <div class="bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-3 rounded-xl border border-blue-100">
+                                <div class="font-medium text-gray-800">Tool control</div>
+                            </div>
+                            <div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 rounded-xl border border-emerald-100">
+                                <div class="font-medium text-gray-800">Session management</div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="https://github.com/dowhiledev/nomos" class="btn-primary">
+                                <i data-lucide="github" class="w-5 h-5 inline mr-2"></i>
+                                Get Started
+                            </a>
+                            <a href="https://github.com/dowhiledev/nomos/blob/main/README.md" class="btn-secondary">
+                                <i data-lucide="book" class="w-5 h-5 inline mr-2"></i>
+                                Documentation
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Coming Soon -->
-            <!-- Kosmos Studio - Full Width -->
-            <div class="mb-6">
-                <div class="bg-white rounded-lg p-6 border border-gray-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                            <i data-lucide="palette" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Kosmos</h4>
-                            <p class="text-sm text-gray-600">Visual Studio</p>
-                        </div>
-                    </div>
-                    <p class="text-gray-600 text-sm mb-4">
-                        No-code visual builder for AI agents. Drag, drop, deploy.
-                    </p>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
-                </div>
+            <!-- Coming Soon - Enhanced Grid -->
+            <div class="text-center mb-12">
+                <h3 class="text-2xl lg:text-3xl font-bold mb-4">
+                    <span class="font-thin">Coming Soon:</span> <span class="gradient-text">Production Suite</span>
+                </h3>
+                <p class="text-gray-600 text-lg">The complete toolkit for enterprise AI agent deployment</p>
             </div>
 
-            <!-- Other Products - Grid -->
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <!-- Kosmos Studio -->
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="palette" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-2">Kosmos Studio</h4>
+                    <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                        Visual no-code builder for AI agents. Drag, drop, and deploy complex workflows with ease.
+                    </p>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 px-3 py-1 rounded-full text-xs font-medium">
+                            Q2 2025
+                        </span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+                    </div>
+                </div>
+
                 <!-- Argus Observability -->
-                <div class="bg-white rounded-lg p-6 border border-gray-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                            <i data-lucide="eye" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Argus</h4>
-                            <p class="text-sm text-gray-600">Observability</p>
-                        </div>
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="eye" class="w-6 h-6 text-white"></i>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">
-                        Real-time monitoring, tracing, and analytics for your agents.
+                    <h4 class="font-bold text-lg mb-2">Argus Monitor</h4>
+                    <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                        Real-time monitoring, tracing, and analytics for your production AI agents.
                     </p>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium">
+                            Q3 2025
+                        </span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+                    </div>
                 </div>
 
                 <!-- Clio Versioning -->
-                <div class="bg-white rounded-lg p-6 border border-gray-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                            <i data-lucide="git-branch" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Clio</h4>
-                            <p class="text-sm text-gray-600">Versioning</p>
-                        </div>
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="git-branch" class="w-6 h-6 text-white"></i>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">
-                        Version control and rollback for agent configurations and models.
+                    <h4 class="font-bold text-lg mb-2">Clio Version</h4>
+                    <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                        Version control and rollback for agent configurations and model deployments.
                     </p>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
-                </div>
-
-                <!-- Echo Testing -->
-                <div class="bg-white rounded-lg p-6 border border-gray-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                            <i data-lucide="check-square" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Echo</h4>
-                            <p class="text-sm text-gray-600">Testing</p>
-                        </div>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-gradient-to-r from-violet-100 to-purple-100 text-violet-700 px-3 py-1 rounded-full text-xs font-medium">
+                            Q3 2025
+                        </span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">
-                        Automated testing framework for AI agent behavior and performance.
-                    </p>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
                 </div>
 
                 <!-- Hermes Deploy -->
-                <div class="bg-white rounded-lg p-6 border border-gray-200">
-                    <div class="flex items-center mb-4">
-                        <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center mr-3">
-                            <i data-lucide="rocket" class="w-5 h-5 text-gray-600"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold">Hermes</h4>
-                            <p class="text-sm text-gray-600">Enterprise Deployment</p>
-                        </div>
+                <div class="group bg-white/70 backdrop-blur-lg rounded-xl p-6 border border-gray-200 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        <i data-lucide="rocket" class="w-6 h-6 text-white"></i>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">
-                        One-click deployment to any cloud provider with auto-scaling, security, and compliance built-in.
+                    <h4 class="font-bold text-lg mb-2">Hermes Deploy</h4>
+                    <p class="text-gray-600 text-sm mb-4 leading-relaxed">
+                        One-click deployment with auto-scaling, security, and compliance built-in.
                     </p>
-                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">Coming Soon</span>
+                    <div class="flex items-center justify-between">
+                        <span class="bg-gradient-to-r from-rose-100 to-pink-100 text-rose-700 px-3 py-1 rounded-full text-xs font-medium">
+                            Q4 2025
+                        </span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-indigo-500 transition-colors"></i>
+                    </div>
                 </div>
             </div>
 
-            <div class="text-center mt-12">
-                <p class="text-gray-600 mb-6">
-                    Join our community to get early access to the complete ecosystem
+            <!-- Community CTA -->
+            <div class="text-center bg-gradient-to-r from-indigo-50 to-blue-50 rounded-2xl p-8 lg:p-12 border border-indigo-100">
+                <h3 class="text-2xl lg:text-3xl font-bold mb-4 gradient-text">Join the Community</h3>
+                <p class="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
+                    Get early access to the complete ecosystem, contribute to the roadmap, and connect with other AI agent builders.
                 </p>
-                <a href="https://discord.gg/nomos"
-                    class="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors">
-                    <i data-lucide="users" class="w-5 h-5 inline mr-2"></i>
-                    Join Discord Community
-                </a>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="https://discord.gg/nomos" class="btn-primary">
+                        <i data-lucide="users" class="w-5 h-5 inline mr-2"></i>
+                        Join Discord
+                    </a>
+                    <a href="https://github.com/dowhiledev/nomos" class="btn-secondary">
+                        <i data-lucide="star" class="w-5 h-5 inline mr-2"></i>
+                        Star on GitHub
+                    </a>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Get Started Section -->
-    <section id="get-started" class="py-20 bg-black text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="get-started" class="py-20 bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-blue-500/20 transform rotate-12 scale-150"></div>
+        </div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="text-center">
-                <h2 class="text-4xl lg:text-5xl font-bold mb-6">
-                    Ready to Build Your AI Agent?
+                <h2 class="text-4xl lg:text-6xl font-bold mb-6">
+                    <span class="font-thin">Ready to Build Your</span><br>
+                    <span class="gradient-text">AI Agent</span><span class="font-thin">?</span>
                 </h2>
-                <p class="text-xl text-gray-300 max-w-3xl mx-auto mb-12">
-                    Join thousands of developers building production-ready AI agents with full control and predictable
+                <p class="text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto mb-12 font-light">
+                    Join thousands of developers building <span class="text-white font-medium">production-ready AI agents</span> with full control and predictable
                     behavior.
                 </p>
 
                 <div class="flex flex-col sm:flex-row gap-6 justify-center mb-16">
                     <a href="https://github.com/dowhiledev/nomos"
-                        class="bg-white text-black px-8 py-4 rounded-lg hover:bg-gray-100 transition-all transform hover:scale-105 text-center font-medium">
-                        <i data-lucide="star" class="w-5 h-5 inline mr-2"></i>
+                        class="btn-primary text-lg group">
+                        <i data-lucide="star" class="w-5 h-5 inline mr-2 group-hover:scale-110 transition-transform"></i>
                         Star on GitHub
                     </a>
                     <a href="https://github.com/dowhiledev/nomos/blob/main/README.md"
-                        class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
-                        <i data-lucide="book" class="w-5 h-5 inline mr-2"></i>
+                        class="btn-secondary-dark text-lg group">
+                        <i data-lucide="book" class="w-5 h-5 inline mr-2 group-hover:scale-110 transition-transform"></i>
                         Read Documentation
                     </a>
                     <a href="https://discord.gg/nomos"
-                        class="border-2 border-white text-white px-8 py-4 rounded-lg hover:bg-white hover:text-black transition-all text-center font-medium">
-                        <i data-lucide="message-circle" class="w-5 h-5 inline mr-2"></i>
+                        class="btn-secondary-dark text-lg group">
+                        <i data-lucide="message-circle" class="w-5 h-5 inline mr-2 group-hover:scale-110 transition-transform"></i>
                         Join Community
                     </a>
+                </div>
+
+                <!-- Quick Start Stats -->
+                <div class="grid md:grid-cols-3 gap-8 max-w-3xl mx-auto">
+                    <div class="text-center stagger-fade-in">
+                        <div class="text-3xl font-bold gradient-text mb-2">5min</div>
+                        <div class="text-gray-300 text-sm">Setup Time</div>
+                    </div>
+                    <div class="text-center stagger-fade-in">
+                        <div class="text-3xl font-bold gradient-text mb-2">100%</div>
+                        <div class="text-gray-300 text-sm">Open Source</div>
+                    </div>
+                    <div class="text-center stagger-fade-in">
+                        <div class="text-3xl font-bold gradient-text mb-2">∞</div>
+                        <div class="text-gray-300 text-sm">Possibilities</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -990,7 +1436,7 @@
 
     <!-- Scroll to Top Button -->
     <button id="scrollToTop"
-        class="fixed bottom-8 right-8 bg-black text-white p-3 rounded-lg shadow-lg hover:bg-gray-800 transition-all transform hover:scale-110 opacity-0 invisible">
+        class="fixed bottom-8 right-8 bg-black text-white p-3 rounded-lg shadow-lg hover:bg-gray-800 transition-all transform hover:scale-110 opacity-0 invisible z-[9999]">
         <i data-lucide="arrow-up" class="w-6 h-6"></i>
     </button>
 
@@ -1016,18 +1462,26 @@
             return material;
         };
 
-        // Particle Wave Variables - exactly matching the example
-        var SEPARATION = 200, AMOUNTX = 40, AMOUNTY = 60;
+        // Particle Wave Variables - Enhanced modern version with performance optimization
+        var SEPARATION = 150, AMOUNTX = 50, AMOUNTY = 70;
         var camera, scene, renderer;
         var particles = [];
         var count = 0;
         var windowHalfX, windowHalfY;
+        var isReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         function initParticleWave() {
             const canvas = document.getElementById('particle-canvas');
             const heroSection = document.querySelector('.hero-gradient');
 
-            if (!canvas || !heroSection) return;
+            if (!canvas || !heroSection || isReduced) return;
+
+            // Reduce particle count on mobile for better performance
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                AMOUNTX = 30;
+                AMOUNTY = 40;
+            }
 
             // Get hero section dimensions
             const rect = heroSection.getBoundingClientRect();
@@ -1038,30 +1492,57 @@
             camera = new THREE.PerspectiveCamera(75, rect.width / rect.height, 1, 10000);
             camera.position.set(0, 0, 1000);
 
-            // Setup scene with fog
+            // Setup scene with subtle fog
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0xffffff, 1000, 4000);
+            scene.fog = new THREE.Fog(0xfafafa, 1000, 4000);
 
-            // Create particle material with black color for better contrast
+            // Create enhanced particle material with gradient colors
             var PI2 = Math.PI * 2;
-            var material = new THREE.SpriteCanvasMaterial({
-                color: 0x000000, // Black particles for contrast
-                program: function (context) {
-                    context.globalAlpha = 0.2; // More transparent particles
-                    context.beginPath();
-                    context.arc(0, 0, 0.2, 0, PI2, true); // Reduced particle size
-                    context.fill();
-                }
-            });
+            var materials = [
+                new THREE.SpriteCanvasMaterial({
+                    color: 0x6366f1, // Indigo
+                    program: function (context) {
+                        context.globalAlpha = 0.15;
+                        context.beginPath();
+                        context.arc(0, 0, 0.3, 0, PI2, true);
+                        context.fill();
+                    }
+                }),
+                new THREE.SpriteCanvasMaterial({
+                    color: 0x0ea5e9, // Blue
+                    program: function (context) {
+                        context.globalAlpha = 0.1;
+                        context.beginPath();
+                        context.arc(0, 0, 0.2, 0, PI2, true);
+                        context.fill();
+                    }
+                }),
+                new THREE.SpriteCanvasMaterial({
+                    color: 0x8b5cf6, // Purple
+                    program: function (context) {
+                        context.globalAlpha = 0.08;
+                        context.beginPath();
+                        context.arc(0, 0, 0.25, 0, PI2, true);
+                        context.fill();
+                    }
+                })
+            ];
 
-            // Create particles grid spread across the width and depth
+            // Create particles grid with varied materials
             var i = 0;
             for (var ix = 0; ix < AMOUNTX; ix++) {
                 for (var iy = 0; iy < AMOUNTY; iy++) {
-                    var particle = particles[i++] = new THREE.Sprite(material);
+                    var materialIndex = Math.floor(Math.random() * materials.length);
+                    var particle = particles[i++] = new THREE.Sprite(materials[materialIndex]);
+                    
                     particle.position.x = ix * SEPARATION - ((AMOUNTX * SEPARATION) / 2);
                     particle.position.z = iy * SEPARATION - ((AMOUNTY * SEPARATION) / 2);
-                    particle.position.y = -800; // Start even further down at bottom
+                    particle.position.y = -900; // Start deeper
+                    
+                    // Add some randomness to initial positions
+                    particle.position.x += (Math.random() - 0.5) * 50;
+                    particle.position.z += (Math.random() - 0.5) * 50;
+                    
                     scene.add(particle);
                 }
             }
@@ -1097,15 +1578,31 @@
             renderer.setSize(rect.width, rect.height);
         }
 
+        var isAnimating = true;
+
         function animate() {
-            requestAnimationFrame(animate);
-            render();
+            if (isAnimating) {
+                requestAnimationFrame(animate);
+                render();
+            }
         }
 
+        // Pause animation when page is not visible for performance
+        document.addEventListener('visibilitychange', () => {
+            isAnimating = !document.hidden;
+            if (isAnimating) {
+                animate();
+            }
+        });
+
         function render() {
-            // Side profile camera position - looking at the wave from the side
-            camera.position.set(0, 0, 1000);
-            camera.lookAt(0, -200, 0); // Look down towards the bottom of the screen
+            // Enhanced camera position for dynamic perspective
+            camera.position.set(
+                Math.sin(count * 0.01) * 200,
+                0,
+                1000 + Math.cos(count * 0.01) * 100
+            );
+            camera.lookAt(0, -300, 0);
 
             var i = 0;
 
@@ -1113,18 +1610,26 @@
                 for (var iy = 0; iy < AMOUNTY; iy++) {
                     var particle = particles[i++];
 
-                    // Position particles at the bottom and create wave motion
-                    particle.position.y = -600 + (Math.sin((ix + count) * 0.3) * 50) +
-                        (Math.sin((iy + count) * 0.5) * 50);
+                    // Enhanced wave motion with multiple frequencies
+                    var waveY = -700 + 
+                        (Math.sin((ix + count) * 0.3) * 60) +
+                        (Math.sin((iy + count) * 0.5) * 40) +
+                        (Math.sin((ix + iy + count) * 0.2) * 30);
 
-                    // Scale particles
-                    particle.scale.x = particle.scale.y = (Math.sin((ix + count) * 0.3) + 1) * 2 +
-                        (Math.sin((iy + count) * 0.5) + 1) * 2;
+                    particle.position.y = waveY;
+
+                    // Enhanced scaling with breathing effect
+                    var baseScale = (Math.sin((ix + count) * 0.3) + 1) * 2 +
+                        (Math.sin((iy + count) * 0.5) + 1) * 1.5;
+                    
+                    var breathingScale = 1 + Math.sin(count * 0.05) * 0.3;
+                    
+                    particle.scale.x = particle.scale.y = baseScale * breathingScale;
                 }
             }
 
             renderer.render(scene, camera);
-            count += 0.1; // Animation speed matching example
+            count += 0.08; // Slightly faster animation
         }
 
         // Initialize Lucide icons
@@ -1173,6 +1678,25 @@
             });
         });
 
+        // Initialize particle system with intersection observer for performance
+        const heroSection = document.querySelector('.hero-gradient');
+        if (heroSection && 'IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Initialize particle system when hero section is visible
+                        setTimeout(initParticleWave, 100);
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            observer.observe(heroSection);
+        } else {
+            // Fallback for browsers without IntersectionObserver
+            setTimeout(initParticleWave, 500);
+        }
+
         // Scroll to top button
         const scrollToTopBtn = document.getElementById('scrollToTop');
 
@@ -1193,13 +1717,44 @@
             });
         });
 
-        // Mobile menu toggle (if needed)
+        // Mobile menu toggle
         const mobileMenuBtn = document.querySelector('[data-mobile-menu-toggle]');
         const mobileMenu = document.querySelector('[data-mobile-menu]');
+        const mobileMenuIcon = mobileMenuBtn?.querySelector('i');
 
         if (mobileMenuBtn && mobileMenu) {
             mobileMenuBtn.addEventListener('click', () => {
+                const isHidden = mobileMenu.classList.contains('hidden');
                 mobileMenu.classList.toggle('hidden');
+                
+                // Update icon
+                if (mobileMenuIcon) {
+                    mobileMenuIcon.setAttribute('data-lucide', isHidden ? 'x' : 'menu');
+                    lucide.createIcons();
+                }
+            });
+
+            // Close mobile menu when clicking on links
+            const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+            mobileMenuLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    if (mobileMenuIcon) {
+                        mobileMenuIcon.setAttribute('data-lucide', 'menu');
+                        lucide.createIcons();
+                    }
+                });
+            });
+
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileMenuBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+                    mobileMenu.classList.add('hidden');
+                    if (mobileMenuIcon) {
+                        mobileMenuIcon.setAttribute('data-lucide', 'menu');
+                        lucide.createIcons();
+                    }
+                }
             });
         }
     </script>
