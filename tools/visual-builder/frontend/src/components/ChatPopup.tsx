@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
-import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ChevronDown, ChevronUp, Send, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, Send, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { exportToYaml } from '../utils/nomosYaml';
 import * as yaml from 'js-yaml';
 import { NomosClient, SessionData } from 'nomos-sdk';
@@ -163,8 +163,8 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   useEffect(() => {
     if (open) {
       setPosition({
-        x: window.innerWidth - 600, // Wider for 2-column layout
-        y: window.innerHeight - 500,
+        x: window.innerWidth - 800, // Wider for 2-column layout
+        y: window.innerHeight - 700,
       });
     }
   }, [open, setPosition]);
@@ -206,188 +206,201 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   if (!open) return null;
 
   return (
-    <div className="fixed z-50" style={{ left: position.x, top: position.y, width: sidebarCollapsed ? '380px' : '580px' }}>
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent showCloseButton={false} className="p-0 shadow-lg max-w-none" style={{ width: sidebarCollapsed ? '380px' : '580px' }}>
-          <div className="flex items-center justify-between p-2 border-b cursor-move" onMouseDown={onMouseDown}>
-            <DialogTitle className="text-sm">Chat Preview</DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
-              <X className="w-3 h-3" />
-            </Button>
-          </div>
-          <div className="flex h-96">
-            {/* Left Sidebar - Configuration */}
-            {!sidebarCollapsed && (
-              <div className="w-48 border-r p-3 space-y-3 overflow-y-auto">
-                <div className="space-y-2">
-                  <label className="text-xs font-medium">Provider</label>
-                  <Select value={provider} onValueChange={setProvider}>
-                    <SelectTrigger className="w-full text-xs" size="sm">
-                      <SelectValue placeholder="Select provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="openai">OpenAI</SelectItem>
-                      <SelectItem value="google">Google</SelectItem>
-                      <SelectItem value="mistral">Mistral</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+    <div
+      className="fixed z-50 bg-white border rounded-lg shadow-xl"
+      style={{
+        left: position.x,
+        top: position.y,
+        width: sidebarCollapsed ? '480px' : '780px',
+        height: '600px'
+      }}
+    >
+      <div className="flex items-center justify-between p-2 border-b cursor-move bg-gray-50 rounded-t-lg" onMouseDown={onMouseDown}>
+        <h3 className="text-sm font-medium">Chat Preview</h3>
+        <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+      <div className="flex h-[calc(100%-40px)]">
+        {/* Left Sidebar - Configuration */}
+        {!sidebarCollapsed && (
+          <div className="w-64 border-r p-3 space-y-3 overflow-y-auto">
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Provider</label>
+              <Select value={provider} onValueChange={setProvider}>
+                <SelectTrigger className="w-full text-xs" size="sm">
+                  <SelectValue placeholder="Select provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="google">Google</SelectItem>
+                  <SelectItem value="mistral">Mistral</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-medium">Model</label>
-                  <Input
-                    value={model}
-                    onChange={e => setModel(e.target.value)}
-                    placeholder="Model name"
-                    className="text-xs h-8"
-                  />
-                </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Model</label>
+              <Input
+                value={model}
+                onChange={e => setModel(e.target.value)}
+                placeholder="Model name"
+                className="text-xs h-8"
+              />
+            </div>
 
-                <div className="space-y-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowEnv(!showEnv)}
-                    className="flex items-center gap-1 p-0 h-auto text-xs font-medium"
-                  >
-                    {showEnv ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    Environment Variables
-                  </Button>
-                  {showEnv && (
-                    <div className="space-y-1">
-                      {envVars.map((ev, i) => (
-                        <div key={i} className="space-y-1">
-                          <Input
-                            value={ev.key}
-                            onChange={e => updateEnv(i, e.target.value, ev.value)}
-                            placeholder="KEY"
-                            className="text-xs h-8"
-                          />
-                          <Input
-                            value={ev.value}
-                            onChange={e => updateEnv(i, ev.key, e.target.value)}
-                            placeholder="Value"
-                            className="text-xs h-8"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeEnv(i)}
-                            className="h-6 w-full text-xs"
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                      <Button variant="ghost" size="sm" onClick={addEnv} className="w-full text-xs">
-                        Add Variable
-                      </Button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-medium">Tools (.py files)</label>
-                  <input
-                    type="file"
-                    multiple
-                    accept=".py"
-                    id="tools-upload"
-                    className="text-xs w-full"
-                  />
-                </div>
-
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => {
-                    const fileInput = document.getElementById('tools-upload') as HTMLInputElement;
-                    saveAndStart(fileInput.files || undefined);
-                  }}
-                  className="w-full text-xs"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Starting...' : 'Save & Start'}
-                </Button>
-              </div>
-            )}
-
-            {/* Collapse/Expand Button */}
-            <div className="flex flex-col justify-center">
+            <div className="space-y-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="h-8 w-4 p-0 border-l border-r"
+                onClick={() => setShowEnv(!showEnv)}
+                className="flex items-center gap-1 p-0 h-auto text-xs font-medium"
               >
-                {sidebarCollapsed ? (
-                  <ChevronRight className="w-3 h-3" />
-                ) : (
-                  <ChevronLeft className="w-3 h-3" />
-                )}
+                {showEnv ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                Environment Variables
               </Button>
-            </div>
-
-            {/* Right Side - Chat */}
-            <div className="flex-1 flex flex-col">
-              <div className="flex-1 p-3 overflow-y-auto bg-muted text-sm space-y-2">
-                {!isConfigured && !isLoading && (
-                  <div className="text-center text-muted-foreground p-4">
-                    Configure settings and click "Save & Start" to begin chatting
-                  </div>
-                )}
-                {isLoading && (
-                  <div className="text-center text-muted-foreground p-4">
-                    Starting server and configuring agent...
-                  </div>
-                )}
-                {messages.map((m, i) => (
-                  <div key={i} className={`p-3 rounded-lg max-w-[85%] ${m.role === 'user'
-                      ? 'bg-blue-500 text-white ml-auto'
-                      : 'bg-white border mr-auto shadow-sm'
-                    }`}>
-                    <div className="text-xs opacity-70 mb-1 font-medium">
-                      {m.role === 'user' ? 'You' : 'Assistant'}
+              {showEnv && (
+                <div className="space-y-2">
+                  {envVars.map((ev, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <Input
+                        value={ev.key}
+                        onChange={e => updateEnv(i, e.target.value, ev.value)}
+                        placeholder="KEY"
+                        className="text-xs h-7 flex-1"
+                      />
+                      <span className="text-xs text-muted-foreground">=</span>
+                      <Input
+                        value={ev.value}
+                        onChange={e => updateEnv(i, ev.key, e.target.value)}
+                        placeholder="value"
+                        className="text-xs h-7 flex-1"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeEnv(i)}
+                        className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words">
-                      {m.content}
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-
-              <div className="border-t p-3">
-                <div className="flex gap-2">
-                  <Textarea
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                      }
-                    }}
-                    className="flex-1 text-sm"
-                    rows={2}
-                    disabled={!isConfigured}
-                    placeholder={isConfigured ? "Type your message... (Enter to send, Shift+Enter for new line)" : "Save & Start first"}
-                  />
+                  ))}
                   <Button
-                    variant="default"
-                    size="icon"
-                    onClick={sendMessage}
-                    disabled={!isConfigured}
-                    className="h-16 w-12"
+                    variant="outline"
+                    size="sm"
+                    onClick={addEnv}
+                    className="w-full text-xs h-7 flex items-center gap-1"
                   >
-                    <Send className="w-4 h-4" />
+                    <Plus className="w-3 h-3" />
+                    Add Variable
                   </Button>
                 </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tools-upload" className="text-xs font-medium">
+                Tools (.py files)
+              </Label>
+              <Input
+                id="tools-upload"
+                type="file"
+                multiple
+                accept=".py"
+                className="text-xs"
+              />
+            </div>
+
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                const fileInput = document.getElementById('tools-upload') as HTMLInputElement;
+                saveAndStart(fileInput.files || undefined);
+              }}
+              className="w-full text-xs"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Starting...' : 'Save & Start'}
+            </Button>
+          </div>
+        )}
+
+        {/* Collapse/Expand Button */}
+        <div className="flex flex-col justify-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="h-8 w-4 p-0 border-l border-r"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-3 h-3" />
+            ) : (
+              <ChevronLeft className="w-3 h-3" />
+            )}
+          </Button>
+        </div>
+
+        {/* Right Side - Chat */}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 p-3 overflow-y-auto bg-muted text-sm space-y-2">
+            {!isConfigured && !isLoading && (
+              <div className="text-center text-muted-foreground p-4">
+                Configure settings and click "Save & Start" to begin chatting
               </div>
+            )}
+            {isLoading && (
+              <div className="text-center text-muted-foreground p-4">
+                Starting server and configuring agent...
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} className={`p-3 rounded-lg max-w-[85%] ${m.role === 'user'
+                  ? 'bg-blue-500 text-white ml-auto'
+                  : 'bg-white border mr-auto shadow-sm'
+                }`}>
+                <div className="text-xs opacity-70 mb-1 font-medium">
+                  {m.role === 'user' ? 'You' : 'Assistant'}
+                </div>
+                <div className="text-sm whitespace-pre-wrap break-words">
+                  {m.content}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="border-t p-3">
+            <div className="flex gap-2">
+              <Textarea
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                className="flex-1 text-sm"
+                rows={2}
+                disabled={!isConfigured}
+                placeholder={isConfigured ? "Type your message... (Enter to send, Shift+Enter for new line)" : "Save & Start first"}
+              />
+              <Button
+                variant="default"
+                size="icon"
+                onClick={sendMessage}
+                disabled={!isConfigured}
+                className="h-16 w-12"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>
     </div>
   );
 });
