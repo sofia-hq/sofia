@@ -10,7 +10,7 @@ from pydantic import BaseModel
 app = FastAPI()
 
 nomos_process: Optional[subprocess.Popen] = None
-server_port: int = 8000
+server_port: int = 8080
 
 
 def terminate(proc: subprocess.Popen) -> None:
@@ -48,7 +48,6 @@ atexit.register(cleanup)
 class ResetPayload(BaseModel):
     yaml: str
     env: Dict[str, str]
-    port: Optional[int] = None
 
 
 @app.post("/reset")
@@ -66,18 +65,16 @@ def reset(payload: ResetPayload):
         terminate(nomos_process)
         nomos_process = None
 
-    port = payload.port or 8000
-    server_port = port
     cmd = [
         "nomos",
         "serve",
         "--config",
         "config.agent.yaml",
         "--port",
-        str(port),
+        str(server_port),
     ]
     nomos_process = subprocess.Popen(cmd)
-    return {"status": "started", "port": port}
+    return {"status": "started", "port": server_port}
 
 
 @app.post("/chat")
