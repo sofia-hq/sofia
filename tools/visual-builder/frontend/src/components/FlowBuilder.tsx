@@ -560,7 +560,12 @@ const initialEdges: Edge[] = [
   },
 ];
 
-export default function FlowBuilder() {
+interface FlowBuilderProps {
+  onPreview?: (nodes: Node[], edges: Edge[], agent: string, persona: string) => void;
+  onSaveConfig?: (nodes: Node[], edges: Edge[], agent: string, persona: string) => void;
+}
+
+export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
@@ -720,6 +725,15 @@ export default function FlowBuilder() {
     setAgentName(name);
     setPersona(newPersona);
   }, []);
+
+  const handlePreview = useCallback(() => {
+    if (onPreview) onPreview(nodes, edges, agentName, persona);
+  }, [onPreview, nodes, edges, agentName, persona]);
+
+  const handleSaveConfig = useCallback(() => {
+    if (onSaveConfig) onSaveConfig(nodes, edges, agentName, persona);
+  }, [onSaveConfig, nodes, edges, agentName, persona]);
+
 
   // Custom onNodesChange handler that auto-resizes groups when children move
   const onNodesChange = useCallback((changes: any[]) => {
@@ -1263,6 +1277,8 @@ export default function FlowBuilder() {
               onExportYaml={handleExportYaml}
               onImportYaml={handleImportYaml}
               onNewConfig={handleNewConfig}
+              onSaveConfig={handleSaveConfig}
+              onPreview={handlePreview}
             />
           </div>
 
@@ -1299,7 +1315,11 @@ export default function FlowBuilder() {
             deleteKeyCode={["Delete", "Backspace"]}
             selectNodesOnDrag={false}
           >
-          <Background gap={20}/>
+          <Background
+            gap={20}
+            color="#374151"
+            className="dark:bg-gray-900"
+          />
           <Controls />
 
           {/* Arrow marker definition */}
@@ -1317,6 +1337,7 @@ export default function FlowBuilder() {
                 <path
                   d="M0,0 L0,6 L9,3 z"
                   fill="#374151"
+                  className="dark:fill-gray-300"
                 />
               </marker>
             </defs>
