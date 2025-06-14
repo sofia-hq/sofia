@@ -24,6 +24,7 @@ import { FlowGroupEditDialog } from './dialogs/FlowGroupEditDialog';
 import { ExportImportDialog } from './dialogs/ExportImportDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SearchFilter } from './SearchFilter';
+import { PreviewPanel } from './panels/PreviewPanel';
 import { autoArrangeNodes } from '../utils/autoArrange';
 import {
   copyNodeToClipboard,
@@ -569,6 +570,7 @@ export default function FlowBuilder() {
     data: FlowGroupData;
   } | null>(null);
   const [showExportImportDialog, setShowExportImportDialog] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [agentName, setAgentName] = useState('my-agent');
   const [persona, setPersona] = useState('A helpful assistant');
   const [contextMenu, setContextMenu] = useState<{
@@ -696,6 +698,10 @@ export default function FlowBuilder() {
 
   const handleImportYaml = useCallback(() => {
     setShowExportImportDialog(true);
+  }, []);
+
+  const handlePreview = useCallback(() => {
+    setShowPreview(true);
   }, []);
 
   const handleNewConfig = useCallback(() => {
@@ -1261,9 +1267,10 @@ export default function FlowBuilder() {
               onBulkDuplicate={handleBulkDuplicate}
               onBulkGroup={handleBulkGroup}
               onExportYaml={handleExportYaml}
-              onImportYaml={handleImportYaml}
-              onNewConfig={handleNewConfig}
-            />
+            onImportYaml={handleImportYaml}
+            onNewConfig={handleNewConfig}
+            onPreview={handlePreview}
+          />
           </div>
 
           {/* Floating Search Filter */}
@@ -1359,6 +1366,13 @@ export default function FlowBuilder() {
           agentName={agentName}
           persona={persona}
           onAgentConfigChange={handleAgentConfigChange}
+        />
+
+        <PreviewPanel
+          open={showPreview}
+          onClose={() => setShowPreview(false)}
+          nodes={nodes}
+          edges={edges}
         />
 
         <KeyboardShortcuts />
