@@ -22,6 +22,7 @@ import { FlowProvider } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
 import { FlowGroupEditDialog } from './dialogs/FlowGroupEditDialog';
 import { ExportImportDialog } from './dialogs/ExportImportDialog';
+import { ChatPreviewDialog } from './dialogs/ChatPreviewDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SearchFilter } from './SearchFilter';
 import { autoArrangeNodes } from '../utils/autoArrange';
@@ -569,6 +570,7 @@ export default function FlowBuilder() {
     data: FlowGroupData;
   } | null>(null);
   const [showExportImportDialog, setShowExportImportDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
   const [agentName, setAgentName] = useState('my-agent');
   const [persona, setPersona] = useState('A helpful assistant');
   const [contextMenu, setContextMenu] = useState<{
@@ -705,6 +707,10 @@ export default function FlowBuilder() {
     setAgentName('my-agent');
     setPersona('A helpful assistant');
   }, [setNodesWithUndo, setEdges]);
+
+  const handlePreview = useCallback(() => {
+    setShowPreviewDialog(true);
+  }, []);
 
   const handleImportFlow = useCallback((mergeResult: any) => {
     // Add imported nodes alongside existing ones using merge import
@@ -1263,6 +1269,7 @@ export default function FlowBuilder() {
               onExportYaml={handleExportYaml}
               onImportYaml={handleImportYaml}
               onNewConfig={handleNewConfig}
+              onPreview={handlePreview}
             />
           </div>
 
@@ -1359,6 +1366,15 @@ export default function FlowBuilder() {
           agentName={agentName}
           persona={persona}
           onAgentConfigChange={handleAgentConfigChange}
+        />
+
+        <ChatPreviewDialog
+          open={showPreviewDialog}
+          onClose={() => setShowPreviewDialog(false)}
+          nodes={nodes}
+          edges={edges}
+          agentName={agentName}
+          persona={persona}
         />
 
         <KeyboardShortcuts />
