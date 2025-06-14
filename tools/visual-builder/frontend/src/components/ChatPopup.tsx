@@ -221,7 +221,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
           <X className="w-3 h-3" />
         </Button>
       </div>
-      <div className="flex h-[calc(100%-40px)]">
+      <div className="flex h-[calc(100%-40px)] relative">
         {/* Left Sidebar - Configuration */}
         {!sidebarCollapsed && (
           <div className="w-64 border-r p-3 space-y-3 overflow-y-auto">
@@ -327,21 +327,26 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
           </div>
         )}
 
-        {/* Collapse/Expand Button */}
-        <div className="flex flex-col justify-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="h-8 w-4 p-0 border-l border-r"
-          >
-            {sidebarCollapsed ? (
-              <ChevronRight className="w-3 h-3" />
-            ) : (
-              <ChevronLeft className="w-3 h-3" />
-            )}
-          </Button>
-        </div>
+        {/* Floating Collapse/Expand Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`absolute top-2 z-10 h-8 w-8 p-0 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 ${
+            sidebarCollapsed ? 'left-0' : 'left-64'
+          } transition-all duration-200`}
+          style={{
+            transform: sidebarCollapsed
+              ? 'translateX(-50%)'
+              : 'translateX(-50%)'
+          }}
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="w-3 h-3" />
+          ) : (
+            <ChevronLeft className="w-3 h-3" />
+          )}
+        </Button>
 
         {/* Right Side - Chat */}
         <div className="flex-1 flex flex-col">
