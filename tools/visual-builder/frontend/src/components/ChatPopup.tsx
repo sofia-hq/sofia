@@ -8,6 +8,7 @@ import { exportToYaml } from '../utils/nomosYaml';
 import * as yaml from 'js-yaml';
 import { NomosClient, SessionData } from 'nomos-sdk';
 import type { Node, Edge } from '@xyflow/react';
+import { useDraggable } from '../hooks/useDraggable';
 
 interface EnvVar { key: string; value: string }
 
@@ -47,6 +48,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   const [input, setInput] = useState('');
   const [sessionData, setSessionData] = useState<SessionData | undefined>();
   const clientRef = useRef<NomosClient>();
+  const { position, onMouseDown, setPosition } = useDraggable({ x: 0, y: 0 });
 
   useEffect(() => {
     try {
@@ -97,6 +99,10 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   useEffect(() => {
     if (open) {
       resetBackend();
+      setPosition({
+        x: window.innerWidth - 340,
+        y: window.innerHeight - 420,
+      });
     }
   }, [open, resetBackend]);
 
@@ -118,10 +124,10 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-20 right-4 z-50 w-80">
+    <div className="fixed z-50 w-80" style={{ left: position.x, top: position.y }}>
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent showCloseButton={false} className="p-0 shadow-lg">
-          <div className="flex items-center justify-between p-2 border-b">
+          <div className="flex items-center justify-between p-2 border-b cursor-move" onMouseDown={onMouseDown}>
             <DialogTitle className="text-sm">Chat Preview</DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
               <X className="w-3 h-3" />
