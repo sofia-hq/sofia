@@ -1,4 +1,5 @@
 import { Step, Message, Summary } from './agent.js';
+import { z } from 'zod';
 
 export interface FlowContext {
   flow_id: string;
@@ -20,6 +21,14 @@ export interface FlowConfig {
   description?: string;
   components?: Record<string, Record<string, any>>;
 }
+
+export const FlowConfigSchema = z.object({
+  flow_id: z.string(),
+  enters: z.array(z.string()),
+  exits: z.array(z.string()),
+  description: z.string().optional(),
+  components: z.record(z.record(z.any())).optional(),
+});
 
 export class Flow {
   config: FlowConfig;
