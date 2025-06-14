@@ -1,4 +1,5 @@
 import { Button } from './ui/button';
+import { ThemeToggle } from './ThemeToggle';
 import {
   Download,
   Upload,
@@ -32,6 +33,8 @@ interface ToolbarProps {
   onExportYaml?: () => void;
   onImportYaml?: () => void;
   onNewConfig?: () => void;
+  onSaveConfig?: () => void;
+  onPreview?: () => void;
 }
 
 export function Toolbar({
@@ -49,11 +52,13 @@ export function Toolbar({
   onExportYaml,
   onImportYaml,
   onNewConfig,
+  onSaveConfig,
+  onPreview,
 }: ToolbarProps) {
   return (
-    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
+    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm">
       {/* File Operations */}
-      <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+      <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
         <Button
           variant="ghost"
           size="sm"
@@ -81,13 +86,13 @@ export function Toolbar({
         >
           <Download className="w-4 h-4" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={onSaveConfig}>
           <Save className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Undo/Redo */}
-      <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+      <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
         <Button
           variant="ghost"
           size="sm"
@@ -112,7 +117,7 @@ export function Toolbar({
 
       {/* Selection Operations */}
       {selectedNodesCount > 0 && (
-        <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+        <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
           <Button
             variant="ghost"
             size="sm"
@@ -135,7 +140,7 @@ export function Toolbar({
       )}
 
       {/* Layout */}
-      <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+      <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
         <Button
           variant="ghost"
           size="sm"
@@ -168,10 +173,15 @@ export function Toolbar({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        <Button variant="default" size="sm" className="h-8 px-3">
+        <Button variant="default" size="sm" className="h-8 px-3" onClick={onPreview}>
           <Play className="w-3 h-3 mr-1" />
           Preview
         </Button>
+      </div>
+
+      {/* Theme Toggle */}
+      <div className="flex items-center border-l border-gray-200 dark:border-gray-600 pl-2">
+        <ThemeToggle />
       </div>
     </div>
   );
