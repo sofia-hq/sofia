@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { ChevronDown, ChevronUp, Send, X } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ChevronDown, ChevronUp, Send, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportToYaml } from '../utils/nomosYaml';
 import * as yaml from 'js-yaml';
 import { NomosClient, SessionData } from 'nomos-sdk';
@@ -32,6 +33,9 @@ interface Message {
 
 const STORAGE_KEY = 'nomos-chat-state';
 
+// Environment configuration
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
 export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatPopup({
   open,
   onClose,
@@ -41,13 +45,17 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   persona,
 }, ref) {
   const [provider, setProvider] = useState('openai');
-  const [model, setModel] = useState('gpt-3.5-turbo');
+  const [model, setModel] = useState('gpt-4o-mini');
   const [envVars, setEnvVars] = useState<EnvVar[]>([]);
   const [showEnv, setShowEnv] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionData, setSessionData] = useState<SessionData | undefined>();
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const clientRef = useRef<NomosClient>();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { position, onMouseDown, setPosition } = useDraggable({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -60,6 +68,9 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         if (Array.isArray(parsed.envVars)) setEnvVars(parsed.envVars);
         if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
         if (parsed.sessionData) setSessionData(parsed.sessionData);
+        if (parsed.isConfigured) setIsConfigured(parsed.isConfigured);
+        if (parsed.sidebarCollapsed) setSidebarCollapsed(parsed.sidebarCollapsed);
+        // Don't restore loading state
       }
     } catch {
       /* ignore */
@@ -67,53 +78,124 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   }, []);
 
   useEffect(() => {
-    const state = { provider, model, envVars, messages, sessionData };
+    const state = { provider, model, envVars, messages, sessionData, isConfigured, sidebarCollapsed };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       /* ignore */
     }
-  }, [provider, model, envVars, messages, sessionData]);
+  }, [provider, model, envVars, messages, sessionData, isConfigured, sidebarCollapsed]);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const resetBackend = useCallback(async () => {
-    const result = exportToYaml(nodes, edges, agentName, persona);
-    const lines = result.yaml.split('\n');
-    const header = lines.slice(0, 4);
-    const body = lines.slice(4).join('\n');
-    const config = yaml.load(body) as any;
-    config.llm = { provider, model };
-    const finalYaml = [...header, yaml.dump(config, { indent: 2, lineWidth: 100, noRefs: true, sortKeys: false, styles: { '!!str': 'literal' } })].join('\n');
-    await fetch('http://localhost:8000/reset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ yaml: finalYaml, env: Object.fromEntries(envVars.map(v => [v.key, v.value])) }),
-    });
-    clientRef.current = new NomosClient('http://localhost:8000');
-    const res = await clientRef.current.chat({ user_input: '' });
-    setSessionData(res.session_data);
-    setMessages([{ role: 'assistant', content: JSON.stringify(res.response) }]);
+    try {
+      setIsLoading(true);
+      const result = exportToYaml(nodes, edges, agentName, persona);
+      const lines = result.yaml.split('\n');
+      const header = lines.slice(0, 4);
+      const body = lines.slice(4).join('\n');
+      const config = yaml.load(body) as any;
+      config.llm = { provider, model };
+      const finalYaml = [...header, yaml.dump(config, { indent: 2, lineWidth: 100, noRefs: true, sortKeys: false, styles: { '!!str': 'literal' } })].join('\n');
+
+      const resetResponse = await fetch(`${BACKEND_URL}/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yaml: finalYaml, env: Object.fromEntries(envVars.map(v => [v.key, v.value])) }),
+      });
+
+      if (!resetResponse.ok) {
+        throw new Error(`Reset failed: ${resetResponse.status} ${resetResponse.statusText}`);
+      }
+
+      clientRef.current = new NomosClient(BACKEND_URL);
+      setIsConfigured(true);
+    } catch (error) {
+      setMessages([{ role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [nodes, edges, agentName, persona, provider, model, envVars]);
 
-  useImperativeHandle(ref, () => ({ reset: resetBackend }), [resetBackend]);
+  const uploadTools = useCallback(async (files: FileList) => {
+    const formData = new FormData();
+    Array.from(files).forEach(file => {
+      if (file.name.endsWith('.py')) {
+        formData.append('files', file);
+      }
+    });
+
+    if (formData.has('files')) {
+      const response = await fetch(`${BACKEND_URL}/upload-tools`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+      }
+    }
+  }, []);
+
+  const saveAndStart = useCallback(async (files?: FileList) => {
+    try {
+      if (files) {
+        await uploadTools(files);
+      }
+      await resetBackend();
+    } catch (error) {
+      setMessages([{ role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }]);
+    }
+  }, [uploadTools, resetBackend]);
+
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      setIsConfigured(false);
+      setMessages([]);
+      setSessionData(undefined);
+    }
+  }), []);
 
   useEffect(() => {
     if (open) {
-      resetBackend();
       setPosition({
-        x: window.innerWidth - 340,
-        y: window.innerHeight - 420,
+        x: window.innerWidth - 600, // Wider for 2-column layout
+        y: window.innerHeight - 500,
       });
     }
-  }, [open, resetBackend]);
+  }, [open, setPosition]);
 
   const sendMessage = useCallback(async () => {
-    if (!input.trim() || !clientRef.current) return;
-    const req = { user_input: input, session_data: sessionData };
-    const res = await clientRef.current.chat(req);
-    setSessionData(res.session_data);
-    setMessages(m => [...m, { role: 'user', content: input }, { role: 'assistant', content: JSON.stringify(res.response) }]);
-    setInput('');
-  }, [input, sessionData]);
+    if (!input.trim() || !clientRef.current || !isConfigured) return;
+
+    try {
+      const req = {
+        user_input: input,
+        session_data: sessionData || undefined
+      };
+
+      const res = await clientRef.current.chat(req);
+
+      setSessionData(res.session_data);
+      setMessages(m => [
+        ...m,
+        { role: 'user', content: input },
+        { role: 'assistant', content: JSON.stringify(res.response, null, 2) }
+      ]);
+      setInput('');
+    } catch (error) {
+      setMessages(m => [
+        ...m,
+        { role: 'user', content: input },
+        { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }
+      ]);
+      setInput('');
+    }
+  }, [input, sessionData, isConfigured]);
 
   const addEnv = () => setEnvVars(v => [...v, { key: '', value: '' }]);
   const updateEnv = (index: number, key: string, value: string) => {
@@ -124,48 +206,184 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   if (!open) return null;
 
   return (
-    <div className="fixed z-50 w-80" style={{ left: position.x, top: position.y }}>
+    <div className="fixed z-50" style={{ left: position.x, top: position.y, width: sidebarCollapsed ? '380px' : '580px' }}>
       <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent showCloseButton={false} className="p-0 shadow-lg">
+        <DialogContent showCloseButton={false} className="p-0 shadow-lg max-w-none" style={{ width: sidebarCollapsed ? '380px' : '580px' }}>
           <div className="flex items-center justify-between p-2 border-b cursor-move" onMouseDown={onMouseDown}>
             <DialogTitle className="text-sm">Chat Preview</DialogTitle>
             <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
               <X className="w-3 h-3" />
             </Button>
           </div>
-          <div className="p-3 space-y-2">
-            <div className="flex gap-2">
-              <Input value={provider} onChange={e => setProvider(e.target.value)} placeholder="Provider" />
-              <Input value={model} onChange={e => setModel(e.target.value)} placeholder="Model" />
-            </div>
-            <Button variant="ghost" size="sm" onClick={() => setShowEnv(!showEnv)} className="flex items-center gap-1">
-              {showEnv ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              Env Vars
-            </Button>
-            {showEnv && (
-              <div className="space-y-1">
-                {envVars.map((ev, i) => (
-                  <div key={i} className="flex gap-1">
-                    <Input value={ev.key} onChange={e => updateEnv(i, e.target.value, ev.value)} placeholder="KEY" />
-                    <Input value={ev.value} onChange={e => updateEnv(i, ev.key, e.target.value)} placeholder="Value" />
-                    <Button variant="ghost" size="icon" onClick={() => removeEnv(i)} className="h-8 w-8">x</Button>
-                  </div>
-                ))}
-                <Button variant="ghost" size="sm" onClick={addEnv}>Add</Button>
+          <div className="flex h-96">
+            {/* Left Sidebar - Configuration */}
+            {!sidebarCollapsed && (
+              <div className="w-48 border-r p-3 space-y-3 overflow-y-auto">
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Provider</label>
+                  <Select value={provider} onValueChange={setProvider}>
+                    <SelectTrigger className="w-full text-xs" size="sm">
+                      <SelectValue placeholder="Select provider" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="mistral">Mistral</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Model</label>
+                  <Input
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                    placeholder="Model name"
+                    className="text-xs h-8"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEnv(!showEnv)}
+                    className="flex items-center gap-1 p-0 h-auto text-xs font-medium"
+                  >
+                    {showEnv ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    Environment Variables
+                  </Button>
+                  {showEnv && (
+                    <div className="space-y-1">
+                      {envVars.map((ev, i) => (
+                        <div key={i} className="space-y-1">
+                          <Input
+                            value={ev.key}
+                            onChange={e => updateEnv(i, e.target.value, ev.value)}
+                            placeholder="KEY"
+                            className="text-xs h-8"
+                          />
+                          <Input
+                            value={ev.value}
+                            onChange={e => updateEnv(i, ev.key, e.target.value)}
+                            placeholder="Value"
+                            className="text-xs h-8"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeEnv(i)}
+                            className="h-6 w-full text-xs"
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="ghost" size="sm" onClick={addEnv} className="w-full text-xs">
+                        Add Variable
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-medium">Tools (.py files)</label>
+                  <input
+                    type="file"
+                    multiple
+                    accept=".py"
+                    id="tools-upload"
+                    className="text-xs w-full"
+                  />
+                </div>
+
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    const fileInput = document.getElementById('tools-upload') as HTMLInputElement;
+                    saveAndStart(fileInput.files || undefined);
+                  }}
+                  className="w-full text-xs"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Starting...' : 'Save & Start'}
+                </Button>
               </div>
             )}
-            <div className="border rounded p-2 h-48 overflow-y-auto bg-muted text-sm space-y-1">
-              {messages.map((m, i) => (
-                <div key={i} className={m.role === 'user' ? 'text-right' : 'text-left'}>
-                  <span>{m.content}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-1">
-              <Textarea value={input} onChange={e => setInput(e.target.value)} className="flex-1" rows={2} />
-              <Button variant="default" size="icon" onClick={sendMessage} className="h-8 w-8">
-                <Send className="w-3 h-3" />
+
+            {/* Collapse/Expand Button */}
+            <div className="flex flex-col justify-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="h-8 w-4 p-0 border-l border-r"
+              >
+                {sidebarCollapsed ? (
+                  <ChevronRight className="w-3 h-3" />
+                ) : (
+                  <ChevronLeft className="w-3 h-3" />
+                )}
               </Button>
+            </div>
+
+            {/* Right Side - Chat */}
+            <div className="flex-1 flex flex-col">
+              <div className="flex-1 p-3 overflow-y-auto bg-muted text-sm space-y-2">
+                {!isConfigured && !isLoading && (
+                  <div className="text-center text-muted-foreground p-4">
+                    Configure settings and click "Save & Start" to begin chatting
+                  </div>
+                )}
+                {isLoading && (
+                  <div className="text-center text-muted-foreground p-4">
+                    Starting server and configuring agent...
+                  </div>
+                )}
+                {messages.map((m, i) => (
+                  <div key={i} className={`p-3 rounded-lg max-w-[85%] ${m.role === 'user'
+                      ? 'bg-blue-500 text-white ml-auto'
+                      : 'bg-white border mr-auto shadow-sm'
+                    }`}>
+                    <div className="text-xs opacity-70 mb-1 font-medium">
+                      {m.role === 'user' ? 'You' : 'Assistant'}
+                    </div>
+                    <div className="text-sm whitespace-pre-wrap break-words">
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+
+              <div className="border-t p-3">
+                <div className="flex gap-2">
+                  <Textarea
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
+                    }}
+                    className="flex-1 text-sm"
+                    rows={2}
+                    disabled={!isConfigured}
+                    placeholder={isConfigured ? "Type your message... (Enter to send, Shift+Enter for new line)" : "Save & Start first"}
+                  />
+                  <Button
+                    variant="default"
+                    size="icon"
+                    onClick={sendMessage}
+                    disabled={!isConfigured}
+                    className="h-16 w-12"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </DialogContent>
@@ -175,4 +393,3 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 });
 
 ChatPopup.displayName = 'ChatPopup';
-

@@ -3,3 +3,5 @@ uvicorn
 requests
 psutil
 nomos
+python-multipart
+python-dotenv
