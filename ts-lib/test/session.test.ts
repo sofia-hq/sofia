@@ -27,19 +27,19 @@ describe('Agent and Session', () => {
   });
   const steps = { start, end };
 
-  it('runs a simple conversation', () => {
+  it('runs a simple conversation', async () => {
     const llm = new MockLLM();
     const agent = new Agent({ name: 'a', llm, steps, startStepId: 'start', tools: [echo] });
     const session = agent.createSession();
 
     const model = createDecisionModel(start, [echo]);
     llm.setResponse({ reasoning: ['hi'], action: 'ASK', response: 'hello' });
-    const [dec1] = session.next();
+    const [dec1] = await session.next();
     expect(model.parse(dec1)).toBeTruthy();
     expect(dec1.action).toBe('ASK');
 
     llm.setResponse({ reasoning: ['use'], action: 'TOOL_CALL', tool_call: { tool_name: 'echo', tool_kwargs: { text: 'bye' } } });
-    const [dec2, res] = session.next('run');
+    const [dec2, res] = await session.next('run');
     expect(dec2.action).toBe('TOOL_CALL');
     expect(res).toBe('bye');
   });

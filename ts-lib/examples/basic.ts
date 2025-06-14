@@ -1,32 +1,42 @@
-import { Step, Route, createDecisionModel } from '../src/index.js';
-import { Tool } from '../src/models/tool.js';
+import { Step, Agent, Tool, OpenAI } from '../src/index.ts';
 import { z } from 'zod';
 
-const greet = new Step({
+const start = new Step({
   step_id: 'start',
-  description: 'Greet the user and optionally echo back text',
-  routes: [
-    { target: 'end', condition: 'user says bye' }
-  ],
+  description: 'Say hello to the user',
+  routes: [{ target: 'end', condition: 'user says bye' }],
   available_tools: ['echo']
 });
 
 const end = new Step({
   step_id: 'end',
-  description: 'Conversation finished',
+  description: 'End of conversation',
   auto_flow: true
 });
 
-const echo = new Tool('echo', 'Repeat back provided text', (args: {text: string}) => args.text, {
+const echo = new Tool('echo', 'Repeat back provided text', (args: { text: string }) => args.text, {
   text: { type: z.string() }
 });
 
-const decisionModel = createDecisionModel(greet, [echo]);
+const apiKey = process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error('OPENAI_API_KEY not set. Example cannot run.');
+  process.exit(1);
+}
 
-console.log('Decision schema expects:', decisionModel.shape);
-console.log(decisionModel.parse({
-  reasoning: ['say hello'],
-  action: 'ASK',
-  response: 'Hello!'
-}));
+const llm = new OpenAI({ apiKey });
+const agent = new Agent({
+  name: 'demo',
+  llm,
+  steps: { start, end },
+  startStepId: 'start',
+  tools: [echo]
+});
 
+(async () => {
+  const session = agent.createSession();
+  const [decision] = await session.next('Hello!');
+  console.log('Decision:', decision);
+})().catch((err) => {
+  console.error('Example failed:', err);
+});

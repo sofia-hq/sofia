@@ -15,7 +15,7 @@ export interface LLMArgs {
 }
 
 export interface LLM {
-  get_output(args: LLMArgs): any;
+  get_output(args: LLMArgs): Promise<any> | any;
 }
 
 export class Session {
@@ -75,9 +75,9 @@ export class Session {
     return list;
   }
 
-  private _getNextDecision(): any {
+  private async _getNextDecision(): Promise<any> {
     const model = createDecisionModel(this.currentStep, this._getCurrentStepTools());
-    const response = this.llm.get_output({
+    const response = await this.llm.get_output({
       steps: this.steps,
       currentStep: this.currentStep,
       tools: this.tools,
@@ -89,7 +89,7 @@ export class Session {
     return model.parse(response);
   }
 
-  next(userInput?: string, noErrors = 0, nextCount = 0): [any, any?] {
+  async next(userInput?: string, noErrors = 0, nextCount = 0): Promise<[any, any?]> {
     if (noErrors >= this.maxErrors) {
       throw new Error('Maximum errors reached');
     }
@@ -101,7 +101,7 @@ export class Session {
       this.memory.push({ role: 'user', content: userInput });
     }
 
-    const decision = this._getNextDecision();
+    const decision = await this._getNextDecision();
     this.memory.push({ step_id: this.currentStep.step_id } as StepIdentifier);
 
     let toolResult: any = undefined;
