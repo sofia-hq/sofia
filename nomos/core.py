@@ -3,6 +3,7 @@
 import contextlib
 import pickle
 import uuid
+from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel
@@ -41,7 +42,7 @@ class Session:
         start_step_id: str,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
-        tools: Optional[List[Union[Callable, str]]] = None,
+        tools: Optional[List[Union[Callable, Tool, str]]] = None,
         mcp_servers: Optional[List[MCPServer]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
@@ -107,11 +108,12 @@ class Session:
         for tool in tools or []:
             if callable(tool):
                 tools_list.append(Tool.from_function(tool, tool_arg_descs))
+            elif isinstance(tool, Tool):
+                tools_list.append(tool)
             elif Tool.is_package_tool(tool):
                 tools_list.append(Tool.from_pkg(tool, tool_arg_descs))
             elif Tool.is_remote_tool(tool):
-                pass
-                # tools_list.append(Tool.from_mcp(tool, None))
+                continue
             else:
                 log_info(f"Invalid tool type: {type(tool)}. Must be callable or str.")
 
@@ -396,7 +398,8 @@ class Session:
                     )
                 except Exception as e:
                     self._add_message(
-                        "tool", f"Running tool {tool_name} with args {tool_kwargs}"
+                        "tool",
+                        f"Running tool {tool_name} failed with args {tool_kwargs}",
                     )
                     raise e
                 log_info(f"Tool Results: {tool_results}") if self.verbose else None
@@ -536,18 +539,18 @@ class Agent:
         self.max_errors = max_errors
         self.max_iter = max_iter
         tool_set = set(tools) if tools else set()
+        self.mcp_servers: Optional[List[MCPServer]] = mcp_servers
         for step in self.steps.values():
             _pkg_tools = [
                 tool for tool in step.available_tools if Tool.is_package_tool(tool)
             ]
             tool_set.update(_pkg_tools)
-            _remote_tools = [
-                tool for tool in step.available_tools if Tool.is_remote_tool(tool)
-            ]
-            tool_set.update(_remote_tools)
-        self.tools = list(tool_set)
+
+        mcp_server_tools = chain.from_iterable(
+            mcp_server.get_tools() for mcp_server in (self.mcp_servers or [])
+        )
+        self.tools = list(tool_set) + list(mcp_server_tools)
         self.config = config
-        self.mcp_servers: Optional[List[MCPServer]] = mcp_servers
 
         # Initialize flow manager if flows are configured
         self.flow_manager: Optional[FlowManager] = None
@@ -572,9 +575,27 @@ class Agent:
         # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
+                step_tool_name = (
+                    Tool.get_tool_name_from_remote_tool_name(step_tool)
+                    if Tool.is_remote_tool(step_tool)
+                    else step_tool
+                )
+                step_tool_server_name = (
+                    Tool.get_remote_server_name_from_tool_name(step_tool)
+                    if Tool.is_remote_tool(step_tool)
+                    else None
+                )
                 for tool in self.tools:
-                    if (callable(tool) and tool.__name__ == step_tool) or (
-                        isinstance(tool, str) and tool == step_tool
+                    if (
+                        (callable(tool) and tool.__name__ == step_tool_name)
+                        or (isinstance(tool, str) and tool == step_tool_name)
+                        or (
+                            (isinstance(tool, Tool) and tool.name == step_tool_name)
+                            and (
+                                tool.remote_server
+                                and tool.remote_server.name == step_tool_server_name
+                            )
+                        )
                     ):
                         break
                 else:

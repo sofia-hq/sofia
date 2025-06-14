@@ -1,6 +1,5 @@
 """Tool abstractions and related logic for the NOMOS package."""
 
-import asyncio
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Type
 
@@ -8,21 +7,23 @@ from docstring_parser import parse
 
 from pydantic import BaseModel, HttpUrl, SecretStr, ValidationError
 
+from ..mcp.client import MCPClient
+from ..models.mcp import MCPServerTransport, MCPToolCallResult
 from ..utils.url import join_urls
 from ..utils.utils import create_base_model
 
 
-class MCPServer(BaseModel):
+class RemoteToolServer(BaseModel):
     """
-    Represents a Model Configuration Protocol (MCP) server that provides tools.
+    Represents a remote tool server that provides tools.
 
-    MCP servers expose tools that can be discovered and used by Nomos agents.
+    Remote tool servers expose tools that can be discovered and used by Nomos agents.
     Each tool on the server is made available as a Tool object in Nomos.
     Attributes:
-        url (HttpUrl): The base URL of the MCP server.
-        api_key (Optional[SecretStr]): API key for authentication with the MCP server.
-        name (str): Name of the MCP server.
-        endpoint_path (str): Path to the tools endpoint on the MCP server.
+        url (HttpUrl): The base URL of the remote tool server.
+        api_key (Optional[SecretStr]): API key for authentication with the remote tool server.
+        name (str): Name of the remote tool server.
+        path (Optional[str]): Path to the tools endpoint on the remote tool server.
     """
 
     name: str
@@ -41,21 +42,106 @@ class MCPServer(BaseModel):
 
         return str(self.url)
 
-    def get_tools(self) -> List[str]:
+    def get_tools(self) -> List["Tool"]:
         """
-        Get a list of tool names available on the MCP server.
+        Get a list of tool definitions available on the remote tool server.
 
-        :return: A list of tool names.
+        :return: A list of tool definitions, each as a dict with 'name', 'description', and 'parameters'.
         """
-        return asyncio.run(self.get_tools_async())
+        raise NotImplementedError("This method should be implemented by subclasses.")
 
-    async def get_tools_async(self) -> List[str]:
+    def call_tool(self, tool: "Tool", **kwargs: Dict) -> MCPToolCallResult:
         """
-        Asynchronously get a list of tool names available on the MCP server.
+        Call a tool on the remote tool server with the provided arguments.
 
-        :return: A list of tool names.
+        :param tool: The tool to call.
+        :param kwargs: The arguments to pass to the tool's function.
+        :return: The result of the tool's function.
         """
-        return []
+        raise NotImplementedError("This method should be implemented by subclasses.")
+
+
+class MCPServer(RemoteToolServer):
+    """
+    Represents a Model Configuration Protocol (MCP) server that provides tools.
+
+    MCP servers expose tools that can be discovered and used by Nomos agents.
+    Each tool on the MCP server is made available as a Tool object in Nomos.
+    Attributes:
+        name (str): Name of the MCP server.
+        url (HttpUrl): The base URL of the MCP server.
+        api_key (Optional[SecretStr]): API key for authentication with the MCP server.
+        path (Optional[str]): Path to the tools endpoint on the MCP server.
+        server_transport (Optional[MCPServerTransport]): The transport type for the MCP server.
+    Methods:
+        get_url() -> str:
+            Get the full URL of the MCP server, including the endpoint path.
+        get_tools() -> List[Tool]:
+            Get a list of tool definitions available on the MCP server.
+        call_tool(tool_name: str, **kwargs) -> Any:
+            Call a tool on the MCP server with the provided arguments.
+    """
+
+    server_transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
+
+    def get_tools(self) -> List["Tool"]:
+        """
+        Get a list of tool definitions available on the MCP server.
+
+        :return: A list of tool definitions, each as a dict with 'name', 'description', and 'parameters'.
+        """
+        tools: List["Tool"] = []
+        client = MCPClient(
+            str(self.url), path=self.path, transport=self.server_transport
+        )
+        tools_list = client.get_tools_list()
+
+        server_type_to_builtin_type = {
+            "integer": int,
+            "string": str,
+            "boolean": bool,
+            "number": float,
+            "array": list,
+            "object": dict,
+            "null": type(None),
+        }
+        for tool in tools_list:
+            tool_name = tool["name"]
+            tool_description = tool["description"]
+            mapped_parameters = {}
+            parameters = tool["inputSchema"].get("properties", {})
+            for param_name, param_info in parameters.items():
+                param_type = server_type_to_builtin_type.get(
+                    param_info.get("type"), Any
+                )
+                param_description = param_info.get("title", "")
+                mapped_parameters[param_name] = {
+                    "type": param_type,
+                    "description": param_description,
+                }
+            tool_obj = Tool(
+                name=tool_name,
+                description=tool_description,
+                function=lambda *args, **kwargs: None,
+                remote_server=self,
+                parameters=mapped_parameters,
+            )
+            tools.append(tool_obj)
+
+        return tools
+
+    def call_tool(self, tool: "Tool", **kwargs: Dict) -> MCPToolCallResult:
+        """
+        Call a tool on the MCP server.
+
+        :param tool_name: The name of the tool to call.
+        :param kwargs: The arguments to pass to the tool's function.
+        :return: The result of the tool's function.
+        """
+        client = MCPClient(
+            str(self.url), path=self.path, transport=self.server_transport
+        )
+        return client.call_tool(tool.name, kwargs)
 
 
 class Tool(BaseModel):
@@ -67,6 +153,7 @@ class Tool(BaseModel):
         description (str): A brief description of the tool.
         function (Callable): The function to be executed when the tool is called.
         parameters (Dict[str, Dict[str, Any]]): A dictionary of parameters for the function.
+        remote_server (Optional[RemoteToolServer]): The remote tool server providing the tool.
     Methods:
         from_function(function: Callable, tool_arg_descs: Dict[str, Dict[str, str]]) -> Tool:
             Create a Tool instance from a function and its argument descriptions.
@@ -82,6 +169,7 @@ class Tool(BaseModel):
     description: str
     function: Callable
     parameters: Dict[str, Dict[str, Any]] = {}
+    remote_server: Optional[RemoteToolServer] = None
     _cached_args_model: Optional[Type[BaseModel]] = None
 
     @classmethod
@@ -164,22 +252,6 @@ class Tool(BaseModel):
             raise ValueError(f"Could not load tool {identifier}: {e}")
 
     @classmethod
-    def from_mcp(cls, identifier: str, mcp_server: MCPServer) -> "Tool":
-        """
-        Create a Tool instance from a Model Configuration Protocol (MCP) server.
-
-        :param identifier: The tool identifier in the format "mcp:tool_name".
-        :param mcp_server: The MCP server providing the tool.
-        :return: An instance of Tool.
-        """
-        return cls(
-            name=identifier,
-            description="testing",
-            function=str.lower,
-            parameters={},
-        )
-
-    @classmethod
     def is_package_tool(cls, identifier: str) -> bool:
         """
         Check if a tool identifier corresponds to a package tool.
@@ -190,6 +262,16 @@ class Tool(BaseModel):
         return ":" in identifier and not cls.is_remote_tool(identifier)
 
     @classmethod
+    def is_mcp_tool(cls, identifier: str) -> bool:
+        """
+        Check if a tool identifier corresponds to an MCP tool.
+
+        :param identifier: The tool identifier.
+        :return: True if the tool is an MCP tool, False otherwise.
+        """
+        return identifier.startswith("mcp:") and len(identifier.split(":")) == 3
+
+    @classmethod
     def is_remote_tool(cls, identifier: str) -> bool:
         """
         Check if a tool identifier corresponds to a remote tool.
@@ -197,10 +279,40 @@ class Tool(BaseModel):
         :param identifier: The tool identifier.
         :return: True if the tool is a remote tool, False otherwise.
         """
-        if "mcp:" in identifier:
+        if cls.is_mcp_tool(identifier):
             return True
 
         return False
+
+    @classmethod
+    def get_remote_server_name_from_tool_name(cls, identifier: str) -> Optional[str]:
+        """
+        Get the remote server name from a tool identifier.
+
+        :param identifier: The tool identifier in format "mcp:server_name:tool_name".
+        :return: The remote server name if found, None otherwise.
+        """
+        if cls.is_remote_tool(identifier):
+            parts = identifier.split(":")
+            if len(parts) >= 3:
+                return parts[1]
+
+        return None
+
+    @classmethod
+    def get_tool_name_from_remote_tool_name(cls, identifier: str) -> Optional[str]:
+        """
+        Get the tool name from a remote tool identifier.
+
+        :param identifier: The tool identifier in format "mcp:server_name:tool_name".
+        :return: The tool name if found, None otherwise.
+        """
+        if cls.is_remote_tool(identifier):
+            parts = identifier.split(":")
+            if len(parts) >= 3:
+                return parts[2]
+
+        return None
 
     def get_args_model(self) -> Type[BaseModel]:
         """
@@ -232,6 +344,14 @@ class Tool(BaseModel):
             args_model(**kwargs)
         except ValidationError as e:
             raise InvalidArgumentsError(e)
+
+        if self.remote_server:
+            tool_call_result = self.remote_server.call_tool(self, **kwargs)
+            if tool_call_result.error:
+                raise ToolCallError(tool_call_result.error)
+
+            return tool_call_result.content  # type: ignore
+
         return str(self.function(*args, **kwargs))
 
     def __str__(self) -> str:
@@ -282,6 +402,23 @@ class InvalidArgumentsError(Exception):
             msg = error.get("msg")
             error_messages.append(msg) if msg else None
         return f"Invalid arguments: {', '.join(error_messages)}. Please Try again with valid arguments."
+
+
+class ToolCallError(Exception):
+    """Exception raised when a tool call fails."""
+
+    def __init__(self, error: str) -> None:
+        """
+        Tool call exception.
+
+        :param error: The error message.
+        """
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self) -> str:
+        """Create a simplified tool call error."""
+        return f"Tool call failed with error: {self.error}"
 
 
 __all__ = ["Tool", "FallbackError"]
