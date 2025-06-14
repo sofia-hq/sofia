@@ -207,7 +207,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 
   return (
     <div
-      className="fixed z-50 bg-white border rounded-lg shadow-xl"
+      className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl"
       style={{
         left: position.x,
         top: position.y,
@@ -215,7 +215,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         height: '600px'
       }}
     >
-      <div className="flex items-center justify-between p-2 border-b cursor-move bg-gray-50 rounded-t-lg" onMouseDown={onMouseDown}>
+      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 cursor-move bg-gray-50 dark:bg-gray-700 rounded-t-lg" onMouseDown={onMouseDown}>
         <h3 className="text-sm font-medium">Chat Preview</h3>
         <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
           <X className="w-3 h-3" />
@@ -224,7 +224,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
       <div className="flex h-[calc(100%-40px)] relative">
         {/* Left Sidebar - Configuration */}
         {!sidebarCollapsed && (
-          <div className="w-64 border-r p-3 space-y-3 overflow-y-auto">
+          <div className="w-64 border-r border-gray-200 dark:border-gray-700 p-3 space-y-3 overflow-y-auto">
             <div className="space-y-2">
               <label className="text-xs font-medium">Provider</label>
               <Select value={provider} onValueChange={setProvider}>
@@ -332,7 +332,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
           variant="ghost"
           size="sm"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className={`absolute top-2 z-10 h-8 w-8 p-0 bg-white border border-gray-200 rounded-full shadow-sm hover:bg-gray-50 ${
+          className={`absolute top-2 z-10 h-8 w-8 p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
             sidebarCollapsed ? 'left-0' : 'left-64'
           } transition-all duration-200`}
           style={{
@@ -377,7 +377,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t p-3">
+          <div className="border-t border-gray-200 dark:border-gray-700 p-3">
             <div className="flex gap-2">
               <Textarea
                 value={input}

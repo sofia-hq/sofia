@@ -1,4 +1,5 @@
 import { Button } from './ui/button';
+import { ThemeToggle } from './ThemeToggle';
 import {
   Download,
   Upload,
@@ -55,9 +56,9 @@ export function Toolbar({
   onPreview,
 }: ToolbarProps) {
   return (
-    <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
+    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm">
       {/* File Operations */}
-      <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+      <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
         <Button
           variant="ghost"
           size="sm"
@@ -91,7 +92,7 @@ export function Toolbar({
       </div>
 
       {/* Undo/Redo */}
-      <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+      <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
         <Button
           variant="ghost"
           size="sm"
@@ -116,7 +117,7 @@ export function Toolbar({
 
       {/* Selection Operations */}
       {selectedNodesCount > 0 && (
-        <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+        <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
           <Button
             variant="ghost"
             size="sm"
@@ -139,7 +140,7 @@ export function Toolbar({
       )}
 
       {/* Layout */}
-      <div className="flex items-center gap-1 border-r border-gray-200 pr-2">
+      <div className="flex items-center gap-1 border-r border-gray-200 dark:border-gray-600 pr-2">
         <Button
           variant="ghost"
           size="sm"
@@ -176,6 +177,11 @@ export function Toolbar({
           <Play className="w-3 h-3 mr-1" />
           Preview
         </Button>
+      </div>
+
+      {/* Theme Toggle */}
+      <div className="flex items-center border-l border-gray-200 dark:border-gray-600 pl-2">
+        <ThemeToggle />
       </div>
     </div>
   );

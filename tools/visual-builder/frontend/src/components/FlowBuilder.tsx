@@ -1315,7 +1315,11 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
             deleteKeyCode={["Delete", "Backspace"]}
             selectNodesOnDrag={false}
           >
-          <Background gap={20}/>
+          <Background
+            gap={20}
+            color="#374151"
+            className="dark:bg-gray-900"
+          />
           <Controls />
 
           {/* Arrow marker definition */}
@@ -1333,6 +1337,7 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
                 <path
                   d="M0,0 L0,6 L9,3 z"
                   fill="#374151"
+                  className="dark:fill-gray-300"
                 />
               </marker>
             </defs>

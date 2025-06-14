@@ -2,6 +2,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 import FlowBuilder from './components/FlowBuilder';
 import { useRef, useState } from 'react';
 import { ChatPopup, ChatPopupRef } from './components/ChatPopup';
+import { ThemeProvider } from './context/ThemeContext';
 import type { Node, Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -26,19 +27,21 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen w-screen bg-white">
-      <ReactFlowProvider>
-        <FlowBuilder onPreview={handlePreview} onSaveConfig={handleSave} />
-      </ReactFlowProvider>
-      <ChatPopup
-        ref={chatRef}
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        nodes={builderData.nodes}
-        edges={builderData.edges}
-        agentName={builderData.agent}
-        persona={builderData.persona}
-      />
-    </div>
+    <ThemeProvider>
+      <div className="h-screen w-screen bg-white dark:bg-gray-900 transition-colors">
+        <ReactFlowProvider>
+          <FlowBuilder onPreview={handlePreview} onSaveConfig={handleSave} />
+        </ReactFlowProvider>
+        <ChatPopup
+          ref={chatRef}
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          nodes={builderData.nodes}
+          edges={builderData.edges}
+          agentName={builderData.agent}
+          persona={builderData.persona}
+        />
+      </div>
+    </ThemeProvider>
   );
 }
