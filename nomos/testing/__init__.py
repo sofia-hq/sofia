@@ -1,12 +1,14 @@
+"""Testing utilities for Nomos agents."""
+
 from __future__ import annotations
 
-from uuid import uuid4
 from typing import List, Union
-
-from pydantic import BaseModel, Field
+from uuid import uuid4
 
 from nomos.llms import LLMBase
-from nomos.models.agent import Message, Summary, StepIdentifier
+from nomos.models.agent import Message, StepIdentifier, Summary
+
+from pydantic import BaseModel, Field
 
 
 class SessionContext(BaseModel):
@@ -26,8 +28,14 @@ class AssertionResult(BaseModel):
 
 
 def smart_assert(result: BaseModel, expectation: str, llm: LLMBase) -> None:
-    """Use ``llm`` to verify that ``result`` meets ``expectation``."""
+    """Check if the agent output meets the expectation using LLM.
 
+    param result: The result from the agent.
+    param expectation: The expectation to check against the result.
+    param llm: The LLM instance to use for checking.
+    Raises:
+        AssertionError: If the expectation is not met.
+    """
     messages = [
         Message(
             role="system",
@@ -43,7 +51,12 @@ def smart_assert(result: BaseModel, expectation: str, llm: LLMBase) -> None:
     ]
     check = llm.get_output(messages=messages, response_format=AssertionResult)
     if not check.success:
-        raise AssertionError(check.assertion or "Expectation not met")
+        err_msg = (
+            f"{check.assertion or 'Expectation not met'}\n"
+            f"Expectation: {expectation}\n"
+            f"Reasoning: {', '.join(check.reasoning)}"
+        )
+        raise AssertionError(err_msg)
 
 
 __all__ = ["SessionContext", "smart_assert", "AssertionResult"]
