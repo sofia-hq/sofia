@@ -84,6 +84,16 @@ class MCPServer(RemoteToolServer):
 
     server_transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
 
+    _server_type_to_builtin_type = {
+        "integer": int,
+        "string": str,
+        "boolean": bool,
+        "number": float,
+        "array": list,
+        "object": dict,
+        "null": type(None),
+    }
+
     def get_tools(self) -> List["Tool"]:
         """
         Get a list of tool definitions available on the MCP server.
@@ -96,22 +106,13 @@ class MCPServer(RemoteToolServer):
         )
         tools_list = client.get_tools_list()
 
-        server_type_to_builtin_type = {
-            "integer": int,
-            "string": str,
-            "boolean": bool,
-            "number": float,
-            "array": list,
-            "object": dict,
-            "null": type(None),
-        }
         for tool in tools_list:
             tool_name = tool["name"]
             tool_description = tool["description"]
             mapped_parameters = {}
             parameters = tool["inputSchema"].get("properties", {})
             for param_name, param_info in parameters.items():
-                param_type = server_type_to_builtin_type.get(
+                param_type = self._server_type_to_builtin_type.get(
                     param_info.get("type"), Any
                 )
                 param_description = param_info.get("title", "")

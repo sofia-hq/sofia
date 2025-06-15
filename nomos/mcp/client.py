@@ -82,13 +82,15 @@ class MCPServerResponse:
 class MCPClient:
     """Client for interacting with MCP servers."""
 
+    default_protocol_version = "2025-03-26"
+
     def __init__(
         self,
         base_url: str,
         path: Optional[str] = None,
         transport: Optional[MCPServerTransport] = MCPServerTransport.mcp,
         client_name: str = "nomos-client",
-        protocol_version: str = "2025-03-26",
+        protocol_version: str = default_protocol_version,
     ) -> None:
         """
         Initialize the MCP client.
@@ -101,12 +103,13 @@ class MCPClient:
         """
         self.base_url = base_url
         self.transport = transport
-        if path:
+        if not path:
             if self.transport == MCPServerTransport.mcp:
-                self.path = "mcp/"
+                path = "mcp/"
             else:
-                self.path = ""
+                path = ""
 
+        self.path = path
         self.client_name = client_name
         self.protocol_version = protocol_version
 
@@ -237,7 +240,7 @@ class MCPClient:
         """
         return self.send_notification(session_id, "notifications/initialized")
 
-    def get_tools_list(self, progress_token: str = "progress-token") -> List:
+    def get_tools_list(self) -> List:
         """
         Get the list of tools available on the MCP server.
 
@@ -252,7 +255,7 @@ class MCPClient:
             payload = {
                 "id": str(uuid.uuid4()),
                 "method": "tools/list",
-                "params": {"_meta": {"progressToken": progress_token}},
+                "params": {},
             }
             headers = {
                 "mcp-session-id": session_id,
@@ -260,24 +263,24 @@ class MCPClient:
             res = self._jsonrpc_request("POST", headers=headers, payload=payload)
             return res.json["data"]["result"]["tools"]
 
-    def call_tool(
-        self, tool_name: str, params: dict, progress_token: str = "progress-token"
-    ) -> MCPToolCallResult:
+    def call_tool(self, tool_name: str, params: dict) -> MCPToolCallResult:
         """
         Call a specific tool on the MCP server.
 
         :param tool_name: The name of the tool to call.
         :param params: The parameters for the tool.
-        :param progress_token: Optional progress token for tracking.
         :return: The response from the tool call.
         :raises MCPClientError: If the tool call fails.
         """
         assert (
             self.transport == MCPServerTransport.mcp
         ), "Only MCP transport is supported"
+
+        request_id = str(uuid.uuid4())
+        progress_token = f"progress-token-{request_id}"
         with self.session() as session_id:
             payload = {
-                "id": str(uuid.uuid4()),
+                "id": request_id,
                 "method": "tools/call",
                 "params": {
                     "name": tool_name,

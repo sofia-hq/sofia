@@ -96,8 +96,6 @@ class Session:
                 f"Flow manager initialized with {len(self.flow_manager.flows)} flows"
             )
 
-        self.mcp_servers = {mcp.name: mcp for mcp in mcp_servers or []}
-
         tool_arg_descs = (
             self.config.tool_arg_descriptions
             if self.config and self.config.tool_arg_descriptions
