@@ -140,6 +140,7 @@ class MCPClient:
         method: str,
         headers: Optional[dict] = None,
         payload: Optional[dict] = None,
+        timeout: int = 30,
     ) -> MCPServerResponse:
         """
         Make a request to the MCP server.
@@ -147,14 +148,23 @@ class MCPClient:
         :param method: The method to call.
         :param headers: Optional headers for the request.
         :param payload: The JSON payload for the request.
+        :param timeout: Timeout in seconds for the request (default: 30 seconds).
         :return: The response from the server.
         :raises MCPClientError: If the request fails.
         """
-        response = httpx.request(method, self.server_url, headers=headers, json=payload)
         try:
+            response = httpx.request(
+                method, self.server_url, headers=headers, json=payload, timeout=timeout
+            )
             response.raise_for_status()  # Raise an error for bad responses
+        except httpx.TimeoutException:
+            raise MCPClientError(f"Request timed out after {timeout} seconds")
+        except httpx.ConnectError:
+            raise MCPClientError("Failed to connect to MCP server")
         except httpx.HTTPStatusError as e:
             raise MCPClientError(f"Failed to call {method}: {e.response.text}")
+        except Exception as e:
+            raise MCPClientError(f"Unexpected error: {str(e)}")
 
         return MCPServerResponse(response)
 
@@ -297,12 +307,12 @@ class MCPClient:
                 tool_call_id=res.json["data"]["id"],
                 content=(
                     result_data["content"][0].get("text")
-                    if not result_data["isError"]
+                    if not result_data.get("isError", False)
                     else None
                 ),
                 error=(
                     result_data["content"][0].get("text")
-                    if result_data["isError"]
+                    if result_data.get("isError", False)
                     else None
                 ),
             )
