@@ -127,3 +127,47 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ReactFlow Dark Mode Support */
+.dark .react-flow__controls {
+  background: rgb(31 41 55) !important;
+  border: 1px solid rgb(75 85 99) !important;
+}
+
+.dark .react-flow__controls-button {
+  background: rgb(31 41 55) !important;
+  border-color: rgb(75 85 99) !important;
+  color: rgb(229 231 235) !important;
+}
+
+.dark .react-flow__controls-button:hover {
+  background: rgb(55 65 81) !important;
+}
+
+.dark .react-flow__panel {
+  background: rgb(31 41 55) !important;
+  border: 1px solid rgb(75 85 99) !important;
+  color: rgb(229 231 235) !important;
+}
+
+.dark .react-flow__minimap {
+  background: rgb(31 41 55) !important;
+  border: 1px solid rgb(75 85 99) !important;
+}
+
+.dark .react-flow__attribution {
+  background: rgb(31 41 55) !important;
+  color: rgb(156 163 175) !important;
+}
+
+.dark .react-flow__background {
+  background: rgb(17 24 39) !important;
+}
+
+.dark .react-flow__edge-path {
+  stroke: rgb(156 163 175) !important;
+}
+
+.dark .react-flow__connection-path {
+  stroke: rgb(156 163 175) !important;
+}

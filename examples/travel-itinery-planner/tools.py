@@ -1,8 +1,9 @@
+import os
 import requests
 import json
 
 headers = {
-    "X-API-KEY": "781f5541ce3cf9c58c8f5f8e834a1f15cf3cab7c",
+    "X-API-KEY": os.getenv("SERPER_API_KEY", "your_api_key_here"),
     "Content-Type": "application/json",
 }
 

@@ -1,183 +1,60 @@
-# Nomos Visual Flow Builder
+# Visual Builder Development Environment
 
-A powerful visual interface for building and configuring Nomos AI agent workflows. This tool provides an intuitive drag-and-drop interface for creating complex conversational flows with integrated tools and step-by-step routing logic.
+This directory contains a small backend API and frontend web application used for the Nomos visual builder. You can run both services together using Docker Compose.
 
-## Features
+## Prerequisites
 
-- **Visual Flow Design**: Drag-and-drop interface for creating agent conversation flows
-- **Step-based Architecture**: Define conversation steps with descriptions, tools, and routing conditions
-- **Tool Integration**: Visual connections between steps and available tools with automatic configuration
-- **Flow Grouping**: Organize related steps into logical groups for better workflow management
-- **Real-time Validation**: Automatic validation of flow connections and configurations
-- **YAML Export/Import**: Export flows to Nomos-compatible YAML configuration files
-- **Undo/Redo Support**: Full history management for flow editing operations
-- **Auto-arrangement**: Intelligent layout algorithms for clean flow visualization
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 16+ and npm/yarn/pnpm
-- Modern web browser with ES6+ support
-
-### Quick Start with Docker
-
-The fastest way to get started is using Docker:
-
-```bash
-# Pull and run from Docker Hub (when available)
-docker run -p 3000:80 nomos/visual-builder
-
-# Or build locally
-git clone <repository-url>
-cd tools/visual-builder
-npm run docker:build
-npm run docker:run
-```
-
-The application will be available at `http://localhost:3000`
-
-### Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-```
-
-### Development
-
-```bash
-# Start development server with hot reload
-npm run dev
-```
-
-The application will be available at `http://localhost:5173`
+- **Node.js 16+** – required for running the frontend in development mode.
+- **Python 3.11+** – required for the FastAPI backend when not using Docker.
+- **Docker** – optional but recommended for running the entire stack with Docker Compose.
 
 ## Usage
 
-### Creating Flows
+1. Build and start the containers:
+   ```bash
+   docker compose -f docker.compose.yml up --build
+   ```
+2. Open the builder in your browser at [http://localhost:3000](http://localhost:3000).
 
-1. **Add Step Nodes**: Right-click on the canvas and select "Add Step Node" to create conversation steps
-2. **Add Tool Nodes**: Add tools that your agent can use during conversations
-3. **Create Connections**:
-   - Connect steps to other steps using route edges (purple) to define conversation flow
-   - Connect steps to tools using tool edges (blue) to make tools available to specific steps
-4. **Configure Steps**: Double-click nodes or use the edit button to configure step details
-5. **Group Related Steps**: Select multiple steps and use the group function to organize them into flows
+The frontend container is built with `VITE_BACKEND_URL` set to `http://backend:8000`, allowing it to communicate with the backend API service.
 
-### Real-time Integration
+Stop the stack with `Ctrl+C` and `docker compose down` when you are finished.
 
-The visual builder features automatic integration between visual connections and step configurations:
+## Running the Frontend Locally
 
-- **Tool Connections**: When you connect a step to a tool visually, the tool is automatically added to the step's `available_tools` list
-- **Route Connections**: Visual route connections automatically populate the step's `routes` configuration
-- **Live Updates**: Changes to visual connections immediately reflect in the step edit dialogs
-
-### Export and Import
-
-- **Export**: Use the export function to generate Nomos-compatible YAML configuration files
-- **Import**: Import existing YAML configurations to continue editing flows visually
-- **Agent Configuration**: Set agent name, persona, and other metadata through the export dialog
-
-## Project Structure
-
-## Project Structure
-
-```
-src/
-├── components/           # React components
-│   ├── FlowBuilder.tsx  # Main flow builder component
-│   ├── nodes/           # Custom node types
-│   ├── edges/           # Custom edge types
-│   ├── dialogs/         # Edit dialogs for nodes
-│   └── ui/              # Reusable UI components
-├── context/             # React context providers
-├── hooks/               # Custom React hooks
-├── types/               # TypeScript type definitions
-├── utils/               # Utility functions
-└── models/              # Data models and validation
-```
-
-## Key Components
-
-- **FlowBuilder**: Main application component managing the flow canvas
-- **StepNode**: Visual representation of conversation steps
-- **ToolNode**: Visual representation of available tools
-- **RouteEdge**: Connections between steps showing conversation flow
-- **ToolEdge**: Connections between steps and tools
-- **StepEditDialog**: Configuration interface for step properties
-- **FlowProvider**: Context provider for sharing flow state
-
-## Docker Deployment
-
-### Building the Docker Image
+If you prefer not to use Docker for the UI, you can run the frontend with Node.js:
 
 ```bash
-# Build the application and Docker image
-npm run docker:build
-
-# Or manually
-npm run build
-docker build -t nomos-visual-builder .
+cd frontend
+npm install
+npm run dev
 ```
 
-### Running with Docker
+The development server will start at [http://localhost:5173](http://localhost:5173) by default. Use the `VITE_BACKEND_URL` environment variable to point it at the backend (e.g. `http://localhost:8000`).
+
+## Running the Backend Locally
+
+The backend is a small FastAPI application. Install its dependencies and run it with `uvicorn`:
 
 ```bash
-# Run locally
-docker run -p 3000:80 nomos-visual-builder
-
-# Run in background
-docker run -d -p 3000:80 --name visual-builder nomos-visual-builder
-
-# Stop the container
-docker stop visual-builder
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
-### Docker Hub
+Environment variables:
 
-```bash
-# Pull from Docker Hub (when published)
-docker pull nomos/visual-builder
-docker run -p 3000:80 nomos/visual-builder
-```
+- `BACKEND_PORT` – port for the FastAPI server (defaults to `8000`).
+- `NOMOS_SERVER_PORT` – port where the Nomos agent server is started (defaults to `8003`).
 
-## Development Notes
+## API Endpoints
 
-### Architecture
+- `POST /reset` – accepts a YAML configuration and environment variables, starts or restarts a Nomos agent on `NOMOS_SERVER_PORT`.
+- `POST /chat` – forwards chat requests to the running Nomos agent and returns its response.
 
-The application is built with:
-- **React Flow**: Core flow visualization and interaction
-- **TypeScript**: Type safety and development experience
-- **Vite**: Fast development server and build tool
-- **Tailwind CSS**: Utility-first styling
-- **Radix UI**: Accessible component primitives
+## Ports and Environment Variables
 
-### Key Features Implementation
-
-- **Real-time Integration**: Uses React Context and useMemo for automatic updates between visual connections and step configurations
-- **Undo/Redo**: Custom hook with deep cloning for reliable history management
-- **Auto-layout**: Dagre-based algorithm for intelligent node positioning
-- **YAML Integration**: Bidirectional conversion between visual flows and Nomos configuration format
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Integration with Nomos
-
-This visual builder generates configuration files compatible with the Nomos AI agent framework. The exported YAML files can be used directly with Nomos to run the designed conversational flows.
-
-## License
-
-This project is part of the Nomos ecosystem. See the main Nomos repository for license information.
+- Frontend: `3000` (Docker) or `5173` (local dev)
+- Backend: `8000`
+- Nomos agent: `8003`
+- `VITE_BACKEND_URL` – URL of the backend API used by the frontend

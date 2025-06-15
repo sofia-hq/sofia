@@ -61,7 +61,7 @@ export const KeyboardShortcuts = memo(() => {
       <Button
         variant="ghost"
         size="sm"
-        className="fixed bottom-4 right-4 bg-white border border-gray-200 shadow-sm hover:shadow-md z-50"
+        className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md z-50"
         onClick={() => setOpen(true)}
         title="Keyboard Shortcuts"
       >
@@ -81,13 +81,13 @@ export const KeyboardShortcuts = memo(() => {
 
           <div className="space-y-3">
             {shortcuts.map((shortcut, index) => (
-              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-                <span className="text-sm text-gray-600">{shortcut.description}</span>
+              <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                <span className="text-sm text-gray-600 dark:text-gray-300">{shortcut.description}</span>
                 <div className="flex gap-1">
                   {shortcut.keys.map((key, keyIndex) => (
                     <kbd
                       key={keyIndex}
-                      className="px-2 py-1 text-xs font-mono bg-gray-100 border border-gray-200 rounded"
+                      className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded"
                     >
                       {key}
                     </kbd>
@@ -97,7 +97,7 @@ export const KeyboardShortcuts = memo(() => {
             ))}
           </div>
 
-          <div className="text-xs text-gray-500 mt-4">
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-4">
             Tip: Right-click on nodes or empty canvas for more options.
           </div>
         </DialogContent>

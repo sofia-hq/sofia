@@ -47,6 +47,7 @@
 <br />
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos)
+[![npm version](https://img.shields.io/npm/v/nomos-sdk.svg)](https://www.npmjs.com/package/nomos-sdk)
 [![codecov](https://codecov.io/gh/dowhiledev/nomos/graph/badge.svg?token=MXRK9HGE5R)](https://codecov.io/gh/dowhiledev/nomos)
 [![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
@@ -213,6 +214,27 @@ pip install nomos[huggingface] # For HuggingFace support
 
 ```bash
 pip install nomos[traces]
+```
+
+### TypeScript/JavaScript SDK
+
+For client-side applications and web development, use our npm package:
+
+```bash
+npm install nomos-sdk
+```
+
+The TypeScript SDK provides full type safety and works in both Node.js and browser environments.
+
+👉 **[Complete SDK documentation and examples](sdk/ts/README.md)**
+
+#### Quick Example
+```typescript
+import { NomosClient } from 'nomos-sdk';
+
+const client = new NomosClient('http://localhost:8000');
+const session = await client.createSession(true);
+const response = await client.sendMessage(session.session_id, 'Hello!');
 ```
 
 ## Usage
