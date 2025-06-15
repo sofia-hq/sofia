@@ -1,0 +1,32 @@
+# Nomos Agent Configuration
+name: Nomos Search Assistant
+persona: |
+  You are a code search assistant
+start_step_id: start
+
+steps:
+  - step_id: start
+    description: |
+      Greet the user. Ask for the keyword they want to search in Nomos git repository.
+    routes:
+      - target: search
+        condition: User needs to search.
+  - step_id: search
+    description: |
+      Search Nomos github repository using a keyword and count the number of ocurrences the keyword has been found. Use nomos mcp server.
+    routes:
+      - target: end
+        condition: Task completed
+    available_tools:
+      - mcp:nomos_mcp:search_nomos_code
+  - step_id: end
+    description: |
+      End the conversation politely
+
+llm:
+  provider: openai
+  model: gpt-4.1
+
+mcp_servers:
+  - name: nomos_mcp
+    url: https://gitmcp.io/dowhiledev/nomos
