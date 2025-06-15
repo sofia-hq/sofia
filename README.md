@@ -359,6 +359,45 @@ nomos test --verbose --no-coverage
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
 
+### Writing Agent Tests
+
+Nomos provides helper utilities to write tests that validate your agent's responses.
+
+Use `smart_assert` to check a single response:
+
+```python
+from nomos.testing import SessionContext, smart_assert
+from nomos.models.agent import Summary, Message, StepIdentifier
+
+def test_greeting(agent):
+    context = SessionContext(
+        history=[
+            Summary(content="Initial summary"),
+            Message(role="user", content="Hello"),
+            StepIdentifier(step_id="start"),
+        ]
+    )
+    decision, _, _ = agent.next("Hello", context.model_dump(mode="json"))
+    smart_assert(decision, "Agent should greet the user", agent.llm)
+
+```
+
+For multi-turn sessions, use `ScenarioRunner`:
+
+```python
+from nomos.testing.eval import ScenarioRunner, Scenario
+
+def test_budget_flow(agent):
+    ScenarioRunner.run(
+        agent,
+        Scenario(
+            scenario="User asks for budgeting advice",
+            expectation="Agent explains how to plan a budget",
+        ),
+    )
+
+```
+
 ### Python API Example (Full Code)
 
 ```python

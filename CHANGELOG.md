@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [0.3.0] - draft
+
+### Added
+- Evaluation helpers `SessionContext` and `smart_assert` for validating agent responses.
+- `ScenarioRunner` framework for simulating conversations.
+- Example tests for the Financial Planning Assistant.
+- Mock LLM now supports queuing multiple responses for multi-turn testing.
+
 ## [0.2.2] - 2025-06-08
 
 ### Added
