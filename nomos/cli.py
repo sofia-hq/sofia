@@ -788,7 +788,7 @@ if __name__ == '__main__':
         os.unlink(temp_script_path)
 
 
-def _run_tests(pytest_args: List[str] | None, coverage: bool) -> None:
+def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) -> None:
     """Run tests using pytest."""
     cmd = ["python", "-m", "pytest"] + (pytest_args or ["."])
 
