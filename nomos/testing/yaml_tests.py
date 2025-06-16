@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional
-
-import yaml
-from pydantic import BaseModel, Field
+from typing import Dict, List, Optional, Union
 
 from nomos.llms import LLMConfig
 from nomos.models.agent import Message, StepIdentifier, Summary
 from nomos.testing import SessionContext
-from nomos.testing.e2e import Scenario
+
+from pydantic import BaseModel, Field
+
+import yaml
 
 
 class HistoryItem(BaseModel):
@@ -23,7 +23,7 @@ class HistoryItem(BaseModel):
     content: Optional[str] = None
     step_id: Optional[str] = None
 
-    def to_obj(self):
+    def to_obj(self) -> Union[Summary, Message, StepIdentifier]:
         """Convert to Nomos history object."""
         if self.type == "summary":
             return Summary(summary=self.summary or [])
@@ -43,10 +43,11 @@ class UnitTestCase(BaseModel):
     expectation: str
     invalid: bool = False
 
-    def build_context(self) -> SessionContext:
-        ctx = SessionContext()
+    def build_context(self) -> Optional[SessionContext]:
+        """Build a SessionContext from the provided context data."""
         if not self.context:
-            return ctx
+            return None
+        ctx = SessionContext()
         if "current_step_id" in self.context:
             ctx.current_step_id = self.context["current_step_id"]
         history = self.context.get("history") or []
@@ -70,7 +71,7 @@ class TestSuite(BaseModel):
     e2e: Dict[str, E2ETestCase] = Field(default_factory=dict)
 
 
-def load_yaml_tests(path: str | Path) -> TestSuite:
+def load_yaml_tests(path: Union[str, Path]) -> TestSuite:
     """Load a TestSuite from YAML file."""
     with open(path, "r") as f:
         data = yaml.safe_load(f)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Union
+from typing import List, Optional, Union
 from uuid import uuid4
 
 from nomos.llms import LLMBase
@@ -15,7 +15,7 @@ class SessionContext(BaseModel):
     """Container for session data required by :meth:`Agent.next`."""
 
     session_id: str = Field(default_factory=lambda: str(uuid4()))
-    current_step_id: str | None = None
+    current_step_id: Optional[str] = None
     history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
 
 
@@ -24,7 +24,7 @@ class AssertionResult(BaseModel):
 
     reasoning: List[str] = Field(..., description="Step by step reasoning")
     success: bool = Field(..., description="Whether expectation is met")
-    assertion: str | None = Field(None, description="Assertion message if failed")
+    assertion: Optional[str] = Field(None, description="Assertion message if failed")
 
 
 def smart_assert(result: BaseModel, expectation: str, llm: LLMBase) -> None:

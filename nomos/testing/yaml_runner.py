@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import subprocess
-import tempfile
 from pathlib import Path
 from typing import List, Optional
 
 
-def _create_test_file(yaml_path: Path, tmpdir: Path) -> Path:
+def _create_test_file(yaml_path: Path) -> Path:
     """Generate a pytest file that executes YAML defined tests."""
     agent_cfg = yaml_path.parent / "config.agent.yaml"
-    test_file = tmpdir / "test_generated.py"
+    test_file = yaml_path.parent / "test_generated.py"
     lines: List[str] = [
         "import pytest",
         "from pathlib import Path",
@@ -48,21 +47,23 @@ def _create_test_file(yaml_path: Path, tmpdir: Path) -> Path:
         "        ScenarioRunner.run(agent, scenario, tc.max_steps)",
         "    globals()[f'test_{name}'] = _test",
     ]
-    with open(test_file, 'w') as f:
-        f.write('\n'.join(lines))
+    with open(test_file, "w") as f:
+        f.write("\n".join(lines))
     return test_file
 
 
-def run_yaml_tests(yaml_path: Path, pytest_args: Optional[List[str]] = None, coverage: bool = True) -> int:
+def run_yaml_tests(
+    yaml_path: Path, pytest_args: Optional[List[str]] = None, coverage: bool = True
+) -> int:
     """Run YAML defined tests using pytest."""
-    with tempfile.TemporaryDirectory() as tmp:
-        test_file = _create_test_file(yaml_path, Path(tmp))
-        cmd = ["python", "-m", "pytest", str(test_file)]
-        if pytest_args:
-            cmd.extend(pytest_args)
-        if coverage:
-            cmd.extend(["--cov=.", "--cov-report=term-missing"])
-        result = subprocess.run(cmd)
-        return result.returncode
+    test_file = _create_test_file(yaml_path)
+    cmd = ["python", "-m", "pytest", str(test_file)]
+    if pytest_args:
+        cmd.extend(pytest_args)
+    if coverage:
+        cmd.extend(["--cov=.", "--cov-report=term-missing"])
+    result = subprocess.run(cmd)
+    return result.returncode
+
 
 __all__ = ["run_yaml_tests"]

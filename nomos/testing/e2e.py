@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from nomos.core import Agent
 from nomos.models.agent import Message
@@ -26,14 +26,14 @@ class NextInput(BaseModel):  # noqa
     decision: SimulationDecision = Field(
         ..., description="What to do next, either continue the conversation or assert"
     )
-    input: str | None = Field(
+    input: Optional[str] = Field(
         None,
         description=(
             "The input that need to be given to the agent next,"
             " If decided to continue the conversation"
         ),
     )
-    assertion: str | None = Field(
+    assertion: Optional[str] = Field(
         None,
         description="The assertion that need to be made if the decision is to assert",
     )
