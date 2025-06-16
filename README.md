@@ -341,20 +341,20 @@ nomos test
 ```
 
 **Options:**
-- `--pattern, -p`: Test file pattern to match (default: `test_*.py`)
-- `--verbose, -v`: Enable verbose test output
+- `--config, -c`: Path to `tests.agent.yaml` file (defaults to `tests.agent.yaml` in the current directory)
 - `--coverage/--no-coverage`: Generate coverage report (default: `true`)
+- Any additional arguments are passed directly to `pytest`.
 
 **Examples:**
 ```bash
 # Run all tests
 nomos test
 
-# Run specific test pattern
-nomos test --pattern "test_tools*"
+# Provide custom yaml file and verbose output
+nomos test --config ./my_tests.yaml -v
 
-# Verbose output without coverage
-nomos test --verbose --no-coverage
+# Pass any pytest args
+nomos test tests/test_cli.py -k serve
 ```
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
@@ -396,6 +396,22 @@ def test_budget_flow(agent):
         ),
     )
 
+```
+
+### YAML Test Configuration
+
+You can define agent tests in a YAML file and run them with `nomos test`.
+Nomos looks for `tests.agent.yaml` by default.
+
+```yaml
+llm:
+  provider: openai
+  model: gpt-4o-mini
+
+unit:
+  greet:
+    input: "Hello"
+    expectation: "Greets the user"
 ```
 
 ### Python API Example (Full Code)
