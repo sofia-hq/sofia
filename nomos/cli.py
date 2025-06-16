@@ -795,8 +795,6 @@ def _run_tests(pytest_args: List[str] | None, coverage: bool) -> None:
     if coverage:
         cmd.extend(["--cov=.", "--cov-report=term-missing"])
 
-    console.print(f"🧪 Running: [bold]{' '.join(cmd)}[/bold]", style=PRIMARY_COLOR)
-
     result = subprocess.run(cmd)
 
     if result.returncode == 0:
