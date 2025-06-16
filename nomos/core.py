@@ -95,8 +95,8 @@ class Session:
             )
 
         tool_arg_descs = (
-            self.config.tool_arg_descriptions
-            if self.config and self.config.tool_arg_descriptions
+            self.config.tools.tool_arg_descriptions
+            if self.config and self.config.tools.tool_arg_descriptions
             else {}
         )
         tools_list = [
@@ -590,6 +590,8 @@ class Agent:
                     "No LLM provided. Please provide an LLM or a config with an LLM."
                 )
             llm = config.llm.get_llm()
+        tools = tools or []
+        tools.extend(config.tools.get_tools())
         return cls(
             llm=llm,
             name=config.name,
@@ -597,7 +599,7 @@ class Agent:
             start_step_id=config.start_step_id,
             system_message=config.system_message,
             persona=config.persona,
-            tools=tools or [],
+            tools=tools,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
             max_iter=config.max_iter,

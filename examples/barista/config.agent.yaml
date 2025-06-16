@@ -98,16 +98,19 @@ flows:
 
 
 # Additional meanimg to tool's arguments
-tool_arg_descriptions:
-  add_to_cart:
-    coffee_type: Coffee type (e.g., Espresso, Latte, Cappuccino)
-    size: Size of the coffee (Small, Medium, Large)
-    price: Price of the coffee
-  remove_item:
-    item_id: The ID of the item to remove from the cart
-  finalize_order:
-    payment_method: Payment method (Card or Cash)
-    payment: Payment amount (required if payment_method is Cash)
+tools:
+  tool_files:
+    - barista_tools.py
+  tool_arg_descriptions:
+    add_to_cart:
+      coffee_type: Coffee type (e.g., Espresso, Latte, Cappuccino)
+      size: Size of the coffee (Small, Medium, Large)
+      price: Price of the coffee
+    remove_item:
+      item_id: The ID of the item to remove from the cart
+    finalize_order:
+      payment_method: Payment method (Card or Cash)
+      payment: Payment amount (required if payment_method is Cash)
 
 
 # llm configuration

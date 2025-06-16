@@ -100,18 +100,21 @@ steps:
       Provide encouragement and remind them they can return for more financial guidance.
       End the conversation professionally.
 
-tool_arg_descriptions:
-  calculate_budget:
-    monthly_income: User's monthly income amount
-  add_expense:
-    amount: Expense amount
-    category: One of Housing, Transportation, Food, Utilities, Entertainment, Savings
-    description: Brief description of the expense
-    date: Optional date in YYYY-MM-DD format
-  set_savings_goal:
-    target_amount: Goal amount to save
-    target_date: Target date in YYYY-MM-DD format
-    description: Description of the savings goal
+tools:
+  tool_files:
+    - tools.py
+  tool_arg_descriptions:
+    calculate_budget:
+      monthly_income: User's monthly income amount
+    add_expense:
+      amount: Expense amount
+      category: One of Housing, Transportation, Food, Utilities, Entertainment, Savings
+      description: Brief description of the expense
+      date: Optional date in YYYY-MM-DD format
+    set_savings_goal:
+      target_amount: Goal amount to save
+      target_date: Target date in YYYY-MM-DD format
+      description: Description of the savings goal
 
 llm:
   provider: openai
