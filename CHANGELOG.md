@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<!-- ## [0.1.15]
+<!-- ## Unreleased
 
 ### Added
 - Your new features here.
@@ -25,18 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
-## [Unreleased]
-
-### Added
-- YAML-based test configuration loaded by `nomos test`.
-
-## [0.3.0] - draft
+## [0.2.3] - 2025-06-17
 
 ### Added
 - Evaluation helpers `SessionContext` and `smart_assert` for validating agent responses.
 - `ScenarioRunner` framework for simulating conversations.
 - Example tests for the Financial Planning Assistant.
-- Mock LLM now supports queuing multiple responses for multi-turn testing.
+- YAML-based test configuration loaded by `nomos test`.
+
+### Changed
+- Now no need to pass the `tools` by specifying `-t` flag for each tool file, instead mention them in the agent config file under `tools` key. Check the [example](examples/barista/config.agent.yaml) for more details.
 
 ## [0.2.2] - 2025-06-08
 
