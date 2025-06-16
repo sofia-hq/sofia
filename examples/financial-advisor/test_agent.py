@@ -57,7 +57,7 @@ def test_budget_calculation_smart(financial_advisor_agent: Agent):
     )
     smart_assert(
         decision,
-        "Calls the calculate_budget tool with the 2000 monthly income",
+        "Calls the calculate_budget tool with the 5000 monthly income",
         financial_advisor_agent.llm,
     )
 
@@ -102,4 +102,4 @@ def test_tracking_expenses_scenario(financial_advisor_agent: Agent):
             "If you ask for a summary, it should provide the total expenses and remaining budget. "
         ),
     )
-    ScenarioRunner.run(financial_advisor_agent, scenario)
+    ScenarioRunner.run(financial_advisor_agent, scenario, 10)

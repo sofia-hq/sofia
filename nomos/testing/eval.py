@@ -85,7 +85,9 @@ class ScenarioRunner:
             if getattr(action, "value", action) == "END":
                 break
             if turns >= max_turns:
-                break
+                raise AssertionError(
+                    "Maximum number of turns reached without meeting expectations."
+                )
 
             chat_history_str = "\n".join(str(msg) for msg in chat_history)
             next_input: NextInput = llm.get_output(
