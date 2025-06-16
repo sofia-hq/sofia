@@ -1,4 +1,4 @@
-"""Evaluate an agent against a scenario and verify expectations."""
+"""Perform end-to-end testing of an agent with a scenario."""
 
 from __future__ import annotations
 

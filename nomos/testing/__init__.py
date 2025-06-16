@@ -1,4 +1,4 @@
-"""Testing utilities for Nomos agents."""
+"""Unit Testing utilities for Nomos agents."""
 
 from __future__ import annotations
 
