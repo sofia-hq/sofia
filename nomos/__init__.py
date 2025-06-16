@@ -12,7 +12,7 @@ from .server import run_server
 from .testing import smart_assert
 from .testing.e2e import Scenario, ScenarioRunner
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __author__ = "DoWhile"
 
 __all__ = [
