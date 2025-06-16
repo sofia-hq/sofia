@@ -280,13 +280,13 @@ nomos run
 
 **Options:**
 - `--config, -c`: Configuration file path (default: `config.agent.yaml`)
-- `--tools, -t`: Python files with tool definitions (can be used multiple times)
+- `--tools, -t`: Python files with tool definitions (can be used multiple times) - **Note: As of v0.2.3, you can now specify tools directly in your agent config file**
 - `--port, -p`: Development server port (default: `8000`)
 - `--verbose, -v`: Enable verbose logging
 
 **Examples:**
 ```bash
-# Basic usage
+# Basic usage (tools will be loaded from config file)
 nomos run
 
 # With custom config and tools
@@ -359,11 +359,13 @@ nomos test tests/test_cli.py -k serve
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
 
-### Writing Agent Tests
+### Agent Testing and Evaluation
 
-Nomos provides helper utilities to write tests that validate your agent's responses.
+Nomos provides comprehensive testing utilities to validate your agent's responses and simulate conversations.
 
-Use `smart_assert` to check a single response:
+#### Smart Assertions
+
+Use `smart_assert` to validate agent responses using LLM-based evaluation:
 
 ```python
 from nomos.testing import SessionContext, smart_assert
@@ -382,7 +384,9 @@ def test_greeting(agent):
 
 ```
 
-For multi-turn sessions, use `ScenarioRunner`:
+#### Scenario Testing
+
+For multi-turn conversations, use `ScenarioRunner`:
 
 ```python
 from nomos.testing.eval import ScenarioRunner, Scenario
@@ -412,6 +416,11 @@ unit:
   greet:
     input: "Hello"
     expectation: "Greets the user"
+
+e2e:
+  budget_flow:
+    scenario: "User asks for budgeting advice"
+    expectation: "Agent explains how to plan a budget"
 ```
 
 ### Python API Example (Full Code)
@@ -698,7 +707,37 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 > **NOTE**: Make sure the package is installed in your environment and function returns an output that is string representable.
 
-## Custom Tool Files
+## Tool Configuration
+
+### New in v0.2.3: Integrated Tool Configuration
+
+As of version 0.2.3, you can now specify tools directly in your agent configuration file instead of relying solely on CLI flags. This provides better organization and easier deployment.
+
+#### Configuration-Based Tools
+
+Add tools to your `config.agent.yaml`:
+
+```yaml
+name: my-agent
+persona: A helpful assistant
+steps:
+  - step_id: start
+    # ... step configuration
+start_step_id: start
+
+# Tool configuration - NEW in v0.2.3
+tools:
+  tool_files:
+    - "barista_tools"          # Module name
+    - "tools/my_tools.py"      # File path
+    - "math:sqrt"              # Package function
+  tool_arg_descriptions:
+    add_to_cart:
+      coffee_type: "Coffee type (e.g., Espresso, Latte, Cappuccino)"
+      size: "Size of the coffee (Small, Medium, Large)"
+```
+
+#### Custom Tool Files
 
 You can organize your own tools in Python modules or keep them inside a `tools/` directory.
 Each module should export a list named `tools` containing the functions you want
@@ -713,17 +752,23 @@ def greet(name: str) -> str:
 tools = [greet]
 ```
 
-Run the CLI and provide the tool file with `--tools` (you can specify multiple
-files):
+#### Tool Loading Options
 
+**Option 1: Configuration File (Recommended)**
+```yaml
+# In config.agent.yaml
+tools:
+  tool_files:
+    - "my_tools"              # Load as module
+    - "tools/custom_tools.py" # Load as file path
+```
+
+**Option 2: CLI Flags (Legacy)**
 ```bash
 nomos run --config config.agent.yaml --tools tools/my_tools.py
 ```
 
-The command sets the `TOOLS_PATH` environment variable so the API server loads
-your modules directly. When embedding Nomos in your own application, set
-`TOOLS_PATH` to a colon-separated list of directories containing your tool
-modules.
+The configuration file approach is recommended as it keeps all agent settings in one place and works better with deployment scenarios.
 
 ## Examples
 
@@ -737,11 +782,14 @@ To run the Barista agent:
 cd examples/barista
 export OPENAI_API_KEY=your-api-key-here
 
-# Run in development mode
-nomos run --config config.barista.yaml --tools barista_tools.py
+# Run in development mode (tools loaded from config.agent.yaml)
+nomos run --config config.agent.yaml
+
+# Or with explicit tool files (legacy approach)
+nomos run --config config.agent.yaml --tools barista_tools.py
 
 # Or serve with Docker
-nomos serve --config config.barista.yaml --tools barista_tools.py
+nomos serve --config config.agent.yaml
 ```
 
 ### Example: Financial Planning Assistant
@@ -759,15 +807,18 @@ To run the Financial Planning Assistant:
 ```bash
 cd examples/financial-advisor
 
-# Run in development mode
+# Run in development mode (tools loaded from config.agent.yaml)
 export OPENAI_API_KEY=your-api-key-here
+nomos run --config config.agent.yaml
+
+# Or with explicit tool files (legacy approach)
 nomos run --config config.agent.yaml --tools tools.py
 
 # Or serve with Docker
-nomos serve --config config.agent.yaml --tools tools.py
+nomos serve --config config.agent.yaml
 
 # Or serve in detached mode
-nomos serve --config config.agent.yaml --tools tools.py --detach
+nomos serve --config config.agent.yaml --detach
 ```
 
 ## Deployment
