@@ -2,21 +2,12 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
-from uuid import uuid4
+from typing import List, Optional
 
 from nomos.llms import LLMBase
-from nomos.models.agent import Message, StepIdentifier, Summary
+from nomos.models.agent import Message
 
 from pydantic import BaseModel, Field
-
-
-class SessionContext(BaseModel):
-    """Container for session data required by :meth:`Agent.next`."""
-
-    session_id: str = Field(default_factory=lambda: str(uuid4()))
-    current_step_id: Optional[str] = None
-    history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
 
 
 class AssertionResult(BaseModel):
@@ -59,4 +50,4 @@ def smart_assert(result: BaseModel, expectation: str, llm: LLMBase) -> None:
         raise AssertionError(err_msg)
 
 
-__all__ = ["SessionContext", "smart_assert", "AssertionResult"]
+__all__ = ["smart_assert", "AssertionResult"]

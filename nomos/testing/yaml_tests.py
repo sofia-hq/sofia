@@ -6,8 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from nomos.llms import LLMConfig
-from nomos.models.agent import Message, StepIdentifier, Summary
-from nomos.testing import SessionContext
+from nomos.models.agent import Message, SessionContext, StepIdentifier, Summary
 
 from pydantic import BaseModel, Field
 

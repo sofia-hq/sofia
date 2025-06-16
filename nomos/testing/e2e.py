@@ -7,11 +7,9 @@ from enum import Enum
 from typing import Any, List, Optional, Tuple
 
 from nomos.core import Agent
-from nomos.models.agent import Message
+from nomos.models.agent import Message, SessionContext
 
 from pydantic import BaseModel, Field
-
-from . import SessionContext
 
 
 class SimulationDecision(Enum):  # noqa
