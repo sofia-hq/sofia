@@ -504,7 +504,7 @@ start_step_id: start
 max_errors: 3  # Maximum consecutive errors before stopping
 ```
 
-See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a more full-featured example.
+See [`examples/barista/config.agent.yaml`](examples/barista/config.agent.yaml) for a more full-featured example.
 More examples are available in the [`examples`](examples/) directory.
 
 ## Flow Management
