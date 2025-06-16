@@ -2,6 +2,7 @@
 
 from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Type, Union
+from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
@@ -165,6 +166,14 @@ class Summary(BaseModel):
         return f"[Past Summary] {self.content}"
 
 
+class SessionContext(BaseModel):
+    """Container for session data required by `Agent.next`."""
+
+    session_id: str = Field(default_factory=lambda: str(uuid4()))
+    current_step_id: Optional[str] = None
+    history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
+
+
 def create_decision_model(
     current_step: Step, current_step_tools: List[Tool]
 ) -> Type[BaseModel]:
@@ -280,4 +289,5 @@ __all__ = [
     "Message",
     "Summary",
     "create_decision_model",
+    "SessionContext",
 ]

@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- YAML-based test configuration loaded by `nomos test`.
 
 ## [0.3.0] - draft
 

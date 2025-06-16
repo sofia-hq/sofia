@@ -14,6 +14,7 @@ from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
 from .models.agent import (
     Message,
+    SessionContext,
     Step,
     StepIdentifier,
     Summary,
@@ -711,7 +712,7 @@ class Agent:
     def next(
         self,
         user_input: Optional[str] = None,
-        session_data: Optional[dict] = None,
+        session_data: Optional[Union[dict, SessionContext]] = None,
         verbose: bool = False,
     ) -> tuple[BaseModel, str, dict]:
         """
@@ -722,6 +723,8 @@ class Agent:
         :param verbose: Whether to return verbose output.
         :return: A tuple containing the decision and session data.
         """
+        if isinstance(session_data, SessionContext):
+            session_data = session_data.model_dump(mode="json")
         session = (
             self.get_session_from_dict(session_data)
             if session_data
