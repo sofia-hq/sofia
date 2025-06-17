@@ -1,7 +1,7 @@
 """Tool abstractions and related logic for the SOFIA package."""
 
 import inspect
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 from docstring_parser import parse
 
@@ -257,4 +257,103 @@ class InvalidArgumentsError(Exception):
         return f"Invalid arguments: {', '.join(error_messages)}. Please Try again with valid arguments."
 
 
-__all__ = ["Tool", "FallbackError"]
+class ToolWrapper(BaseModel):
+    """Represents a wrapper for a tool."""
+
+    def get_tool(self, *args, **kwargs) -> Tool:
+        raise NotImplementedError("get_tool method must be implemented in subclasses.")
+
+
+class PkgTool(ToolWrapper):
+    """
+    Represents a tool that can be loaded from a package.
+
+    Attributes:
+        identifier (str): The package identifier in the format "library_name:tool_name".
+    """
+
+    identifier: str
+
+    def get_tool(
+        self, tool_arg_desc: Optional[Dict[str, Dict[str, str]]] = None
+    ) -> Tool:
+        """
+        Get a Tool instance from the package identifier.
+
+        :param tool_arg_desc: A dictionary of argument descriptions for the function.
+        :return: An instance of Tool.
+        """
+        return Tool.from_pkg(self.identifier, tool_arg_desc)
+
+
+class CrewAITool(ToolWrapper):
+    """
+    Represents a CrewAI tool.
+
+    Attributes:
+        tool_id (str): The ID of the CrewAI tool.
+        tool_kwargs (Optional[dict]): Optional keyword arguments for the CrewAI tool.
+    """
+
+    tool_id: str
+    tool_kwargs: Optional[dict] = None
+
+    def get_tool(self, *args, **kwargs) -> Tool:
+        """
+        Get a Tool instance from the CrewAI tool ID.
+
+        :param tool_arg_desc: A dictionary of argument descriptions for the function.
+        :return: An instance of Tool.
+        """
+        return Tool.from_crewai_tool(self.tool_id, self.tool_kwargs)
+
+
+class LangChainTool(ToolWrapper):
+    """
+    Represents a LangChain tool.
+
+    Attributes:
+        tool (Any): The LangChain tool instance.
+    """
+
+    tool: Any
+
+    def get_tool(self, *args, **kwargs) -> Tool:
+        """
+        Get a Tool instance from the LangChain tool.
+
+        :return: An instance of Tool.
+        """
+        return Tool.from_langchain_tool()
+
+
+def get_tools(
+    tools: Optional[list[Union[Callable, ToolWrapper]]], tool_arg_desc: dict
+) -> dict[str, Tool]:
+    """
+    Get a list of Tool instances from a list of functions or tool identifiers.
+
+    :param tools: A list of functions or tool identifiers.
+    :param tool_arg_desc: A dictionary mapping function names to argument descriptions.
+    :return: A dictionary mapping tool names to Tool instances.
+    """
+    _tools: dict[str, Tool] = {}
+    for tool in tools or []:
+        _tool = None
+        if callable(tool):
+            _tool = Tool.from_function(tool, tool_arg_desc)
+        if isinstance(tool, ToolWrapper):
+            _tool = tool.get_tool(tool_arg_desc)
+        assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
+        _tools[_tool.name] = _tool
+    return _tools
+
+
+__all__ = [
+    "Tool",
+    "FallbackError",
+    "get_tools",
+    "PkgTool",
+    "CrewAITool",
+    "LangChainTool",
+]

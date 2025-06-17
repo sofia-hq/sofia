@@ -3,7 +3,7 @@
 import importlib
 import importlib.util
 import os
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -14,6 +14,7 @@ from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
+from .models.tool import ToolWrapper
 
 
 class ServerConfig(BaseModel):
@@ -32,7 +33,7 @@ class ToolsConfig(BaseModel):
     tool_files: List[str] = []  # List of tool files to load
     tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]] = None
 
-    def get_tools(self) -> List[Callable]:
+    def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
         """
         Load and return the tools based on the configuration.
 
