@@ -1,13 +1,11 @@
 <!-- Announcement Bar -->
-<div align="center" style="margin-bottom: 1.5em;">
+<div style="margin-bottom: 1.5em;">
   <div style="
     display: inline-block;
     background: #222;
     color: #fff;
     font-weight: 500;
-    padding: 0.5em 2em;
     font-size: 1em;
-    margin-bottom: 1em;
     border-radius: 999px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
@@ -16,7 +14,7 @@
   </div>
 </div>
 
-<h1 align="center">
+<h1>
   <a href="https://github.com/dowhiledev/nomos">
     <picture>
       <source srcset="assets/dark.png" media="(prefers-color-scheme: dark)">
@@ -26,16 +24,11 @@
   </a>
 </h1>
 
-<div align="center">
-
+<div>
   An open-source, configurable multi-step agent framework for building advanced LLM-powered assistants
-  <br />
-  <br />
   <a href="#usage"><strong>Explore examples »</strong></a>
   ·
-  <a href="https://nomos-builder.vercel.app"><strong>🎨 Try Visual Builder »</strong></a>
-  <br />
-  <br />
+  <a href="https://nomos.dowhile.dev/try"><strong>🎨 Try Visual Builder »</strong></a>
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
   ·
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
@@ -43,7 +36,7 @@
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
 </div>
 
-<div align="center">
+<div>
 <br />
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos)
@@ -53,12 +46,11 @@
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
 [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base)](https://hub.docker.com/r/chandralegend/nomos-base)
 [![License](https://img.shields.io/github/license/dowhiledev/nomos)](LICENSE)
-
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/nomos/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 </div>
 
-<details open="open">
+<details>
 <summary>Table of Contents</summary>
 
 - [About](#about)
@@ -123,7 +115,7 @@ The framework allows you to move from no-code to low-code development, making it
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
 - **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses.
-- **🎨 Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface. **[Try it live at nomos-builder.vercel.app](https://nomos-builder.vercel.app)**
+- **🎨 Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface. **[Try it live](https://nomos.dowhile.dev/try)**
 - **OpenAI, Mistral, Gemini, Ollama, and HuggingFace LLM support**
 - **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
 - **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
@@ -147,7 +139,7 @@ For those who prefer a no-code approach, NOMOS includes a powerful Visual Flow B
 
 ### 🚀 Try It Now
 
-**Live hosted version**: [nomos-builder.vercel.app](https://nomos-builder.vercel.app)
+**Live hosted version**: [nomos.dowhile.dev/try](https://nomos.dowhile.dev/try)
 
 ### Key Features
 
@@ -243,7 +235,7 @@ NOMOS supports a spectrum of implementation approaches from no-code to low-code 
 
 ### 🎨 No-Code: Visual Flow Builder
 
-The easiest way to get started is with our Visual Flow Builder at [nomos-builder.vercel.app](https://nomos-builder.vercel.app). Simply drag and drop to create your agent flows, then export the configuration.
+The easiest way to get started is with our Visual Flow Builder at [nomos.dowhile.dev/try](https://nomos.dowhile.dev/try). Simply drag and drop to create your agent flows, then export the configuration.
 
 ### CLI Usage
 
