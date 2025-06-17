@@ -7,7 +7,7 @@ from docstring_parser import parse
 
 from pydantic import BaseModel, ValidationError
 
-from ..utils.utils import create_base_model
+from ..utils.utils import convert_camelcase_to_snakecase, create_base_model
 
 
 class Tool(BaseModel):
@@ -114,6 +114,66 @@ class Tool(BaseModel):
             return cls.from_function(module, _tool_arg_descs)
         except Exception as e:
             raise ValueError(f"Could not load tool {identifier}: {e}")
+
+    @classmethod
+    def from_langchain_tool(cls) -> None:
+        """TODO: Create a Tool instance from a LangChain tool."""
+        return
+
+    @classmethod
+    def from_crewai_tool(
+        cls, tool_id: str, tool_kwargs: Optional[dict] = None
+    ) -> "Tool":
+        """
+        Create a Tool instance from a CrewAI tool.
+
+        :param tool_id: The ID of the CrewAI tool. eg- FileReadTool
+        :param tool_kwargs: Optional keyword arguments for the CrewAI tool.
+        :return: An instance of Tool.
+        """
+        from crewai.tools import BaseTool
+        from pydantic import create_model, BaseModel, ConfigDict
+
+        def rename_pydantic_model(
+            model: type[BaseModel], new_name: str
+        ) -> type[BaseModel]:
+            """Rename a Pydantic model while preserving its fields and defaults."""
+            fields = {
+                name: (field.annotation, field)
+                for name, field in model.model_fields.items()
+            }
+            return create_model(
+                new_name, **fields, __config__=ConfigDict(extra="forbid")
+            )
+
+        tool_kwargs = tool_kwargs or {}
+
+        module = __import__("crewai_tools", fromlist=[tool_id])
+        tool_class = getattr(module, tool_id, None)
+        assert (
+            tool_class is not None
+        ), f"Tool class {tool_id} not found in crewai_tools module"
+
+        try:
+            tool_instance = tool_class(**tool_kwargs)
+            assert isinstance(
+                tool_instance, BaseTool
+            ), f"{tool_id} is not a valid CrewAI tool"
+            structured_tool = tool_instance.to_structured_tool()
+            fn_name = convert_camelcase_to_snakecase(tool_id)
+            camel_case_fn_name = fn_name.replace("_", " ").title().replace(" ", "")
+            new_tool_args_model = rename_pydantic_model(
+                structured_tool.args_schema, f"{camel_case_fn_name}Args"
+            )
+            return cls(
+                name=fn_name,
+                description=tool_instance.name,
+                function=tool_instance.run,
+                parameters={},
+                _cached_args_model=new_tool_args_model,
+            )
+        except Exception as e:
+            raise ValueError(f"Could not load CrewAI tool {tool_id}: {e}")
 
     def get_args_model(self) -> Type[BaseModel]:
         """

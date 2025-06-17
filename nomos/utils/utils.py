@@ -68,7 +68,13 @@ def create_enum(name: str, values: Dict[str, Any]) -> Enum:
     return Enum(name, values)
 
 
+def convert_camelcase_to_snakecase(name: str) -> str:
+    """Convert a camelCase or PascalCase string to snake_case."""
+    return "".join(["_" + i.lower() if i.isupper() else i for i in name]).lstrip("_")
+
+
 __all__ = [
     "create_base_model",
     "create_enum",
+    "convert_camelcase_to_snakecase",
 ]
