@@ -15,6 +15,7 @@ from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
 from .models.tool import ToolWrapper
+from .utils.utils import convert_camelcase_to_snakecase
 
 
 class ServerConfig(BaseModel):
@@ -27,10 +28,45 @@ class ServerConfig(BaseModel):
     workers: int = 1
 
 
+class ExternalTool(BaseModel):
+    """Configuration for an external tool."""
+
+    tag: str  # Tag of the external tool (eg - @pkg/itertools.combinations, @crewai/FileReadTool, @langchain/BingSearchAPIWrapper)
+    name: Optional[
+        str
+    ]  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    kwargs: Optional[Dict[str, Union[str, int, float]]] = (
+        None  # Optional keyword arguments for the Tool initialization
+    )
+
+    def get_tool_wrapper(self) -> ToolWrapper:
+        """
+        Get the ToolWrapper instance for the external tool.
+
+        :return: ToolWrapper instance.
+        """
+        tool_type, tool_name = self.tag.split("/", 1)
+        name = self.name or convert_camelcase_to_snakecase(
+            self.tool_name.split(".")[-1]
+        )
+        assert tool_type in [
+            "pkg",
+            "crewai",
+            "langchain",
+        ], f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', and 'langchain'."
+        return ToolWrapper(
+            name=name,
+            tool_type=tool_type,
+            tool_identifier=tool_name,
+            kwargs=self.kwargs,
+        )
+
+
 class ToolsConfig(BaseModel):
     """Configuration for tools used by the agent."""
 
     tool_files: List[str] = []  # List of tool files to load
+    external_tools: Optional[List[ExternalTool]] = None  # List of external tools
     tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]] = None
 
     def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
@@ -40,6 +76,7 @@ class ToolsConfig(BaseModel):
         :return: List of tool functions.
         """
         tools_list: List = []
+        # Load Tools for python files
         for tool_file in self.tool_files:
             try:
                 # Handle both file paths and module names
@@ -68,6 +105,16 @@ class ToolsConfig(BaseModel):
 
             except (ImportError, FileNotFoundError, AttributeError) as e:
                 raise ImportError(f"Failed to load tools from '{tool_file}': {e}")
+
+        # Load external tools
+        for external_tool in self.external_tools or []:
+            try:
+                tool_wrapper = external_tool.get_tool_wrapper()
+                tools_list.append(tool_wrapper)
+            except ValueError as e:
+                raise ValueError(
+                    f"Failed to load external tool '{external_tool.tag}': {e}"
+                )
 
         return tools_list
 

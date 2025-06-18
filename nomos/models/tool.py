@@ -1,13 +1,13 @@
 """Tool abstractions and related logic for the SOFIA package."""
 
 import inspect
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Literal, Optional, Type, Union
 
 from docstring_parser import parse
 
 from pydantic import BaseModel, ValidationError
 
-from ..utils.utils import convert_camelcase_to_snakecase, create_base_model
+from ..utils.utils import create_base_model
 
 
 class Tool(BaseModel):
@@ -41,6 +41,7 @@ class Tool(BaseModel):
         cls,
         function: Callable,
         tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None,
+        name: Optional[str] = None,
     ) -> "Tool":
         """
         Create a Tool instance from a function and its argument descriptions.
@@ -87,7 +88,7 @@ class Tool(BaseModel):
             params[name] = param_info
 
         return cls(
-            name=function.__name__,
+            name=name or function.__name__,
             description=description,
             function=function,
             parameters=params,
@@ -95,23 +96,32 @@ class Tool(BaseModel):
 
     @classmethod
     def from_pkg(
-        cls, identifier: str, tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None
+        cls,
+        name: str,
+        identifier: str,
+        tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None,
     ) -> "Tool":
         """
         Create a Tool instance from a package identifier.
 
-        :param identifier: The package identifier in the format "library_name:tool_name".
+        :param identifier: The package identifier in the format "itertools.combinations", "package.submodule.submodule.function", etc.
         """
-        library_name, tool_name = identifier.split(":")
+        tool_arg_descs = tool_arg_descs or {}
+        if "." not in identifier:
+            raise ValueError(
+                f"Invalid tool identifier: {identifier}. It should be in the format 'package.submodule.function'."
+            )
+        module_name, function_name = identifier.rsplit(".", 1)
         try:
-            module = __import__(library_name)
-            if tool_arg_descs is None:
-                tool_arg_descs = {}
-            _tool_arg_descs = getattr(module, "tool_arg_descs", tool_arg_descs)
-            for submodule in tool_name.split("."):
-                module = getattr(module, submodule)
-            assert callable(module), f"{module} is not callable"
-            return cls.from_function(module, _tool_arg_descs)
+            module = __import__(module_name, fromlist=[function_name])
+            function = getattr(module, function_name, None)
+            assert (
+                function is not None
+            ), f"Function '{function_name}' not found in module '{module_name}'."
+            assert callable(
+                function
+            ), f"'{function_name}' in module '{module_name}' is not callable."
+            return cls.from_function(function, tool_arg_descs, name)
         except Exception as e:
             raise ValueError(f"Could not load tool {identifier}: {e}")
 
@@ -122,7 +132,7 @@ class Tool(BaseModel):
 
     @classmethod
     def from_crewai_tool(
-        cls, tool_id: str, tool_kwargs: Optional[dict] = None
+        cls, name: str, tool_id: str, tool_kwargs: Optional[dict] = None
     ) -> "Tool":
         """
         Create a Tool instance from a CrewAI tool.
@@ -160,13 +170,12 @@ class Tool(BaseModel):
                 tool_instance, BaseTool
             ), f"{tool_id} is not a valid CrewAI tool"
             structured_tool = tool_instance.to_structured_tool()
-            fn_name = convert_camelcase_to_snakecase(tool_id)
-            camel_case_fn_name = fn_name.replace("_", " ").title().replace(" ", "")
+            camel_case_fn_name = name.replace("_", " ").title().replace(" ", "")
             new_tool_args_model = rename_pydantic_model(
                 structured_tool.args_schema, f"{camel_case_fn_name}Args"
             )
             return cls(
-                name=fn_name,
+                name=name,
                 description=tool_instance.name,
                 function=tool_instance.run,
                 parameters={},
@@ -260,71 +269,36 @@ class InvalidArgumentsError(Exception):
 class ToolWrapper(BaseModel):
     """Represents a wrapper for a tool."""
 
-    def get_tool(self, *args, **kwargs) -> Tool:
-        raise NotImplementedError("get_tool method must be implemented in subclasses.")
-
-
-class PkgTool(ToolWrapper):
-    """
-    Represents a tool that can be loaded from a package.
-
-    Attributes:
-        identifier (str): The package identifier in the format "library_name:tool_name".
-    """
-
-    identifier: str
+    tool_type: Literal["pkg", "crewai", "langchain"]
+    tool_identifier: str
+    name: str
+    kwargs: Optional[dict] = None
 
     def get_tool(
-        self, tool_arg_desc: Optional[Dict[str, Dict[str, str]]] = None
+        self, tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None
     ) -> Tool:
         """
-        Get a Tool instance from the package identifier.
-
-        :param tool_arg_desc: A dictionary of argument descriptions for the function.
-        :return: An instance of Tool.
-        """
-        return Tool.from_pkg(self.identifier, tool_arg_desc)
-
-
-class CrewAITool(ToolWrapper):
-    """
-    Represents a CrewAI tool.
-
-    Attributes:
-        tool_id (str): The ID of the CrewAI tool.
-        tool_kwargs (Optional[dict]): Optional keyword arguments for the CrewAI tool.
-    """
-
-    tool_id: str
-    tool_kwargs: Optional[dict] = None
-
-    def get_tool(self, *args, **kwargs) -> Tool:
-        """
-        Get a Tool instance from the CrewAI tool ID.
-
-        :param tool_arg_desc: A dictionary of argument descriptions for the function.
-        :return: An instance of Tool.
-        """
-        return Tool.from_crewai_tool(self.tool_id, self.tool_kwargs)
-
-
-class LangChainTool(ToolWrapper):
-    """
-    Represents a LangChain tool.
-
-    Attributes:
-        tool (Any): The LangChain tool instance.
-    """
-
-    tool: Any
-
-    def get_tool(self, *args, **kwargs) -> Tool:
-        """
-        Get a Tool instance from the LangChain tool.
+        Get a Tool instance from the tool identifier.
 
         :return: An instance of Tool.
         """
-        return Tool.from_langchain_tool()
+        if self.tool_type == "pkg":
+            return Tool.from_pkg(
+                name=self.name,
+                identifier=self.tool_identifier,
+                tool_arg_descs=tool_arg_descs,
+            )
+        if self.tool_type == "crewai":
+            return Tool.from_crewai_tool(
+                name=self.name, tool_id=self.tool_identifier, tool_kwargs=self.kwargs
+            )
+        # if self.tool_type == "langchain":
+        #     return Tool.from_langchain_tool(
+        #         name=self.name, tool=self.tool_identifier, tool_kwargs=self.kwargs
+        #     )
+        raise ValueError(
+            f"Unsupported tool type: {self.tool_type}. Supported types are 'pkg', 'crewai', and 'langchain'."
+        )
 
 
 def get_tools(
@@ -353,7 +327,4 @@ __all__ = [
     "Tool",
     "FallbackError",
     "get_tools",
-    "PkgTool",
-    "CrewAITool",
-    "LangChainTool",
 ]
