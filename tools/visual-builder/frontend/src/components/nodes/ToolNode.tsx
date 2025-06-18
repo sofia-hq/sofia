@@ -69,6 +69,10 @@ export const ToolNode = memo((props: NodeProps) => {
           </div>
         )}
 
+        {data.external_tag && (
+          <div className="text-xs text-blue-600 break-all">{data.external_tag}</div>
+        )}
+
         {paramCount > 0 && (
           <div className="text-xs text-blue-600">
             {paramCount} parameter{paramCount !== 1 ? 's' : ''}

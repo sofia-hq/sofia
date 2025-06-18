@@ -132,14 +132,32 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                 />
               </div>
 
-              {/* Package Reference */}
+              {/* External Tool Tag */}
               <div className="space-y-2">
-                <Label htmlFor="package_reference">Package Reference</Label>
+                <Label htmlFor="external_tag">External Tag</Label>
                 <Input
-                  id="package_reference"
-                  value={formData.package_reference || ''}
-                  onChange={(e) => updateField('package_reference', e.target.value)}
-                  placeholder="package_name:function_name (optional)"
+                  id="external_tag"
+                  value={formData.external_tag || ''}
+                  onChange={(e) => updateField('external_tag', e.target.value)}
+                  placeholder="@pkg/itertools.combinations"
+                />
+              </div>
+
+              {/* Kwargs */}
+              <div className="space-y-2">
+                <Label htmlFor="kwargs">Kwargs (JSON)</Label>
+                <Textarea
+                  id="kwargs"
+                  value={JSON.stringify(formData.kwargs || {}, null, 2)}
+                  onChange={(e) => {
+                    try {
+                      updateField('kwargs', JSON.parse(e.target.value));
+                    } catch {
+                      /* ignore invalid JSON */
+                    }
+                  }}
+                  placeholder="{\"key\": \"value\"}"
+                  rows={3}
                 />
               </div>
             </>

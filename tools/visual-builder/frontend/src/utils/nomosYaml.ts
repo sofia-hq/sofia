@@ -198,6 +198,26 @@ export function exportToYaml(
       }
     });
 
+    // Build external tools
+    const externalTools = toolNodes
+      .filter(node => (node.data as ToolNodeData).external_tag)
+      .map(node => {
+        const data = node.data as ToolNodeData;
+        const item: any = { tag: data.external_tag!, name: data.name };
+        if (data.kwargs && Object.keys(data.kwargs).length > 0) {
+          item.kwargs = data.kwargs;
+        }
+        return item;
+      });
+
+    const toolsSection: any = {};
+    if (externalTools.length > 0) {
+      toolsSection.external_tools = externalTools;
+    }
+    if (Object.keys(toolArgDescriptions).length > 0) {
+      toolsSection.tool_arg_descriptions = toolArgDescriptions;
+    }
+
     // Build final config
     const config: AgentConfig = {
       name: agentName,
@@ -205,7 +225,7 @@ export function exportToYaml(
       start_step_id: startStepId,
       steps,
       ...(flows.length > 0 && { flows }),
-      ...(Object.keys(toolArgDescriptions).length > 0 && { tool_arg_descriptions: toolArgDescriptions })
+      ...(Object.keys(toolsSection).length > 0 && { tools: toolsSection })
     };
 
     // Validate config
@@ -294,6 +314,7 @@ export function importFromYaml(yamlContent: string): ImportResult {
     const stepIdToNodeId = new Map<string, string>();
     const toolNameToNodeId = new Map<string, string>();
     const allToolNames = new Set<string>();
+    const externalToolMap: Record<string, { tag: string; kwargs?: Record<string, any> }> = {};
 
     // First pass: collect all tool names
     parsedConfig.steps.forEach(step => {
@@ -301,6 +322,12 @@ export function importFromYaml(yamlContent: string): ImportResult {
         step.available_tools.forEach(tool => allToolNames.add(tool));
       }
     });
+    if (parsedConfig.tools && parsedConfig.tools.external_tools) {
+      parsedConfig.tools.external_tools.forEach(ext => {
+        allToolNames.add(ext.name);
+        externalToolMap[ext.name] = { tag: ext.tag, kwargs: ext.kwargs };
+      });
+    }
 
     // Create tool nodes
     let toolIndex = 0;
@@ -315,7 +342,12 @@ export function importFromYaml(yamlContent: string): ImportResult {
         data: {
           name: toolName,
           description: `Tool: ${toolName}`,
-          parameters: getToolParameters(toolName, parsedConfig.tool_arg_descriptions)
+          parameters: getToolParameters(
+            toolName,
+            (parsedConfig.tools?.tool_arg_descriptions || (parsedConfig as any).tool_arg_descriptions)
+          ),
+          external_tag: externalToolMap[toolName]?.tag,
+          kwargs: externalToolMap[toolName]?.kwargs
         } as ToolNodeData
       };
 
