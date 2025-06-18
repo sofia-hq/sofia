@@ -10,7 +10,7 @@
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
   ">
-    <b>NOMOS v0.2.3 released!</b> | <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+    <b>NOMOS v0.2.4 released!</b> | <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
 
@@ -75,7 +75,7 @@
   - [Mistral AI](#mistral-ai)
   - [Google Gemini](#google-gemini)
 - [Configuration](#configuration)
-- [Package Tool Integration](#package-tool-integration)
+ - [External Tool Integration](#external-tool-integration)
 - [Examples](#examples)
   - [Barista Agent](#example-barista-agent)
   - [Financial Planning Assistant](#example-financial-planning-assistant)
@@ -112,6 +112,7 @@ The framework allows you to move from no-code to low-code development, making it
 - **Persona-driven**: Easily set the agent's persona for consistent, branded responses.
 - **Tool integration**: Register Python functions as tools for the agent to call.
 - **Package-based tools**: Reference Python package functions directly using `package_name:function` syntax.
+- **External tool support**: Load CrewAI or LangChain tools, or any Python package function via configuration.
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
 - **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses.
@@ -272,7 +273,7 @@ nomos run
 
 **Options:**
 - `--config, -c`: Configuration file path (default: `config.agent.yaml`)
-- `--tools, -t`: Python files with tool definitions (can be used multiple times) - **Note: As of v0.2.3, you can now specify tools directly in your agent config file**
+- `--tools, -t`: Python files with tool definitions (can be used multiple times) - **Note: As of v0.2.4, you can now specify tools directly in your agent config file**
 - `--port, -p`: Development server port (default: `8000`)
 - `--verbose, -v`: Enable verbose logging
 
@@ -675,21 +676,25 @@ llm:
 # ...rest of config
 ```
 
-## Package Tool Integration
+## External Tool Integration
 
-NOMOS allows you to reference Python package functions directly using the `package_name:function` syntax:
+NOMOS allows you to reference Python package functions, CrewAI tools, and LangChain tools directly in your configuration.
+
+### Package functions
+
+Use the dotted path to a Python function:
 
 ```python
 # Reference a function from a standard library
 "math:sqrt"                      # Standard library function
 "json:loads"                     # Another standard library function
-"itertools:combinations"         # Complex functions work too!
+"itertools.combinations"         # Functions from built-in modules work too!
 
 # Reference nested module functions
-"package_name:module.submodule.function"
+"package_name.module.submodule.function"
 ```
 
-Benefits of package tool integration:
+Benefits of external tool integration:
 
 1. **No-code/low-code development**: Use existing Python functions without writing wrapper code
 2. **Automatic documentation**: Function docstrings are used to generate tool descriptions and parameter documentation
@@ -701,9 +706,9 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 ## Tool Configuration
 
-### New in v0.2.3: Integrated Tool Configuration
+### New in v0.2.4: Integrated Tool Configuration
 
-As of version 0.2.3, you can now specify tools directly in your agent configuration file instead of relying solely on CLI flags. This provides better organization and easier deployment.
+As of version 0.2.4, you can now specify tools directly in your agent configuration file instead of relying solely on CLI flags. This provides better organization and easier deployment.
 
 #### Configuration-Based Tools
 
@@ -717,12 +722,19 @@ steps:
     # ... step configuration
 start_step_id: start
 
-# Tool configuration - NEW in v0.2.3
+# Tool configuration - NEW in v0.2.4
 tools:
   tool_files:
     - "barista_tools"          # Module name
     - "tools/my_tools.py"      # File path
     - "math:sqrt"              # Package function
+  external_tools:
+    - tag: "@pkg/itertools.combinations"
+      name: "combinations"
+    - tag: "@crewai/FileReadTool"
+      name: "file_read_tool"
+    - tag: "@langchain/google_search"
+      name: "google_search"
   tool_arg_descriptions:
     add_to_cart:
       coffee_type: "Coffee type (e.g., Espresso, Latte, Cappuccino)"

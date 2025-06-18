@@ -445,7 +445,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-2">
                     <div class="text-2xl font-bold gradient-text">NOMOS</div>
-                    <span class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-xs px-2 py-1 rounded-lg font-medium">v0.2.3</span>
+                    <span class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-xs px-2 py-1 rounded-lg font-medium">v0.2.4</span>
                 </div>
 
                 <div class="hidden md:flex items-center space-x-8">
@@ -789,7 +789,7 @@
         </div>
     </section>
 
-    <!-- What's New in 0.2.3 Section -->
+    <!-- What's New in 0.2.4 Section -->
     <section class="py-16 bg-gradient-to-br from-indigo-50 via-white to-blue-50 relative overflow-hidden">
         <!-- Background Pattern -->
         <div class="absolute inset-0 opacity-5">
@@ -800,13 +800,13 @@
             <div class="text-center mb-12">
                 <div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
                     <i data-lucide="star" class="w-4 h-4"></i>
-                    What's New in v0.2.3
+                    What's New in v0.2.4
                 </div>
                 <h2 class="text-3xl lg:text-5xl font-bold mb-6">
-                    <span class="gradient-text">Enhanced Testing</span> & <span class="text-highlight">Tool Configuration</span>
+                    <span class="gradient-text">Enhanced Testing</span>, <span class="text-highlight">Tool Configuration</span> & <span class="text-highlight">External Tools</span>
                 </h2>
                 <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                    This release brings powerful testing capabilities and streamlined tool management to make agent development even more efficient.
+                    This release brings powerful testing capabilities, streamlined tool management, and external tool support for CrewAI and LangChain.
                 </p>
             </div>
 
@@ -841,6 +841,17 @@
                     <h3 class="font-bold text-lg mb-2 text-gray-900">YAML Test Configs</h3>
                     <p class="text-gray-600 text-sm leading-relaxed">
                         Load test configurations from YAML files with <code class="bg-gray-100 px-2 py-1 rounded text-xs">nomos test</code> command.
+                    </p>
+                </div>
+
+                <!-- New Feature 4: External Tools -->
+                <div class="bg-white/80 backdrop-blur-lg rounded-xl p-6 border border-indigo-100 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-sky-500 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="tool" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2 text-gray-900">CrewAI & LangChain Tools</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">
+                        Seamlessly integrate ready-made tools from CrewAI or LangChain for powerful agent capabilities.
                     </p>
                 </div>
             </div>
@@ -903,7 +914,7 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-4 text-gray-900">Configuration-Driven</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        <span class="font-medium">YAML or Python</span> configuration. Now in v0.2.3: Integrated tool configuration - define tools directly in your config file.
+                        <span class="font-medium">YAML or Python</span> configuration. Now in v0.2.4: Integrated tool configuration with CrewAI & LangChain tool support.
                     </p>
                 </div>
 
@@ -1024,7 +1035,7 @@
                         </div>
                         <h4 class="font-bold text-lg mb-2 text-gray-900">Advanced Testing & Evaluation</h4>
                         <p class="text-gray-600 leading-relaxed">
-                            New in v0.2.3: Smart assertions with LLM-based evaluation, scenario testing, and YAML-based test configurations. Test agent responses intelligently.
+                            New in v0.2.4: Smart assertions with LLM-based evaluation, scenario testing, and YAML-based test configurations. Test agent responses intelligently.
                         </p>
                     </div>
                 </div>
@@ -1179,7 +1190,7 @@
                                     ✓ Available Now
                                 </span>
                                 <div class="text-right">
-                                    <div class="text-2xl font-bold gradient-text">v0.2.3</div>
+                                    <div class="text-2xl font-bold gradient-text">v0.2.4</div>
                                     <div class="text-sm text-gray-500">Latest Release</div>
                                 </div>
                             </div>
@@ -1199,6 +1210,9 @@
                             </div>
                             <div class="bg-gradient-to-r from-blue-50 to-cyan-50 px-4 py-3 rounded-xl border border-blue-100">
                                 <div class="font-medium text-gray-800">Tool control</div>
+                            </div>
+                            <div class="bg-gradient-to-r from-cyan-50 to-sky-50 px-4 py-3 rounded-xl border border-cyan-100">
+                                <div class="font-medium text-gray-800">External tools</div>
                             </div>
                             <div class="bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 rounded-xl border border-emerald-100">
                                 <div class="font-medium text-gray-800">Session management</div>
