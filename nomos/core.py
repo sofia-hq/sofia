@@ -502,7 +502,7 @@ class Agent:
         :param start_step_id: ID of the starting step.
         :param persona: Optional persona string.
         :param system_message: Optional system message.
-        :param tools: List of tool callables or PkgTool, LangChainTool, CrewAITool, etc.
+        :param tools: List of tool callables or ToolWrapper instances.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -517,8 +517,21 @@ class Agent:
         self.show_steps_desc = show_steps_desc
         self.max_errors = max_errors
         self.max_iter = max_iter
-        self.tools = list(set(tools or []))
         self.config = config
+
+        # Remove duplicates of tools based on their names or IDs
+        seen = set()
+        self.tools = []
+        for tool in tools or []:
+            tool_id = (
+                tool.name
+                if isinstance(tool, ToolWrapper)
+                else getattr(tool, "__name__", None)
+            )
+            tool_id = tool_id or id(tool)  # Fallback to id if no name
+            if tool_id not in seen:
+                seen.add(tool_id)
+                self.tools.append(tool)
 
         # Initialize flow manager if flows are configured
         self.flow_manager: Optional[FlowManager] = None
@@ -544,8 +557,8 @@ class Agent:
         for step in self.steps.values():
             for step_tool in step.available_tools:
                 for tool in self.tools:
-                    if (callable(tool) and tool.__name__ == step_tool) or (
-                        isinstance(tool, str) and tool == step_tool
+                    if (isinstance(tool, ToolWrapper) and tool.name == step_tool) or (
+                        callable(tool) and getattr(tool, "__name__", None) == step_tool
                     ):
                         break
                 else:
@@ -553,7 +566,7 @@ class Agent:
                         f"Tool {step_tool} not found in tools for step {step.step_id}"
                     )
                     raise ValueError(
-                        f"Tool {step_tool} not found in tools for step {step.step_id}"
+                        f"Tool {step_tool} not found in tools for step {step.step_id}\nAvailable tools: {self.tools}"
                     )
         log_debug(f"FlowManager initialized with start step '{start_step_id}'")
 

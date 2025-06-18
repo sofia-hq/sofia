@@ -71,9 +71,8 @@ class Tool(BaseModel):
         tool_arg_desc = tool_arg_descs.get(function.__name__, {})
         tool_arg_desc_doc.update(tool_arg_desc)
         tool_arg_desc = tool_arg_desc_doc.copy()
-
         params = {}
-        for name, param in sig.parameters.items():
+        for _name, param in sig.parameters.items():
             param_info = {
                 "type": (
                     param.annotation
@@ -81,12 +80,11 @@ class Tool(BaseModel):
                     else Any
                 )
             }
-            if tool_arg_desc.get(name):
-                param_info["description"] = tool_arg_desc[name]
+            if tool_arg_desc.get(_name):
+                param_info["description"] = tool_arg_desc[_name]
             if param.default is not inspect.Parameter.empty:
                 param_info["default"] = param.default
-            params[name] = param_info
-
+            params[_name] = param_info
         return cls(
             name=name or function.__name__,
             description=description,
@@ -327,4 +325,5 @@ __all__ = [
     "Tool",
     "FallbackError",
     "get_tools",
+    "ToolWrapper",
 ]

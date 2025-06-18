@@ -49,6 +49,7 @@ class ExternalTool(BaseModel):
         name = self.name or convert_camelcase_to_snakecase(
             self.tool_name.split(".")[-1]
         )
+        tool_type = tool_type.replace("@", "")
         assert tool_type in [
             "pkg",
             "crewai",

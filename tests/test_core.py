@@ -4,7 +4,7 @@ import pytest
 from nomos.models.agent import Action, create_decision_model, Message
 from nomos.core import Agent
 from nomos.config import AgentConfig
-from nomos.models.tool import Tool
+from nomos.models.tool import Tool, ToolWrapper
 
 
 def test_agent_initialization(basic_agent):
@@ -50,7 +50,11 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
     ask_response = expected_decision_model(
@@ -61,7 +65,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert session.current_step.available_tools == [
         "test_tool",
         "another_test_tool",
-        "itertools:combinations",
+        "combinations",
     ]
 
     # Set up mock responses
@@ -104,7 +108,11 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
 
@@ -146,7 +154,11 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
 
@@ -180,7 +192,11 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
 
@@ -216,6 +232,9 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
                 "test_tool": {"arg0": "Test argument"},
                 "another_test_tool": {"arg1": "Another test argument"},
             },
+            "external_tools": [
+                {"tag": "@pkg/itertools.combinations", "name": "combinations"}
+            ],
         },
     )
 
@@ -235,3 +254,8 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     # Test that tool arg descriptions were properly loaded
     tool = session.tools["test_tool"]
     assert tool.parameters["arg0"]["description"] == "Test argument"
+
+    # Test that package tool was properly registered
+    pkg_tool = session.tools["combinations"]
+    assert isinstance(pkg_tool, Tool)
+    assert pkg_tool.name == "combinations"

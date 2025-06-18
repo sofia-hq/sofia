@@ -6,6 +6,7 @@ from pydantic import BaseModel
 import pytest
 
 from nomos.models.agent import Message, Step, Route
+from nomos.models.tool import ToolWrapper
 from nomos.llms import LLMBase
 from nomos.core import Agent
 from nomos.utils.logging import log_error
@@ -70,7 +71,7 @@ def basic_steps():
         step_id="start",
         description="Start step",
         routes=[Route(target="end", condition="User is done")],
-        available_tools=["test_tool", "another_test_tool", "itertools:combinations"],
+        available_tools=["test_tool", "another_test_tool", "combinations"],
     )
 
     end_step = Step(
@@ -103,13 +104,27 @@ def test_tool_1():
 
 
 @pytest.fixture
-def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1):
+def pkg_tool():
+    """Fixture providing a package tool wrapper."""
+    return ToolWrapper(
+        tool_type="pkg",
+        name="combinations",
+        tool_identifier="itertools.combinations",
+    )
+
+
+@pytest.fixture
+def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1, pkg_tool):
     """Fixture providing a basic Nomos agent instance."""
     return Agent(
         name="test_agent",
         llm=mock_llm,
         steps=basic_steps,
         start_step_id="start",
-        tools=[test_tool_0, test_tool_1],
+        tools=[
+            test_tool_0,
+            test_tool_1,
+            pkg_tool,
+        ],
         persona="Test persona",
     )
