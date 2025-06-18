@@ -28,6 +28,10 @@ jobs:
     - name: Install dependencies
       run: poetry install --all-extras --with=dev
 
+    - name: Install External tool dependencies
+      run: |
+        pip install 'crewai[tools]'
+
     - name: Run tests with pytest
       run: poetry run pytest --cov --cov-branch --cov-report=xml --junitxml=junit.xml -o junit_family=legacy --ignore=examples
 
