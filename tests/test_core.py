@@ -222,6 +222,10 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
 
 def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     """Test loading agent from config."""
+    import os
+
+    os.environ["OPENAI_API_KEY"] = "test_key"  # PDFSearchTool requires this env var
+
     config = AgentConfig(
         name="config_test",
         steps=basic_steps,
@@ -233,7 +237,15 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
                 "another_test_tool": {"arg1": "Another test argument"},
             },
             "external_tools": [
-                {"tag": "@pkg/itertools.combinations", "name": "combinations"}
+                {"tag": "@pkg/itertools.combinations", "name": "combinations"},
+                {"tag": "@crewai/FileReadTool", "name": "file_read_tool"},
+                {
+                    "tag": "@crewai/PDFSearchTool",
+                    "name": "pdf_search_tool",
+                    "kwargs": {
+                        "pdf": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                    },
+                },
             ],
         },
     )
@@ -247,7 +259,7 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     assert agent.name == "config_test"
     assert agent.persona == "Config test persona"
     assert len(agent.steps) == 2
-    assert len(agent.tools) == 3
+    assert len(agent.tools) == 5
 
     session = agent.create_session(verbose=True)
 
@@ -259,3 +271,25 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     pkg_tool = session.tools["combinations"]
     assert isinstance(pkg_tool, Tool)
     assert pkg_tool.name == "combinations"
+
+    # Test whether crewai tool is registered
+    crewai_tool = session.tools.get("file_read_tool")
+    assert crewai_tool is not None
+    assert (
+        crewai_tool.get_args_model()
+        .model_json_schema()
+        .get("properties", {})
+        .get("file_path")
+        is not None
+    )
+
+    # Test whether PDFSearchTool is registered
+    pdf_search_tool = session.tools.get("pdf_search_tool")
+    assert pdf_search_tool is not None
+    assert (
+        pdf_search_tool.get_args_model()
+        .model_json_schema()
+        .get("properties", {})
+        .get("query")
+        is not None
+    )

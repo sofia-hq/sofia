@@ -34,7 +34,7 @@ class Tool(BaseModel):
     description: str
     function: Callable
     parameters: Dict[str, Dict[str, Any]] = {}
-    _cached_args_model: Optional[Type[BaseModel]] = None
+    args_model: Optional[Type[BaseModel]] = None
 
     @classmethod
     def from_function(
@@ -177,7 +177,7 @@ class Tool(BaseModel):
                 description=tool_instance.name,
                 function=tool_instance.run,
                 parameters={},
-                _cached_args_model=new_tool_args_model,
+                args_model=new_tool_args_model,
             )
         except Exception as e:
             raise ValueError(f"Could not load CrewAI tool {tool_id}: {e}")
@@ -188,15 +188,15 @@ class Tool(BaseModel):
 
         :return: A Pydantic model representing the tool's arguments.
         """
-        if self._cached_args_model:
-            return self._cached_args_model
+        if self.args_model:
+            return self.args_model
         camel_case_fn_name = self.name.replace("_", " ").title().replace(" ", "")
         basemodel_name = f"{camel_case_fn_name}Args"
         args_model = create_base_model(
             basemodel_name,
             self.parameters,
         )
-        self._cached_args_model = args_model
+        self.args_model = args_model
         return args_model
 
     def run(self, *args, **kwargs) -> str:
