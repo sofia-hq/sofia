@@ -1,43 +1,11 @@
-<!-- Announcement Bar -->
-<div style="margin-bottom: 1.5em;">
-  <div style="
-    display: inline-block;
-    background: #222;
-    color: #fff;
-    font-weight: 500;
-    font-size: 1em;
-    border-radius: 999px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    border: 1px solid #222;
-  ">
-    <b>NOMOS v0.2.4 released!</b> | <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
-  </div>
-</div>
+# Nomos
 
-<h1>
-  <a href="https://github.com/dowhiledev/nomos">
-    <picture>
-      <source srcset="assets/dark.png" media="(prefers-color-scheme: dark)">
-      <source srcset="assets/light.png" media="(prefers-color-scheme: light)">
-      <img src="assets/light.png" alt="nomos" width="400">
-    </picture>
-  </a>
-</h1>
+![Nomos logo light](assets/light.png#gh-light-mode-only)
+![Nomos logo dark](assets/dark.png#gh-dark-mode-only)
 
-<div>
-  An open-source, configurable multi-step agent framework for building advanced LLM-powered assistants
-  <a href="#usage"><strong>Explore examples »</strong></a>
-  ·
-  <a href="https://nomos.dowhile.dev/try"><strong>🎨 Try Visual Builder »</strong></a>
-  <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
-  ·
-  <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
-  ·
-  <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
-</div>
+**Nomos** is an open-source framework for building multi-step LLM powered assistants. Define personas, tools and flows using Python or YAML.
 
-<div>
-<br />
+[Explore examples](#usage) · [Try the visual builder](https://nomos.dowhile.dev/try)
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos)
 [![npm version](https://img.shields.io/npm/v/nomos-sdk.svg)](https://www.npmjs.com/package/nomos-sdk)
@@ -48,7 +16,14 @@
 [![License](https://img.shields.io/github/license/dowhiledev/nomos)](LICENSE)
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/nomos/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
-</div>
+```bash
+pip install nomos
+```
+
+```python
+from nomos import Agent
+# define steps and run your assistant
+```
 
 <details>
 <summary>Table of Contents</summary>
