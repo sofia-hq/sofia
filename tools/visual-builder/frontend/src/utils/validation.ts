@@ -124,6 +124,16 @@ export function validateToolNode(data: ToolNodeData): ValidationResult {
     });
   }
 
+  if (data.tool_type && data.tool_type !== 'custom') {
+    if (!data.tool_identifier || data.tool_identifier.trim() === '') {
+      errors.push({
+        field: 'tool_identifier',
+        message: 'Tool identifier is required for external tools',
+        severity: 'error'
+      });
+    }
+  }
+
   return {
     isValid: errors.length === 0,
     errors,

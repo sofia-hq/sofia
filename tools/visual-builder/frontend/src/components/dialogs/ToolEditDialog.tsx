@@ -27,6 +27,8 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
   const [formData, setFormData] = useState<ToolNodeData>(toolData);
   const [newParamKey, setNewParamKey] = useState('');
   const [newParamType, setNewParamType] = useState('string');
+  const [newKwargKey, setNewKwargKey] = useState('');
+  const [newKwargValue, setNewKwargValue] = useState('');
 
   // Real-time validation
   const validation = validateToolNode(formData);
@@ -55,6 +57,35 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
       setNewParamKey('');
       setNewParamType('string');
     }
+  };
+
+  const addKwarg = () => {
+    if (newKwargKey.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        kwargs: {
+          ...(prev.kwargs || {}),
+          [newKwargKey.trim()]: newKwargValue
+        }
+      }));
+      setNewKwargKey('');
+      setNewKwargValue('');
+    }
+  };
+
+  const removeKwarg = (key: string) => {
+    setFormData(prev => {
+      const newKwargs = { ...(prev.kwargs || {}) };
+      delete newKwargs[key];
+      return { ...prev, kwargs: newKwargs };
+    });
+  };
+
+  const updateKwargValue = (key: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      kwargs: { ...(prev.kwargs || {}), [key]: value }
+    }));
   };
 
   const removeParameter = (key: string) => {
@@ -130,10 +161,79 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Describe what this tool does..."
               rows={3}
+              disabled={formData.tool_type === 'crewai' || formData.tool_type === 'langchain'}
             />
           </div>
 
-          {/* Parameters */}
+        {/* Tool Type */}
+        <div className="space-y-2">
+          <Label htmlFor="tool-type">Tool Type</Label>
+          <select
+            id="tool-type"
+            value={formData.tool_type || 'custom'}
+            onChange={(e) => setFormData(prev => ({ ...prev, tool_type: e.target.value as any }))}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+          >
+            <option value="custom">Custom</option>
+            <option value="crewai">CrewAI</option>
+            <option value="langchain">Langchain</option>
+            <option value="pkg">Package</option>
+          </select>
+        </div>
+
+        {formData.tool_type && formData.tool_type !== 'custom' && (
+          <div className="space-y-2">
+            <Label htmlFor="tool-identifier">Tool Identifier</Label>
+            <Input
+              id="tool-identifier"
+              value={formData.tool_identifier || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, tool_identifier: e.target.value }))}
+              placeholder="Class or function path"
+            />
+          </div>
+        )}
+
+        {formData.tool_type && formData.tool_type !== 'custom' && (
+          <div className="space-y-2">
+            <Label>Kwargs</Label>
+            <div className="grid grid-cols-3 gap-2">
+              <Input
+                value={newKwargKey}
+                onChange={(e) => setNewKwargKey(e.target.value)}
+                placeholder="Arg name"
+                onKeyPress={(e) => e.key === 'Enter' && addKwarg()}
+              />
+              <Input
+                value={newKwargValue}
+                onChange={(e) => setNewKwargValue(e.target.value)}
+                placeholder="Value"
+              />
+              <Button type="button" onClick={addKwarg} size="sm">
+                <Plus className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="space-y-2">
+              {Object.entries(formData.kwargs || {}).map(([key, value]) => (
+                <div key={key} className="p-2 border rounded flex items-center gap-2">
+                  <Badge variant="outline">{key}</Badge>
+                  <Input
+                    value={value as string}
+                    onChange={(e) => updateKwargValue(key, e.target.value)}
+                    className="flex-1"
+                  />
+                  <button onClick={() => removeKwarg(key)} className="hover:text-red-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              {Object.keys(formData.kwargs || {}).length === 0 && (
+                <div className="text-sm text-gray-500 text-center py-2">No kwargs defined</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {(formData.tool_type !== 'crewai' && formData.tool_type !== 'langchain') && (
           <div className="space-y-2">
             <Label>Parameters</Label>
 
@@ -188,6 +288,7 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
               </div>
             )}
           </div>
+        )}
         </div>
 
         <DialogFooter>
