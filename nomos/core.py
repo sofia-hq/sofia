@@ -15,6 +15,7 @@ from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
 from .models.agent import (
     Message,
+    SessionContext,
     Step,
     StepIdentifier,
     Summary,
@@ -97,8 +98,8 @@ class Session:
             )
 
         tool_arg_descs = (
-            self.config.tool_arg_descriptions
-            if self.config and self.config.tool_arg_descriptions
+            self.config.tools.tool_arg_descriptions
+            if self.config and self.config.tools.tool_arg_descriptions
             else {}
         )
 
@@ -626,6 +627,8 @@ class Agent:
                     "No LLM provided. Please provide an LLM or a config with an LLM."
                 )
             llm = config.llm.get_llm()
+        tools = tools or []
+        tools.extend(config.tools.get_tools())
         return cls(
             llm=llm,
             name=config.name,
@@ -633,7 +636,7 @@ class Agent:
             start_step_id=config.start_step_id,
             system_message=config.system_message,
             persona=config.persona,
-            tools=tools or [],
+            tools=tools,
             mcp_servers=config.mcp_servers,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
@@ -750,7 +753,7 @@ class Agent:
     def next(
         self,
         user_input: Optional[str] = None,
-        session_data: Optional[dict] = None,
+        session_data: Optional[Union[dict, SessionContext]] = None,
         verbose: bool = False,
     ) -> tuple[BaseModel, str, dict]:
         """
@@ -761,6 +764,8 @@ class Agent:
         :param verbose: Whether to return verbose output.
         :return: A tuple containing the decision and session data.
         """
+        if isinstance(session_data, SessionContext):
+            session_data = session_data.model_dump(mode="json")
         session = (
             self.get_session_from_dict(session_data)
             if session_data

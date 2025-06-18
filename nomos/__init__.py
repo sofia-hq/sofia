@@ -6,12 +6,13 @@ Define your agent's persona, tools, and step-by-step flows in Python or YAML—p
 
 from .config import AgentConfig, ServerConfig
 from .core import Agent
-from .models.agent import Action, Route, Step
+from .models.agent import Action, Route, SessionContext, Step, StepIdentifier, Summary
 from .models.flow import Flow, FlowComponent, FlowConfig, FlowContext, FlowManager
 from .server import run_server
-from .utils.flow_utils import create_flows_from_config
+from .testing import smart_assert
+from .testing.e2e import Scenario, ScenarioRunner
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 __author__ = "DoWhile"
 
 __all__ = [
@@ -20,6 +21,8 @@ __all__ = [
     "ServerConfig",
     "Action",
     "Step",
+    "StepIdentifier",
+    "Summary",
     "Route",
     "Flow",
     "FlowManager",
@@ -27,5 +30,8 @@ __all__ = [
     "FlowComponent",
     "FlowConfig",
     "run_server",
-    "create_flows_from_config",
+    "SessionContext",
+    "smart_assert",
+    "ScenarioRunner",
+    "Scenario",
 ]

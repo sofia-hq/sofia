@@ -354,15 +354,16 @@ def serve(
 
 @app.command()
 def test(
-    pattern: Optional[str] = typer.Option(
-        "test_*.py", "--pattern", "-p", help="Test file pattern to match"
-    ),
-    verbose: bool = typer.Option(
-        False, "--verbose", "-v", help="Enable verbose test output"
+    config: Optional[str] = typer.Option(
+        None,
+        "--config",
+        "-c",
+        help="Path to YAML test configuration file (defaults to tests.agent.yaml)",
     ),
     coverage: bool = typer.Option(
         True, "--coverage/--no-coverage", help="Generate coverage report"
     ),
+    pytest_args: List[str] = typer.Argument(None),
 ) -> None:
     """Run the Nomos testing framework."""
     print_banner()
@@ -375,8 +376,19 @@ def test(
         )
     )
 
+    yaml_path = Path(config) if config else Path.cwd() / "tests.agent.yaml"
+
     try:
-        _run_tests(pattern, verbose, coverage)  # type: ignore
+        if yaml_path.exists():
+            from .testing.yaml_runner import run_yaml_tests
+
+            result = run_yaml_tests(yaml_path, pytest_args, coverage)
+            if result != 0:
+                console.print("❌ Some tests failed!", style=ERROR_COLOR)
+                raise typer.Exit(result)
+            console.print("✅ All tests passed!", style=SUCCESS_COLOR)
+        else:
+            _run_tests(pytest_args, coverage)
     except Exception as e:
         console.print(f"❌ Error running tests: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
@@ -776,20 +788,17 @@ if __name__ == '__main__':
         os.unlink(temp_script_path)
 
 
-def _run_tests(pattern: str, verbose: bool, coverage: bool) -> None:
+def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) -> None:
     """Run tests using pytest."""
-    cmd = ["python", "-m", "pytest"]
-
-    if pattern != "test_*.py":
-        cmd.extend(["-k", pattern])
-
-    if verbose:
-        cmd.append("-v")
+    cmd = ["python", "-m", "pytest"] + (pytest_args or ["."])
 
     if coverage:
         cmd.extend(["--cov=.", "--cov-report=term-missing"])
 
-    console.print(f"🧪 Running: [bold]{' '.join(cmd)}[/bold]", style=PRIMARY_COLOR)
+    console.print(
+        f"Running tests with command: [bold]{' '.join(cmd)}[/bold]",
+        style=PRIMARY_COLOR,
+    )
 
     result = subprocess.run(cmd)
 

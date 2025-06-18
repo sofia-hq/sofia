@@ -445,7 +445,7 @@
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center space-x-2">
                     <div class="text-2xl font-bold gradient-text">NOMOS</div>
-                    <span class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-xs px-2 py-1 rounded-lg font-medium">v0.2.2</span>
+                    <span class="bg-gradient-to-r from-indigo-500 to-blue-500 text-white text-xs px-2 py-1 rounded-lg font-medium">v0.2.3</span>
                 </div>
 
                 <div class="hidden md:flex items-center space-x-8">
@@ -789,6 +789,64 @@
         </div>
     </section>
 
+    <!-- What's New in 0.2.3 Section -->
+    <section class="py-16 bg-gradient-to-br from-indigo-50 via-white to-blue-50 relative overflow-hidden">
+        <!-- Background Pattern -->
+        <div class="absolute inset-0 opacity-5">
+            <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-blue-500/10 transform rotate-12 scale-150"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-12">
+                <div class="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-2 rounded-full text-sm font-medium mb-4">
+                    <i data-lucide="star" class="w-4 h-4"></i>
+                    What's New in v0.2.3
+                </div>
+                <h2 class="text-3xl lg:text-5xl font-bold mb-6">
+                    <span class="gradient-text">Enhanced Testing</span> & <span class="text-highlight">Tool Configuration</span>
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    This release brings powerful testing capabilities and streamlined tool management to make agent development even more efficient.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- New Feature 1: Smart Testing -->
+                <div class="bg-white/80 backdrop-blur-lg rounded-xl p-6 border border-indigo-100 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2 text-gray-900">Smart Testing</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">
+                        New <code class="bg-gray-100 px-2 py-1 rounded text-xs">smart_assert</code> and <code class="bg-gray-100 px-2 py-1 rounded text-xs">ScenarioRunner</code> for LLM-based response validation.
+                    </p>
+                </div>
+
+                <!-- New Feature 2: Integrated Tool Config -->
+                <div class="bg-white/80 backdrop-blur-lg rounded-xl p-6 border border-indigo-100 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="settings" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2 text-gray-900">Config-Based Tools</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">
+                        Define tools directly in your agent config file instead of relying on CLI flags. Better organization and deployment.
+                    </p>
+                </div>
+
+                <!-- New Feature 3: YAML Test Config -->
+                <div class="bg-white/80 backdrop-blur-lg rounded-xl p-6 border border-indigo-100 hover:border-indigo-300 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-4">
+                        <i data-lucide="file-text" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2 text-gray-900">YAML Test Configs</h3>
+                    <p class="text-gray-600 text-sm leading-relaxed">
+                        Load test configurations from YAML files with <code class="bg-gray-100 px-2 py-1 rounded text-xs">nomos test</code> command.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Features Section -->
     <section id="features" class="py-20 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -845,7 +903,7 @@
                     </div>
                     <h3 class="text-xl font-semibold mb-4 text-gray-900">Configuration-Driven</h3>
                     <p class="text-gray-600 leading-relaxed">
-                        <span class="font-medium">YAML or Python</span> configuration. Change agent behavior without touching core logic.
+                        <span class="font-medium">YAML or Python</span> configuration. Now in v0.2.3: Integrated tool configuration - define tools directly in your config file.
                     </p>
                 </div>
 
@@ -964,9 +1022,9 @@
                         <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                             <i data-lucide="zap" class="w-6 h-6 text-white"></i>
                         </div>
-                        <h4 class="font-bold text-lg mb-2 text-gray-900">Easy Testing</h4>
+                        <h4 class="font-bold text-lg mb-2 text-gray-900">Advanced Testing & Evaluation</h4>
                         <p class="text-gray-600 leading-relaxed">
-                            Test individual steps and transitions independently. Debug complex workflows with confidence.
+                            New in v0.2.3: Smart assertions with LLM-based evaluation, scenario testing, and YAML-based test configurations. Test agent responses intelligently.
                         </p>
                     </div>
                 </div>
@@ -1121,7 +1179,7 @@
                                     ✓ Available Now
                                 </span>
                                 <div class="text-right">
-                                    <div class="text-2xl font-bold gradient-text">v0.2.2</div>
+                                    <div class="text-2xl font-bold gradient-text">v0.2.3</div>
                                     <div class="text-sm text-gray-500">Latest Release</div>
                                 </div>
                             </div>

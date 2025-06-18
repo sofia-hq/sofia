@@ -1,7 +1,9 @@
 """AgentConfig class for managing agent configurations."""
 
+import importlib
+import importlib.util
 import os
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -18,12 +20,56 @@ from .models.tool import MCPServer
 class ServerConfig(BaseModel):
     """Configuration for the FastAPI server."""
 
-    openai_api_key: Optional[str] = None
     redis_url: Optional[str] = None
     database_url: Optional[str] = None
     enable_tracing: bool = False
     port: int = 8000
     workers: int = 1
+
+
+class ToolsConfig(BaseModel):
+    """Configuration for tools used by the agent."""
+
+    tool_files: List[str] = []  # List of tool files to load
+    tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]] = None
+
+    def get_tools(self) -> List[Callable]:
+        """
+        Load and return the tools based on the configuration.
+
+        :return: List of tool functions.
+        """
+        tools_list: List = []
+        for tool_file in self.tool_files:
+            try:
+                # Handle both file paths and module names
+                if tool_file.endswith(".py"):
+                    # It's a file path
+                    if not os.path.exists(tool_file):
+                        raise FileNotFoundError(
+                            f"Tool file '{tool_file}' does not exist."
+                        )
+
+                    # Load module from file path
+                    spec = importlib.util.spec_from_file_location(
+                        "tool_module", tool_file
+                    )
+                    if spec is None or spec.loader is None:
+                        raise ImportError(f"Could not load module from '{tool_file}'")
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                else:
+                    # It's a module name, try to import it directly
+                    module = importlib.import_module(tool_file)
+
+                # Extract tools from the module
+                tools = module.tools if hasattr(module, "tools") else []
+                tools_list.extend(tools)
+
+            except (ImportError, FileNotFoundError, AttributeError) as e:
+                raise ImportError(f"Failed to load tools from '{tool_file}': {e}")
+
+        return tools_list
 
 
 class AgentConfig(BaseSettings):
@@ -50,7 +96,6 @@ class AgentConfig(BaseSettings):
     persona: Optional[str] = None  # Recommended to use a default persona
     steps: List[Step]
     start_step_id: str
-    tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]] = None
     system_message: Optional[str] = (
         None  # Default system message will be used if not provided
     )
@@ -59,12 +104,11 @@ class AgentConfig(BaseSettings):
     max_iter: int = 10
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
-
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
-
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
-    server: ServerConfig = ServerConfig()
+    server: ServerConfig = ServerConfig()  # Configuration for the FastAPI server
+    tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
     mcp_servers: Optional[List[MCPServer]] = None
 

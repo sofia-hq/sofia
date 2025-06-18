@@ -1,22 +1,20 @@
 <!-- Announcement Bar -->
-<div align="center" style="margin-bottom: 1.5em;">
+<div style="margin-bottom: 1.5em;">
   <div style="
     display: inline-block;
     background: #222;
     color: #fff;
     font-weight: 500;
-    padding: 0.5em 2em;
     font-size: 1em;
-    margin-bottom: 1em;
     border-radius: 999px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     border: 1px solid #222;
   ">
-    <b>NOMOS v0.2.2 released!</b> | <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
+    <b>NOMOS v0.2.3 released!</b> | <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
   </div>
 </div>
 
-<h1 align="center">
+<h1>
   <a href="https://github.com/dowhiledev/nomos">
     <picture>
       <source srcset="assets/dark.png" media="(prefers-color-scheme: dark)">
@@ -26,16 +24,11 @@
   </a>
 </h1>
 
-<div align="center">
-
+<div>
   An open-source, configurable multi-step agent framework for building advanced LLM-powered assistants
-  <br />
-  <br />
   <a href="#usage"><strong>Explore examples »</strong></a>
   ·
-  <a href="https://nomos-builder.vercel.app"><strong>🎨 Try Visual Builder »</strong></a>
-  <br />
-  <br />
+  <a href="https://nomos.dowhile.dev/try"><strong>🎨 Try Visual Builder »</strong></a>
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=bug&template=01_BUG_REPORT.md&title=bug%3A+">Report a Bug</a>
   ·
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=enhancement&template=02_FEATURE_REQUEST.md&title=feat%3A+">Request a Feature</a>
@@ -43,7 +36,7 @@
   <a href="https://github.com/dowhiledev/nomos/issues/new?assignees=&labels=question&template=04_SUPPORT_QUESTION.md&title=support%3A+">Ask a Question</a>
 </div>
 
-<div align="center">
+<div>
 <br />
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos)
@@ -53,12 +46,11 @@
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
 [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base)](https://hub.docker.com/r/chandralegend/nomos-base)
 [![License](https://img.shields.io/github/license/dowhiledev/nomos)](LICENSE)
-
 [![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/nomos/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 
 </div>
 
-<details open="open">
+<details>
 <summary>Table of Contents</summary>
 
 - [About](#about)
@@ -123,7 +115,7 @@ The framework allows you to move from no-code to low-code development, making it
 - **Auto tool documentation**: Tool descriptions and parameter documentation are automatically generated from docstrings.
 - **YAML or Python config**: Configure agents via code or declarative YAML.
 - **Step-level answer models**: Specify an `answer_model` for any step to receive structured (JSON/object) responses.
-- **🎨 Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface. **[Try it live at nomos-builder.vercel.app](https://nomos-builder.vercel.app)**
+- **🎨 Visual Flow Builder**: Interactive web-based tool for designing and managing agent flows with drag-and-drop interface. **[Try it live](https://nomos.dowhile.dev/try)**
 - **OpenAI, Mistral, Gemini, Ollama, and HuggingFace LLM support**
 - **Session management**: Save and resume conversations with Redis or PostgreSQL persistent storage.
 - **Advanced error handling**: Built-in error recovery mechanisms with configurable retry limits.
@@ -147,7 +139,7 @@ For those who prefer a no-code approach, NOMOS includes a powerful Visual Flow B
 
 ### 🚀 Try It Now
 
-**Live hosted version**: [nomos-builder.vercel.app](https://nomos-builder.vercel.app)
+**Live hosted version**: [nomos.dowhile.dev/try](https://nomos.dowhile.dev/try)
 
 ### Key Features
 
@@ -243,7 +235,7 @@ NOMOS supports a spectrum of implementation approaches from no-code to low-code 
 
 ### 🎨 No-Code: Visual Flow Builder
 
-The easiest way to get started is with our Visual Flow Builder at [nomos-builder.vercel.app](https://nomos-builder.vercel.app). Simply drag and drop to create your agent flows, then export the configuration.
+The easiest way to get started is with our Visual Flow Builder at [nomos.dowhile.dev/try](https://nomos.dowhile.dev/try). Simply drag and drop to create your agent flows, then export the configuration.
 
 ### CLI Usage
 
@@ -280,13 +272,13 @@ nomos run
 
 **Options:**
 - `--config, -c`: Configuration file path (default: `config.agent.yaml`)
-- `--tools, -t`: Python files with tool definitions (can be used multiple times)
+- `--tools, -t`: Python files with tool definitions (can be used multiple times) - **Note: As of v0.2.3, you can now specify tools directly in your agent config file**
 - `--port, -p`: Development server port (default: `8000`)
 - `--verbose, -v`: Enable verbose logging
 
 **Examples:**
 ```bash
-# Basic usage
+# Basic usage (tools will be loaded from config file)
 nomos run
 
 # With custom config and tools
@@ -341,23 +333,87 @@ nomos test
 ```
 
 **Options:**
-- `--pattern, -p`: Test file pattern to match (default: `test_*.py`)
-- `--verbose, -v`: Enable verbose test output
+- `--config, -c`: Path to `tests.agent.yaml` file (defaults to `tests.agent.yaml` in the current directory)
 - `--coverage/--no-coverage`: Generate coverage report (default: `true`)
+- Any additional arguments are passed directly to `pytest`.
 
 **Examples:**
 ```bash
 # Run all tests
 nomos test
 
-# Run specific test pattern
-nomos test --pattern "test_tools*"
+# Provide custom yaml file and verbose output
+nomos test --config ./my_tests.yaml -v
 
-# Verbose output without coverage
-nomos test --verbose --no-coverage
+# Pass any pytest args
+nomos test tests/test_cli.py -k serve
 ```
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
+
+### Agent Testing and Evaluation
+
+Nomos provides comprehensive testing utilities to validate your agent's responses and simulate conversations.
+
+#### Smart Assertions
+
+Use `smart_assert` to validate agent responses using LLM-based evaluation:
+
+```python
+from nomos.testing import SessionContext, smart_assert
+from nomos.models.agent import Summary, Message, StepIdentifier
+
+def test_greeting(agent):
+    context = SessionContext(
+        history=[
+            Summary(content="Initial summary"),
+            Message(role="user", content="Hello"),
+            StepIdentifier(step_id="start"),
+        ]
+    )
+    decision, _, _ = agent.next("Hello", context.model_dump(mode="json"))
+    smart_assert(decision, "Agent should greet the user", agent.llm)
+
+```
+
+#### Scenario Testing
+
+For multi-turn conversations, use `ScenarioRunner`:
+
+```python
+from nomos.testing.eval import ScenarioRunner, Scenario
+
+def test_budget_flow(agent):
+    ScenarioRunner.run(
+        agent,
+        Scenario(
+            scenario="User asks for budgeting advice",
+            expectation="Agent explains how to plan a budget",
+        ),
+    )
+
+```
+
+### YAML Test Configuration
+
+You can define agent tests in a YAML file and run them with `nomos test`.
+Nomos looks for `tests.agent.yaml` by default.
+
+```yaml
+llm:
+  provider: openai
+  model: gpt-4o-mini
+
+unit:
+  greet:
+    input: "Hello"
+    expectation: "Greets the user"
+
+e2e:
+  budget_flow:
+    scenario: "User asks for budgeting advice"
+    expectation: "Agent explains how to plan a budget"
+```
 
 ### Python API Example (Full Code)
 
@@ -449,7 +505,7 @@ start_step_id: start
 max_errors: 3  # Maximum consecutive errors before stopping
 ```
 
-See [`examples/config.barista.yaml`](examples/config.barista.yaml) for a more full-featured example.
+See [`examples/barista/config.agent.yaml`](examples/barista/config.agent.yaml) for a more full-featured example.
 More examples are available in the [`examples`](examples/) directory.
 
 ## Flow Management
@@ -643,7 +699,37 @@ Tool parameter descriptions in configuration files take precedence over automati
 
 > **NOTE**: Make sure the package is installed in your environment and function returns an output that is string representable.
 
-## Custom Tool Files
+## Tool Configuration
+
+### New in v0.2.3: Integrated Tool Configuration
+
+As of version 0.2.3, you can now specify tools directly in your agent configuration file instead of relying solely on CLI flags. This provides better organization and easier deployment.
+
+#### Configuration-Based Tools
+
+Add tools to your `config.agent.yaml`:
+
+```yaml
+name: my-agent
+persona: A helpful assistant
+steps:
+  - step_id: start
+    # ... step configuration
+start_step_id: start
+
+# Tool configuration - NEW in v0.2.3
+tools:
+  tool_files:
+    - "barista_tools"          # Module name
+    - "tools/my_tools.py"      # File path
+    - "math:sqrt"              # Package function
+  tool_arg_descriptions:
+    add_to_cart:
+      coffee_type: "Coffee type (e.g., Espresso, Latte, Cappuccino)"
+      size: "Size of the coffee (Small, Medium, Large)"
+```
+
+#### Custom Tool Files
 
 You can organize your own tools in Python modules or keep them inside a `tools/` directory.
 Each module should export a list named `tools` containing the functions you want
@@ -658,17 +744,23 @@ def greet(name: str) -> str:
 tools = [greet]
 ```
 
-Run the CLI and provide the tool file with `--tools` (you can specify multiple
-files):
+#### Tool Loading Options
 
+**Option 1: Configuration File (Recommended)**
+```yaml
+# In config.agent.yaml
+tools:
+  tool_files:
+    - "my_tools"              # Load as module
+    - "tools/custom_tools.py" # Load as file path
+```
+
+**Option 2: CLI Flags (Legacy)**
 ```bash
 nomos run --config config.agent.yaml --tools tools/my_tools.py
 ```
 
-The command sets the `TOOLS_PATH` environment variable so the API server loads
-your modules directly. When embedding Nomos in your own application, set
-`TOOLS_PATH` to a colon-separated list of directories containing your tool
-modules.
+The configuration file approach is recommended as it keeps all agent settings in one place and works better with deployment scenarios.
 
 ## Examples
 
@@ -682,11 +774,14 @@ To run the Barista agent:
 cd examples/barista
 export OPENAI_API_KEY=your-api-key-here
 
-# Run in development mode
-nomos run --config config.barista.yaml --tools barista_tools.py
+# Run in development mode (tools loaded from config.agent.yaml)
+nomos run --config config.agent.yaml
+
+# Or with explicit tool files (legacy approach)
+nomos run --config config.agent.yaml --tools barista_tools.py
 
 # Or serve with Docker
-nomos serve --config config.barista.yaml --tools barista_tools.py
+nomos serve --config config.agent.yaml
 ```
 
 ### Example: Financial Planning Assistant
@@ -704,15 +799,18 @@ To run the Financial Planning Assistant:
 ```bash
 cd examples/financial-advisor
 
-# Run in development mode
+# Run in development mode (tools loaded from config.agent.yaml)
 export OPENAI_API_KEY=your-api-key-here
+nomos run --config config.agent.yaml
+
+# Or with explicit tool files (legacy approach)
 nomos run --config config.agent.yaml --tools tools.py
 
 # Or serve with Docker
-nomos serve --config config.agent.yaml --tools tools.py
+nomos serve --config config.agent.yaml
 
 # Or serve in detached mode
-nomos serve --config config.agent.yaml --tools tools.py --detach
+nomos serve --config config.agent.yaml --detach
 ```
 
 ## Deployment

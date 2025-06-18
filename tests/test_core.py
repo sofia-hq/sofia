@@ -211,9 +211,11 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
         steps=basic_steps,
         start_step_id="start",
         persona="Config test persona",
-        tool_arg_descriptions={
-            "test_tool": {"arg0": "Test argument"},
-            "another_test_tool": {"arg1": "Another test argument"},
+        tools={
+            "tool_arg_descriptions": {
+                "test_tool": {"arg0": "Test argument"},
+                "another_test_tool": {"arg1": "Another test argument"},
+            },
         },
     )
 

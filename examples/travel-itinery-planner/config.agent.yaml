@@ -175,6 +175,10 @@ steps:
       - target: get_trip_details
         condition: User wants to plan another trip
 
+tools:
+  tool_files:
+    - tools.py
+
 llm:
   provider: openai
   model: gpt-4o-mini

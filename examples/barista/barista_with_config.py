@@ -5,13 +5,12 @@ os.environ["NOMOS_LOG_LEVEL"] = "DEBUG"
 os.environ["NOMOS_ENABLE_LOGGING"] = "true"
 
 from nomos import *
-from barista_tools import tools
 from nomos.llms.openai import OpenAI
 
 # Define the LLM and Barista
 config = AgentConfig.from_yaml("config.barista.yaml")
 llm = config.llm.get_llm() if hasattr(config, "llm") and config.llm else OpenAI()
-barista = Agent.from_config(config, llm, tools)
+barista = Agent.from_config(config, llm)
 
 # Start the conversation
 sess = barista.create_session()
