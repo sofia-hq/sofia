@@ -2,6 +2,10 @@
 
 Nomos is about giving you **control and observability** over AI agents. Instead of one large prompt, you guide the model through clear steps with explicit tool access. The framework was inspired by our own need to tame prompt-based chaos and build reliable assistants for production use.
 
+## Prompt‑based vs Step‑based
+
+Traditional prompt-based agents rely on a single instruction block. This can lead to unpredictable behavior and is hard to debug or test. Nomos breaks the conversation into **steps** so you can enforce a structure, control tool access, and validate each decision. This approach emphasizes collaboration, reliability, and observability.
+
 Key ideas:
 
 - **Step-based agents** keep behavior predictable and easier to debug.
