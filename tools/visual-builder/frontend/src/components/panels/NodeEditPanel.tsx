@@ -173,7 +173,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                         /* ignore invalid JSON */
                       }
                     }}
-                    placeholder="{\"key\": \"value\"}"
+                    placeholder='{"key": "value"}'
                     rows={3}
                   />
                 </div>
