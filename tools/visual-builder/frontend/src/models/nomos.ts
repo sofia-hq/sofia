@@ -17,6 +17,9 @@ export interface ToolConfig {
   description?: string;
   parameters?: Record<string, ToolParameter>;
   package_reference?: string;
+  tool_type?: 'custom' | 'crewai' | 'langchain' | 'pkg';
+  tool_identifier?: string;
+  kwargs?: Record<string, any>;
 }
 
 export interface ToolParameter {
@@ -54,7 +57,11 @@ export interface NomosConfig {
   start_step_id: string;
   steps: StepConfig[];
   flows?: FlowConfig[];
-  tools?: ToolConfig[];
+  tools?: {
+    tool_files?: string[];
+    external_tools?: Array<{ tag: string; name: string; kwargs?: Record<string, any> }>;
+    tool_arg_descriptions?: Record<string, Record<string, string>>;
+  };
   llm?: LLMConfig;
   max_iter?: number;
   max_errors?: number;

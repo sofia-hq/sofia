@@ -132,16 +132,52 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                 />
               </div>
 
-              {/* Package Reference */}
+              {/* Tool Type */}
               <div className="space-y-2">
-                <Label htmlFor="package_reference">Package Reference</Label>
-                <Input
-                  id="package_reference"
-                  value={formData.package_reference || ''}
-                  onChange={(e) => updateField('package_reference', e.target.value)}
-                  placeholder="package_name:function_name (optional)"
-                />
+                <Label htmlFor="tool_type">Tool Type</Label>
+                <select
+                  id="tool_type"
+                  value={formData.tool_type || 'custom'}
+                  onChange={(e) => updateField('tool_type', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                >
+                  <option value="custom">Custom</option>
+                  <option value="crewai">CrewAI</option>
+                  <option value="langchain">Langchain</option>
+                  <option value="pkg">Package</option>
+                </select>
               </div>
+
+              {formData.tool_type && formData.tool_type !== 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="tool_identifier">Tool Identifier</Label>
+                  <Input
+                    id="tool_identifier"
+                    value={formData.tool_identifier || ''}
+                    onChange={(e) => updateField('tool_identifier', e.target.value)}
+                    placeholder="Class or function path"
+                  />
+                </div>
+              )}
+
+              {formData.tool_type && formData.tool_type !== 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="kwargs">Kwargs (JSON)</Label>
+                  <Textarea
+                    id="kwargs"
+                    value={JSON.stringify(formData.kwargs || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        updateField('kwargs', JSON.parse(e.target.value));
+                      } catch {
+                        /* ignore invalid JSON */
+                      }
+                    }}
+                    placeholder='{"key": "value"}'
+                    rows={3}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>
