@@ -1,4 +1,4 @@
-# Fullcode Development
+# Full-code Development
 
 In the fullcode workflow you write everything in Python:
 
