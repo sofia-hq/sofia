@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
+## [0.2.4] - 2025-06-18
+
+### Added
+- Support for external tools via `ToolsConfig.external_tools` allowing the use of
+  Python package functions and CrewAI or LangChain tools.
+- `ToolWrapper` abstraction and `get_tools` helper for consistent tool loading.
+
+### Changed
+- `Tool.from_pkg` now accepts dotted module paths instead of `package:func`
+  syntax and `Step` no longer modifies tool names automatically.
+
 ## [0.2.3] - 2025-06-17
 
 ### Added
@@ -35,19 +46,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Now no need to pass the `tools` by specifying `-t` flag for each tool file, instead mention them in the agent config file under `tools` key. Check the [example](examples/barista/config.agent.yaml) for more details.
-
-## [0.2.4] - 2025-06-18
-
-### Added
-- Support for external tools via `ToolsConfig.external_tools` allowing the use of
-  Python package functions and CrewAI or LangChain tools.
-- `ToolWrapper` abstraction and `get_tools` helper for consistent tool loading.
-- Utility `convert_camelcase_to_snakecase`.
-- CI installs `crewai[tools]` for integration tests.
-
-### Changed
-- `Tool.from_pkg` now accepts dotted module paths instead of `package:func`
-  syntax and `Step` no longer modifies tool names automatically.
 
 ## [0.2.2] - 2025-06-08
 
