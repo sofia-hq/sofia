@@ -1,10 +1,11 @@
 """Tests for core Nomos agent functionality."""
 
+import sys
 import pytest
 from nomos.models.agent import Action, create_decision_model, Message
 from nomos.core import Agent
 from nomos.config import AgentConfig
-from nomos.models.tool import Tool
+from nomos.models.tool import Tool, ToolWrapper
 
 
 def test_agent_initialization(basic_agent):
@@ -50,7 +51,11 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
     ask_response = expected_decision_model(
@@ -61,7 +66,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert session.current_step.available_tools == [
         "test_tool",
         "another_test_tool",
-        "itertools:combinations",
+        "combinations",
     ]
 
     # Set up mock responses
@@ -104,7 +109,11 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
 
@@ -146,7 +155,11 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
 
@@ -180,7 +193,11 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
         current_step_tools=[
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
-            Tool.from_pkg("itertools:combinations"),
+            ToolWrapper(
+                tool_type="pkg",
+                name="combinations",
+                tool_identifier="itertools.combinations",
+            ).get_tool(),
         ],
     )
 
@@ -206,6 +223,8 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
 
 def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     """Test loading agent from config."""
+    from itertools import combinations
+
     config = AgentConfig(
         name="config_test",
         steps=basic_steps,
@@ -215,14 +234,14 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
             "tool_arg_descriptions": {
                 "test_tool": {"arg0": "Test argument"},
                 "another_test_tool": {"arg1": "Another test argument"},
-            },
+            }
         },
     )
 
     agent = Agent.from_config(
         llm=mock_llm,
         config=config,
-        tools=[test_tool_0, test_tool_1],
+        tools=[test_tool_0, test_tool_1, combinations],
     )
 
     assert agent.name == "config_test"
@@ -235,3 +254,73 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     # Test that tool arg descriptions were properly loaded
     tool = session.tools["test_tool"]
     assert tool.parameters["arg0"]["description"] == "Test argument"
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
+def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_tool_1):
+    """Test that external tools are properly registered in the session."""
+    # Test whether crewai tool is registered
+
+    import os
+
+    os.environ["OPENAI_API_KEY"] = "test_key"  # PDFSearchTool requires this env var
+
+    config = AgentConfig(
+        name="config_test",
+        steps=basic_steps,
+        start_step_id="start",
+        persona="Config test persona",
+        tools={
+            "external_tools": [
+                {"tag": "@pkg/itertools.combinations", "name": "combinations"},
+                {"tag": "@crewai/FileReadTool", "name": "file_read_tool"},
+                {
+                    "tag": "@crewai/PDFSearchTool",
+                    "name": "pdf_search_tool",
+                    "kwargs": {
+                        "pdf": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+                    },
+                },
+            ],
+        },
+    )
+
+    agent = Agent.from_config(
+        llm=mock_llm,
+        config=config,
+        tools=[test_tool_0, test_tool_1],
+    )
+
+    assert agent.name == "config_test"
+    assert agent.persona == "Config test persona"
+    assert len(agent.steps) == 2
+    assert len(agent.tools) == 5
+
+    session = agent.create_session(verbose=True)
+
+    # Test that package tool was properly registered
+    pkg_tool = session.tools["combinations"]
+    assert isinstance(pkg_tool, Tool)
+    assert pkg_tool.name == "combinations"
+
+    # Test whether crewai FileReadTool is registered
+    crewai_tool = session.tools.get("file_read_tool")
+    assert crewai_tool is not None
+    assert (
+        crewai_tool.get_args_model()
+        .model_json_schema()
+        .get("properties", {})
+        .get("file_path")
+        is not None
+    )
+
+    # Test whether PDFSearchTool is registered
+    pdf_search_tool = session.tools.get("pdf_search_tool")
+    assert pdf_search_tool is not None
+    assert (
+        pdf_search_tool.get_args_model()
+        .model_json_schema()
+        .get("properties", {})
+        .get("query")
+        is not None
+    )

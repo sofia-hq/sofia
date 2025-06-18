@@ -114,16 +114,19 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
+        """
         tool_ids = []
         for tool in self.available_tools:
             if Tool.is_package_tool(tool):
-                tool_ids.append(Tool.from_pkg(tool).name)
+                tool_ids.append(Tool.from_pkg(tool.name))
             elif Tool.is_remote_tool(tool):
                 tool_ids.append(Tool.get_tool_name_from_remote_tool_name(tool))  # type: ignore
             else:
                 tool_ids.append(tool)
 
         return tool_ids
+        """
+        return self.available_tools
 
     def get_step_identifier(self) -> StepIdentifier:
         """
