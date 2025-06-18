@@ -1,3 +1,6 @@
 # TLDR
 
-Nomos is an open‑source framework for defining multi‑step agents. Configure personas, steps and tools in YAML or Python, then run locally or in Docker.
+- **Multi-step agents**: break tasks into steps with clear tool access.
+- **YAML or Python**: choose between fullcode, less-code or no-code workflows.
+- **Built for production**: tracing, error handling and strong testing support.
+- **Runs anywhere**: local development, Docker containers or managed cloud.

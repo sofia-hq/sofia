@@ -1,8 +1,12 @@
 # Nomos Developer Documentation
 
-Welcome to the Nomos developer guide. These documents focus on using Nomos to build and operate production‑ready agents.
+This guide helps you build agents with a smooth developer experience. Choose the workflow that best fits your team:
 
-## Sections
+- **[Fullcode](fullcode/README.md)** – write steps, tools and tests entirely in Python.
+- **[Less-code](less-code/README.md)** – describe agents in YAML while keeping tools and deep tests in Python.
+- **[No-code](no-code/README.md)** – configure everything in YAML and reuse package tools.
+
+Additional docs:
 
 - [TLDR](tldr.md)
 - [ELI5 Overview](eli5.md)

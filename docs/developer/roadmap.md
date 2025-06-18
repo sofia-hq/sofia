@@ -1,7 +1,10 @@
 # Roadmap
 
-Nomos is under active development. Follow the open issues on GitHub for upcoming features:
+Nomos is evolving quickly. Planned areas of improvement include:
 
-```
-- [Top Feature Requests](https://github.com/dowhiledev/nomos/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc)
-```
+- Richer visual builder and improved CLI scaffolding
+- More built-in tools and tighter integration with CrewAI packages
+- Advanced tracing adapters for popular observability platforms
+- Expanded YAML schema validation and helpful error messages
+
+Follow [open issues](https://github.com/dowhiledev/nomos/issues?q=label%3Aenhancement+is%3Aopen+sort%3Areactions-%2B1-desc) for the latest progress.

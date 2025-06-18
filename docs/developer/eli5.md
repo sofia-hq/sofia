@@ -1,3 +1,3 @@
 # ELI5
 
-Nomos lets you describe how your AI helper should act, one step at a time. You write down the steps and which tools it can use. Nomos then runs those steps and keeps track of the conversation for you.
+Think of Nomos as instructions for a helpful robot. You break down tasks into small steps and decide what tools the robot may use in each one. Nomos follows those steps and remembers the conversation so it can respond politely and predictably.

@@ -1,17 +1,12 @@
 # Vision & Inspiration
 
-Nomos aims to provide **structured guidance** for AI behavior. The project name comes from the Greek word for "law" or "custom" and emphasizes rule‑based flows.
+Nomos is about giving you **control and observability** over AI agents. Instead of one large prompt, you guide the model through clear steps with explicit tool access. The framework was inspired by our own need to tame prompt-based chaos and build reliable assistants for production use.
 
-Key features include:
+Key ideas:
 
-- step based agent flows
-- persona driven prompts
-- extensible tool integration
+- **Step-based agents** keep behavior predictable and easier to debug.
+- **Persona-driven prompts** let you maintain consistent tone and brand voice.
+- **Extensible tools** allow safe interaction with your code and third‑party services.
+- **Flow groups** organize complex conversations with their own memory and metadata.
 
-These features are highlighted in the main README:
-
-```
-- **Step-based agent flows**: Define agent behavior as a sequence of steps, each with its own tools and transitions.
-- **Persona-driven**: Easily set the agent's persona for consistent, branded responses.
-- **Tool integration**: Register Python functions as tools for the agent to call.
-```
+Nomos draws inspiration from projects like CrewAI and LangChain but focuses on shipping enterprise-ready agents with strong testing and deployment stories.

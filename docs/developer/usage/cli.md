@@ -1,31 +1,29 @@
 # CLI Quick Reference
 
-Nomos ships with a CLI to bootstrap and run agents.
+Nomos provides a `nomos` command with helpful sub‑commands.
 
 ## Initialize a project
-
-```
+```bash
 nomos init --directory ./my-bot --name chatbot --template basic
 ```
+Options:
+- `--directory, -d` project directory
+- `--name, -n` agent name
+- `--template, -t` template type
+- `--generate, -g` let Nomos draft your config
 
-Options include:
-- `--directory, -d`: Project directory
-- `--name, -n`: Agent name
-- `--template, -t`: Template type
-- `--generate, -g`: Generate with AI
-
-## Development server
-
+## Run locally
+```bash
+nomos run --config config.agent.yaml --port 8000
 ```
-nomos run
-```
+Use `--watch` to reload on changes.
 
-Pass `--config` for a YAML file and `--port` to change the port.
-
-## Production
-
-```
-nomos serve --detach
+## Serve in production
+```bash
+nomos serve --config config.agent.yaml --detach
 ```
 
-See the README for full option lists.
+## Test an agent
+```bash
+nomos test -c tests.agent.yaml
+```
