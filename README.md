@@ -422,7 +422,9 @@ e2e:
 from nomos import *
 from nomos.llms import OpenAIChatLLM
 from nomos.models.flow import FlowConfig
+from nomos.models.tools import ToolWrapper
 from nomos.memory.flow import FlowMemoryComponent
+from math import sqrt
 
 def get_time():
     """Get the current time.
@@ -437,14 +439,14 @@ steps = [
     Step(
         step_id="start",
         description="Greet and offer to tell the time or perform calculations.",
-        available_tools=["get_time", "math:sqrt"],  # Direct reference to the sqrt function from math package
+        available_tools=["get_time", "sqrt"],
         routes=[Route(target="calculation", condition="User wants to do math"),
                 Route(target="end", condition="User is done")],
     ),
     Step(
         step_id="calculation",
         description="Perform mathematical calculations for the user.",
-        available_tools=["math:sqrt", "math:pow"],
+        available_tools=["sqrt", "pow"],
         routes=[Route(target="end", condition="Calculation is complete")],
     ),
     Step(
@@ -476,7 +478,7 @@ agent = Nomos(
     steps=steps,
     flows=flows,  # Add flows to the agent
     start_step_id="start",
-    tools=[get_time, "math:sqrt", "math:pow"],
+    tools=[get_time, sqrt, ToolWrapper(tool_type="pkg", name="pow", tool_identifier="math.pow")],  # Register tools
     persona="You are a friendly assistant that can tell time and perform calculations.",
     max_errors=3,  # Will retry up to 3 times before failing
     max_iter=5,   # Maximum number of iterations allowed in a single interaction
@@ -494,9 +496,9 @@ steps:
   - step_id: start
     description: Handle user requests for mathematical operations or data processing.
     available_tools:
-      - math:sqrt
-      - json:loads
-      - itertools:combinations
+      - sqrt
+      - load_json
+      - combinations
     routes:
       - target: end
         condition: User is done with calculations
@@ -680,20 +682,6 @@ llm:
 
 NOMOS allows you to reference Python package functions, CrewAI tools, and LangChain tools directly in your configuration.
 
-### Package functions
-
-Use the dotted path to a Python function:
-
-```python
-# Reference a function from a standard library
-"math:sqrt"                      # Standard library function
-"json:loads"                     # Another standard library function
-"itertools.combinations"         # Functions from built-in modules work too!
-
-# Reference nested module functions
-"package_name.module.submodule.function"
-```
-
 Benefits of external tool integration:
 
 1. **No-code/low-code development**: Use existing Python functions without writing wrapper code
@@ -725,9 +713,8 @@ start_step_id: start
 # Tool configuration - NEW in v0.2.4
 tools:
   tool_files:
-    - "barista_tools"          # Module name
-    - "tools/my_tools.py"      # File path
-    - "math:sqrt"              # Package function
+    - "barista_tools.py"    # Python module
+    - "tools.my_tools"      # File path
   external_tools:
     - tag: "@pkg/itertools.combinations"
       name: "combinations"

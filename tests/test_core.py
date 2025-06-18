@@ -1,5 +1,6 @@
 """Tests for core Nomos agent functionality."""
 
+import sys
 import pytest
 from nomos.models.agent import Action, create_decision_model, Message
 from nomos.core import Agent
@@ -222,9 +223,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
 
 def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     """Test loading agent from config."""
-    import os
-
-    os.environ["OPENAI_API_KEY"] = "test_key"  # PDFSearchTool requires this env var
+    from itertools import combinations
 
     config = AgentConfig(
         name="config_test",
@@ -235,7 +234,43 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
             "tool_arg_descriptions": {
                 "test_tool": {"arg0": "Test argument"},
                 "another_test_tool": {"arg1": "Another test argument"},
-            },
+            }
+        },
+    )
+
+    agent = Agent.from_config(
+        llm=mock_llm,
+        config=config,
+        tools=[test_tool_0, test_tool_1, combinations],
+    )
+
+    assert agent.name == "config_test"
+    assert agent.persona == "Config test persona"
+    assert len(agent.steps) == 2
+    assert len(agent.tools) == 3
+
+    session = agent.create_session(verbose=True)
+
+    # Test that tool arg descriptions were properly loaded
+    tool = session.tools["test_tool"]
+    assert tool.parameters["arg0"]["description"] == "Test argument"
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
+def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_tool_1):
+    """Test that external tools are properly registered in the session."""
+    # Test whether crewai tool is registered
+
+    import os
+
+    os.environ["OPENAI_API_KEY"] = "test_key"  # PDFSearchTool requires this env var
+
+    config = AgentConfig(
+        name="config_test",
+        steps=basic_steps,
+        start_step_id="start",
+        persona="Config test persona",
+        tools={
             "external_tools": [
                 {"tag": "@pkg/itertools.combinations", "name": "combinations"},
                 {"tag": "@crewai/FileReadTool", "name": "file_read_tool"},
@@ -263,16 +298,12 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
 
     session = agent.create_session(verbose=True)
 
-    # Test that tool arg descriptions were properly loaded
-    tool = session.tools["test_tool"]
-    assert tool.parameters["arg0"]["description"] == "Test argument"
-
     # Test that package tool was properly registered
     pkg_tool = session.tools["combinations"]
     assert isinstance(pkg_tool, Tool)
     assert pkg_tool.name == "combinations"
 
-    # Test whether crewai tool is registered
+    # Test whether crewai FileReadTool is registered
     crewai_tool = session.tools.get("file_read_tool")
     assert crewai_tool is not None
     assert (
