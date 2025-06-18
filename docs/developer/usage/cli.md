@@ -25,7 +25,7 @@ Use `--watch` to reload on changes.
 ## serve – production deployment
 
 ```bash
-nomos serve --config config.agent.yaml --detach
+nomos serve --config config.agent.yaml
 ```
 
 ## test – run unit and scenario tests

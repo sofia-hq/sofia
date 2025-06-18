@@ -6,7 +6,7 @@ overview and then dive into the workflow that matches your team.
 
 ## Choose Your Workflow
 
-- **[Fullcode](fullcode/README.md)** – write steps, tools and tests completely in
+- **[Full-code](full-code/README.md)** – write steps, tools and tests completely in
   Python.
 - **[Less-code](less-code/README.md)** – define agents in YAML while keeping
   tools and deeper tests in Python.

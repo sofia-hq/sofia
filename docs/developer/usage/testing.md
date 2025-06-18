@@ -28,4 +28,9 @@ unit:
   hello:
     input: "hello"
     expectation: "Greets the user"
+
+e2e:
+  budgeting:
+    scenario: "User asks for budgeting advice"
+    expectation: "Provides a budget plan"
 ```

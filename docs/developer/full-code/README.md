@@ -1,4 +1,4 @@
-# Fullcode Development
+# Full-code Development
 
 Write every part of your agent in Python for maximum flexibility. Use this mode
 when you want tight control over logic, tools and tests.
@@ -28,12 +28,4 @@ agent = Nomos(name="clock", llm=None, steps=steps, tools=[get_time], start_step_
 def test_start():
     decision, *_ = agent.next("time?", {})
     smart_assert(decision, "Agent tells the time", agent.llm)
-```
-
-### Mermaid Overview
-
-```mermaid
-flowchart LR
-    start([start]) --> tool[get_time]
-    tool --> end([finish])
 ```

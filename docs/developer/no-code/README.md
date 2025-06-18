@@ -12,14 +12,20 @@ CLI.
 ## Example Config
 
 ```yaml
+# config.agent.yaml
 name: support-bot
 persona: Helpful assistant
 steps:
   - step_id: start
     description: Answer FAQs
     available_tools:
-      - crewai.search_web
+      - search_web
 start_step_id: start
+
+tools:
+  external_tools:
+    - tag: crewai/SerperDevTool
+      name: search_web
 ```
 
-Run with `nomos serve --config config.agent.yaml`.
+Run with `nomos run --config config.agent.yaml`.

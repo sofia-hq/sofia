@@ -19,14 +19,6 @@ used. You may define routes to jump to another step when conditions are met.
       condition: Information complete
 ```
 
-### Visualising a Simple Flow
-
-```mermaid
-flowchart TD
-    start([Start]) --> gather[Gather Info]
-    gather -->|Information complete| finish([Finish])
-```
-
 ## Flows
 
 Flows group related steps and can carry dedicated memory components. When
