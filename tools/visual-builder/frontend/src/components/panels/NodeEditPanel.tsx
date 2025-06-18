@@ -120,6 +120,35 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                 />
               </div>
 
+              {/* Tool Type */}
+              <div className="space-y-2">
+                <Label htmlFor="tool_type">Tool Type</Label>
+                <select
+                  id="tool_type"
+                  value={formData.tool_type || 'custom'}
+                  onChange={(e) => updateField('tool_type', e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                >
+                  <option value="custom">Custom</option>
+                  <option value="crewai">CrewAI</option>
+                  <option value="langchain">Langchain</option>
+                  <option value="package">Package</option>
+                </select>
+              </div>
+
+              {/* Identifier for external tools */}
+              {formData.tool_type && formData.tool_type !== 'custom' && (
+                <div className="space-y-2">
+                  <Label htmlFor="reference">Tool Identifier</Label>
+                  <Input
+                    id="reference"
+                    value={formData.reference || ''}
+                    onChange={(e) => updateField('reference', e.target.value)}
+                    placeholder="itertools.combinations"
+                  />
+                </div>
+              )}
+
               {/* Description */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
@@ -129,17 +158,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                   onChange={(e) => updateField('description', e.target.value)}
                   placeholder="Describe what this tool does"
                   rows={3}
-                />
-              </div>
-
-              {/* External Tool Tag */}
-              <div className="space-y-2">
-                <Label htmlFor="external_tag">External Tag</Label>
-                <Input
-                  id="external_tag"
-                  value={formData.external_tag || ''}
-                  onChange={(e) => updateField('external_tag', e.target.value)}
-                  placeholder="@pkg/itertools.combinations"
+                  disabled={formData.tool_type === 'crewai'}
                 />
               </div>
 

@@ -17,7 +17,8 @@ export interface ToolConfig {
   description?: string;
   parameters?: Record<string, ToolParameter>;
   package_reference?: string;
-  external_tag?: string;
+  tool_type?: 'custom' | 'crewai' | 'langchain' | 'package';
+  reference?: string;
   kwargs?: Record<string, any>;
 }
 

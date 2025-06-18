@@ -44,6 +44,17 @@ export function validateStepNode(data: StepNodeData): ValidationResult {
     });
   }
 
+  // External tool validation
+  if (data.tool_type && data.tool_type !== 'custom') {
+    if (!data.reference || data.reference.trim() === '') {
+      errors.push({
+        field: 'reference',
+        message: 'Tool identifier is required for external tools',
+        severity: 'error'
+      });
+    }
+  }
+
   // Routes validation
   if (data.routes && data.routes.length > 0) {
     data.routes.forEach((route, index) => {
@@ -112,7 +123,7 @@ export function validateToolNode(data: ToolNodeData): ValidationResult {
   }
 
   // Parameters validation
-  if (data.parameters) {
+  if (data.parameters && data.tool_type !== 'crewai') {
     Object.entries(data.parameters).forEach(([key, param]) => {
       if (!param.description || param.description.trim() === '') {
         warnings.push({

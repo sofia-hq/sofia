@@ -14,7 +14,8 @@ export interface ToolNodeData {
   name: string;
   description?: string;
   parameters?: Record<string, { type: string; description?: string }>;
-  external_tag?: string;
+  tool_type?: 'custom' | 'crewai' | 'langchain' | 'package';
+  reference?: string;
   kwargs?: Record<string, any>;
   [key: string]: unknown;
 }

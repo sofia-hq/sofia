@@ -161,19 +161,38 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
             placeholder="Describe what this tool does..."
             rows={3}
+            disabled={formData.tool_type === 'crewai'}
           />
         </div>
 
-        {/* External Tag */}
+        {/* Tool Type */}
         <div className="space-y-2">
-          <Label htmlFor="external-tag">External Tag</Label>
-          <Input
-            id="external-tag"
-            value={formData.external_tag || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, external_tag: e.target.value }))}
-            placeholder="@pkg/itertools.combinations"
-          />
+          <Label htmlFor="tool-type">Tool Type</Label>
+          <select
+            id="tool-type"
+            value={formData.tool_type || 'custom'}
+            onChange={(e) => setFormData(prev => ({ ...prev, tool_type: e.target.value }))}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+          >
+            <option value="custom">Custom</option>
+            <option value="crewai">CrewAI</option>
+            <option value="langchain">Langchain</option>
+            <option value="package">Package</option>
+          </select>
         </div>
+
+        {/* Identifier for external tools */}
+        {formData.tool_type && formData.tool_type !== 'custom' && (
+          <div className="space-y-2">
+            <Label htmlFor="reference">Tool Identifier</Label>
+            <Input
+              id="reference"
+              value={formData.reference || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, reference: e.target.value }))}
+              placeholder="itertools.combinations"
+            />
+          </div>
+        )}
 
         {/* Kwargs */}
         <div className="space-y-2">
@@ -219,26 +238,28 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
             <Label>Parameters</Label>
 
             {/* Add new parameter */}
-            <div className="grid grid-cols-3 gap-2">
-              <Input
-                value={newParamKey}
-                onChange={(e) => setNewParamKey(e.target.value)}
-                placeholder="Parameter name"
-                onKeyPress={(e) => e.key === 'Enter' && addParameter()}
-              />
-              <select
-                value={newParamType}
-                onChange={(e) => setNewParamType(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-              >
-                {parameterTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-              <Button type="button" onClick={addParameter} size="sm">
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
+            {formData.tool_type !== 'crewai' && (
+              <div className="grid grid-cols-3 gap-2">
+                <Input
+                  value={newParamKey}
+                  onChange={(e) => setNewParamKey(e.target.value)}
+                  placeholder="Parameter name"
+                  onKeyPress={(e) => e.key === 'Enter' && addParameter()}
+                />
+                <select
+                  value={newParamType}
+                  onChange={(e) => setNewParamType(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                >
+                  {parameterTypes.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+                <Button type="button" onClick={addParameter} size="sm">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
 
             {/* Existing parameters */}
             <div className="space-y-2">
@@ -249,15 +270,18 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
                       <Badge variant="outline">{key}</Badge>
                       <Badge variant="secondary">{param?.type || 'string'}</Badge>
                     </div>
-                    <button onClick={() => removeParameter(key)} className="hover:text-red-600">
-                      <X className="w-4 h-4" />
-                    </button>
+                    {formData.tool_type !== 'crewai' && (
+                      <button onClick={() => removeParameter(key)} className="hover:text-red-600">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                   <Input
                     value={param?.description || ''}
                     onChange={(e) => updateParameterDescription(key, e.target.value)}
                     placeholder="Parameter description"
                     className="text-sm"
+                    disabled={formData.tool_type === 'crewai'}
                   />
                 </div>
               ))}

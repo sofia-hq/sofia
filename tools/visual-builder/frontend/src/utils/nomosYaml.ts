@@ -185,7 +185,7 @@ export function exportToYaml(
     const toolArgDescriptions: Record<string, Record<string, string>> = {};
     toolNodes.forEach(node => {
       const data = node.data as ToolNodeData;
-      if (data.parameters) {
+      if (data.parameters && data.tool_type !== 'crewai') {
         const argDescriptions: Record<string, string> = {};
         Object.entries(data.parameters).forEach(([key, param]) => {
           if (param.description) {
@@ -200,10 +200,16 @@ export function exportToYaml(
 
     // Build external tools
     const externalTools = toolNodes
-      .filter(node => (node.data as ToolNodeData).external_tag)
+      .filter(node => {
+        const d = node.data as ToolNodeData;
+        return d.tool_type && d.tool_type !== 'custom' && d.reference;
+      })
       .map(node => {
         const data = node.data as ToolNodeData;
-        const item: any = { tag: data.external_tag!, name: data.name };
+        const item: any = {
+          tag: `@${data.tool_type}/${data.reference}`,
+          name: data.name
+        };
         if (data.kwargs && Object.keys(data.kwargs).length > 0) {
           item.kwargs = data.kwargs;
         }
@@ -314,7 +320,7 @@ export function importFromYaml(yamlContent: string): ImportResult {
     const stepIdToNodeId = new Map<string, string>();
     const toolNameToNodeId = new Map<string, string>();
     const allToolNames = new Set<string>();
-    const externalToolMap: Record<string, { tag: string; kwargs?: Record<string, any> }> = {};
+    const externalToolMap: Record<string, { tool_type: string; reference: string; kwargs?: Record<string, any> }> = {};
 
     // First pass: collect all tool names
     parsedConfig.steps.forEach(step => {
@@ -325,7 +331,10 @@ export function importFromYaml(yamlContent: string): ImportResult {
     if (parsedConfig.tools && parsedConfig.tools.external_tools) {
       parsedConfig.tools.external_tools.forEach(ext => {
         allToolNames.add(ext.name);
-        externalToolMap[ext.name] = { tag: ext.tag, kwargs: ext.kwargs };
+        const match = ext.tag.match(/^@(\w+)\/(.+)$/);
+        if (match) {
+          externalToolMap[ext.name] = { tool_type: match[1], reference: match[2], kwargs: ext.kwargs };
+        }
       });
     }
 
@@ -335,6 +344,7 @@ export function importFromYaml(yamlContent: string): ImportResult {
       const nodeId = `tool-${Date.now()}-${toolIndex++}`;
       toolNameToNodeId.set(toolName, nodeId);
 
+      const extInfo = externalToolMap[toolName];
       const toolNode: Node = {
         id: nodeId,
         type: 'tool',
@@ -346,8 +356,9 @@ export function importFromYaml(yamlContent: string): ImportResult {
             toolName,
             (parsedConfig.tools?.tool_arg_descriptions || (parsedConfig as any).tool_arg_descriptions)
           ),
-          external_tag: externalToolMap[toolName]?.tag,
-          kwargs: externalToolMap[toolName]?.kwargs
+          tool_type: extInfo?.tool_type || 'custom',
+          reference: extInfo?.reference,
+          kwargs: extInfo?.kwargs
         } as ToolNodeData
       };
 
