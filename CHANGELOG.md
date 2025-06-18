@@ -25,6 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - Your security fixes here. -->
 
+## [0.2.4] - 2025-06-18
+
+### Added
+- Support for external tools via `ToolsConfig.external_tools` allowing the use of
+  Python package functions and CrewAI or LangChain tools.
+- `ToolWrapper` abstraction and `get_tools` helper for consistent tool loading.
+
+### Changed
+- `Tool.from_pkg` now accepts dotted module paths instead of `package:func`
+  syntax and `Step` no longer modifies tool names automatically.
+
 ## [0.2.3] - 2025-06-17
 
 ### Added

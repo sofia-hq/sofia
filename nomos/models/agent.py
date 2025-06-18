@@ -114,10 +114,7 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
-        return [
-            Tool.from_pkg(tool).name if ":" in tool else tool
-            for tool in self.available_tools
-        ]
+        return self.available_tools
 
     def get_step_identifier(self) -> StepIdentifier:
         """
