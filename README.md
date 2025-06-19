@@ -1,25 +1,9 @@
-<!-- Announcement Bar -->
-<div style="margin-bottom: 1.5em;">
-  <div style="
-    display: inline-block;
-    background: #222;
-    color: #fff;
-    font-weight: 500;
-    font-size: 1em;
-    border-radius: 999px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-    border: 1px solid #222;
-  ">
-    <b>NOMOS v0.2.4 released!</b> | <a href="https://github.com/dowhiledev/nomos/releases" style="color:#fff;text-decoration:underline;">See what's new →</a>
-  </div>
-</div>
-
 <h1>
   <a href="https://github.com/dowhiledev/nomos">
     <picture>
-      <source srcset="assets/dark.png" media="(prefers-color-scheme: dark)">
-      <source srcset="assets/light.png" media="(prefers-color-scheme: light)">
-      <img src="assets/light.png" alt="NOMOS" width="400">
+      <source srcset="docs/assets/dark.png" media="(prefers-color-scheme: dark)">
+      <source srcset="docs/assets/light.png" media="(prefers-color-scheme: light)">
+      <img src="docs/assets/light.png" alt="NOMOS" width="400">
     </picture>
   </a>
 </h1>
@@ -34,7 +18,6 @@
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
 [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base?style=flat-square)](https://hub.docker.com/r/chandralegend/nomos-base)
 [![License](https://img.shields.io/github/license/dowhiledev/nomos?style=flat-square)](LICENSE)
-[![Pull Requests welcome](https://img.shields.io/badge/PRs-welcome-ff69b4.svg?style=flat-square)](https://github.com/dowhiledev/nomos/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 [![Open Issues](https://img.shields.io/github/issues-raw/dowhiledev/nomos?style=flat-square)](https://github.com/dowhiledev/nomos/issues)
 
 </div>
