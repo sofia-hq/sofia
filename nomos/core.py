@@ -1,6 +1,7 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
 import contextlib
+import os
 import pickle
 import uuid
 from itertools import chain
@@ -531,6 +532,7 @@ class Agent:
         self.max_iter = max_iter
         self.mcp_servers: Optional[List[MCPServer]] = mcp_servers
         self.config = config
+        self._setup_logging()
 
         # Remove duplicates of tools based on their names or IDs
         seen = set()
@@ -644,6 +646,19 @@ class Agent:
             max_iter=config.max_iter,
             config=config,
         )
+
+    def _setup_logging(self) -> None:
+        """Set up logging configuration."""
+        # temporary fix until config is made available to other parts.
+        if self.config and self.config.logging:
+            logging_config = self.config.logging
+            os.environ.setdefault(
+                "NOMOS_ENABLE_LOGGING", str(logging_config.enable).lower()
+            )
+            if logging_config.handlers:
+                os.environ.setdefault(
+                    "NOMOS_LOG_LEVEL", logging_config.handlers[0].level.upper()
+                )
 
     def create_session(
         self, memory: Optional[Memory] = None, verbose: bool = False

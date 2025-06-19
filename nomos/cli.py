@@ -425,6 +425,15 @@ steps:
         condition: {route['condition']}
 """
 
+    # Add logging configuration
+    config_content += """\nlogging:
+  enable: true
+  handlers:
+    - type: stderr
+      level: INFO
+      format: "{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
+"""
+
     # Write config file
     with open(target_dir / "config.agent.yaml", "w") as f:
         f.write(config_content)

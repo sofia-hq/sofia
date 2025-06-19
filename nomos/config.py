@@ -121,6 +121,21 @@ class ToolsConfig(BaseModel):
         return tools_list
 
 
+class LoggingHandler(BaseModel):
+    """Configuration for a logging handler."""
+
+    type: str  # Type of the logging handler (e.g., 'stderr', 'file')
+    level: str
+    format: str = "{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
+
+
+class LoggingConfig(BaseModel):
+    """Configuration for logging."""
+
+    enable: bool
+    handlers: List[LoggingHandler] = []
+
+
 class AgentConfig(BaseSettings):
     """
     Configuration for the agent, including model settings and flow steps.
@@ -160,6 +175,7 @@ class AgentConfig(BaseSettings):
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
     mcp_servers: Optional[List[MCPServer]] = None
+    logging: Optional[LoggingConfig] = None  # Optional logging configuration
 
     @classmethod
     def from_yaml(cls, file_path: str) -> "AgentConfig":
@@ -184,6 +200,7 @@ class AgentConfig(BaseSettings):
                 for k, v in server_data.items()
             }
             data["server"] = expanded
+
         return cls(**data)
 
     def to_yaml(self, file_path: str) -> None:

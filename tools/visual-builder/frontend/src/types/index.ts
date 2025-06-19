@@ -10,11 +10,28 @@ export interface StepNodeData {
   [key: string]: unknown;
 }
 
+export type ToolType = 'custom' | 'crewai' | 'langchain' | 'pkg';
+
 export interface ToolNodeData {
   name: string;
   description?: string;
   parameters?: Record<string, { type: string; description?: string }>;
+  tool_type?: ToolType;
+  tool_identifier?: string;
+  kwargs?: Record<string, any>;
   [key: string]: unknown;
+}
+
+export interface ExternalTool {
+  tag: string;
+  name: string;
+  kwargs?: Record<string, any>;
+}
+
+export interface ToolsConfig {
+  tool_files?: string[];
+  external_tools?: ExternalTool[];
+  tool_arg_descriptions?: Record<string, Record<string, string>>;
 }
 
 export interface AgentConfig {
@@ -23,7 +40,7 @@ export interface AgentConfig {
   start_step_id: string;
   steps: StepConfig[];
   flows?: FlowConfig[];
-  tool_arg_descriptions?: Record<string, Record<string, string>>;
+  tools?: ToolsConfig;
   llm?: LLMConfig;
 }
 
