@@ -8,10 +8,18 @@ import { ChevronDown, ChevronUp, Send, X, ChevronLeft, ChevronRight, Plus } from
 import { exportToYaml } from '../utils/nomosYaml';
 import * as yaml from 'js-yaml';
 import { NomosClient, SessionData } from 'nomos-sdk';
-import type { Node, Edge } from '@xyflow/react';
 import { useDraggable } from '../hooks/useDraggable';
+import ReactMarkdown from 'react-markdown';
 
 interface EnvVar { key: string; value: string }
+
+interface BackendResponse {
+  reasoning: string[];
+  action: string;
+  response: string;
+  step_id: string;
+  [key: string]: any;
+}
 
 export interface ChatPopupRef {
   reset: () => void;
@@ -20,8 +28,8 @@ export interface ChatPopupRef {
 interface ChatPopupProps {
   open: boolean;
   onClose: () => void;
-  nodes: Node[];
-  edges: Edge[];
+  nodes: any[];
+  edges: any[];
   agentName: string;
   persona: string;
 }
@@ -29,12 +37,75 @@ interface ChatPopupProps {
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  reasoning?: string[];
 }
 
 const STORAGE_KEY = 'nomos-chat-state';
 
 // Environment configuration
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+// Component for rendering assistant message with collapsible reasoning
+interface AssistantMessageProps {
+  content: string;
+  reasoning?: string[];
+}
+
+const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
+  const [showReasoning, setShowReasoning] = useState(false);
+
+  return (
+    <div className="bg-white border mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
+      <div className="text-xs opacity-70 mb-1 font-medium">Assistant</div>
+      
+      {reasoning && reasoning.length > 0 && (
+        <div className="mb-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowReasoning(!showReasoning)}
+            className="flex items-center gap-1 p-0 h-auto text-xs font-medium text-gray-600 hover:text-gray-800"
+          >
+            {showReasoning ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            Reasoning ({reasoning.length} steps)
+          </Button>
+          
+          {showReasoning && (
+            <div className="mt-2 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
+              <div className="space-y-1">
+                {reasoning.map((step, index) => (
+                  <div key={index} className="text-xs text-gray-700 flex items-start gap-2">
+                    <span className="text-blue-500 font-mono min-w-[20px]">{index + 1}.</span>
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <div className="text-sm prose prose-sm max-w-none">
+        <ReactMarkdown
+          components={{
+            // Custom styles for markdown elements
+            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+            h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+            code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
+            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
+            ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
+            li: ({ children }) => <li className="text-sm">{children}</li>,
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+};
 
 export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatPopup({
   open,
@@ -98,9 +169,9 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
       const lines = result.yaml.split('\n');
       const header = lines.slice(0, 4);
       const body = lines.slice(4).join('\n');
-      const config = yaml.load(body) as any;
+      const config = (yaml as any).load(body) as any;
       config.llm = { provider, model };
-      const finalYaml = [...header, yaml.dump(config, { indent: 2, lineWidth: 100, noRefs: true, sortKeys: false, styles: { '!!str': 'literal' } })].join('\n');
+      const finalYaml = [...header, (yaml as any).dump(config, { indent: 2, lineWidth: 100, noRefs: true, sortKeys: false, styles: { '!!str': 'literal' } })].join('\n');
 
       const resetResponse = await fetch(`${BACKEND_URL}/reset`, {
         method: 'POST',
@@ -181,10 +252,44 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
       const res = await clientRef.current.chat(req);
 
       setSessionData(res.session_data);
+      
+      // Parse the response to extract reasoning and response content
+      let parsedResponse: BackendResponse | null = null;
+      let assistantMessage: Message;
+      
+      try {
+        // Try to parse the response as JSON to extract reasoning and response
+        if (typeof res.response === 'string') {
+          parsedResponse = JSON.parse(res.response);
+        } else if (typeof res.response === 'object' && res.response !== null) {
+          parsedResponse = res.response as BackendResponse;
+        }
+        
+        if (parsedResponse && parsedResponse.reasoning && parsedResponse.response) {
+          assistantMessage = {
+            role: 'assistant',
+            content: parsedResponse.response,
+            reasoning: parsedResponse.reasoning
+          };
+        } else {
+          // Fallback to displaying the raw response
+          assistantMessage = {
+            role: 'assistant',
+            content: typeof res.response === 'string' ? res.response : JSON.stringify(res.response, null, 2)
+          };
+        }
+      } catch (parseError) {
+        // If parsing fails, display the raw response
+        assistantMessage = {
+          role: 'assistant',
+          content: typeof res.response === 'string' ? res.response : JSON.stringify(res.response, null, 2)
+        };
+      }
+
       setMessages(m => [
         ...m,
         { role: 'user', content: input },
-        { role: 'assistant', content: JSON.stringify(res.response, null, 2) }
+        assistantMessage
       ]);
       setInput('');
     } catch (error) {
@@ -362,16 +467,17 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
               </div>
             )}
             {messages.map((m, i) => (
-              <div key={i} className={`p-3 rounded-lg max-w-[85%] ${m.role === 'user'
-                  ? 'bg-blue-500 text-white ml-auto'
-                  : 'bg-white border mr-auto shadow-sm'
-                }`}>
-                <div className="text-xs opacity-70 mb-1 font-medium">
-                  {m.role === 'user' ? 'You' : 'Assistant'}
-                </div>
-                <div className="text-sm whitespace-pre-wrap break-words">
-                  {m.content}
-                </div>
+              <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+                {m.role === 'user' ? (
+                  <div className="bg-blue-500 text-white ml-auto p-3 rounded-lg max-w-[85%]">
+                    <div className="text-xs opacity-70 mb-1 font-medium">You</div>
+                    <div className="text-sm whitespace-pre-wrap break-words">
+                      {m.content}
+                    </div>
+                  </div>
+                ) : (
+                  <AssistantMessage content={m.content} reasoning={m.reasoning} />
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />

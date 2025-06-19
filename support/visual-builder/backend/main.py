@@ -221,7 +221,7 @@ def reset(payload: ResetPayload) -> Dict[str, str]:
 
 
 @app.post("/chat")
-def chat(data: dict = Body(...)) -> Dict[str, str]:
+def chat(data: dict = Body(...)) -> dict:
     """Forward chat requests to the running Nomos server."""
     if nomos_process is None or nomos_process.poll() is not None:
         raise HTTPException(status_code=400, detail="Nomos server not running")

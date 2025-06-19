@@ -2,6 +2,6 @@ fastapi
 uvicorn
 requests
 psutil
-nomos
+nomos[cli,serve,traces,openai,mistralai,gemini,ollama,huggingface]
 python-multipart
 python-dotenv
