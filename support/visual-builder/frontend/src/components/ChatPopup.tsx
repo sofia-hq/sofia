@@ -38,6 +38,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   reasoning?: string[];
+  isStreaming?: boolean;
 }
 
 const STORAGE_KEY = 'nomos-chat-state';
@@ -124,7 +125,9 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   const [sessionData, setSessionData] = useState<SessionData | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const streamingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { position, onMouseDown, setPosition } = useDraggable({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -158,6 +161,15 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (streamingTimeoutRef.current) {
+        clearTimeout(streamingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Remove the resetBackend function as it's no longer needed
   const uploadTools = useCallback(async (files: FileList) => {
@@ -210,11 +222,77 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
     }
   }, [open, setPosition]);
 
+  // Clear chat function - resets messages and session data
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    setSessionData(undefined);
+    if (streamingTimeoutRef.current) {
+      clearTimeout(streamingTimeoutRef.current);
+      streamingTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Stream text animation function
+  const streamText = useCallback((text: string, messageIndex: number, reasoning?: string[]) => {
+    let currentIndex = 0;
+
+    const streamNextChar = () => {
+      if (currentIndex <= text.length) {
+        setMessages(prevMessages =>
+          prevMessages.map((msg, idx) =>
+            idx === messageIndex
+              ? {
+                  ...msg,
+                  content: text.substring(0, currentIndex),
+                  reasoning,
+                  isStreaming: currentIndex < text.length
+                }
+              : msg
+          )
+        );
+        currentIndex++;
+
+        if (currentIndex <= text.length) {
+          // Adjust speed based on character - faster for spaces, slower for punctuation
+          // Increased speed by 3x (reduced delays)
+          const char = text[currentIndex - 1];
+          const delay = char === ' ' ? 7 : char.match(/[.!?]/) ? 33 : 10;
+
+          streamingTimeoutRef.current = setTimeout(streamNextChar, delay);
+        }
+      }
+    };
+
+    streamNextChar();
+  }, []);
+
+  // Typing indicator component
+  const TypingIndicator = () => (
+    <div className="bg-white border mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
+      <div className="text-xs opacity-70 mb-1 font-medium">Assistant</div>
+      <div className="flex items-center space-x-1">
+        <div className="flex space-x-1">
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        </div>
+        <span className="text-xs text-gray-500 ml-2">typing...</span>
+      </div>
+    </div>
+  );
+
   const sendMessage = useCallback(async () => {
     if (!input.trim()) return;
 
+    // Add user message first
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages(m => [...m, userMessage]);
+    const currentInput = input;
+    setInput('');
+
     try {
       setIsLoading(true);
+      setIsTyping(true);
 
       // Build the agent config from the flow
       const result = exportToYaml(nodes, edges, agentName, persona);
@@ -227,7 +305,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
       const requestPayload = {
         agent_config: config,
         chat_request: {
-          user_input: input,
+          user_input: currentInput,
           session_data: sessionData || undefined
         },
         env_vars: Object.fromEntries(envVars.map(v => [v.key, v.value])),
@@ -246,10 +324,12 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 
       const res = await response.json();
       setSessionData(res.session_data);
+      setIsTyping(false);
 
       // Parse the response to extract reasoning and response content
       let parsedResponse: BackendResponse | null = null;
-      let assistantMessage: Message;
+      let assistantContent: string;
+      let reasoning: string[] | undefined;
 
       try {
         // Try to parse the response as JSON to extract reasoning and response
@@ -260,43 +340,42 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         }
 
         if (parsedResponse && parsedResponse.reasoning && parsedResponse.response) {
-          assistantMessage = {
-            role: 'assistant',
-            content: parsedResponse.response,
-            reasoning: parsedResponse.reasoning
-          };
+          assistantContent = parsedResponse.response;
+          reasoning = parsedResponse.reasoning;
         } else {
           // Fallback to displaying the raw response
-          assistantMessage = {
-            role: 'assistant',
-            content: typeof res.response === 'string' ? res.response : JSON.stringify(res.response, null, 2)
-          };
+          assistantContent = typeof res.response === 'string' ? res.response : JSON.stringify(res.response, null, 2);
         }
       } catch (parseError) {
         // If parsing fails, display the raw response
-        assistantMessage = {
-          role: 'assistant',
-          content: typeof res.response === 'string' ? res.response : JSON.stringify(res.response, null, 2)
-        };
+        assistantContent = typeof res.response === 'string' ? res.response : JSON.stringify(res.response, null, 2);
       }
 
-      setMessages(m => [
-        ...m,
-        { role: 'user', content: input },
-        assistantMessage
-      ]);
-      setInput('');
+      // Add assistant message with empty content for streaming
+      const assistantMessage: Message = {
+        role: 'assistant',
+        content: '',
+        reasoning,
+        isStreaming: true
+      };
+
+      setMessages(m => [...m, assistantMessage]);
+
+      // Start streaming the response
+      const messageIndex = messages.length + 1; // +1 because we already added user message
+      streamText(assistantContent, messageIndex, reasoning);
+
     } catch (error) {
-      setMessages(m => [
-        ...m,
-        { role: 'user', content: input },
-        { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }
-      ]);
-      setInput('');
+      setIsTyping(false);
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: `Error: ${error instanceof Error ? error.message : String(error)}`
+      };
+      setMessages(m => [...m, errorMessage]);
     } finally {
       setIsLoading(false);
     }
-  }, [input, sessionData, nodes, edges, agentName, persona, provider, model, envVars]);
+  }, [input, sessionData, nodes, edges, agentName, persona, provider, model, envVars, messages.length, streamText]);
 
   const addEnv = () => setEnvVars(v => [...v, { key: '', value: '' }]);
   const updateEnv = (index: number, key: string, value: string) => {
@@ -307,20 +386,41 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   if (!open) return null;
 
   return (
-    <div
-      className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl"
-      style={{
-        left: position.x,
-        top: position.y,
-        width: sidebarCollapsed ? '480px' : '780px',
-        height: '600px'
-      }}
-    >
+    <>
+      <style>
+        {`
+          @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+          }
+        `}
+      </style>
+      <div
+        className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl"
+        style={{
+          left: position.x,
+          top: position.y,
+          width: sidebarCollapsed ? '480px' : '780px',
+          height: '600px'
+        }}
+      >
       <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 cursor-move bg-gray-50 dark:bg-gray-700 rounded-t-lg" onMouseDown={onMouseDown}>
         <h3 className="text-sm font-medium">Chat Preview</h3>
-        <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
-          <X className="w-3 h-3" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {messages.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearChat}
+              className="h-7 px-2 text-xs"
+            >
+              Clear
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-6 w-6 p-0">
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
       </div>
       <div className="flex h-[calc(100%-40px)] relative">
         {/* Left Sidebar - Configuration */}
@@ -472,10 +572,14 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
                     </div>
                   </div>
                 ) : (
-                  <AssistantMessage content={m.content} reasoning={m.reasoning} />
+                  <AssistantMessage
+                    content={m.content}
+                    reasoning={m.reasoning}
+                  />
                 )}
               </div>
             ))}
+            {isTyping && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
 
@@ -509,6 +613,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         </div>
       </div>
     </div>
+    </>
   );
 });
 
