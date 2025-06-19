@@ -56,7 +56,6 @@ To learn more about NOMOS, check out [the documentation](docs/). If you're looki
 - [Why use NOMOS?](#why-use-nomos)
 - [NOMOS Ecosystem](#nomos-ecosystem)
 - [Key Features](#key-features)
-- [Getting Started](#getting-started)
 - [Documentation](#documentation)
 - [Additional Resources](#additional-resources)
 
