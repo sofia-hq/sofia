@@ -106,7 +106,7 @@ jobs:
           echo "TypeScript examples compiled successfully"
 
       - name: Test JavaScript example
-        working-directory: ./examples/typescript-sdk-example
+        working-directory: ./cookbook/examples/typescript-sdk-example
         run: |
           timeout 10s npm run start:js || echo "Expected timeout - no server running"
           echo "JavaScript example executed successfully"
