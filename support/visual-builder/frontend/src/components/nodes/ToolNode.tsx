@@ -24,32 +24,32 @@ export const ToolNode = memo((props: NodeProps) => {
 
   const colorMap: Record<ToolType | 'custom', any> = {
     custom: {
-      container: 'bg-blue-50 border-blue-300 hover:border-blue-400',
-      selected: 'bg-blue-100 border-blue-500 ring-2 ring-blue-200',
-      header: 'bg-blue-100 border-blue-200',
-      text: 'text-blue-800',
-      icon: 'text-blue-600',
+      container: 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-500',
+      selected: 'bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-400/30',
+      header: 'bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700',
+      text: 'text-blue-800 dark:text-blue-300',
+      icon: 'text-blue-600 dark:text-blue-400',
     },
     crewai: {
-      container: 'bg-purple-50 border-purple-300 hover:border-purple-400',
-      selected: 'bg-purple-100 border-purple-500 ring-2 ring-purple-200',
-      header: 'bg-purple-100 border-purple-200',
-      text: 'text-purple-800',
-      icon: 'text-purple-600',
+      container: 'bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-600 hover:border-purple-400 dark:hover:border-purple-500',
+      selected: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500 dark:border-purple-400 ring-2 ring-purple-200 dark:ring-purple-400/30',
+      header: 'bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700',
+      text: 'text-purple-800 dark:text-purple-300',
+      icon: 'text-purple-600 dark:text-purple-400',
     },
     langchain: {
-      container: 'bg-green-50 border-green-300 hover:border-green-400',
-      selected: 'bg-green-100 border-green-500 ring-2 ring-green-200',
-      header: 'bg-green-100 border-green-200',
-      text: 'text-green-800',
-      icon: 'text-green-600',
+      container: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600 hover:border-green-400 dark:hover:border-green-500',
+      selected: 'bg-green-100 dark:bg-green-900/30 border-green-500 dark:border-green-400 ring-2 ring-green-200 dark:ring-green-400/30',
+      header: 'bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-700',
+      text: 'text-green-800 dark:text-green-300',
+      icon: 'text-green-600 dark:text-green-400',
     },
     pkg: {
-      container: 'bg-teal-50 border-teal-300 hover:border-teal-400',
-      selected: 'bg-teal-100 border-teal-500 ring-2 ring-teal-200',
-      header: 'bg-teal-100 border-teal-200',
-      text: 'text-teal-800',
-      icon: 'text-teal-600',
+      container: 'bg-teal-50 dark:bg-teal-900/20 border-teal-300 dark:border-teal-600 hover:border-teal-400 dark:hover:border-teal-500',
+      selected: 'bg-teal-100 dark:bg-teal-900/30 border-teal-500 dark:border-teal-400 ring-2 ring-teal-200 dark:ring-teal-400/30',
+      header: 'bg-teal-100 dark:bg-teal-900/30 border-teal-200 dark:border-teal-700',
+      text: 'text-teal-800 dark:text-teal-300',
+      icon: 'text-teal-600 dark:text-teal-400',
     },
   };
 
@@ -61,9 +61,9 @@ export const ToolNode = memo((props: NodeProps) => {
         isSelected
           ? colors.selected
           : hasErrors
-          ? 'bg-red-50 border-red-300'
+          ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600'
           : hasWarnings
-          ? 'bg-yellow-50 border-yellow-300'
+          ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-600'
           : colors.container
       }`}
     >
@@ -73,9 +73,9 @@ export const ToolNode = memo((props: NodeProps) => {
           isSelected
             ? colors.selected
             : hasErrors
-            ? 'bg-red-100 border-red-200'
+            ? 'bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-700'
             : hasWarnings
-            ? 'bg-yellow-100 border-yellow-200'
+            ? 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700'
             : colors.header
         }`}
       >
@@ -84,16 +84,16 @@ export const ToolNode = memo((props: NodeProps) => {
           <span className={`font-medium text-sm truncate ${colors.text}`}>{data.name}</span>
           {hasErrors && (
             <div title="Node has validation errors">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 flex-shrink-0" />
             </div>
           )}
           {hasWarnings && !hasErrors && (
             <div title="Node has validation warnings">
-              <AlertTriangle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-yellow-500 dark:text-yellow-400 flex-shrink-0" />
             </div>
           )}
         </div>
-        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-blue-200 flex-shrink-0" onClick={handleEdit}>
+        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-blue-200 dark:hover:bg-blue-700 flex-shrink-0" onClick={handleEdit}>
           <Edit className="w-3 h-3" />
         </Button>
       </div>
@@ -118,7 +118,7 @@ export const ToolNode = memo((props: NodeProps) => {
         type="target"
         position={Position.Left}
         id="tool-input"
-        className={`w-2 h-2 border-2 border-white ${colors.icon}`}
+        className={`w-2 h-2 border-2 border-white dark:border-gray-800 ${colors.icon}`}
       />
     </div>
   );

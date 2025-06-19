@@ -56,8 +56,8 @@ const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
   const [showReasoning, setShowReasoning] = useState(false);
 
   return (
-    <div className="bg-white border mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
-      <div className="text-xs opacity-70 mb-1 font-medium">Assistant</div>
+    <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
+      <div className="text-xs opacity-70 mb-1 font-medium text-gray-900 dark:text-gray-100">Assistant</div>
 
       {reasoning && reasoning.length > 0 && (
         <div className="mb-3">
@@ -65,18 +65,18 @@ const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
             variant="ghost"
             size="sm"
             onClick={() => setShowReasoning(!showReasoning)}
-            className="flex items-center gap-1 p-0 h-auto text-xs font-medium text-gray-600 hover:text-gray-800"
+            className="flex items-center gap-1 p-0 h-auto text-xs font-medium text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
           >
             {showReasoning ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             Reasoning ({reasoning.length} steps)
           </Button>
 
           {showReasoning && (
-            <div className="mt-2 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
+            <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-2 border-blue-200 dark:border-blue-500">
               <div className="space-y-1">
                 {reasoning.map((step, index) => (
-                  <div key={index} className="text-xs text-gray-700 flex items-start gap-2">
-                    <span className="text-blue-500 font-mono min-w-[20px]">{index + 1}.</span>
+                  <div key={index} className="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-2">
+                    <span className="text-blue-500 dark:text-blue-400 font-mono min-w-[20px]">{index + 1}.</span>
                     <span>{step}</span>
                   </div>
                 ))}
@@ -86,19 +86,19 @@ const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
         </div>
       )}
 
-      <div className="text-sm prose prose-sm max-w-none">
+      <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
         <ReactMarkdown
           components={{
-            // Custom styles for markdown elements
-            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-            h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
-            code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
-            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">{children}</pre>,
-            ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2">{children}</ul>,
-            ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2">{children}</ol>,
-            li: ({ children }) => <li className="text-sm">{children}</li>,
+            // Custom styles for markdown elements with dark mode support
+            p: ({ children }) => <p className="mb-2 last:mb-0 text-gray-900 dark:text-gray-100">{children}</p>,
+            h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-gray-900 dark:text-gray-100">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-gray-100">{children}</h3>,
+            code: ({ children }) => <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-xs font-mono text-gray-900 dark:text-gray-100">{children}</code>,
+            pre: ({ children }) => <pre className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-xs overflow-x-auto text-gray-900 dark:text-gray-100">{children}</pre>,
+            ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">{children}</ol>,
+            li: ({ children }) => <li className="text-sm text-gray-900 dark:text-gray-100">{children}</li>,
           }}
         >
           {content}
@@ -268,15 +268,15 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 
   // Typing indicator component
   const TypingIndicator = () => (
-    <div className="bg-white border mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
-      <div className="text-xs opacity-70 mb-1 font-medium">Assistant</div>
+    <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
+      <div className="text-xs opacity-70 mb-1 font-medium text-gray-900 dark:text-gray-100">Assistant</div>
       <div className="flex items-center space-x-1">
         <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-          <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+          <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
         </div>
-        <span className="text-xs text-gray-500 ml-2">typing...</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">typing...</span>
       </div>
     </div>
   );
