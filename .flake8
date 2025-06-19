@@ -1,4 +1,0 @@
-[flake8]
-exclude = tests/*, examples/*
-ignore = ANN101, E501, W503, ANN102, ANN001, ANN002, ANN003, D401, N803, N806, C416, E203, B008
-max-line-length = 100
