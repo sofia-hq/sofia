@@ -1,35 +1,24 @@
 """Nomos Visual Builder Backend.
 
 FastAPI backend server for the Nomos Visual Builder application.
-Provides endpoints for managing Nomos agents, uploading tools, and forwarding chat requests.
 """
 
-import atexit
 import glob
 import os
-import signal
-import socket
-import subprocess
 from typing import Any, Dict, List, Optional
 
-from dotenv import load_dotenv
-
-from fastapi import Body, FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
+from nomos.api.models import ChatRequest, ChatResponse
+from nomos.core import Agent, AgentConfig
+
 from pydantic import BaseModel
-
-import requests
-
-
-# Load environment variables from .env file
-load_dotenv()
 
 app = FastAPI()
 
 # Environment configuration
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
-NOMOS_SERVER_PORT = int(os.getenv("NOMOS_SERVER_PORT", "8003"))
 
 # Add CORS middleware
 app.add_middleware(
@@ -40,92 +29,7 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-nomos_process: Optional[subprocess.Popen] = None
-server_port: int = NOMOS_SERVER_PORT
-
-
-def terminate(proc: subprocess.Popen) -> None:
-    """Terminate a process and its children."""
-    if proc.poll() is not None:
-        return
-    try:
-        import psutil
-
-        ps_proc = psutil.Process(proc.pid)
-        for child in ps_proc.children(recursive=True):
-            child.terminate()
-        ps_proc.terminate()
-        _, alive = psutil.wait_procs([ps_proc], timeout=3)
-        for item in alive:
-            item.kill()
-    except Exception:
-        proc.terminate()
-        try:
-            proc.wait(timeout=3)
-        except Exception:
-            proc.kill()
-
-
-def cleanup() -> None:
-    """Cleanup function to terminate the Nomos process on exit."""
-    global nomos_process
-    if nomos_process:
-        terminate(nomos_process)
-        nomos_process = None
-
-
-def kill_process_on_port(port: int) -> None:
-    """Kill any process running on the specified port."""
-    try:
-        import psutil
-
-        for proc in psutil.process_iter(["pid", "name", "connections"]):
-            try:
-                connections = proc.info["connections"]
-                if connections:
-                    for conn in connections:
-                        if conn.laddr.port == port:
-                            print(
-                                f"Killing process {proc.info['pid']} ({proc.info['name']}) on port {port}"
-                            )
-                            proc.terminate()
-                            try:
-                                proc.wait(timeout=3)
-                            except psutil.TimeoutExpired:
-                                proc.kill()
-                            return
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                pass
-    except ImportError:
-        # Fallback using lsof and kill
-        try:
-            result = subprocess.run(
-                ["lsof", "-ti", f":{port}"], capture_output=True, text=True, check=False
-            )
-            if result.stdout.strip():
-                pids = result.stdout.strip().split("\n")
-                for pid in pids:
-                    if pid:
-                        print(f"Killing process {pid} on port {port}")
-                        os.kill(int(pid), signal.SIGTERM)
-        except Exception as e:
-            print(f"Could not kill process on port {port}: {e}")
-
-
-def is_port_in_use(port: int) -> bool:
-    """Check if a port is currently in use."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(("localhost", port)) == 0
-
-
-atexit.register(cleanup)
-
-
-class ResetPayload(BaseModel):
-    """Payload for resetting the Nomos server configuration."""
-
-    yaml: str
-    env: Dict[str, str]
+agent: Optional[Agent] = None
 
 
 def clean_tools_directory() -> None:
@@ -165,74 +69,42 @@ async def upload_tools(files: List[UploadFile] = File(...)) -> Dict[str, Any]:  
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/reset")
-def reset(payload: ResetPayload) -> Dict[str, str]:
-    """Reset the running Nomos server with new configuration."""
-    global nomos_process
+class ServerlessChatRequest(BaseModel):
+    """Request model for serverless chat endpoint."""
 
-    with open("config.agent.yaml", "w", encoding="utf-8") as fh:
-        fh.write(payload.yaml)
-
-    for key, value in payload.env.items():
-        os.environ[str(key)] = str(value)
-
-    # Kill existing nomos process if running
-    if nomos_process and nomos_process.poll() is None:
-        terminate(nomos_process)
-        nomos_process = None
-
-    # Check if port is in use and kill any process using it
-    if is_port_in_use(server_port):
-        kill_process_on_port(server_port)
-        # Wait a bit for the port to be freed
-        import time
-
-        time.sleep(1)
-
-    cmd = [
-        "nomos",
-        "serve",
-        "--config",
-        "config.agent.yaml",
-        "--port",
-        str(server_port),
-    ]
-
-    # Start the nomos server
-    try:
-        nomos_process = subprocess.Popen(cmd)
-
-        # Wait a moment and check if it started successfully
-        import time
-
-        time.sleep(3)
-
-        if nomos_process.poll() is not None:
-            nomos_process = None
-            raise HTTPException(status_code=500, detail="Nomos server failed to start")
-
-    except Exception as e:
-        nomos_process = None
-        raise HTTPException(
-            status_code=500, detail=f"Failed to start nomos server: {str(e)}"
-        )
-
-    return {"status": "started"}
+    agent_config: AgentConfig
+    chat_request: ChatRequest
+    env_vars: Optional[Dict[str, str]] = None
+    verbose: bool = False
 
 
 @app.post("/chat")
-def chat(data: dict = Body(...)) -> dict:
-    """Forward chat requests to the running Nomos server."""
-    if nomos_process is None or nomos_process.poll() is not None:
-        raise HTTPException(status_code=400, detail="Nomos server not running")
+def chat(request: ServerlessChatRequest) -> ChatResponse:
+    """Handle serverless chat requests."""
+    global agent
+    from tools import tool_list
 
-    url = f"http://localhost:{server_port}/chat"
-    try:
-        resp = requests.post(url, json=data, timeout=60)
-        resp.raise_for_status()
-        return resp.json()
-    except requests.RequestException as exc:
-        raise HTTPException(status_code=500, detail=f"Nomos server error: {str(exc)}")
+    if request.env_vars:
+        # Set environment variables if provided
+        for key, value in request.env_vars.items():
+            os.environ[key] = value
+
+    # Re-instantiate the agent if it doesn't exist or if the config has changed
+    if (
+        agent is None
+        or agent.config.model_dump_json() != request.agent_config.model_dump_json()  # type: ignore
+    ):
+        agent = Agent.from_config(config=request.agent_config, tools=tool_list)
+
+    # Process the chat request
+    decision, tool_output, session_data = agent.next(
+        **request.chat_request.model_dump(), verbose=request.verbose
+    )
+    return ChatResponse(
+        response=decision.model_dump(mode="json"),
+        tool_output=tool_output,
+        session_data=session_data,
+    )
 
 
 if __name__ == "__main__":

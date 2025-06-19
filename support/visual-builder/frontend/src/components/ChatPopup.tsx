@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ChevronDown, ChevronUp, Send, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { exportToYaml } from '../utils/nomosYaml';
 import * as yaml from 'js-yaml';
-import { NomosClient, SessionData } from 'nomos-sdk';
+import { SessionData } from 'nomos-sdk';
 import { useDraggable } from '../hooks/useDraggable';
 import ReactMarkdown from 'react-markdown';
 
@@ -57,7 +57,7 @@ const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
   return (
     <div className="bg-white border mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
       <div className="text-xs opacity-70 mb-1 font-medium">Assistant</div>
-      
+
       {reasoning && reasoning.length > 0 && (
         <div className="mb-3">
           <Button
@@ -69,7 +69,7 @@ const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
             {showReasoning ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             Reasoning ({reasoning.length} steps)
           </Button>
-          
+
           {showReasoning && (
             <div className="mt-2 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
               <div className="space-y-1">
@@ -84,7 +84,7 @@ const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
           )}
         </div>
       )}
-      
+
       <div className="text-sm prose prose-sm max-w-none">
         <ReactMarkdown
           components={{
@@ -122,10 +122,8 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionData, setSessionData] = useState<SessionData | undefined>();
-  const [isConfigured, setIsConfigured] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const clientRef = useRef<NomosClient>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { position, onMouseDown, setPosition } = useDraggable({ x: 0, y: 0 });
 
@@ -139,7 +137,6 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         if (Array.isArray(parsed.envVars)) setEnvVars(parsed.envVars);
         if (Array.isArray(parsed.messages)) setMessages(parsed.messages);
         if (parsed.sessionData) setSessionData(parsed.sessionData);
-        if (parsed.isConfigured) setIsConfigured(parsed.isConfigured);
         if (parsed.sidebarCollapsed) setSidebarCollapsed(parsed.sidebarCollapsed);
         // Don't restore loading state
       }
@@ -149,49 +146,20 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   }, []);
 
   useEffect(() => {
-    const state = { provider, model, envVars, messages, sessionData, isConfigured, sidebarCollapsed };
+    const state = { provider, model, envVars, messages, sessionData, sidebarCollapsed };
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       /* ignore */
     }
-  }, [provider, model, envVars, messages, sessionData, isConfigured, sidebarCollapsed]);
+  }, [provider, model, envVars, messages, sessionData, sidebarCollapsed]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const resetBackend = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const result = exportToYaml(nodes, edges, agentName, persona);
-      const lines = result.yaml.split('\n');
-      const header = lines.slice(0, 4);
-      const body = lines.slice(4).join('\n');
-      const config = (yaml as any).load(body) as any;
-      config.llm = { provider, model };
-      const finalYaml = [...header, (yaml as any).dump(config, { indent: 2, lineWidth: 100, noRefs: true, sortKeys: false, styles: { '!!str': 'literal' } })].join('\n');
-
-      const resetResponse = await fetch(`${BACKEND_URL}/reset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yaml: finalYaml, env: Object.fromEntries(envVars.map(v => [v.key, v.value])) }),
-      });
-
-      if (!resetResponse.ok) {
-        throw new Error(`Reset failed: ${resetResponse.status} ${resetResponse.statusText}`);
-      }
-
-      clientRef.current = new NomosClient(BACKEND_URL);
-      setIsConfigured(true);
-    } catch (error) {
-      setMessages([{ role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [nodes, edges, agentName, persona, provider, model, envVars]);
-
+  // Remove the resetBackend function as it's no longer needed
   const uploadTools = useCallback(async (files: FileList) => {
     const formData = new FormData();
     Array.from(files).forEach(file => {
@@ -214,18 +182,20 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 
   const saveAndStart = useCallback(async (files?: FileList) => {
     try {
+      setIsLoading(true);
       if (files) {
         await uploadTools(files);
       }
-      await resetBackend();
+      // No need to start a server anymore - just mark as ready
+      setIsLoading(false);
     } catch (error) {
       setMessages([{ role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }]);
+      setIsLoading(false);
     }
-  }, [uploadTools, resetBackend]);
+  }, [uploadTools]);
 
   useImperativeHandle(ref, () => ({
     reset: () => {
-      setIsConfigured(false);
       setMessages([]);
       setSessionData(undefined);
     }
@@ -241,22 +211,46 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   }, [open, setPosition]);
 
   const sendMessage = useCallback(async () => {
-    if (!input.trim() || !clientRef.current || !isConfigured) return;
+    if (!input.trim()) return;
 
     try {
-      const req = {
-        user_input: input,
-        session_data: sessionData || undefined
+      setIsLoading(true);
+
+      // Build the agent config from the flow
+      const result = exportToYaml(nodes, edges, agentName, persona);
+      const lines = result.yaml.split('\n');
+      const body = lines.slice(4).join('\n');
+      const config = (yaml as any).load(body) as any;
+      config.llm = { provider, model };
+
+      // Prepare the serverless chat request
+      const requestPayload = {
+        agent_config: config,
+        chat_request: {
+          user_input: input,
+          session_data: sessionData || undefined
+        },
+        env_vars: Object.fromEntries(envVars.map(v => [v.key, v.value])),
+        verbose: false
       };
 
-      const res = await clientRef.current.chat(req);
+      const response = await fetch(`${BACKEND_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload),
+      });
 
+      if (!response.ok) {
+        throw new Error(`Chat request failed: ${response.status} ${response.statusText}`);
+      }
+
+      const res = await response.json();
       setSessionData(res.session_data);
-      
+
       // Parse the response to extract reasoning and response content
       let parsedResponse: BackendResponse | null = null;
       let assistantMessage: Message;
-      
+
       try {
         // Try to parse the response as JSON to extract reasoning and response
         if (typeof res.response === 'string') {
@@ -264,7 +258,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         } else if (typeof res.response === 'object' && res.response !== null) {
           parsedResponse = res.response as BackendResponse;
         }
-        
+
         if (parsedResponse && parsedResponse.reasoning && parsedResponse.response) {
           assistantMessage = {
             role: 'assistant',
@@ -299,8 +293,10 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         { role: 'assistant', content: `Error: ${error instanceof Error ? error.message : String(error)}` }
       ]);
       setInput('');
+    } finally {
+      setIsLoading(false);
     }
-  }, [input, sessionData, isConfigured]);
+  }, [input, sessionData, nodes, edges, agentName, persona, provider, model, envVars]);
 
   const addEnv = () => setEnvVars(v => [...v, { key: '', value: '' }]);
   const updateEnv = (index: number, key: string, value: string) => {
@@ -427,7 +423,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
               className="w-full text-xs"
               disabled={isLoading}
             >
-              {isLoading ? 'Starting...' : 'Save & Start'}
+              {isLoading ? 'Uploading...' : 'Upload Tools'}
             </Button>
           </div>
         )}
@@ -456,14 +452,14 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         {/* Right Side - Chat */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 p-3 overflow-y-auto bg-muted text-sm space-y-2">
-            {!isConfigured && !isLoading && (
+            {messages.length === 0 && !isLoading && (
               <div className="text-center text-muted-foreground p-4">
-                Configure settings and click "Save & Start" to begin chatting
+                Upload your tools and start chatting with your agent
               </div>
             )}
             {isLoading && (
               <div className="text-center text-muted-foreground p-4">
-                Starting server and configuring agent...
+                Processing your request...
               </div>
             )}
             {messages.map((m, i) => (
@@ -496,14 +492,14 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
                 }}
                 className="flex-1 text-sm"
                 rows={2}
-                disabled={!isConfigured}
-                placeholder={isConfigured ? "Type your message... (Enter to send, Shift+Enter for new line)" : "Save & Start first"}
+                disabled={isLoading}
+                placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
               />
               <Button
                 variant="default"
                 size="icon"
                 onClick={sendMessage}
-                disabled={!isConfigured}
+                disabled={isLoading}
                 className="h-16 w-12"
               >
                 <Send className="w-4 h-4" />

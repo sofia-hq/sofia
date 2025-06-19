@@ -5,7 +5,7 @@ declare module 'js-yaml' {
   export class YAMLException extends Error {
     mark?: any;
   }
-  
+
   const yaml: {
     load: typeof load;
     dump: typeof dump;
