@@ -98,7 +98,7 @@ jobs:
           npm link
 
       - name: Test TypeScript examples
-        working-directory: ./examples/typescript-sdk-example
+        working-directory: ./cookbook/examples/typescript-sdk-example
         run: |
           npm install
           npm link nomos-sdk

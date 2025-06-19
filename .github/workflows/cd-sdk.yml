@@ -23,7 +23,7 @@ jobs:
       id-token: write  # Required for npm provenance
     defaults:
       run:
-        working-directory: ./sdk/ts
+        working-directory: ./support/ts-sdk
 
     steps:
       - name: Checkout repository
