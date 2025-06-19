@@ -30,9 +30,10 @@ export OPENAI_API_KEY=your-api-key-here
 ```python
 from nomos.llms import Mistral
 
-llm = Mistral(model="mistral-medium")
-# or
+llm = Mistral(model="ministral-8b-latest")
+# Other supported models:
 llm = Mistral(model="mistral-small")
+llm = Mistral(model="mistral-medium")
 llm = Mistral(model="mistral-large")
 ```
 
@@ -51,8 +52,8 @@ export MISTRAL_API_KEY=your-api-key-here
 ```python
 from nomos.llms import Gemini
 
-llm = Gemini(model="gemini-pro")
-# or
+llm = Gemini(model="gemini-2.0-flash")
+# Other supported models:
 llm = Gemini(model="gemini-1.5-pro")
 llm = Gemini(model="gemini-1.5-flash")
 ```

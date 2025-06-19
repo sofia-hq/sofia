@@ -22,14 +22,21 @@ nomos init
 - `--directory, -d`: Project directory (default: `./my-nomos-agent`)
 - `--name, -n`: Agent name
 - `--template, -t`: Template to use (`basic`, `conversational`, `workflow`)
-- `--generate, -g`: Generate a template using AI (You are required to set the corresponding LLM API key in your environment variables, e.g., `OPENAI_API_KEY` for OpenAI)
+- `--generate, -g`: Generate agent configuration using AI
+- `--usecase, -u`: Use case description or path to text file (for AI generation)
+- `--tools`: Comma-separated list of available tools (for AI generation)
 
 ### Examples
 
 ```bash
+# Basic interactive setup
+nomos init
+
+# With specific directory and template
 nomos init --directory ./my-bot --name chatbot --template basic
-# or
-nomos init --directory ./my-bot --name chatbot --generate
+
+# Generate using AI with use case
+nomos init --generate --usecase "Create a weather agent" --tools "weather_api"
 ```
 
 This will interactively guide you to create a config YAML and starter Python file for your agent.
@@ -64,7 +71,7 @@ nomos run --verbose --port 3000
 
 ## Production Deployment
 
-Serve your agent using Docker for production:
+Serve your agent using FastAPI and uvicorn for production:
 
 ```bash
 nomos serve
@@ -74,12 +81,8 @@ nomos serve
 
 - `--config, -c`: Configuration file path (default: `config.agent.yaml`)
 - `--tools, -t`: Python files with tool definitions (can be used multiple times)
-- `--dockerfile, -f`: Path to custom Dockerfile
-- `--env-file, -e`: Path to .env file to load environment variables
-- `--tag`: Docker image tag (default: `nomos-agent`)
-- `--port, -p`: Host port to bind to (default: `8000`)
-- `--build/--no-build`: Build Docker image before running (default: `true`)
-- `--detach/--no-detach`: Run container in detached mode (background)
+- `--port, -p`: Port to bind the server (if not specified, uses config or default)
+- `--workers, -w`: Number of uvicorn workers
 
 ### Examples
 
@@ -87,17 +90,14 @@ nomos serve
 # Basic deployment
 nomos serve
 
-# With custom Dockerfile and tools
-nomos serve --dockerfile custom.Dockerfile --tools tools.py
+# With custom config and tools
+nomos serve --config my-config.yaml --tools tools.py
 
-# Custom port without building
-nomos serve --port 9000 --no-build
+# Custom port and workers
+nomos serve --port 9000 --workers 4
 
-# Run in detached mode (background)
-nomos serve --detach
-
-# With environment file
-nomos serve --env-file .env --detach
+# Load tools from multiple files
+nomos serve --tools tools.py --tools utils.py
 ```
 
 ## Testing
@@ -136,8 +136,9 @@ Nomos provides comprehensive testing utilities to validate your agent's response
 Use `smart_assert` to validate agent responses using LLM-based evaluation:
 
 ```python
-from nomos.testing import SessionContext, smart_assert
-from nomos.models.agent import Summary, Message, StepIdentifier
+from nomos.testing import smart_assert
+from nomos import SessionContext, Summary, StepIdentifier
+from nomos.models.agent import Message
 
 def test_greeting(agent):
     context = SessionContext(
@@ -156,7 +157,7 @@ def test_greeting(agent):
 For multi-turn conversations, use `ScenarioRunner`:
 
 ```python
-from nomos.testing.eval import ScenarioRunner, Scenario
+from nomos.testing.e2e import ScenarioRunner, Scenario
 
 def test_budget_flow(agent):
     ScenarioRunner.run(

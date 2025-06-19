@@ -7,11 +7,10 @@ NOMOS provides flexible configuration options through both Python API and YAML f
 ### Basic Agent Setup
 
 ```python
-from nomos import *
-from nomos.llms import OpenAIChatLLM
+from nomos import Agent, AgentConfig, Step, Route
+from nomos.llms import OpenAI
 from nomos.models.flow import FlowConfig
-from nomos.models.tools import ToolWrapper
-from math import sqrt
+from math import sqrt, pow
 
 def get_time():
     """Get the current time.
@@ -58,20 +57,21 @@ flows = [
     )
 ]
 
-llm = OpenAIChatLLM()
-agent = Nomos(
+config = AgentConfig(
     name="clockbot",
-    llm=llm,
+    llm={"provider": "openai", "model": "gpt-4o-mini"},
     steps=steps,
-    flows=flows,  # Add flows to the agent
+    flows=flows,
     start_step_id="start",
-    tools=[get_time, sqrt, ToolWrapper(tool_type="pkg", name="pow", tool_identifier="math.pow")],
     persona="You are a friendly assistant that can tell time and perform calculations.",
-    max_errors=3,  # Will retry up to 3 times before failing
-    max_iter=5,   # Maximum number of iterations allowed in a single interaction
+    max_errors=3,
+    max_iter=5,
 )
-sess = agent.create_session()
-# ... interact with sess.next(user_input)
+
+llm = config.get_llm()
+agent = Agent.from_config(config, llm, [get_time, sqrt, pow])
+session = agent.create_session()
+# ... interact with session.next(user_input)
 ```
 
 ## YAML Configuration

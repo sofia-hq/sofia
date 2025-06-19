@@ -28,12 +28,18 @@ pip install nomos[mistralai]   # For Mistral AI support
 pip install nomos[gemini]      # For Google Gemini support
 pip install nomos[ollama]      # For Ollama support
 pip install nomos[huggingface] # For HuggingFace support
+\```
+
+### With server support
+
+```bash
+pip install nomos[serve]       # For FastAPI server support
 ```
 
 ### With tracing support
 
 ```bash
-pip install nomos[traces]
+pip install nomos[traces]      # For OpenTelemetry tracing
 ```
 
 ## TypeScript/JavaScript SDK

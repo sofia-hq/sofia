@@ -9,14 +9,14 @@ NOMOS provides multiple deployment options to suit different environments and re
 The simplest way to deploy your agent is using the NOMOS CLI:
 
 ```bash
-# Deploy with Docker
+# Deploy with FastAPI server
 nomos serve --config config.agent.yaml
 
-# Deploy in detached mode (background)
-nomos serve --config config.agent.yaml --detach
+# Custom port and workers
+nomos serve --config config.agent.yaml --port 9000 --workers 4
 
-# Custom port and environment
-nomos serve --config config.agent.yaml --port 9000 --env-file .env
+# Load additional tools
+nomos serve --config config.agent.yaml --tools tools.py --tools utils.py
 ```
 
 See the [CLI Usage Guide](cli-usage.md) for complete deployment options.
