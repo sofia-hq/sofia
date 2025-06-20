@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Button } from '../ui/button';
-import { Play, Wrench, Trash2, Copy, Edit, Clipboard } from 'lucide-react';
+import { Play, Wrench, Trash2, Copy, Edit, Clipboard, Unlink } from 'lucide-react';
 
 interface ContextMenuProps {
   x: number;
@@ -13,7 +13,9 @@ interface ContextMenuProps {
   onDelete?: () => void;
   onCopy?: () => void;
   onPaste?: () => void;
+  onDetach?: (type: 'all' | 'tools' | 'steps') => void;
   isOnNode?: boolean;
+  isOnEdge?: boolean;
   nodeType?: string;
 }
 
@@ -28,7 +30,9 @@ export const ContextMenu = memo(({
   onDelete,
   onCopy,
   onPaste,
+  onDetach,
   isOnNode = false,
+  isOnEdge = false,
   nodeType,
 }: ContextMenuProps) => {
   if (!visible) return null;
@@ -62,7 +66,7 @@ export const ContextMenu = memo(({
           top: y,
         }}
       >
-        {!isOnNode ? (
+        {!isOnNode && !isOnEdge ? (
           // Menu for empty canvas
           <>
             <Button
@@ -97,6 +101,40 @@ export const ContextMenu = memo(({
                 </Button>
               </>
             )}
+          </>
+        ) : isOnEdge ? (
+          // Menu for edge
+          <>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start px-3 py-2 h-auto text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => handleAction(onDelete)}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Edge
+              </Button>
+            )}
+            <div className="border-t border-gray-100 my-1" />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start px-3 py-2 h-auto"
+              onClick={() => handleAction(onAddStepNode)}
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Add Step Node
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-start px-3 py-2 h-auto"
+              onClick={() => handleAction(onAddToolNode)}
+            >
+              <Wrench className="w-4 h-4 mr-2" />
+              Add Tool Node
+            </Button>
           </>
         ) : (
           // Menu for existing node
@@ -153,6 +191,38 @@ export const ContextMenu = memo(({
               <Wrench className="w-4 h-4 mr-2" />
               Add Tool Node
             </Button>
+            {onDetach && (
+              <>
+                <div className="border-t border-gray-100 my-1" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start px-3 py-2 h-auto text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  onClick={() => handleAction(() => onDetach('tools'))}
+                >
+                  <Unlink className="w-4 h-4 mr-2" />
+                  Detach Tools
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start px-3 py-2 h-auto text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  onClick={() => handleAction(() => onDetach('steps'))}
+                >
+                  <Unlink className="w-4 h-4 mr-2" />
+                  Detach Steps
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start px-3 py-2 h-auto text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  onClick={() => handleAction(() => onDetach('all'))}
+                >
+                  <Unlink className="w-4 h-4 mr-2" />
+                  Detach All
+                </Button>
+              </>
+            )}
             {onDelete && (
               <>
                 <div className="border-t border-gray-100 my-1" />

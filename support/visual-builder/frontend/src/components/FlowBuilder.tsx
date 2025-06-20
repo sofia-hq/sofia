@@ -37,6 +37,7 @@ import {
   bulkDuplicateNodes,
   bulkGroupNodes,
 } from '../utils/bulkOperations';
+import { detachNode, detachMultipleNodes } from '../utils/detachNodes';
 import type { StepNodeData, ToolNodeData, FlowGroupData } from '../types';
 
 // Utility function to calculate group bounds based on child nodes
@@ -582,6 +583,7 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     visible: boolean;
     nodeId?: string;
     nodeType?: string;
+    edgeId?: string;
   }>({
     x: 0,
     y: 0,
@@ -693,6 +695,37 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
       setNodesWithUndo(result.nodes, `Group ${selectedNodeIds.length} nodes into flow`);
     }
   }, [nodes, edges, setNodesWithUndo]);
+
+  const handleDetachSelected = useCallback((detachType: 'all' | 'tools' | 'steps' = 'all') => {
+    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
+    if (selectedNodeIds.length === 0) return;
+
+    const result = detachMultipleNodes(selectedNodeIds, nodes, edges, detachType);
+    
+    const actionName = detachType === 'all' ? 'Detach' : 
+                      detachType === 'tools' ? 'Detach tools from' : 
+                      'Detach steps from';
+    
+    setEdges(result.edges);
+    // Show notification about detached connections
+    console.log(`${actionName} ${selectedNodeIds.length} node(s): ${result.detachedConnections.length} connections removed`);
+  }, [nodes, edges, setEdges]);
+
+  const handleDetachNode = useCallback((nodeId: string, detachType: 'all' | 'tools' | 'steps' = 'all') => {
+    const result = detachNode({
+      nodeId,
+      nodes,
+      edges,
+      detachType,
+    });
+    
+    const actionName = detachType === 'all' ? 'Detach' : 
+                      detachType === 'tools' ? 'Detach tools from' : 
+                      'Detach steps from';
+    
+    setEdges(result.edges);
+    console.log(`${actionName} node ${nodeId}: ${result.detachedConnections.length} connections removed`);
+  }, [nodes, edges, setEdges]);
 
   // Export/Import handlers
   const handleExportYaml = useCallback(() => {
@@ -863,6 +896,19 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
         visible: true,
         nodeId: node.id,
         nodeType: node.type,
+      });
+    }
+  }, []);
+
+  const handleEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.preventDefault();
+    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
+    if (reactFlowBounds) {
+      setContextMenu({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+        visible: true,
+        edgeId: edge.id,
       });
     }
   }, []);
@@ -1194,6 +1240,15 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     }
   }, [contextMenu.nodeId, nodes, edges, setNodesWithUndo, setEdgesWithUndo]);
 
+  const deleteEdge = useCallback(() => {
+    if (contextMenu.edgeId) {
+      setEdgesWithUndo(
+        edges.filter((edge) => edge.id !== contextMenu.edgeId),
+        'Delete edge'
+      );
+    }
+  }, [contextMenu.edgeId, edges, setEdgesWithUndo]);
+
   const editNode = useCallback(() => {
     if (contextMenu.nodeId && contextMenu.nodeType) {
       const node = nodes.find(n => n.id === contextMenu.nodeId);
@@ -1299,6 +1354,7 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
             onConnect={onConnect}
             onContextMenu={handleContextMenu}
             onNodeContextMenu={handleNodeContextMenu}
+            onEdgeContextMenu={handleEdgeContextMenu}
             onNodeDoubleClick={handleNodeDoubleClick}
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
@@ -1354,8 +1410,10 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
           onEdit={contextMenu.nodeId ? editNode : undefined}
           onCopy={contextMenu.nodeId ? copyNode : undefined}
           onPaste={hasClipboardData() ? pasteNode : undefined}
-          onDelete={contextMenu.nodeId ? deleteNode : undefined}
+          onDelete={contextMenu.nodeId ? deleteNode : contextMenu.edgeId ? deleteEdge : undefined}
+          onDetach={contextMenu.nodeId ? (type) => handleDetachNode(contextMenu.nodeId!, type) : undefined}
           isOnNode={!!contextMenu.nodeId}
+          isOnEdge={!!contextMenu.edgeId}
           nodeType={contextMenu.nodeType}
         />
 
