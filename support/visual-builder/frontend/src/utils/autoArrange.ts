@@ -360,161 +360,63 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     return child;
   });
 
-  // Create a combined list of all step nodes for tool positioning reference
-  const allStepNodesWithPositions = [
-    ...arrangedUngroupedStepNodes,
-    ...adjustedGroupedStepNodes
-  ];
+  const toolsByStep: Record<string, Node[]> = {};
+  edges.forEach(edge => {
+    if (edge.type === 'tool') {
+      const tool = toolNodes.find(t => t.id === edge.target);
+      if (tool) {
+        if (!toolsByStep[edge.source]) toolsByStep[edge.source] = [];
+        toolsByStep[edge.source].push(tool);
+  });
+  const positionedToolNodes: Node[] = [];
+  const usedToolIds = new Set<string>();
 
-  // Pre-compute absolute bounds of all step nodes for tool collision detection
-  const stepBoundaries = allStepNodesWithPositions.map(step => {
+  const tryPlace = (desired: { x: number; y: number }): { x: number; y: number } => {
+    let pos = { ...desired };
+    while (
+      isPositionInsideGroup(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) ||
+      overlapsStep(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) ||
+      positionedToolNodes.some(n =>
+        Math.abs(n.position.x - pos.x) < TOOL_NODE_WIDTH + 20 &&
+        Math.abs(n.position.y - pos.y) < TOOL_NODE_HEIGHT + 20
+      )
+    ) {
+      pos.x += TOOL_NODE_WIDTH + 40;
+    return pos;
+  };
+  allStepNodesWithPositions.forEach(step => {
+    const tools = toolsByStep[step.id];
+    if (!tools || tools.length === 0) return;
     let absX = step.position.x;
     let absY = step.position.y;
     if (step.parentId) {
       const parent = optimizedGroupNodes.find(g => g.id === step.parentId);
       if (parent) {
-        absX = parent.position.x + step.position.x;
-        absY = parent.position.y + step.position.y;
-      }
+        absX += parent.position.x;
+        absY += parent.position.y;
     }
-    return {
-      minX: absX,
-      minY: absY,
-      maxX: absX + STEP_NODE_WIDTH,
-      maxY: absY + STEP_NODE_HEIGHT,
-    };
-  });
-
-  const overlapsStep = (x: number, y: number, width: number, height: number): boolean => {
-    return stepBoundaries.some(b => {
-      const nodeRight = x + width;
-      const nodeBottom = y + height;
-      return !(x >= b.maxX || nodeRight <= b.minX || y >= b.maxY || nodeBottom <= b.minY);
+    const spacing = TOOL_NODE_HEIGHT + 30;
+    const startY = absY - ((tools.length - 1) * spacing) / 2;
+    tools.forEach((tool, idx) => {
+      const desired = {
+        x: absX + STEP_NODE_WIDTH + 60,
+        y: startY + idx * spacing,
+      const pos = tryPlace(desired);
+      positionedToolNodes.push({ ...tool, position: snapToGrid(pos) });
+      usedToolIds.add(tool.id);
     });
-  };
-
-  // Position tool nodes intelligently - aim for natural placement near connected nodes
-  let toolNodeOffsetIndex = 0;
-
-  // Calculate a more natural tool positioning strategy
-  // Instead of pushing all tools to the far right, try to place them near their connected nodes first
-  const mainFlowBounds = {
-    minX: Math.min(...arrangedUngroupedStepNodes.map(n => n.position.x)),
-    maxX: Math.max(...arrangedUngroupedStepNodes.map(n => n.position.x + STEP_NODE_WIDTH)),
-    minY: Math.min(...arrangedUngroupedStepNodes.map(n => n.position.y)),
-    maxY: Math.max(...arrangedUngroupedStepNodes.map(n => n.position.y + STEP_NODE_HEIGHT)),
-  };
-
-  // For disconnected tools, place them in a more natural location - either to the right of main flow
-  // or below it, whichever gives better spacing
-  const fallbackToolAreaX = mainFlowBounds.maxX + 40; // Much closer to main flow
-  const fallbackToolAreaY = mainFlowBounds.minY;
-
-
-  const arrangedToolNodes = toolNodes.map((toolNode) => {
-    // Find all step nodes that connect to this tool
-    const connectedStepEdges = edges.filter(
-      (edge) => edge.type === 'tool' && edge.target === toolNode.id
-    );
-
-    if (connectedStepEdges.length === 0) {
-      // No connections - place in a compact area near the main flow
-      let position: { x: number; y: number };
-      let attempts = 0;
-
-      // Place tools in a single vertical column next to the main flow
-      do {
-        position = {
-          x: fallbackToolAreaX,
-          y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40))
-        };
-
-        if (
-          isPositionInsideGroup(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) ||
-          overlapsStep(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)
-        ) {
-          toolNodeOffsetIndex++;
-          attempts++;
-          if (attempts > 10) {
-            position = {
-              x: fallbackToolAreaX + 200,
-              y: fallbackToolAreaY + (attempts * (TOOL_NODE_HEIGHT + 40))
-            };
-            break;
-          }
-        } else {
-          break;
-        }
-      } while (true);
-
-      toolNodeOffsetIndex++;
-      return {
-        ...toolNode,
-        position: snapToGrid(position),
-      };
-    }
-
-    // Connected tool - try to place it near the connected step node
-    const primaryStepEdge = connectedStepEdges[0];
-
-    // Search for the connected step node in ALL step nodes (ungrouped and grouped)
-    let primaryStepNode = allStepNodesWithPositions.find((n: Node) => n.id === primaryStepEdge.source);
-
-    if (!primaryStepNode) {
-      // Fallback to disconnected logic
-      let position = {
-        x: fallbackToolAreaX,
-        y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40))
-      };
-
-      // Quick check for collisions
-      if (
-        isPositionInsideGroup(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) ||
-        overlapsStep(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)
-      ) {
-        position = {
-          x: fallbackToolAreaX + 200,
-          y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40))
-        };
-      }
-
-      toolNodeOffsetIndex++;
-      return {
-        ...toolNode,
-        position: snapToGrid(position),
-      };
-    }
-
-    // Smart positioning: try to place tool near its connected step node
-    let position: { x: number; y: number };
-    const stepNode = primaryStepNode;
-
-    // Calculate the absolute position of the step node
-    // If it's a grouped node, we need to add the group position to its relative position
-    let stepAbsolutePosition = { ...stepNode.position };
-    if (stepNode.parentId) {
-      const parentGroup = optimizedGroupNodes.find(g => g.id === stepNode.parentId);
-      if (parentGroup) {
-        stepAbsolutePosition = {
-          x: parentGroup.position.x + stepNode.position.x,
-          y: parentGroup.position.y + stepNode.position.y,
-        };
-      }
-    }
-
-    // Prefer placing tool nodes to the right of their connected step
-    const candidatePositions = [
-      // Directly to the right
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 60, y: stepAbsolutePosition.y },
-      // Slightly below if space is tight
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 60, y: stepAbsolutePosition.y + TOOL_NODE_HEIGHT + 40 },
-      // Slightly above as a last resort
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 60, y: stepAbsolutePosition.y - TOOL_NODE_HEIGHT - 40 },
-    ];
-
-    // Find the first position that doesn't conflict with groups or steps
-    position = candidatePositions.find(pos =>
-      !isPositionInsideGroup(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) &&
+  });
+  let unconnectedOffset = 0;
+  toolNodes.forEach(tool => {
+    if (usedToolIds.has(tool.id)) return;
+    const desired = {
+      x: fallbackToolAreaX,
+      y: fallbackToolAreaY + unconnectedOffset * (TOOL_NODE_HEIGHT + 40),
+    };
+    const pos = tryPlace(desired);
+    positionedToolNodes.push({ ...tool, position: snapToGrid(pos) });
+    unconnectedOffset++;
+  return [...arrangedUngroupedStepNodes, ...positionedToolNodes, ...optimizedGroupNodes, ...adjustedGroupedStepNodes];
       !overlapsStep(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)
     ) || {
       // Fallback: place in the general tool area
