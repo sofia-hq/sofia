@@ -145,6 +145,7 @@ export function calculateBidirectionalEdgePaths(
     return { edgePath, labelX, labelY };
   } else {
     // Second edge takes a C-shaped path with 4 bends for cleaner separation
+    // Only use C-shaped path when going backwards (source below target)
     const isGoingUp = targetY < sourceY;
     const isGoingDown = targetY > sourceY;
     const isHorizontal = Math.abs(targetY - sourceY) < 50; // Nearly horizontal
@@ -153,8 +154,8 @@ export function calculateBidirectionalEdgePaths(
     const horizontalDistance = Math.abs(targetX - sourceX);
     const verticalDistance = Math.abs(targetY - sourceY);
 
-    // Base offset distance for creating the C-shape - increased for more pronounced curves
-    const cOffset = Math.max(180, Math.min(horizontalDistance * 0.6, 350));
+    // Fixed value for how far the bend should be from the node
+    const k = 200;
 
     let pathData: string;
     let labelX: number;
@@ -179,8 +180,18 @@ export function calculateBidirectionalEdgePaths(
 
       if (isGoingUp) {
         // Going up: Create a C-path going left-down-up-right with smooth corners
-        const bendOffset = 60; // Increased initial bend distance from nodes
-        const leftX = Math.min(sourceX, targetX) - cOffset;
+        const bendOffset = 60; // Initial bend distance from nodes
+
+        // Calculate x position of 2nd and 3rd bend using the specified logic
+        let bendX: number;
+        if (horizontalDistance >= 2 * k) {
+          bendX = (sourceX + targetX) / 2;
+        } else if (targetX >= sourceX) {
+          bendX = sourceX - k;
+        } else {
+          bendX = targetX - k;
+        }
+
         const downY = sourceY + bendOffset; // Go down first (opposite of final direction)
         const upY = targetY - bendOffset;   // Approach target from below
 
@@ -188,19 +199,29 @@ export function calculateBidirectionalEdgePaths(
         const pathPoints = [
           { x: sourceX, y: sourceY },
           { x: sourceX, y: downY },
-          { x: leftX, y: downY },
-          { x: leftX, y: upY },
+          { x: bendX, y: downY },
+          { x: bendX, y: upY },
           { x: targetX, y: upY },
           { x: targetX, y: targetY }
         ];
 
         pathData = createSmoothPath(pathPoints, radius);
-        labelX = leftX;
-        labelY = (downY + upY) / 2;
+        labelX = bendX;
+        labelY = (downY + upY) / 2 - 20; // Move label above center
       } else if (isGoingDown) {
         // Going down: Create a C-path going left-up-down-right with smooth corners
-        const bendOffset = 60; // Increased initial bend distance from nodes
-        const leftX = Math.min(sourceX, targetX) - cOffset;
+        const bendOffset = 60; // Initial bend distance from nodes
+
+        // Calculate x position of 2nd and 3rd bend using the specified logic
+        let bendX: number;
+        if (horizontalDistance >= 2 * k) {
+          bendX = (sourceX + targetX) / 2;
+        } else if (targetX >= sourceX) {
+          bendX = sourceX - k;
+        } else {
+          bendX = targetX - k;
+        }
+
         const upY = sourceY - bendOffset;   // Go up first (opposite of final direction)
         const downY = targetY + bendOffset; // Approach target from above
 
@@ -208,30 +229,38 @@ export function calculateBidirectionalEdgePaths(
         const pathPoints = [
           { x: sourceX, y: sourceY },
           { x: sourceX, y: upY },
-          { x: leftX, y: upY },
-          { x: leftX, y: downY },
+          { x: bendX, y: upY },
+          { x: bendX, y: downY },
           { x: targetX, y: downY },
           { x: targetX, y: targetY }
         ];
 
         pathData = createSmoothPath(pathPoints, radius);
-        labelX = leftX;
-        labelY = (upY + downY) / 2;
+        labelX = bendX;
+        labelY = (upY + downY) / 2 - 20; // Move label above center
       } else {
         // Fallback: nearly horizontal, use side routing with smooth corners
-        const leftX = Math.min(sourceX, targetX) - cOffset;
+        // Calculate x position of 2nd and 3rd bend using the specified logic
+        let bendX: number;
+        if (horizontalDistance >= 2 * k) {
+          bendX = (sourceX + targetX) / 2;
+        } else if (targetX >= sourceX) {
+          bendX = sourceX - k;
+        } else {
+          bendX = targetX - k;
+        }
 
         // Define the path points for smooth curves
         const pathPoints = [
           { x: sourceX, y: sourceY },
-          { x: leftX, y: sourceY },
-          { x: leftX, y: targetY },
+          { x: bendX, y: sourceY },
+          { x: bendX, y: targetY },
           { x: targetX, y: targetY }
         ];
 
         pathData = createSmoothPath(pathPoints, radius);
-        labelX = leftX;
-        labelY = (sourceY + targetY) / 2;
+        labelX = bendX;
+        labelY = (sourceY + targetY) / 2 - 15; // Move label above center
       }
     }
 
@@ -274,15 +303,22 @@ export function getBidirectionalPartner(edgeId: string, edges: any[]): string | 
 }
 
 /**
- * Determine if this edge should use offset path (second edge in bidirectional pair)
+ * Determine if this edge should use offset path (C-shaped path) based on node positions
+ * C-shaped path should be used when source node is below destination node (going backwards)
  */
-export function shouldUseOffsetPath(edgeId: string, edges: any[]): boolean {
+export function shouldUseOffsetPath(
+  edgeId: string,
+  edges: any[],
+  sourceY: number,
+  targetY: number
+): boolean {
   const edge = edges.find(e => e.id === edgeId);
   if (!edge || edge.type !== 'route') return false;
 
   const partnerEdgeId = getBidirectionalPartner(edgeId, edges);
   if (!partnerEdgeId) return false;
 
-  // Use offset path for the lexicographically larger edge ID to ensure consistency
-  return edgeId > partnerEdgeId;
+  // Use C-shaped path only when source node is below destination node (sourceY > targetY)
+  // This means we're going "backwards" in the typical top-to-bottom flow
+  return sourceY > targetY;
 }

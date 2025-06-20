@@ -15,9 +15,9 @@ export const RouteEdge = memo((props: EdgeProps) => {
   const [showDeleteButton, setShowDeleteButton] = useState(false);
   const { setEdges, getEdges } = useReactFlow();
 
-  // Check if this edge is part of a bidirectional pair and should use offset path
+  // Check if this edge is part of a bidirectional pair and should use C-shaped path
   const edges = getEdges();
-  const useBidirectionalPath = shouldUseOffsetPath(id, edges);
+  const useBidirectionalPath = shouldUseOffsetPath(id, edges, sourceY, targetY);
 
   let edgePath, labelX, labelY;
 
