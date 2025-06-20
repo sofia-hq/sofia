@@ -367,9 +367,48 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       if (tool) {
         if (!toolsByStep[edge.source]) toolsByStep[edge.source] = [];
         toolsByStep[edge.source].push(tool);
+      }
+    }
   });
   const positionedToolNodes: Node[] = [];
   const usedToolIds = new Set<string>();
+
+  // Calculate bounds for tool positioning
+  const allStepNodesWithPositions = [...arrangedUngroupedStepNodes, ...adjustedGroupedStepNodes];
+
+  const stepBounds = {
+    minX: Math.min(...allStepNodesWithPositions.map(n => n.position.x)),
+    maxX: Math.max(...allStepNodesWithPositions.map(n => n.position.x + STEP_NODE_WIDTH)),
+    minY: Math.min(...allStepNodesWithPositions.map(n => n.position.y)),
+    maxY: Math.max(...allStepNodesWithPositions.map(n => n.position.y + STEP_NODE_HEIGHT)),
+  };
+
+  const fallbackToolAreaX = stepBounds.maxX + 100;
+  const fallbackToolAreaY = stepBounds.minY;
+
+  // Utility function to check if a position overlaps with any step node
+  const overlapsStep = (x: number, y: number, width: number, height: number): boolean => {
+    return allStepNodesWithPositions.some(step => {
+      let stepX = step.position.x;
+      let stepY = step.position.y;
+
+      // If step is in a group, calculate absolute position
+      if (step.parentId) {
+        const parent = optimizedGroupNodes.find(g => g.id === step.parentId);
+        if (parent) {
+          stepX += parent.position.x;
+          stepY += parent.position.y;
+        }
+      }
+
+      const stepRight = stepX + STEP_NODE_WIDTH;
+      const stepBottom = stepY + STEP_NODE_HEIGHT;
+      const nodeRight = x + width;
+      const nodeBottom = y + height;
+
+      return !(x >= stepRight || nodeRight <= stepX || y >= stepBottom || nodeBottom <= stepY);
+    });
+  };
 
   const tryPlace = (desired: { x: number; y: number }): { x: number; y: number } => {
     let pos = { ...desired };
@@ -382,33 +421,46 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       )
     ) {
       pos.x += TOOL_NODE_WIDTH + 40;
+    }
     return pos;
   };
+
+  // Position tools next to their connected steps
   allStepNodesWithPositions.forEach(step => {
     const tools = toolsByStep[step.id];
     if (!tools || tools.length === 0) return;
+
     let absX = step.position.x;
     let absY = step.position.y;
+
+    // If step is in a group, calculate absolute position
     if (step.parentId) {
       const parent = optimizedGroupNodes.find(g => g.id === step.parentId);
       if (parent) {
         absX += parent.position.x;
         absY += parent.position.y;
+      }
     }
+
     const spacing = TOOL_NODE_HEIGHT + 30;
     const startY = absY - ((tools.length - 1) * spacing) / 2;
+
     tools.forEach((tool, idx) => {
       const desired = {
         x: absX + STEP_NODE_WIDTH + 60,
         y: startY + idx * spacing,
+      };
       const pos = tryPlace(desired);
       positionedToolNodes.push({ ...tool, position: snapToGrid(pos) });
       usedToolIds.add(tool.id);
     });
   });
+
+  // Position any unconnected tools
   let unconnectedOffset = 0;
   toolNodes.forEach(tool => {
     if (usedToolIds.has(tool.id)) return;
+
     const desired = {
       x: fallbackToolAreaX,
       y: fallbackToolAreaY + unconnectedOffset * (TOOL_NODE_HEIGHT + 40),
@@ -416,25 +468,12 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     const pos = tryPlace(desired);
     positionedToolNodes.push({ ...tool, position: snapToGrid(pos) });
     unconnectedOffset++;
-  return [...arrangedUngroupedStepNodes, ...positionedToolNodes, ...optimizedGroupNodes, ...adjustedGroupedStepNodes];
-      !overlapsStep(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)
-    ) || {
-      // Fallback: place in the general tool area
-      x: fallbackToolAreaX + 50,
-      y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 30))
-    };
-
-    toolNodeOffsetIndex++;
-    return {
-      ...toolNode,
-      position: snapToGrid(position),
-    };
   });
 
-  // Final pass: resolve any tool node overlaps with a more natural approach
-  const finalToolNodes = arrangedToolNodes.map((toolNode, index) => {
+  // Final pass: resolve any remaining tool node overlaps
+  const finalToolNodes = positionedToolNodes.map((toolNode, index) => {
     // Check for overlaps with previously positioned tool nodes
-    const overlappingNodes = arrangedToolNodes.slice(0, index).filter((otherNode) => {
+    const overlappingNodes = positionedToolNodes.slice(0, index).filter((otherNode: Node) => {
       const xOverlap = Math.abs(toolNode.position.x - otherNode.position.x) < TOOL_NODE_WIDTH + 20;
       const yOverlap = Math.abs(toolNode.position.y - otherNode.position.y) < TOOL_NODE_HEIGHT + 20;
       return xOverlap && yOverlap;
@@ -455,7 +494,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       // Find first position that doesn't overlap with groups, steps and other tools
       for (const attempt of adjustmentAttempts) {
         const wouldOverlapGroup = isPositionInsideGroup(attempt.x, attempt.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT);
-        const wouldOverlapTool = arrangedToolNodes.slice(0, index).some(otherNode => {
+        const wouldOverlapTool = positionedToolNodes.slice(0, index).some((otherNode: Node) => {
           const xOverlap = Math.abs(attempt.x - otherNode.position.x) < TOOL_NODE_WIDTH + 20;
           const yOverlap = Math.abs(attempt.y - otherNode.position.y) < TOOL_NODE_HEIGHT + 20;
           return xOverlap && yOverlap;
@@ -477,7 +516,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     return toolNode;
   });
 
-  // Combine all nodes: arranged ungrouped steps, arranged tools, optimized groups and adjusted grouped steps
+  // Combine all nodes: arranged ungrouped steps, final tools, optimized groups and adjusted grouped steps
   return [...arrangedUngroupedStepNodes, ...finalToolNodes, ...optimizedGroupNodes, ...adjustedGroupedStepNodes];
 }
 

@@ -45,6 +45,7 @@ const STORAGE_KEY = 'nomos-chat-state';
 
 // Environment configuration
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+const DISABLE_FILE_UPLOAD = import.meta.env.VITE_DISABLE_FILE_UPLOAD === 'true';
 
 // Component for rendering assistant message with collapsible reasoning
 interface AssistantMessageProps {
@@ -173,6 +174,11 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 
   // Remove the resetBackend function as it's no longer needed
   const uploadTools = useCallback(async (files: FileList) => {
+    if (DISABLE_FILE_UPLOAD) {
+      console.info('Tool upload is currently disabled. The hosted version supports only Package, CrewAI, and Langchain Tools. To enable tool upload, please run the visual builder locally.');
+      return;
+    }
+
     const formData = new FormData();
     Array.from(files).forEach(file => {
       if (file.name.endsWith('.py')) {
@@ -195,7 +201,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   const saveAndStart = useCallback(async (files?: FileList) => {
     try {
       setIsLoading(true);
-      if (files) {
+      if (files && !DISABLE_FILE_UPLOAD) {
         await uploadTools(files);
       }
       // No need to start a server anymore - just mark as ready
@@ -500,31 +506,35 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tools-upload" className="text-xs font-medium">
-                Tools (.py files)
-              </Label>
-              <Input
-                id="tools-upload"
-                type="file"
-                multiple
-                accept=".py"
-                className="text-xs"
-              />
-            </div>
+            {!DISABLE_FILE_UPLOAD && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="tools-upload" className="text-xs font-medium">
+                    Tools (.py files)
+                  </Label>
+                  <Input
+                    id="tools-upload"
+                    type="file"
+                    multiple
+                    accept=".py"
+                    className="text-xs"
+                  />
+                </div>
 
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => {
-                const fileInput = document.getElementById('tools-upload') as HTMLInputElement;
-                saveAndStart(fileInput.files || undefined);
-              }}
-              className="w-full text-xs"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Uploading...' : 'Upload Tools'}
-            </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => {
+                    const fileInput = document.getElementById('tools-upload') as HTMLInputElement;
+                    saveAndStart(fileInput.files || undefined);
+                  }}
+                  className="w-full text-xs"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Uploading...' : 'Upload Tools'}
+                </Button>
+              </>
+            )}
           </div>
         )}
 
