@@ -19,6 +19,11 @@ app = FastAPI()
 
 # Environment configuration
 BACKEND_PORT = int(os.getenv("BACKEND_PORT", "8000"))
+DISABLE_AGENT_CACHE = os.getenv("DISABLE_AGENT_CACHE", "false").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 
 # Add CORS middleware
 app.add_middleware(
@@ -84,27 +89,41 @@ def chat(request: ServerlessChatRequest) -> ChatResponse:
     global agent
     from tools import tool_list
 
-    if request.env_vars:
-        # Set environment variables if provided
-        for key, value in request.env_vars.items():
-            os.environ[key] = value
-
-    # Re-instantiate the agent if it doesn't exist or if the config has changed
-    if (
-        agent is None
-        or agent.config.model_dump_json() != request.agent_config.model_dump_json()  # type: ignore
-    ):
-        agent = Agent.from_config(config=request.agent_config, tools=tool_list)
-
-    # Process the chat request
-    decision, tool_output, session_data = agent.next(
-        **request.chat_request.model_dump(), verbose=request.verbose
+    # Snapshot current environment state
+    original_env = (
+        dict(os.environ) if DISABLE_AGENT_CACHE and request.env_vars else None
     )
-    return ChatResponse(
-        response=decision.model_dump(mode="json"),
-        tool_output=tool_output,
-        session_data=session_data,
-    )
+
+    try:
+        # Update environment variables
+        if request.env_vars:
+            os.environ.update(request.env_vars)
+
+        # Re-instantiate agent if needed
+        if (
+            agent is None
+            or agent.config.model_dump_json() != request.agent_config.model_dump_json()  # type: ignore
+        ):
+            agent = Agent.from_config(config=request.agent_config, tools=tool_list)
+
+        # Process the chat request
+        decision, tool_output, session_data = agent.next(
+            **request.chat_request.model_dump(), verbose=request.verbose
+        )
+
+        return ChatResponse(
+            response=decision.model_dump(mode="json"),
+            tool_output=tool_output,
+            session_data=session_data,
+        )
+
+    finally:
+        if DISABLE_AGENT_CACHE:
+            agent = None
+            # Restore environment to original state
+            if original_env is not None:
+                os.environ.clear()
+                os.environ.update(original_env)
 
 
 if __name__ == "__main__":
