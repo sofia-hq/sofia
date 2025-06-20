@@ -22,7 +22,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
   let edgePath, labelX, labelY;
 
   if (useBidirectionalPath) {
-    // Use offset path for bidirectional edges
+    // Use custom path for bidirectional edges
     const bidirectionalInfo = {
       forwardEdge: null,
       reverseEdge: null,

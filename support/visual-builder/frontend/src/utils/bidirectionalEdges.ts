@@ -20,6 +20,65 @@ export interface BidirectionalEdgeInfo {
 }
 
 /**
+ * Helper function to create smooth rounded corners for path segments
+ */
+function createSmoothPath(points: { x: number; y: number }[], radius: number = 20): string {
+  if (points.length < 2) return '';
+
+  let path = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    const current = points[i];
+    const prev = points[i - 1];
+    const next = points[i + 1];
+
+    if (!next) {
+      // Last point - just draw line to it
+      path += ` L ${current.x} ${current.y}`;
+    } else {
+      // Calculate the direction vectors
+      const prevDir = {
+        x: current.x - prev.x,
+        y: current.y - prev.y
+      };
+      const nextDir = {
+        x: next.x - current.x,
+        y: next.y - current.y
+      };
+
+      // Normalize and calculate curve points
+      const prevLength = Math.sqrt(prevDir.x * prevDir.x + prevDir.y * prevDir.y);
+      const nextLength = Math.sqrt(nextDir.x * nextDir.x + nextDir.y * nextDir.y);
+
+      const adjustedRadius = Math.min(radius, prevLength / 2, nextLength / 2);
+
+      if (prevLength > 0 && nextLength > 0) {
+        const prevUnit = { x: prevDir.x / prevLength, y: prevDir.y / prevLength };
+        const nextUnit = { x: nextDir.x / nextLength, y: nextDir.y / nextLength };
+
+        // Calculate curve start and end points
+        const curveStart = {
+          x: current.x - prevUnit.x * adjustedRadius,
+          y: current.y - prevUnit.y * adjustedRadius
+        };
+        const curveEnd = {
+          x: current.x + nextUnit.x * adjustedRadius,
+          y: current.y + nextUnit.y * adjustedRadius
+        };
+
+        // Draw line to curve start, then smooth curve, then continue
+        path += ` L ${curveStart.x} ${curveStart.y}`;
+        path += ` Q ${current.x} ${current.y} ${curveEnd.x} ${curveEnd.y}`;
+      } else {
+        path += ` L ${current.x} ${current.y}`;
+      }
+    }
+  }
+
+  return path;
+}
+
+/**
  * Detect bidirectional edges (X->Y and Y->X)
  */
 export function detectBidirectionalEdges(edges: any[]): Map<string, BidirectionalEdgeInfo> {
@@ -63,7 +122,7 @@ export function detectBidirectionalEdges(edges: any[]): Map<string, Bidirectiona
 }
 
 /**
- * Calculate paths for bidirectional edges to avoid overlap
+ * Calculate paths for bidirectional edges to avoid overlap with C-shaped routing
  */
 export function calculateBidirectionalEdgePaths(
   bidirectionalInfo: BidirectionalEdgeInfo,
@@ -71,39 +130,113 @@ export function calculateBidirectionalEdgePaths(
 ): EdgePathInfo {
   const { sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition } = bidirectionalInfo;
 
-  // Calculate offset to separate the two edges
-  const offset = isFirstEdge ? -10 : 10;
+  if (isFirstEdge) {
+    // First edge uses the normal smooth step path
+    const [edgePath, labelX, labelY] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 20,
+    });
 
-  // Determine the direction of the main flow
-  const isHorizontalFlow = Math.abs(targetX - sourceX) > Math.abs(targetY - sourceY);
-
-  let adjustedSourceX = sourceX;
-  let adjustedSourceY = sourceY;
-  let adjustedTargetX = targetX;
-  let adjustedTargetY = targetY;
-
-  if (isHorizontalFlow) {
-    // For horizontal flow, offset vertically to separate the edges
-    adjustedSourceY += offset;
-    adjustedTargetY += offset;
+    return { edgePath, labelX, labelY };
   } else {
-    // For vertical flow, offset horizontally to separate the edges
-    adjustedSourceX += offset;
-    adjustedTargetX += offset;
+    // Second edge takes a C-shaped path with 4 bends for cleaner separation
+    const isGoingUp = targetY < sourceY;
+    const isGoingDown = targetY > sourceY;
+    const isHorizontal = Math.abs(targetY - sourceY) < 50; // Nearly horizontal
+
+    // Calculate distances and offsets for C-shaped path
+    const horizontalDistance = Math.abs(targetX - sourceX);
+    const verticalDistance = Math.abs(targetY - sourceY);
+
+    // Base offset distance for creating the C-shape - increased for more pronounced curves
+    const cOffset = Math.max(180, Math.min(horizontalDistance * 0.6, 350));
+
+    let pathData: string;
+    let labelX: number;
+    let labelY: number;
+
+    if (isHorizontal) {
+      // For horizontal flow, create vertical C-shapes
+      const verticalOffset = Math.max(80, verticalDistance * 1.2);
+      const direction = isGoingUp ? -1 : 1; // Go opposite direction first
+      const midY = sourceY + (direction * verticalOffset);
+
+      pathData = `M ${sourceX} ${sourceY} ` +
+                 `L ${sourceX} ${midY} ` +                      // 1. Go up/down
+                 `L ${targetX} ${midY} ` +                      // 2. Go horizontally
+                 `L ${targetX} ${targetY}`;                     // 3. Go to target
+
+      labelX = (sourceX + targetX) / 2;
+      labelY = midY;
+    } else {
+      // Create C-shaped paths with smooth rounded corners for vertical flows
+      const radius = 20; // Radius for smooth corners (matching regular edges)
+
+      if (isGoingUp) {
+        // Going up: Create a C-path going left-down-up-right with smooth corners
+        const bendOffset = 60; // Increased initial bend distance from nodes
+        const leftX = Math.min(sourceX, targetX) - cOffset;
+        const downY = sourceY + bendOffset; // Go down first (opposite of final direction)
+        const upY = targetY - bendOffset;   // Approach target from below
+
+        // Define the path points for smooth curves
+        const pathPoints = [
+          { x: sourceX, y: sourceY },
+          { x: sourceX, y: downY },
+          { x: leftX, y: downY },
+          { x: leftX, y: upY },
+          { x: targetX, y: upY },
+          { x: targetX, y: targetY }
+        ];
+
+        pathData = createSmoothPath(pathPoints, radius);
+        labelX = leftX;
+        labelY = (downY + upY) / 2;
+      } else if (isGoingDown) {
+        // Going down: Create a C-path going left-up-down-right with smooth corners
+        const bendOffset = 60; // Increased initial bend distance from nodes
+        const leftX = Math.min(sourceX, targetX) - cOffset;
+        const upY = sourceY - bendOffset;   // Go up first (opposite of final direction)
+        const downY = targetY + bendOffset; // Approach target from above
+
+        // Define the path points for smooth curves
+        const pathPoints = [
+          { x: sourceX, y: sourceY },
+          { x: sourceX, y: upY },
+          { x: leftX, y: upY },
+          { x: leftX, y: downY },
+          { x: targetX, y: downY },
+          { x: targetX, y: targetY }
+        ];
+
+        pathData = createSmoothPath(pathPoints, radius);
+        labelX = leftX;
+        labelY = (upY + downY) / 2;
+      } else {
+        // Fallback: nearly horizontal, use side routing with smooth corners
+        const leftX = Math.min(sourceX, targetX) - cOffset;
+
+        // Define the path points for smooth curves
+        const pathPoints = [
+          { x: sourceX, y: sourceY },
+          { x: leftX, y: sourceY },
+          { x: leftX, y: targetY },
+          { x: targetX, y: targetY }
+        ];
+
+        pathData = createSmoothPath(pathPoints, radius);
+        labelX = leftX;
+        labelY = (sourceY + targetY) / 2;
+      }
+    }
+
+    return { edgePath: pathData, labelX, labelY };
   }
-
-  // Use smooth step path for both edges with the offset
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX: adjustedSourceX,
-    sourceY: adjustedSourceY,
-    sourcePosition,
-    targetX: adjustedTargetX,
-    targetY: adjustedTargetY,
-    targetPosition,
-    borderRadius: 20,
-  });
-
-  return { edgePath, labelX, labelY };
 }
 
 /**
