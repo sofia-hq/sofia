@@ -215,7 +215,7 @@ async def websocket_endpoint(
 @app.post("/chat")
 async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
     """Chat endpoint to get the next response from the agent based on the session data."""
-    decision, tool_output, session_data = agent.next(
+    decision, tool_output, session_data, _ = agent.next(
         **request.model_dump(), verbose=verbose
     )
     return ChatResponse(

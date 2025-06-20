@@ -39,3 +39,4 @@ class ChatResponse(BaseModel):
     response: dict
     tool_output: Optional[str] = None
     session_data: SessionData
+    state: Optional[dict] = None

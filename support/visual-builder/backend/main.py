@@ -107,14 +107,17 @@ def chat(request: ServerlessChatRequest) -> ChatResponse:
             agent = Agent.from_config(config=request.agent_config, tools=tool_list)
 
         # Process the chat request
-        decision, tool_output, session_data = agent.next(
-            **request.chat_request.model_dump(), verbose=request.verbose
+        decision, tool_output, session_data, state = agent.next(
+            **request.chat_request.model_dump(),
+            verbose=request.verbose,
+            return_session_state=True,
         )
 
         return ChatResponse(
             response=decision.model_dump(mode="json"),
             tool_output=tool_output,
             session_data=session_data,
+            state=state,
         )
 
     finally:

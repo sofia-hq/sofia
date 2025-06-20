@@ -583,9 +583,10 @@ const initialEdges: Edge[] = [
 interface FlowBuilderProps {
   onPreview?: (nodes: Node[], edges: Edge[], agent: string, persona: string) => void;
   onSaveConfig?: (nodes: Node[], edges: Edge[], agent: string, persona: string) => void;
+  highlightedNodeId?: string | null;
 }
 
-export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProps) {
+export default function FlowBuilder({ onPreview, onSaveConfig, highlightedNodeId }: FlowBuilderProps) {
   const [nodes, setNodes, onNodesChangeBase] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [filteredNodeIds, setFilteredNodeIds] = useState<string[] | null>(null);
@@ -871,6 +872,53 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
+
+  // Handle node highlighting from chat
+  useEffect(() => {
+    if (highlightedNodeId) {
+      // Add highlighting to nodes without affecting layout
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => ({
+          ...node,
+          className: node.id === highlightedNodeId ||
+                     (node.data?.step_id === highlightedNodeId) ||
+                     (node.data?.flow_id === highlightedNodeId)
+                     ? 'highlighted-node'
+                     : undefined,
+          style: {
+            ...node.style,
+            ...(node.id === highlightedNodeId ||
+                (node.data?.step_id === highlightedNodeId) ||
+                (node.data?.flow_id === highlightedNodeId)
+              ? {
+                  boxShadow: '0 0 20px rgba(59, 130, 246, 0.8)',
+                  outline: '3px solid rgba(59, 130, 246, 0.6)',
+                  outlineOffset: '2px'
+                }
+              : {
+                  boxShadow: undefined,
+                  outline: undefined,
+                  outlineOffset: undefined
+                })
+          }
+        }))
+      );
+    } else {
+      // Remove highlighting from all nodes
+      setNodes((currentNodes) =>
+        currentNodes.map((node) => ({
+          ...node,
+          className: undefined,
+          style: {
+            ...node.style,
+            boxShadow: undefined,
+            outline: undefined,
+            outlineOffset: undefined
+          }
+        }))
+      );
+    }
+  }, [highlightedNodeId, setNodes]);
 
   // Context menu handlers
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
