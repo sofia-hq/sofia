@@ -155,6 +155,110 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
 
   const optimizedGroupNodes = groupOptimizations.map(opt => opt.optimizedGroup);
 
+  // ----- Handle multiple disconnected flows by separating components -----
+  const rootNodeIds = new Set<string>();
+  ungroupedStepNodes.forEach(n => rootNodeIds.add(n.id));
+  groupNodes.forEach(n => rootNodeIds.add(n.id));
+
+  const getRootId = (nodeId: string): string => {
+    const grouped = groupedStepNodes.find(g => g.id === nodeId);
+    return grouped && grouped.parentId ? grouped.parentId : nodeId;
+  };
+
+  const adjacency: Record<string, Set<string>> = {};
+  edges.forEach(edge => {
+    if (edge.type === 'route') {
+      const source = getRootId(edge.source);
+      const target = getRootId(edge.target);
+      if (rootNodeIds.has(source) && rootNodeIds.has(target)) {
+        adjacency[source] = adjacency[source] || new Set();
+        adjacency[target] = adjacency[target] || new Set();
+        adjacency[source].add(target);
+        adjacency[target].add(source);
+      }
+    }
+  });
+
+  const visited = new Set<string>();
+  const components: string[][] = [];
+  rootNodeIds.forEach(id => {
+    if (!visited.has(id)) {
+      const queue = [id];
+      visited.add(id);
+      const comp: string[] = [];
+      while (queue.length) {
+        const curr = queue.shift()!;
+        comp.push(curr);
+        const neighbors = adjacency[curr];
+        if (neighbors) {
+          neighbors.forEach(n => {
+            if (!visited.has(n)) {
+              visited.add(n);
+              queue.push(n);
+            }
+          });
+        }
+      }
+      components.push(comp);
+    }
+  });
+
+  const COMPONENT_SPACING = 200;
+  let currentOffsetX = 0;
+
+  components.forEach((comp, idx) => {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    comp.forEach(id => {
+      let node = arrangedUngroupedStepNodes.find(n => n.id === id);
+      let width = STEP_NODE_WIDTH;
+      let height = STEP_NODE_HEIGHT;
+      if (!node) {
+        node = optimizedGroupNodes.find(n => n.id === id);
+        if (node) {
+          width = (node.style?.width as number) || 400;
+          height = (node.style?.height as number) || 300;
+        }
+      }
+      if (node) {
+        minX = Math.min(minX, node.position.x);
+        maxX = Math.max(maxX, node.position.x + width);
+      }
+    });
+
+    const offsetX = currentOffsetX - minX;
+
+    comp.forEach(id => {
+      const stepIdx = arrangedUngroupedStepNodes.findIndex(n => n.id === id);
+      if (stepIdx !== -1) {
+        const node = arrangedUngroupedStepNodes[stepIdx];
+        arrangedUngroupedStepNodes[stepIdx] = {
+          ...node,
+          position: snapToGrid({
+            x: node.position.x + offsetX,
+            y: node.position.y,
+          }),
+        };
+      } else {
+        const groupIdx = optimizedGroupNodes.findIndex(n => n.id === id);
+        if (groupIdx !== -1) {
+          const node = optimizedGroupNodes[groupIdx];
+          optimizedGroupNodes[groupIdx] = {
+            ...node,
+            position: snapToGrid({
+              x: node.position.x + offsetX,
+              y: node.position.y,
+            }),
+          };
+        }
+      }
+    });
+
+    currentOffsetX += maxX - minX + COMPONENT_SPACING;
+  });
+
+  // Recalculate group boundaries after component offsets
+
   // Calculate optimized group boundaries for collision detection using the new positions
   const groupBoundaries = optimizedGroupNodes.map(group => ({
     minX: group.position.x,
@@ -227,25 +331,20 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       let position: { x: number; y: number };
       let attempts = 0;
 
-      // Try positions progressively further from main flow
+      // Place tools in a single vertical column next to the main flow
       do {
-        const col = Math.floor(toolNodeOffsetIndex / 3);
-        const row = toolNodeOffsetIndex % 3;
-
         position = {
-          x: fallbackToolAreaX + (col * (TOOL_NODE_WIDTH + 40)),
-          y: fallbackToolAreaY + (row * (TOOL_NODE_HEIGHT + 40))
+          x: fallbackToolAreaX,
+          y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40))
         };
 
         if (isPositionInsideGroup(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)) {
-          // Try next position or move further right
           toolNodeOffsetIndex++;
           attempts++;
           if (attempts > 10) {
-            // Safety: place well clear of everything
             position = {
-              x: fallbackToolAreaX + 200 + (attempts * 30),
-              y: fallbackToolAreaY + (row * (TOOL_NODE_HEIGHT + 40))
+              x: fallbackToolAreaX + 200,
+              y: fallbackToolAreaY + (attempts * (TOOL_NODE_HEIGHT + 40))
             };
             break;
           }
@@ -270,15 +369,15 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     if (!primaryStepNode) {
       // Fallback to disconnected logic
       let position = {
-        x: fallbackToolAreaX + (toolNodeOffsetIndex * 40),
-        y: fallbackToolAreaY + 100
+        x: fallbackToolAreaX,
+        y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40))
       };
 
       // Quick check for group collision
       if (isPositionInsideGroup(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)) {
         position = {
           x: fallbackToolAreaX + 200,
-          y: fallbackToolAreaY + (toolNodeOffsetIndex * 60)
+          y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 40))
         };
       }
 
@@ -306,16 +405,14 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       }
     }
 
-    // Try multiple natural positions around the connected step node with increased spacing
+    // Prefer vertical placement of tool nodes relative to the connected step
     const candidatePositions = [
-      // Right of the step node (preferred) - increased spacing for better visibility
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 100, y: stepAbsolutePosition.y },
-      // Below the step node - increased spacing
-      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y + STEP_NODE_HEIGHT + 100 },
-      // Above the step node - increased spacing
-      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y - TOOL_NODE_HEIGHT - 100 },
-      // Further right - increased spacing
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 150, y: stepAbsolutePosition.y },
+      // Directly below the step node
+      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y + STEP_NODE_HEIGHT + 60 },
+      // Further below if space is tight
+      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y + STEP_NODE_HEIGHT + TOOL_NODE_HEIGHT + 80 },
+      // Above the step node as a last resort
+      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y - TOOL_NODE_HEIGHT - 60 },
     ];
 
     // Find the first position that doesn't conflict with groups
