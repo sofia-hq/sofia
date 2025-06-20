@@ -6,7 +6,6 @@ import {
   useNodesState,
   useEdgesState,
   addEdge,
-  useReactFlow,
   type OnConnect,
   type Node,
   type Edge,
@@ -17,8 +16,8 @@ import { ToolNode } from './nodes/ToolNode';
 import { GroupNode } from './nodes/GroupNode';
 import { RouteEdge } from './edges/RouteEdge';
 import { ToolEdge } from './edges/ToolEdge';
-import { ContextMenu } from './context-menu/ContextMenu';
-import { FlowProvider } from '../context/FlowContext';
+import { CustomContextMenu } from './context-menu/CustomContextMenu';
+import { FlowProvider, useFlowContext } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
 import { FlowGroupEditDialog } from './dialogs/FlowGroupEditDialog';
 import { ExportImportDialog } from './dialogs/ExportImportDialog';
@@ -37,8 +36,28 @@ import {
   bulkDuplicateNodes,
   bulkGroupNodes,
 } from '../utils/bulkOperations';
-import { detachNode, detachMultipleNodes } from '../utils/detachNodes';
+import { detachNode } from '../utils/detachNodes';
 import type { StepNodeData, ToolNodeData, FlowGroupData } from '../types';
+
+// Component to trigger editing from outside the context
+function EditTrigger({
+  editTrigger,
+  setEditTrigger
+}: {
+  editTrigger: { nodeId: string; nodeType: 'step' | 'tool'; nodeData: StepNodeData | ToolNodeData } | null;
+  setEditTrigger: (trigger: null) => void;
+}) {
+  const { setEditingNode } = useFlowContext();
+
+  useEffect(() => {
+    if (editTrigger) {
+      setEditingNode(editTrigger.nodeId, editTrigger.nodeType, editTrigger.nodeData);
+      setEditTrigger(null);
+    }
+  }, [editTrigger, setEditingNode, setEditTrigger]);
+
+  return null;
+}
 
 // Utility function to calculate group bounds based on child nodes
 const calculateGroupBounds = (groupNode: Node, childNodes: Node[]) => {
@@ -578,20 +597,20 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
   const [agentName, setAgentName] = useState('my-agent');
   const [persona, setPersona] = useState('A helpful assistant');
   const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    visible: boolean;
+    x?: number;
+    y?: number;
     nodeId?: string;
     nodeType?: string;
     edgeId?: string;
-  }>({
-    x: 0,
-    y: 0,
-    visible: false,
-  });
+    visible?: boolean;
+  }>({});
+  const [editTrigger, setEditTrigger] = useState<{
+    nodeId: string;
+    nodeType: 'step' | 'tool';
+    nodeData: StepNodeData | ToolNodeData;
+  } | null>(null);
 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { screenToFlowPosition } = useReactFlow();
 
   // Initialize undo/redo system
   const {
@@ -696,21 +715,6 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     }
   }, [nodes, edges, setNodesWithUndo]);
 
-  const handleDetachSelected = useCallback((detachType: 'all' | 'tools' | 'steps' = 'all') => {
-    const selectedNodeIds = nodes.filter(node => node.selected).map(node => node.id);
-    if (selectedNodeIds.length === 0) return;
-
-    const result = detachMultipleNodes(selectedNodeIds, nodes, edges, detachType);
-    
-    const actionName = detachType === 'all' ? 'Detach' : 
-                      detachType === 'tools' ? 'Detach tools from' : 
-                      'Detach steps from';
-    
-    setEdges(result.edges);
-    // Show notification about detached connections
-    console.log(`${actionName} ${selectedNodeIds.length} node(s): ${result.detachedConnections.length} connections removed`);
-  }, [nodes, edges, setEdges]);
-
   const handleDetachNode = useCallback((nodeId: string, detachType: 'all' | 'tools' | 'steps' = 'all') => {
     const result = detachNode({
       nodeId,
@@ -718,13 +722,8 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
       edges,
       detachType,
     });
-    
-    const actionName = detachType === 'all' ? 'Detach' : 
-                      detachType === 'tools' ? 'Detach tools from' : 
-                      'Detach steps from';
-    
+
     setEdges(result.edges);
-    console.log(`${actionName} node ${nodeId}: ${result.detachedConnections.length} connections removed`);
   }, [nodes, edges, setEdges]);
 
   // Export/Import handlers
@@ -874,47 +873,40 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
   }, [handleUndo, handleRedo]);
 
   // Context menu handlers
-  const handleContextMenu = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-    if (reactFlowBounds) {
-      setContextMenu({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-        visible: true,
-      });
-    }
-  }, []);
-
   const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
     event.preventDefault();
-    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-    if (reactFlowBounds) {
-      setContextMenu({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-        visible: true,
-        nodeId: node.id,
-        nodeType: node.type,
-      });
-    }
+    event.stopPropagation();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      nodeId: node.id,
+      nodeType: node.type,
+      visible: true,
+    });
   }, []);
 
   const handleEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
     event.preventDefault();
-    const reactFlowBounds = reactFlowWrapper.current?.getBoundingClientRect();
-    if (reactFlowBounds) {
-      setContextMenu({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-        visible: true,
-        edgeId: edge.id,
-      });
-    }
+    event.stopPropagation();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      edgeId: edge.id,
+      visible: true,
+    });
   }, []);
 
-  const closeContextMenu = useCallback(() => {
-    setContextMenu(prev => ({ ...prev, visible: false }));
+  const handlePaneContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      visible: true,
+    });
+  }, []);
+
+  const clearContextMenu = useCallback(() => {
+    setContextMenu({ visible: false });
   }, []);
 
   // Auto arrange handler
@@ -1184,10 +1176,11 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
 
   const addStepNode = useCallback(() => {
     const id = `step-${Date.now()}`;
-    const position = screenToFlowPosition({
-      x: contextMenu.x - 100,
-      y: contextMenu.y - 50,
-    });
+    // Default position when adding from context menu
+    const position = {
+      x: 100 + (nodes.length % 5) * 300, // Spread new nodes horizontally
+      y: 100 + Math.floor(nodes.length / 5) * 200, // Stack vertically after 5 nodes
+    };
 
     const newNode: Node = {
       id,
@@ -1202,14 +1195,15 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     };
 
     setNodesWithUndo([...nodes, newNode], 'Add step node');
-  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
+  }, [nodes, setNodesWithUndo]);
 
   const addToolNode = useCallback(() => {
     const id = `tool-${Date.now()}`;
-    const position = screenToFlowPosition({
-      x: contextMenu.x - 90,
-      y: contextMenu.y - 50,
-    });
+    // Default position when adding from context menu
+    const position = {
+      x: 200 + (nodes.length % 5) * 300, // Offset tools slightly from steps
+      y: 150 + Math.floor(nodes.length / 5) * 200,
+    };
 
     const newNode: Node = {
       id,
@@ -1223,7 +1217,7 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     };
 
     setNodesWithUndo([...nodes, newNode], 'Add tool node');
-  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
+  }, [nodes, setNodesWithUndo]);
 
   const deleteNode = useCallback(() => {
     if (contextMenu.nodeId) {
@@ -1256,9 +1250,14 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
         if (node.type === 'group') {
           // Handle group node editing
           handleNodeDoubleClick(null as any, node);
+        } else if (node.type === 'step' || node.type === 'tool') {
+          // For step/tool nodes, set edit trigger state
+          setEditTrigger({
+            nodeId: node.id,
+            nodeType: node.type as 'step' | 'tool',
+            nodeData: node.data
+          });
         }
-        // For step/tool nodes, editing is handled by clicking the edit button within the node
-        // We could potentially trigger it here as well if needed
       }
     }
   }, [contextMenu.nodeId, contextMenu.nodeType, nodes, handleNodeDoubleClick]);
@@ -1293,17 +1292,18 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
     const clipboardData = getClipboardData();
     if (clipboardData && clipboardData.type === 'node') {
       const originalNode = clipboardData.data as Node;
-      const position = screenToFlowPosition({
-        x: contextMenu.x - 100,
-        y: contextMenu.y - 50,
-      });
+      // Default position when pasting from context menu
+      const position = {
+        x: 300 + (nodes.length % 5) * 300,
+        y: 200 + Math.floor(nodes.length / 5) * 200,
+      };
 
       const newNode = cloneNodeWithNewId(originalNode);
       newNode.position = position;
 
       setNodesWithUndo([...nodes, newNode], 'Paste node');
     }
-  }, [contextMenu.x, contextMenu.y, screenToFlowPosition, nodes, setNodesWithUndo]);
+  }, [nodes, setNodesWithUndo]);
 
   return (
     <FlowProvider
@@ -1352,9 +1352,9 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onContextMenu={handleContextMenu}
             onNodeContextMenu={handleNodeContextMenu}
             onEdgeContextMenu={handleEdgeContextMenu}
+            onPaneContextMenu={handlePaneContextMenu}
             onNodeDoubleClick={handleNodeDoubleClick}
             isValidConnection={isValidConnection}
             nodeTypes={nodeTypes}
@@ -1400,11 +1400,12 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
           </svg>
         </ReactFlow>
 
-        <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          visible={contextMenu.visible}
-          onClose={closeContextMenu}
+        {/* Custom Context Menu */}
+        <CustomContextMenu
+          x={contextMenu.x || 0}
+          y={contextMenu.y || 0}
+          visible={!!contextMenu.visible}
+          onClose={clearContextMenu}
           onAddStepNode={addStepNode}
           onAddToolNode={addToolNode}
           onEdit={contextMenu.nodeId ? editNode : undefined}
@@ -1418,6 +1419,7 @@ export default function FlowBuilder({ onPreview, onSaveConfig }: FlowBuilderProp
         />
 
         <NodeEditDialogs />
+        <EditTrigger editTrigger={editTrigger} setEditTrigger={setEditTrigger} />
 
         {editingFlowGroup && (
           <FlowGroupEditDialog

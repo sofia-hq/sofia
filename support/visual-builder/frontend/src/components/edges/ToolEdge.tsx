@@ -47,7 +47,7 @@ export const ToolEdge = memo((props: EdgeProps) => {
         }}
         onContextMenu={handleEdgeContextMenu}
       />
-      
+
       {/* Delete button when edge is right-clicked */}
       {showDeleteButton && (
         <EdgeLabelRenderer>

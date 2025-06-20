@@ -6,23 +6,50 @@ import {
   useReactFlow,
   type EdgeProps,
 } from '@xyflow/react';
+import { shouldUseOffsetPath, calculateBidirectionalEdgePaths } from '../../utils/bidirectionalEdges';
 
 export const RouteEdge = memo((props: EdgeProps) => {
-  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, selected } = props;
+  const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props;
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(String(data?.condition || ''));
   const [showDeleteButton, setShowDeleteButton] = useState(false);
-  const { setEdges } = useReactFlow();
+  const { setEdges, getEdges } = useReactFlow();
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 20, // Add rounded corners
-  });
+  // Check if this edge is part of a bidirectional pair and should use offset path
+  const edges = getEdges();
+  const useBidirectionalPath = shouldUseOffsetPath(id, edges);
+
+  let edgePath, labelX, labelY;
+
+  if (useBidirectionalPath) {
+    // Use offset path for bidirectional edges
+    const bidirectionalInfo = {
+      forwardEdge: null,
+      reverseEdge: null,
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+    };
+
+    const pathInfo = calculateBidirectionalEdgePaths(bidirectionalInfo, false);
+    edgePath = pathInfo.edgePath;
+    labelX = pathInfo.labelX;
+    labelY = pathInfo.labelY;
+  } else {
+    // Use normal smooth step path
+    [edgePath, labelX, labelY] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 20,
+    });
+  }
 
   const handleLabelClick = useCallback(() => {
     setIsEditing(true);
@@ -71,7 +98,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
   const offsetDirection = edgeIndex % 4;
   let labelOffsetX = 0;
   let labelOffsetY = -10; // Default slight upward offset
-  
+
   // Apply different offsets based on edge index to spread labels
   switch (offsetDirection) {
     case 0:
@@ -89,7 +116,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
       labelOffsetY = -5;
       break;
   }
-  
+
   const adjustedLabelX = labelX + labelOffsetX;
   const adjustedLabelY = labelY + labelOffsetY;
 
@@ -105,7 +132,7 @@ export const RouteEdge = memo((props: EdgeProps) => {
         }}
         onContextMenu={handleEdgeContextMenu}
       />
-      
+
       {/* Delete button when edge is right-clicked */}
       {showDeleteButton && (
         <EdgeLabelRenderer>
