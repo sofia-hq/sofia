@@ -1,6 +1,15 @@
 import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 
+// Extended Node type that includes style property
+type NodeWithStyle = Node & {
+  style?: {
+    width?: number;
+    height?: number;
+    [key: string]: any;
+  };
+};
+
 // Fixed node dimensions
 const STEP_NODE_WIDTH = 280;
 const STEP_NODE_HEIGHT = 140;
@@ -261,7 +270,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
   const COMPONENT_SPACING = 200;
   let currentOffsetX = 0;
 
-  components.forEach((comp, idx) => {
+  components.forEach((comp) => {
     let minX = Infinity;
     let maxX = -Infinity;
     comp.forEach(id => {
@@ -271,8 +280,8 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
       if (!node) {
         node = optimizedGroupNodes.find(n => n.id === id);
         if (node) {
-          width = (node.style?.width as number) || 400;
-          height = (node.style?.height as number) || 300;
+          width = ((node as NodeWithStyle).style?.width as number) || 400;
+          height = ((node as NodeWithStyle).style?.height as number) || 300;
         }
       }
       if (node) {
