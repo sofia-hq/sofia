@@ -22,7 +22,7 @@ from .models.agent import (
     create_decision_model,
 )
 from .models.flow import Flow, FlowContext, FlowManager
-from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
+from .models.tool import FallbackError, MCPServer, Tool, ToolWrapper, get_tools
 from .utils.flow_utils import (
     create_flows_from_config,
     should_enter_flow,
@@ -488,7 +488,7 @@ class Agent:
         start_step_id: str,
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
-        tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        tools: Optional[List[Union[Callable, MCPServer, ToolWrapper]]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -503,7 +503,7 @@ class Agent:
         :param start_step_id: ID of the starting step.
         :param persona: Optional persona string.
         :param system_message: Optional system message.
-        :param tools: List of tool callables or ToolWrapper instances.
+        :param tools: List of tool callables, ToolWrappers or MCPServer instances.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -528,7 +528,11 @@ class Agent:
             tool_id = (
                 tool.name
                 if isinstance(tool, ToolWrapper)
-                else getattr(tool, "__name__", None)
+                else (
+                    tool.id
+                    if isinstance(tool, MCPServer)
+                    else getattr(tool, "__name__", None)
+                )
             )
             tool_id = tool_id or id(tool)  # Fallback to id if no name
             if tool_id not in seen:

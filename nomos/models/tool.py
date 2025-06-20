@@ -1,11 +1,11 @@
 """Tool abstractions and related logic for the SOFIA package."""
 
 import inspect
-from typing import Any, Callable, Dict, Literal, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union
 
 from docstring_parser import parse
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, HttpUrl, ValidationError
 
 from ..utils.utils import create_base_model
 
@@ -299,8 +299,62 @@ class ToolWrapper(BaseModel):
         )
 
 
+class MCPServer(BaseModel):
+    """Represents a MCP server."""
+
+    name: str
+    url: HttpUrl
+    path: Optional[str] = None
+    transport: Optional[Literal["mcp"]] = "mcp"
+
+    property
+
+    def id(self) -> str:
+        """
+        Get the unique identifier for the MCP server.
+
+        :return: The unique identifier for the MCP server.
+        """
+        return f"{self.transport}@{self.name}"
+
+    def get_tools(self) -> List[Tool]:
+        """
+        Get a list of Tool instances from the MCP server.
+
+        :return: A list of Tool instances.
+        """
+        return []
+
+    def call_tool(self, tool_name: str, kwargs: Optional[dict] = None) -> str:
+        """
+        Call a tool on the MCP server.
+
+        :param tool_name: The name of the tool to call.
+        :param kwargs: Optional keyword arguments for the tool.
+        :return: The result of the tool's function.
+        """
+        # This is a placeholder for actual implementation
+        return f"Called {tool_name} with args {kwargs} on MCP server {self.name}"
+
+
+class RemoteTool(BaseModel):
+    """Represents a remote tool."""
+
+    name: str
+    kwargs: Optional[dict] = None
+    server: Union[MCPServer]
+
+    def call(self) -> str:
+        """
+        Call the remote tool with the provided arguments.
+
+        :return: The result of the tool's function.
+        """
+        return self.server.call_tool(self.name, kwargs=self.kwargs)
+
+
 def get_tools(
-    tools: Optional[list[Union[Callable, ToolWrapper]]], tool_arg_desc: dict
+    tools: Optional[list[Union[Callable, MCPServer, ToolWrapper]]], tool_arg_desc: dict
 ) -> dict[str, Tool]:
     """
     Get a list of Tool instances from a list of functions or tool identifiers.
@@ -309,15 +363,23 @@ def get_tools(
     :param tool_arg_desc: A dictionary mapping function names to argument descriptions.
     :return: A dictionary mapping tool names to Tool instances.
     """
-    _tools: dict[str, Tool] = {}
+    _tools: dict[str, Union[Tool, MCPServer]] = {}
     for tool in tools or []:
         _tool = None
+        _tool_name = None
         if callable(tool):
             _tool = Tool.from_function(tool, tool_arg_desc)
+            _tool_name = _tool.name
         if isinstance(tool, ToolWrapper):
             _tool = tool.get_tool(tool_arg_desc)
-        assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
-        _tools[_tool.name] = _tool
+            _tool_name = _tool.name
+        if isinstance(tool, MCPServer):
+            _tool = tool
+            _tool_name = tool.id  # type: ignore
+        assert (
+            _tool is not None and _tool_name is not None
+        ), "Tool must be a callable or a ToolWrapper instance"
+        _tools[_tool_name] = _tool
     return _tools
 
 
