@@ -14,6 +14,7 @@ from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
+from .models.tool import MCPServer
 from .models.tool import ToolWrapper
 from .utils.utils import convert_camelcase_to_snakecase
 
@@ -173,6 +174,7 @@ class AgentConfig(BaseSettings):
     server: ServerConfig = ServerConfig()  # Configuration for the FastAPI server
     tools: ToolsConfig = ToolsConfig()  # Configuration for tools
 
+    mcp_servers: Optional[List[MCPServer]] = None
     logging: Optional[LoggingConfig] = None  # Optional logging configuration
 
     @classmethod

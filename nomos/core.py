@@ -4,6 +4,7 @@ import contextlib
 import os
 import pickle
 import uuid
+from itertools import chain
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel
@@ -22,7 +23,7 @@ from .models.agent import (
     create_decision_model,
 )
 from .models.flow import Flow, FlowContext, FlowManager
-from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
+from .models.tool import FallbackError, MCPServer, Tool, ToolWrapper, get_tools
 from .utils.flow_utils import (
     create_flows_from_config,
     should_enter_flow,
@@ -44,6 +45,7 @@ class Session:
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -63,6 +65,7 @@ class Session:
         :param system_message: Optional system message.
         :param persona: Optional persona string.
         :param tools:  List of tool callables or package identifiers (e.g., "math:add").
+        :param mcp_servers: Optional list of MCPServer instances for tool discovery.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -100,7 +103,13 @@ class Session:
             if self.config and self.config.tools.tool_arg_descriptions
             else {}
         )
-        self.tools = get_tools(tools, tool_arg_descs)
+
+        remote_tools = list(
+            filter(lambda t: isinstance(t, str) and Tool.is_remote_tool(t), tools or [])
+        )
+        local_tools = list(set(tools or []).difference(remote_tools))
+        self.tools = get_tools(local_tools, tool_arg_descs)
+        self.tools.update({t.name: t for t in remote_tools})  # type: ignore
         # Variable
         self.memory = memory
         self.memory.context = history or []
@@ -381,7 +390,8 @@ class Session:
                     )
                 except Exception as e:
                     self._add_message(
-                        "tool", f"Running tool {tool_name} with args {tool_kwargs}"
+                        "tool",
+                        f"Running tool {tool_name} failed with args {tool_kwargs}",
                     )
                     raise e
                 log_info(f"Tool Results: {tool_results}") if self.verbose else None
@@ -488,6 +498,7 @@ class Agent:
         start_step_id: str,
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
+        mcp_servers: Optional[List[MCPServer]] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
@@ -504,6 +515,7 @@ class Agent:
         :param persona: Optional persona string.
         :param system_message: Optional system message.
         :param tools: List of tool callables or ToolWrapper instances.
+        :param mcp_servers: Optional list of MCPServer instances for tool discovery.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -518,6 +530,7 @@ class Agent:
         self.show_steps_desc = show_steps_desc
         self.max_errors = max_errors
         self.max_iter = max_iter
+        self.mcp_servers: Optional[List[MCPServer]] = mcp_servers
         self.config = config
         self._setup_logging()
 
@@ -534,6 +547,11 @@ class Agent:
             if tool_id not in seen:
                 seen.add(tool_id)
                 self.tools.append(tool)
+
+        mcp_server_tools = chain.from_iterable(
+            mcp_server.get_tools() for mcp_server in (self.mcp_servers or [])
+        )
+        self.tools.extend(mcp_server_tools)
 
         # Initialize flow manager if flows are configured
         self.flow_manager: Optional[FlowManager] = None
@@ -558,9 +576,28 @@ class Agent:
         # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
+                step_tool_name = (
+                    Tool.get_tool_name_from_remote_tool_name(step_tool)
+                    if Tool.is_remote_tool(step_tool)
+                    else step_tool
+                )
+                step_tool_server_name = (
+                    Tool.get_remote_server_name_from_tool_name(step_tool)
+                    if Tool.is_remote_tool(step_tool)
+                    else None
+                )
                 for tool in self.tools:
-                    if (isinstance(tool, ToolWrapper) and tool.name == step_tool) or (
-                        callable(tool) and getattr(tool, "__name__", None) == step_tool
+                    if (
+                        (isinstance(tool, ToolWrapper) and tool.name == step_tool_name)
+                        or (
+                            callable(tool)
+                            and getattr(tool, "__name__", None) == step_tool_name
+                        )
+                        or (isinstance(tool, Tool) and tool.name == step_tool_name)
+                        and (
+                            tool.remote_server
+                            and tool.remote_server.name == step_tool_server_name
+                        )
                     ):
                         break
                 else:
@@ -603,6 +640,7 @@ class Agent:
             system_message=config.system_message,
             persona=config.persona,
             tools=tools,
+            mcp_servers=config.mcp_servers,
             show_steps_desc=config.show_steps_desc,
             max_errors=config.max_errors,
             max_iter=config.max_iter,
@@ -648,6 +686,7 @@ class Agent:
             system_message=self.system_message,
             persona=self.persona,
             tools=self.tools,
+            mcp_servers=self.mcp_servers,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
