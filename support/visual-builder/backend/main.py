@@ -108,7 +108,9 @@ def chat(request: ServerlessChatRequest) -> ChatResponse:
 
         # Process the chat request
         decision, tool_output, session_data, state = agent.next(
-            **request.chat_request.model_dump(), verbose=request.verbose
+            **request.chat_request.model_dump(),
+            verbose=request.verbose,
+            return_session_state=True,
         )
 
         return ChatResponse(

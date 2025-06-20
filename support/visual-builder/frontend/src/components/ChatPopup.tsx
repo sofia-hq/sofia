@@ -32,6 +32,7 @@ interface ChatPopupProps {
   edges: any[];
   agentName: string;
   persona: string;
+  onHighlightNode?: (nodeId: string | null) => void;
 }
 
 interface Message {
@@ -39,6 +40,10 @@ interface Message {
   content: string;
   reasoning?: string[];
   isStreaming?: boolean;
+  state?: {
+    current_step_id?: string;
+    flow_id?: string;
+  };
 }
 
 const STORAGE_KEY = 'nomos-chat-state';
@@ -51,14 +56,54 @@ const DISABLE_FILE_UPLOAD = import.meta.env.VITE_DISABLE_FILE_UPLOAD === 'true';
 interface AssistantMessageProps {
   content: string;
   reasoning?: string[];
+  state?: {
+    current_step_id?: string;
+    flow_id?: string;
+  };
+  onHighlightNode?: (nodeId: string | null) => void;
 }
 
-const AssistantMessage = ({ content, reasoning }: AssistantMessageProps) => {
+const AssistantMessage = ({ content, reasoning, state, onHighlightNode }: AssistantMessageProps) => {
   const [showReasoning, setShowReasoning] = useState(false);
+
+  // Handle node highlighting on hover
+  const handleStepHover = (nodeId: string | null) => {
+    if (onHighlightNode) {
+      onHighlightNode(nodeId);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
-      <div className="text-xs opacity-70 mb-1 font-medium text-gray-900 dark:text-gray-100">Assistant</div>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-xs opacity-70 font-medium text-gray-900 dark:text-gray-100">Assistant</div>
+
+        {/* State Information */}
+        {state && (state.current_step_id || state.flow_id) && (
+          <div className="flex items-center gap-2 text-xs">
+            {state.current_step_id && (
+              <span
+                className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-mono cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                onMouseEnter={() => handleStepHover(state.current_step_id!)}
+                onMouseLeave={() => handleStepHover(null)}
+                title="Current Step (hover to highlight)"
+              >
+                Step: {state.current_step_id}
+              </span>
+            )}
+            {state.flow_id && (
+              <span
+                className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full font-mono cursor-pointer hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                onMouseEnter={() => handleStepHover(state.flow_id!)}
+                onMouseLeave={() => handleStepHover(null)}
+                title="Current Flow (hover to highlight)"
+              >
+                Flow: {state.flow_id}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
       {reasoning && reasoning.length > 0 && (
         <div className="mb-3">
@@ -116,6 +161,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   edges,
   agentName,
   persona,
+  onHighlightNode,
 }, ref) {
   const [provider, setProvider] = useState('openai');
   const [model, setModel] = useState('gpt-4o-mini');
@@ -239,7 +285,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   }, []);
 
   // Stream text animation function
-  const streamText = useCallback((text: string, messageIndex: number, reasoning?: string[]) => {
+  const streamText = useCallback((text: string, messageIndex: number, reasoning?: string[], state?: any) => {
     let currentIndex = 0;
 
     const streamNextChar = () => {
@@ -251,6 +297,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
                   ...msg,
                   content: text.substring(0, currentIndex),
                   reasoning,
+                  state,
                   isStreaming: currentIndex < text.length
                 }
               : msg
@@ -362,14 +409,15 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         role: 'assistant',
         content: '',
         reasoning,
-        isStreaming: true
+        isStreaming: true,
+        state: res.state
       };
 
       setMessages(m => [...m, assistantMessage]);
 
       // Start streaming the response
       const messageIndex = messages.length + 1; // +1 because we already added user message
-      streamText(assistantContent, messageIndex, reasoning);
+      streamText(assistantContent, messageIndex, reasoning, res.state);
 
     } catch (error) {
       setIsTyping(false);
@@ -585,6 +633,8 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
                   <AssistantMessage
                     content={m.content}
                     reasoning={m.reasoning}
+                    state={m.state}
+                    onHighlightNode={onHighlightNode}
                   />
                 )}
               </div>
