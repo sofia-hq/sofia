@@ -2,10 +2,8 @@
 name = "nomos"
 version = "0.2.4"
 description = "Configurable multi-step agent framework for building advanced LLM-powered assistants"
-authors = [
-    {name = "chandralegend",email = "irugalbandarachandra@gmail.com"}
-]
-license = {text = "MIT"}
+authors = [{ name = "chandralegend", email = "irugalbandarachandra@gmail.com" }]
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.9,<4.0"
 dependencies = [
@@ -27,22 +25,11 @@ cli = [
     "rich (>=13.0.0,<14.0.0)",
     "docker (>=7.1.0,<8.0.0)",
 ]
-openai = [
-    "openai (>=1.76.0,<2.0.0)",
-    "tiktoken (>=0.9.0,<0.10.0)",
-]
-mistralai = [
-    "mistralai (>=1.7.0,<2.0.0)",
-]
-gemini = [
-    "google-genai (>=1.12.1,<2.0.0)",
-]
-ollama = [
-    "ollama (>=0.5.1)",
-]
-huggingface = [
-    "huggingface_hub (>=0.32.0)",
-]
+openai = ["openai (>=1.76.0,<2.0.0)", "tiktoken (>=0.9.0,<0.10.0)"]
+mistralai = ["mistralai (>=1.7.0,<2.0.0)"]
+gemini = ["google-genai (>=1.12.1,<2.0.0)"]
+ollama = ["ollama (>=0.5.1)"]
+huggingface = ["huggingface_hub (>=0.32.0)"]
 traces = [
     "opentelemetry-api (>=1.33.0,<2.0.0)",
     "opentelemetry-sdk (>=1.33.0,<2.0.0)",
@@ -64,9 +51,7 @@ nomos = "nomos.cli:main"
 [tool.pytest.ini_options]
 minversion = "7.0"
 addopts = "-ra -q --cov=nomos --cov-report=term-missing"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.poetry]
 packages = [{ include = "nomos" }]

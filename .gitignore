@@ -8,6 +8,7 @@ docs/next-env.d.ts
 *.dump.*
 .dump
 *.dump/
+test_generated.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

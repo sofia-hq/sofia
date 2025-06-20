@@ -11,6 +11,7 @@ build
 # Development files
 .git
 .gitignore
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -44,7 +45,3 @@ coverage
 .cache
 .parcel-cache
 *.md
-tsconfig.json
-vite.config.ts
-package.json
-package-lock.json

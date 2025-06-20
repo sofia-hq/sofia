@@ -6,21 +6,50 @@ import {
   useReactFlow,
   type EdgeProps,
 } from '@xyflow/react';
+import { shouldUseOffsetPath, calculateBidirectionalEdgePaths } from '../../utils/bidirectionalEdges';
 
 export const RouteEdge = memo((props: EdgeProps) => {
   const { id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data } = props;
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(String(data?.condition || ''));
-  const { setEdges } = useReactFlow();
+  const [showDeleteButton, setShowDeleteButton] = useState(false);
+  const { setEdges, getEdges } = useReactFlow();
 
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
+  // Check if this edge is part of a bidirectional pair and should use C-shaped path
+  const edges = getEdges();
+  const useBidirectionalPath = shouldUseOffsetPath(id, edges, sourceY, targetY);
+
+  let edgePath, labelX, labelY;
+
+  if (useBidirectionalPath) {
+    // Use custom path for bidirectional edges
+    const bidirectionalInfo = {
+      forwardEdge: null,
+      reverseEdge: null,
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+    };
+
+    const pathInfo = calculateBidirectionalEdgePaths(bidirectionalInfo, false);
+    edgePath = pathInfo.edgePath;
+    labelX = pathInfo.labelX;
+    labelY = pathInfo.labelY;
+  } else {
+    // Use normal smooth step path
+    [edgePath, labelX, labelY] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: 20,
+    });
+  }
 
   const handleLabelClick = useCallback(() => {
     setIsEditing(true);
@@ -28,8 +57,8 @@ export const RouteEdge = memo((props: EdgeProps) => {
   }, [data?.condition]);
 
   const handleSave = useCallback(() => {
-    setEdges((edges) =>
-      edges.map((edge) =>
+    setEdges((edges: any) =>
+      edges.map((edge: any) =>
         edge.id === id
           ? { ...edge, data: { ...edge.data, condition: editValue } }
           : edge
@@ -51,6 +80,46 @@ export const RouteEdge = memo((props: EdgeProps) => {
     }
   }, [handleSave, handleCancel]);
 
+  const handleDeleteEdge = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEdges((edges: any) => edges.filter((edge: any) => edge.id !== id));
+  }, [id, setEdges]);
+
+  const handleEdgeContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowDeleteButton(true);
+    // Hide after 3 seconds
+    setTimeout(() => setShowDeleteButton(false), 3000);
+  }, []);
+
+  // Calculate a small offset to prevent exact overlaps
+  const edgeIndex = parseInt(id.split('-').pop() || '0', 10) || Math.abs(id.split('').reduce((a, b) => a + b.charCodeAt(0), 0));
+  const offsetDirection = edgeIndex % 4;
+  let labelOffsetX = 0;
+  let labelOffsetY = -10; // Default slight upward offset
+
+  // Apply different offsets based on edge index to spread labels
+  switch (offsetDirection) {
+    case 0:
+      labelOffsetY = -15;
+      break;
+    case 1:
+      labelOffsetX = 20;
+      labelOffsetY = -5;
+      break;
+    case 2:
+      labelOffsetY = 5;
+      break;
+    case 3:
+      labelOffsetX = -20;
+      labelOffsetY = -5;
+      break;
+  }
+
+  const adjustedLabelX = labelX + labelOffsetX;
+  const adjustedLabelY = labelY + labelOffsetY;
+
   return (
     <>
       <BaseEdge
@@ -59,16 +128,42 @@ export const RouteEdge = memo((props: EdgeProps) => {
         style={{
           stroke: '#374151',
           strokeWidth: 2,
-          markerEnd: 'url(#arrow-marker)'
+          markerEnd: 'url(#arrow-marker)',
         }}
+        onContextMenu={handleEdgeContextMenu}
       />
+
+      {/* Delete button when edge is right-clicked */}
+      {showDeleteButton && (
+        <EdgeLabelRenderer>
+          <div
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY - 30}px)`,
+              pointerEvents: 'all',
+              zIndex: 1000,
+            }}
+          >
+            <button
+              onClick={handleDeleteEdge}
+              className="bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg"
+              title="Delete edge"
+            >
+              ×
+            </button>
+          </div>
+        </EdgeLabelRenderer>
+      )}
+
+      {/* Condition label */}
       {(data?.condition || isEditing) && (
         <EdgeLabelRenderer>
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+              transform: `translate(-50%, -50%) translate(${adjustedLabelX}px,${adjustedLabelY}px)`,
               pointerEvents: 'all',
+              zIndex: 999,
             }}
           >
             {isEditing ? (
@@ -84,8 +179,8 @@ export const RouteEdge = memo((props: EdgeProps) => {
             ) : (
               <div
                 onClick={handleLabelClick}
-                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 shadow-sm cursor-pointer hover:border-gray-400 hover:bg-gray-50"
-                title="Click to edit condition"
+                className="bg-white border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 shadow-sm cursor-pointer hover:border-gray-400 hover:bg-gray-50 max-w-48 truncate"
+                title={`Click to edit condition: ${data?.condition || 'Add condition...'}`}
               >
                 {String(data?.condition || 'Add condition...')}
               </div>

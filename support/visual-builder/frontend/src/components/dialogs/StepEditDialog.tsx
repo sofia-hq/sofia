@@ -98,13 +98,13 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
           {(validation.errors.length > 0 || validation.warnings.length > 0) && (
             <div className="space-y-2">
               {validation.errors.map((error, index) => (
-                <div key={`error-${index}`} className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-2 rounded">
+                <div key={`error-${index}`} className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-2 rounded">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{error.message}</span>
                 </div>
               ))}
               {validation.warnings.map((warning, index) => (
-                <div key={`warning-${index}`} className="flex items-center gap-2 text-sm text-yellow-600 bg-yellow-50 p-2 rounded">
+                <div key={`warning-${index}`} className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
                   <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                   <span>{warning.message}</span>
                 </div>
@@ -152,8 +152,8 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label>Connected Tools</Label>
-              <Link className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-500">Based on visual connections</span>
+              <Link className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Based on visual connections</span>
             </div>
             {currentConnections.toolNames && currentConnections.toolNames.length > 0 ? (
               <div className="flex flex-wrap gap-1">
@@ -164,7 +164,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-gray-500 italic">
+              <div className="text-sm text-gray-500 dark:text-gray-400 italic">
                 No tools connected. Connect tool nodes to this step to add tools.
               </div>
             )}
@@ -174,21 +174,21 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Label>Outgoing Routes</Label>
-              <ArrowRight className="w-4 h-4 text-gray-500" />
-              <span className="text-xs text-gray-500">Based on visual connections</span>
+              <ArrowRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span className="text-xs text-gray-500 dark:text-gray-400">Based on visual connections</span>
             </div>
             {currentConnections.routes && currentConnections.routes.length > 0 ? (
               <div className="space-y-1">
                 {currentConnections.routes.map((route, index) => (
-                  <div key={index} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
-                    <span className="font-medium">{route.target}</span>
-                    <ArrowRight className="w-3 h-3 text-gray-400" />
-                    <span className="flex-1 text-gray-600">{route.condition}</span>
+                  <div key={index} className="flex items-center gap-2 text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{route.target}</span>
+                    <ArrowRight className="w-3 h-3 text-gray-400 dark:text-gray-500" />
+                    <span className="flex-1 text-gray-600 dark:text-gray-300">{route.condition}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-gray-500 italic">
+              <div className="text-sm text-gray-500 dark:text-gray-400 italic">
                 No routes defined. Connect this step to other steps to create routes.
               </div>
             )}

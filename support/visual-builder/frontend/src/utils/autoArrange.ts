@@ -1,6 +1,15 @@
 import dagre from 'dagre';
 import type { Node, Edge } from '@xyflow/react';
 
+// Extended Node type that includes style property
+type NodeWithStyle = Node & {
+  style?: {
+    width?: number;
+    height?: number;
+    [key: string]: any;
+  };
+};
+
 // Fixed node dimensions
 const STEP_NODE_WIDTH = 280;
 const STEP_NODE_HEIGHT = 140;
@@ -16,6 +25,55 @@ function snapToGrid(position: { x: number; y: number }): { x: number; y: number 
     x: Math.round(position.x / GRID_SIZE) * GRID_SIZE,
     y: Math.round(position.y / GRID_SIZE) * GRID_SIZE,
   };
+}
+
+// Arrange step nodes inside a group using a simple dagre layout
+function arrangeStepsInGroup(
+  groupNode: Node,
+  childSteps: Node[],
+  edges: Edge[]
+): Node[] {
+  if (childSteps.length === 0) {
+    return [];
+  }
+
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setGraph({
+    rankdir: 'TB',
+    nodesep: 120,
+    ranksep: 150,
+    marginx: 40,
+    marginy: 40,
+  });
+
+  childSteps.forEach(step => {
+    g.setNode(step.id, { width: STEP_NODE_WIDTH, height: STEP_NODE_HEIGHT });
+  });
+
+  edges.forEach(edge => {
+    if (
+      edge.type === 'route' &&
+      childSteps.some(n => n.id === edge.source) &&
+      childSteps.some(n => n.id === edge.target)
+    ) {
+      g.setEdge(edge.source, edge.target);
+    }
+  });
+
+  dagre.layout(g);
+
+  return childSteps.map(step => {
+    const pos = g.node(step.id);
+    const relativePos = {
+      x: pos.x - STEP_NODE_WIDTH / 2,
+      y: pos.y - STEP_NODE_HEIGHT / 2,
+    };
+    return {
+      ...step,
+      position: snapToGrid(relativePos),
+    };
+  });
 }
 
 export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
@@ -129,9 +187,15 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     return groupNode;
   });
 
+  // Arrange step nodes inside each group using their internal connections
+  const arrangedGroupedStepNodes = groupNodes.flatMap(group => {
+    const children = groupedStepNodes.filter(n => n.parentId === group.id);
+    return arrangeStepsInGroup(group, children, edges);
+  });
+
   // Now optimize group bounds based on child nodes using the NEW positions from dagre
   const groupOptimizations = arrangedGroupNodes.map(groupNode => {
-    const childNodes = groupedStepNodes.filter(child => child.parentId === groupNode.id);
+    const childNodes = arrangedGroupedStepNodes.filter(child => child.parentId === groupNode.id);
     if (childNodes.length > 0) {
       const bounds = calculateOptimalGroupBounds(groupNode, childNodes);
       return {
@@ -155,6 +219,110 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
 
   const optimizedGroupNodes = groupOptimizations.map(opt => opt.optimizedGroup);
 
+  // ----- Handle multiple disconnected flows by separating components -----
+  const rootNodeIds = new Set<string>();
+  ungroupedStepNodes.forEach(n => rootNodeIds.add(n.id));
+  groupNodes.forEach(n => rootNodeIds.add(n.id));
+
+  const getRootId = (nodeId: string): string => {
+    const grouped = groupedStepNodes.find(g => g.id === nodeId);
+    return grouped && grouped.parentId ? grouped.parentId : nodeId;
+  };
+
+  const adjacency: Record<string, Set<string>> = {};
+  edges.forEach(edge => {
+    if (edge.type === 'route') {
+      const source = getRootId(edge.source);
+      const target = getRootId(edge.target);
+      if (rootNodeIds.has(source) && rootNodeIds.has(target)) {
+        adjacency[source] = adjacency[source] || new Set();
+        adjacency[target] = adjacency[target] || new Set();
+        adjacency[source].add(target);
+        adjacency[target].add(source);
+      }
+    }
+  });
+
+  const visited = new Set<string>();
+  const components: string[][] = [];
+  rootNodeIds.forEach(id => {
+    if (!visited.has(id)) {
+      const queue = [id];
+      visited.add(id);
+      const comp: string[] = [];
+      while (queue.length) {
+        const curr = queue.shift()!;
+        comp.push(curr);
+        const neighbors = adjacency[curr];
+        if (neighbors) {
+          neighbors.forEach(n => {
+            if (!visited.has(n)) {
+              visited.add(n);
+              queue.push(n);
+            }
+          });
+        }
+      }
+      components.push(comp);
+    }
+  });
+
+  const COMPONENT_SPACING = 200;
+  let currentOffsetX = 0;
+
+  components.forEach((comp) => {
+    let minX = Infinity;
+    let maxX = -Infinity;
+    comp.forEach(id => {
+      let node = arrangedUngroupedStepNodes.find(n => n.id === id);
+      let width = STEP_NODE_WIDTH;
+      let height = STEP_NODE_HEIGHT;
+      if (!node) {
+        node = optimizedGroupNodes.find(n => n.id === id);
+        if (node) {
+          width = ((node as NodeWithStyle).style?.width as number) || 400;
+          height = ((node as NodeWithStyle).style?.height as number) || 300;
+        }
+      }
+      if (node) {
+        minX = Math.min(minX, node.position.x);
+        maxX = Math.max(maxX, node.position.x + width);
+      }
+    });
+
+    const offsetX = currentOffsetX - minX;
+
+    comp.forEach(id => {
+      const stepIdx = arrangedUngroupedStepNodes.findIndex(n => n.id === id);
+      if (stepIdx !== -1) {
+        const node = arrangedUngroupedStepNodes[stepIdx];
+        arrangedUngroupedStepNodes[stepIdx] = {
+          ...node,
+          position: snapToGrid({
+            x: node.position.x + offsetX,
+            y: node.position.y,
+          }),
+        };
+      } else {
+        const groupIdx = optimizedGroupNodes.findIndex(n => n.id === id);
+        if (groupIdx !== -1) {
+          const node = optimizedGroupNodes[groupIdx];
+          optimizedGroupNodes[groupIdx] = {
+            ...node,
+            position: snapToGrid({
+              x: node.position.x + offsetX,
+              y: node.position.y,
+            }),
+          };
+        }
+      }
+    });
+
+    currentOffsetX += maxX - minX + COMPONENT_SPACING;
+  });
+
+  // Recalculate group boundaries after component offsets
+
   // Calculate optimized group boundaries for collision detection using the new positions
   const groupBoundaries = optimizedGroupNodes.map(group => ({
     minX: group.position.x,
@@ -174,7 +342,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
   };
 
   // Apply child position adjustments based on group optimizations BEFORE tool positioning
-  const adjustedGroupedStepNodes = groupedStepNodes.map(child => {
+  const adjustedGroupedStepNodes = arrangedGroupedStepNodes.map(child => {
     const parentOptimization = groupOptimizations.find(opt =>
       opt.childAdjustments.some(adj => adj.id === child.id)
     );
@@ -192,152 +360,120 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     return child;
   });
 
-  // Create a combined list of all step nodes for tool positioning reference
-  const allStepNodesWithPositions = [
-    ...arrangedUngroupedStepNodes,
-    ...adjustedGroupedStepNodes
-  ];
+  const toolsByStep: Record<string, Node[]> = {};
+  edges.forEach(edge => {
+    if (edge.type === 'tool') {
+      const tool = toolNodes.find(t => t.id === edge.target);
+      if (tool) {
+        if (!toolsByStep[edge.source]) toolsByStep[edge.source] = [];
+        toolsByStep[edge.source].push(tool);
+      }
+    }
+  });
+  const positionedToolNodes: Node[] = [];
+  const usedToolIds = new Set<string>();
 
-  // Position tool nodes intelligently - aim for natural placement near connected nodes
-  let toolNodeOffsetIndex = 0;
+  // Calculate bounds for tool positioning
+  const allStepNodesWithPositions = [...arrangedUngroupedStepNodes, ...adjustedGroupedStepNodes];
 
-  // Calculate a more natural tool positioning strategy
-  // Instead of pushing all tools to the far right, try to place them near their connected nodes first
-  const mainFlowBounds = {
-    minX: Math.min(...arrangedUngroupedStepNodes.map(n => n.position.x)),
-    maxX: Math.max(...arrangedUngroupedStepNodes.map(n => n.position.x + STEP_NODE_WIDTH)),
-    minY: Math.min(...arrangedUngroupedStepNodes.map(n => n.position.y)),
-    maxY: Math.max(...arrangedUngroupedStepNodes.map(n => n.position.y + STEP_NODE_HEIGHT)),
+  const stepBounds = {
+    minX: Math.min(...allStepNodesWithPositions.map(n => n.position.x)),
+    maxX: Math.max(...allStepNodesWithPositions.map(n => n.position.x + STEP_NODE_WIDTH)),
+    minY: Math.min(...allStepNodesWithPositions.map(n => n.position.y)),
+    maxY: Math.max(...allStepNodesWithPositions.map(n => n.position.y + STEP_NODE_HEIGHT)),
   };
 
-  // For disconnected tools, place them in a more natural location - either to the right of main flow
-  // or below it, whichever gives better spacing
-  const fallbackToolAreaX = mainFlowBounds.maxX + 40; // Much closer to main flow
-  const fallbackToolAreaY = mainFlowBounds.minY;
+  const fallbackToolAreaX = stepBounds.maxX + 100;
+  const fallbackToolAreaY = stepBounds.minY;
 
+  // Utility function to check if a position overlaps with any step node
+  const overlapsStep = (x: number, y: number, width: number, height: number): boolean => {
+    return allStepNodesWithPositions.some(step => {
+      let stepX = step.position.x;
+      let stepY = step.position.y;
 
-  const arrangedToolNodes = toolNodes.map((toolNode) => {
-    // Find all step nodes that connect to this tool
-    const connectedStepEdges = edges.filter(
-      (edge) => edge.type === 'tool' && edge.target === toolNode.id
-    );
-
-    if (connectedStepEdges.length === 0) {
-      // No connections - place in a compact area near the main flow
-      let position: { x: number; y: number };
-      let attempts = 0;
-
-      // Try positions progressively further from main flow
-      do {
-        const col = Math.floor(toolNodeOffsetIndex / 3);
-        const row = toolNodeOffsetIndex % 3;
-
-        position = {
-          x: fallbackToolAreaX + (col * (TOOL_NODE_WIDTH + 40)),
-          y: fallbackToolAreaY + (row * (TOOL_NODE_HEIGHT + 40))
-        };
-
-        if (isPositionInsideGroup(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)) {
-          // Try next position or move further right
-          toolNodeOffsetIndex++;
-          attempts++;
-          if (attempts > 10) {
-            // Safety: place well clear of everything
-            position = {
-              x: fallbackToolAreaX + 200 + (attempts * 30),
-              y: fallbackToolAreaY + (row * (TOOL_NODE_HEIGHT + 40))
-            };
-            break;
-          }
-        } else {
-          break;
+      // If step is in a group, calculate absolute position
+      if (step.parentId) {
+        const parent = optimizedGroupNodes.find(g => g.id === step.parentId);
+        if (parent) {
+          stepX += parent.position.x;
+          stepY += parent.position.y;
         }
-      } while (true);
-
-      toolNodeOffsetIndex++;
-      return {
-        ...toolNode,
-        position: snapToGrid(position),
-      };
-    }
-
-    // Connected tool - try to place it near the connected step node
-    const primaryStepEdge = connectedStepEdges[0];
-
-    // Search for the connected step node in ALL step nodes (ungrouped and grouped)
-    let primaryStepNode = allStepNodesWithPositions.find((n: Node) => n.id === primaryStepEdge.source);
-
-    if (!primaryStepNode) {
-      // Fallback to disconnected logic
-      let position = {
-        x: fallbackToolAreaX + (toolNodeOffsetIndex * 40),
-        y: fallbackToolAreaY + 100
-      };
-
-      // Quick check for group collision
-      if (isPositionInsideGroup(position.x, position.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)) {
-        position = {
-          x: fallbackToolAreaX + 200,
-          y: fallbackToolAreaY + (toolNodeOffsetIndex * 60)
-        };
       }
 
-      toolNodeOffsetIndex++;
-      return {
-        ...toolNode,
-        position: snapToGrid(position),
-      };
+      const stepRight = stepX + STEP_NODE_WIDTH;
+      const stepBottom = stepY + STEP_NODE_HEIGHT;
+      const nodeRight = x + width;
+      const nodeBottom = y + height;
+
+      return !(x >= stepRight || nodeRight <= stepX || y >= stepBottom || nodeBottom <= stepY);
+    });
+  };
+
+  const tryPlace = (desired: { x: number; y: number }): { x: number; y: number } => {
+    let pos = { ...desired };
+    while (
+      isPositionInsideGroup(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) ||
+      overlapsStep(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT) ||
+      positionedToolNodes.some(n =>
+        Math.abs(n.position.x - pos.x) < TOOL_NODE_WIDTH + 20 &&
+        Math.abs(n.position.y - pos.y) < TOOL_NODE_HEIGHT + 20
+      )
+    ) {
+      pos.x += TOOL_NODE_WIDTH + 40;
     }
+    return pos;
+  };
 
-    // Smart positioning: try to place tool near its connected step node
-    let position: { x: number; y: number };
-    const stepNode = primaryStepNode;
+  // Position tools next to their connected steps
+  allStepNodesWithPositions.forEach(step => {
+    const tools = toolsByStep[step.id];
+    if (!tools || tools.length === 0) return;
 
-    // Calculate the absolute position of the step node
-    // If it's a grouped node, we need to add the group position to its relative position
-    let stepAbsolutePosition = { ...stepNode.position };
-    if (stepNode.parentId) {
-      const parentGroup = optimizedGroupNodes.find(g => g.id === stepNode.parentId);
-      if (parentGroup) {
-        stepAbsolutePosition = {
-          x: parentGroup.position.x + stepNode.position.x,
-          y: parentGroup.position.y + stepNode.position.y,
-        };
+    let absX = step.position.x;
+    let absY = step.position.y;
+
+    // If step is in a group, calculate absolute position
+    if (step.parentId) {
+      const parent = optimizedGroupNodes.find(g => g.id === step.parentId);
+      if (parent) {
+        absX += parent.position.x;
+        absY += parent.position.y;
       }
     }
 
-    // Try multiple natural positions around the connected step node with increased spacing
-    const candidatePositions = [
-      // Right of the step node (preferred) - increased spacing for better visibility
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 100, y: stepAbsolutePosition.y },
-      // Below the step node - increased spacing
-      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y + STEP_NODE_HEIGHT + 100 },
-      // Above the step node - increased spacing
-      { x: stepAbsolutePosition.x, y: stepAbsolutePosition.y - TOOL_NODE_HEIGHT - 100 },
-      // Further right - increased spacing
-      { x: stepAbsolutePosition.x + STEP_NODE_WIDTH + 150, y: stepAbsolutePosition.y },
-    ];
+    const spacing = TOOL_NODE_HEIGHT + 30;
+    const startY = absY - ((tools.length - 1) * spacing) / 2;
 
-    // Find the first position that doesn't conflict with groups
-    position = candidatePositions.find(pos =>
-      !isPositionInsideGroup(pos.x, pos.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT)
-    ) || {
-      // Fallback: place in the general tool area
-      x: fallbackToolAreaX + 50,
-      y: fallbackToolAreaY + (toolNodeOffsetIndex * (TOOL_NODE_HEIGHT + 30))
-    };
-
-    toolNodeOffsetIndex++;
-    return {
-      ...toolNode,
-      position: snapToGrid(position),
-    };
+    tools.forEach((tool, idx) => {
+      const desired = {
+        x: absX + STEP_NODE_WIDTH + 60,
+        y: startY + idx * spacing,
+      };
+      const pos = tryPlace(desired);
+      positionedToolNodes.push({ ...tool, position: snapToGrid(pos) });
+      usedToolIds.add(tool.id);
+    });
   });
 
-  // Final pass: resolve any tool node overlaps with a more natural approach
-  const finalToolNodes = arrangedToolNodes.map((toolNode, index) => {
+  // Position any unconnected tools
+  let unconnectedOffset = 0;
+  toolNodes.forEach(tool => {
+    if (usedToolIds.has(tool.id)) return;
+
+    const desired = {
+      x: fallbackToolAreaX,
+      y: fallbackToolAreaY + unconnectedOffset * (TOOL_NODE_HEIGHT + 40),
+    };
+    const pos = tryPlace(desired);
+    positionedToolNodes.push({ ...tool, position: snapToGrid(pos) });
+    unconnectedOffset++;
+  });
+
+  // Final pass: resolve any remaining tool node overlaps
+  const finalToolNodes = positionedToolNodes.map((toolNode, index) => {
     // Check for overlaps with previously positioned tool nodes
-    const overlappingNodes = arrangedToolNodes.slice(0, index).filter((otherNode) => {
+    const overlappingNodes = positionedToolNodes.slice(0, index).filter((otherNode: Node) => {
       const xOverlap = Math.abs(toolNode.position.x - otherNode.position.x) < TOOL_NODE_WIDTH + 20;
       const yOverlap = Math.abs(toolNode.position.y - otherNode.position.y) < TOOL_NODE_HEIGHT + 20;
       return xOverlap && yOverlap;
@@ -355,16 +491,17 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
         { x: adjustedPosition.x, y: adjustedPosition.y + (overlappingNodes.length * (TOOL_NODE_HEIGHT + 40)) },
       ];
 
-      // Find first position that doesn't overlap with groups and other tools
+      // Find first position that doesn't overlap with groups, steps and other tools
       for (const attempt of adjustmentAttempts) {
         const wouldOverlapGroup = isPositionInsideGroup(attempt.x, attempt.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT);
-        const wouldOverlapTool = arrangedToolNodes.slice(0, index).some(otherNode => {
+        const wouldOverlapTool = positionedToolNodes.slice(0, index).some((otherNode: Node) => {
           const xOverlap = Math.abs(attempt.x - otherNode.position.x) < TOOL_NODE_WIDTH + 20;
           const yOverlap = Math.abs(attempt.y - otherNode.position.y) < TOOL_NODE_HEIGHT + 20;
           return xOverlap && yOverlap;
         });
+        const wouldOverlapStep = overlapsStep(attempt.x, attempt.y, TOOL_NODE_WIDTH, TOOL_NODE_HEIGHT);
 
-        if (!wouldOverlapGroup && !wouldOverlapTool) {
+        if (!wouldOverlapGroup && !wouldOverlapTool && !wouldOverlapStep) {
           adjustedPosition = attempt;
           break;
         }
@@ -379,7 +516,7 @@ export function autoArrangeNodes(nodes: Node[], edges: Edge[]): Node[] {
     return toolNode;
   });
 
-  // Combine all nodes: arranged ungrouped steps, arranged tools, optimized groups and adjusted grouped steps
+  // Combine all nodes: arranged ungrouped steps, final tools, optimized groups and adjusted grouped steps
   return [...arrangedUngroupedStepNodes, ...finalToolNodes, ...optimizedGroupNodes, ...adjustedGroupedStepNodes];
 }
 

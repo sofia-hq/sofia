@@ -171,3 +171,36 @@
 .dark .react-flow__connection-path {
   stroke: rgb(156 163 175) !important;
 }
+
+/* Custom edge styling for better appearance */
+.react-flow__edge-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #3b82f6 !important;
+  stroke-width: 3 !important;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3;
+}
+
+/* Improve edge label positioning and styling */
+.react-flow__edge-label {
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  border-radius: 4px;
+  padding: 4px 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode edge label styling */
+.dark .react-flow__edge-label {
+  background: rgba(31, 41, 55, 0.95);
+  color: rgb(229, 231, 235);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+}

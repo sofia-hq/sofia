@@ -12,7 +12,7 @@ This directory contains a small backend API and frontend web application used fo
 
 1. Build and start the containers:
    ```bash
-   docker compose -f docker.compose.yml up --build
+   docker compose up --build
    ```
 2. Open the builder in your browser at [http://localhost:3000](http://localhost:3000).
 
