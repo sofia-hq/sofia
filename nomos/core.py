@@ -149,6 +149,17 @@ class Session:
 
         return session_dict
 
+    def get_session_state(self) -> dict[str, Any]:  # noqa
+        """
+        Get the current session state as a dictionary.
+
+        :return: Dictionary containing session state.
+        """
+        return {
+            "current_step_id": self.current_step.step_id,
+            "flow_id": self.current_flow.flow_id if self.current_flow else None,
+        }
+
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
         """
         Run a tool with the given name and arguments.
@@ -732,7 +743,8 @@ class Agent:
         user_input: Optional[str] = None,
         session_data: Optional[Union[dict, SessionContext]] = None,
         verbose: bool = False,
-    ) -> tuple[BaseModel, str, dict]:
+        return_session_state: bool = False,
+    ) -> tuple[BaseModel, str, dict, Optional[dict[str, Any]]]:  # noqa
         """
         Advance the session to the next step based on user input and LLM decision.
 
@@ -751,7 +763,10 @@ class Agent:
         decision, tool_output = session.next(
             user_input=user_input, return_tool=verbose, return_step_transition=verbose
         )
-        return decision, tool_output, session.to_dict()
+        session_state = (
+            None if not return_session_state else session.get_session_state()
+        )
+        return decision, tool_output, session.to_dict(), session_state
 
 
 __all__ = ["Session", "Agent"]
