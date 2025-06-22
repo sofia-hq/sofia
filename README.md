@@ -1,15 +1,10 @@
 <h1>
   <a href="https://github.com/dowhiledev/nomos">
-    <picture>
-      <source srcset="docs/assets/dark.png" media="(prefers-color-scheme: dark)">
-      <source srcset="docs/assets/light.png" media="(prefers-color-scheme: light)">
-      <img src="docs/assets/light.png" alt="NOMOS" width="400">
-    </picture>
+    <img src="docs/assets/banner.png" alt="NOMOS">
   </a>
 </h1>
 
 <div>
-<br />
 
 ![PyPI - Version](https://img.shields.io/pypi/v/nomos?style=flat-square)
 [![npm version](https://img.shields.io/npm/v/nomos-sdk.svg?style=flat-square)](https://www.npmjs.com/package/nomos-sdk)
@@ -17,7 +12,6 @@
 [![Test](https://github.com/dowhiledev/nomos/actions/workflows/test.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/test.yml)
 [![Release](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml/badge.svg?style=flat-square)](https://github.com/dowhiledev/nomos/actions/workflows/publish.yml)
 [![Docker Image Version](https://img.shields.io/docker/v/chandralegend/nomos-base?style=flat-square)](https://hub.docker.com/r/chandralegend/nomos-base)
-[![License](https://img.shields.io/github/license/dowhiledev/nomos?style=flat-square)](LICENSE)
 [![Open Issues](https://img.shields.io/github/issues-raw/dowhiledev/nomos?style=flat-square)](https://github.com/dowhiledev/nomos/issues)
 
 </div>
@@ -25,7 +19,7 @@
 > [!NOTE]
 > Looking for client-side integration? Check out our [TypeScript/JavaScript SDK](support/ts-sdk/README.md).
 
-NOMOS is a framework for building advanced LLM-powered assistants with structured, multi-step workflows. It helps you create sophisticated AI agents through configurable flows, tools, and integrations — making complex agent development accessible from no-code to full-code approaches.
+**NOMOS** is a framework for building advanced LLM-powered assistants with structured, multi-step workflows. It helps you create sophisticated AI agents through configurable flows, tools, and integrations — making complex agent development accessible from no-code to full-code approaches.
 
 ```bash
 pip install nomos[cli]
