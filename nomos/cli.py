@@ -16,6 +16,7 @@ from rich.text import Text
 
 import typer
 
+from . import __version__
 from .config import AgentConfig
 from .llms import LLMConfig
 from .server import run_server
@@ -34,6 +35,27 @@ PRIMARY_COLOR = "cyan"
 SUCCESS_COLOR = "green"
 WARNING_COLOR = "yellow"
 ERROR_COLOR = "red"
+
+
+def _version_callback(value: bool) -> None:
+    """Show version and exit."""
+    if value:
+        console.print(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def cli_app(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        help="Show Nomos version and exit",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Nomos CLI."""
+    pass
 
 
 def print_banner() -> None:

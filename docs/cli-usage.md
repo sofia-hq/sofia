@@ -8,6 +8,14 @@ The Nomos CLI provides powerful commands to bootstrap, develop, and deploy your 
 - [`nomos run`](#development-mode) - Run agent in development mode
 - [`nomos serve`](#production-deployment) - Deploy agent with Docker
 - [`nomos test`](#testing) - Run agent tests
+- `nomos --version` - Display CLI version
+
+### Check Version and Help
+
+```bash
+nomos --version
+nomos --help
+```
 
 ## Initialize a New Agent
 
