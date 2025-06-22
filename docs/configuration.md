@@ -124,6 +124,20 @@ llm:
   model: gpt-4o-mini
 ```
 
+### Generate YAML Schema
+
+Create a JSON schema for your configuration to enable editor validation and autocompletion:
+
+```bash
+nomos schema --output agent.schema.json
+```
+
+Include the schema in your YAML file:
+
+```yaml
+# yaml-language-server: $schema=./agent.schema.json
+```
+
 ## Tool Configuration
 
 ### New in v0.2.4: Integrated Tool Configuration
