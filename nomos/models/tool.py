@@ -7,6 +7,9 @@ from docstring_parser import parse
 
 from pydantic import BaseModel, HttpUrl, ValidationError
 
+from ..mcp.client import MCPClient
+from ..models.mcp import MCPServerTransport, MCPToolCallResult
+from ..utils.url import join_urls
 from ..utils.utils import create_base_model
 
 
@@ -182,6 +185,82 @@ class Tool(BaseModel):
         except Exception as e:
             raise ValueError(f"Could not load CrewAI tool {tool_id}: {e}")
 
+    @classmethod
+    def from_mcp_server(cls, server: "MCPServer") -> List["Tool"]:
+        """
+        Create a Tool instance from a MCP server.
+
+        :param server: The MCP server instance.
+        :return: A list of Tool instances.
+        """
+        mcp_tools = server.get_tools()
+        tools = []
+        for mcp_tool in mcp_tools:
+            tool_name = f"{server.id}/{mcp_tool.name}"
+            tool = cls(
+                name=tool_name,
+                description=mcp_tool.description,
+                function=lambda name=mcp_tool.name, **kwargs: cls._run_mcp_tool(
+                    server, name, kwargs
+                ),
+                parameters=mcp_tool.parameters,
+            )
+            tools.append(tool)
+
+        return tools
+
+    @classmethod
+    def is_remote_tool(cls, tool_identifier: str) -> bool:
+        """
+        Check if the tool identifier is a remote tool.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: True if the tool is a remote tool, False otherwise.
+        """
+        return any([cls.is_mcp_tool(tool_identifier)])
+
+    @classmethod
+    def is_mcp_tool(cls, tool_identifier: str) -> bool:
+        """
+        Check if the tool identifier is a MCP tool.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: True if the tool is a MCP tool, False otherwise.
+        """
+        return tool_identifier.startswith("@mcp/")
+
+    @classmethod
+    def get_server_name_from_tool_identifier(
+        cls, tool_identifier: str
+    ) -> Optional[str]:
+        """
+        Get the server name from the tool identifier.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: The server name if found, None otherwise.
+        """
+        if cls.is_mcp_tool(tool_identifier):
+            return tool_identifier.split("/")[1]
+
+        raise ValueError(
+            f"Invalid tool identifier: {tool_identifier}. Not a server tool."
+        )
+
+    @classmethod
+    def get_tool_name_from_tool_identifier(cls, tool_identifier: str) -> Optional[str]:
+        """
+        Get the tool name from the tool identifier.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: The tool name if found, None otherwise.
+        """
+        if cls.is_mcp_tool(tool_identifier):
+            return tool_identifier.split("/")[2]
+
+        raise ValueError(
+            f"Invalid tool identifier: {tool_identifier}. Not a server tool."
+        )
+
     def get_args_model(self) -> Type[BaseModel]:
         """
         Get the Pydantic model for the tool's arguments.
@@ -214,6 +293,24 @@ class Tool(BaseModel):
             raise InvalidArgumentsError(e)
         return str(self.function(*args, **kwargs))
 
+    @classmethod
+    def _run_mcp_tool(
+        cls, server: "MCPServer", tool_identifier: str, kwargs: Optional[dict] = None
+    ) -> str:
+        """
+        Run a MCP tool with the provided arguments.
+
+        :param server: The MCP server instance.
+        :param tool_identifier: The identifier of the tool to call.
+        :param kwargs: Optional keyword arguments for the tool.
+        :return: The result of the tool's function.
+        """
+        res = server.call_tool(tool_identifier, kwargs)
+        if res.error:
+            raise ToolCallError(res.error)
+
+        return res.content or ""
+
     def __str__(self) -> str:
         """String representation of the Tool instance."""
         return f"Tool(name={self.name}, description={self.description})"
@@ -240,6 +337,27 @@ class FallbackError(Exception):
     def __str__(self) -> str:
         """Create a simplified validation error."""
         return f"Ran into an error: {self.error}. Follow this fallback instruction: {self.fallback}"
+
+
+class ToolCallError(Exception):
+    """
+    Exception raised when a tool call fails.
+
+    This is used to indicate that a tool call was unsuccessful.
+    """
+
+    def __init__(self, error: str) -> None:
+        """
+        Tool call exception.
+
+        :param error: The error message.
+        """
+        super().__init__(error)
+        self.error = error
+
+    def __str__(self) -> str:
+        """Create a simplified validation error."""
+        return f"Tool call failed with error: {self.error}"
 
 
 class InvalidArgumentsError(Exception):
@@ -305,17 +423,60 @@ class MCPServer(BaseModel):
     name: str
     url: HttpUrl
     path: Optional[str] = None
-    transport: Optional[Literal["mcp"]] = "mcp"
+    transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
 
-    property
+    @classmethod
+    def get_builtin_type_from_mcp_type(cls, mcp_type: str) -> Type[Any]:
+        """
+        Get the built-in Python type from the MCP type.
 
+        :param mcp_type: The MCP type as a string.
+        :return: The corresponding built-in Python type.
+        """
+        _server_type_to_builtin_type = {
+            "integer": int,
+            "string": str,
+            "boolean": bool,
+            "number": float,
+            "array": list,
+            "object": dict,
+            "null": type(None),
+        }
+        return _server_type_to_builtin_type.get(mcp_type, Any)
+
+    @property
     def id(self) -> str:
         """
         Get the unique identifier for the MCP server.
 
         :return: The unique identifier for the MCP server.
         """
-        return f"{self.transport}@{self.name}"
+        return f"@mcp/{self.name}"
+
+    @property
+    def url_path(self) -> str:
+        """
+        Get the URL path for the MCP server.
+
+        :return: The URL path for the MCP server.
+        """
+        if not self.path:
+            return str(self.url)
+
+        return join_urls(str(self.url), self.path)
+
+    @classmethod
+    def get_tool_name_from_tool_identifier(cls, tool_identifier: str) -> str:
+        """
+        Get the tool name from the tool identifier.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: The tool name if found, None otherwise.
+        """
+        if Tool.is_mcp_tool(tool_identifier):
+            return tool_identifier.split("/")[2]
+
+        raise ValueError(f"Invalid tool identifier: {tool_identifier}. Not a MCP tool.")
 
     def get_tools(self) -> List[Tool]:
         """
@@ -323,34 +484,63 @@ class MCPServer(BaseModel):
 
         :return: A list of Tool instances.
         """
-        return []
+        tool_models = []
+        mcp_client = MCPClient(base_url=self.url_path, transport=self.transport)
+        tools = mcp_client.get_tools_list()
+        for t in tools:
+            input_parameters = t["inputSchema"].get("properties", {})
+            mapped_parameters = {}
+            for param_name, param_info in input_parameters.items():
+                param_type = self.get_builtin_type_from_mcp_type(param_info["type"])
+                mapped_parameters[param_name] = {
+                    "type": param_type,
+                    "description": param_info.get("description", ""),
+                }
+            data = {
+                "name": t["name"],
+                "description": t["description"],
+                "parameters": mapped_parameters,
+            }
+            params: Dict[str, Any] = {
+                "name": {
+                    "type": str,
+                },
+                "description": {
+                    "type": str,
+                },
+                "parameters": {
+                    "type": dict,
+                    "default": {},
+                },
+            }
+            ModelClass = create_base_model("MCPTool", params)
+            tool_models.append(ModelClass(**data))
 
-    def call_tool(self, tool_name: str, kwargs: Optional[dict] = None) -> str:
+        return tool_models
+
+    def call_tool(
+        self, tool_name: str, kwargs: Optional[dict] = None
+    ) -> MCPToolCallResult:
         """
         Call a tool on the MCP server.
 
-        :param tool_name: The name of the tool to call.
+        :param tool_name: Toll name to call.
         :param kwargs: Optional keyword arguments for the tool.
         :return: The result of the tool's function.
         """
-        # This is a placeholder for actual implementation
-        return f"Called {tool_name} with args {kwargs} on MCP server {self.name}"
+        mcp_client = MCPClient(base_url=self.url_path, transport=self.transport)
+        params = kwargs.copy() if kwargs else {}
+        res = mcp_client.call_tool(tool_name, params)
 
+        is_error = res["result"].get("isError", False)
+        content = res["result"]["content"][0].get("text", "") if not is_error else None
+        error = res["result"]["content"][0].get("text", "") if is_error else None
 
-class RemoteTool(BaseModel):
-    """Represents a remote tool."""
-
-    name: str
-    kwargs: Optional[dict] = None
-    server: Union[MCPServer]
-
-    def call(self) -> str:
-        """
-        Call the remote tool with the provided arguments.
-
-        :return: The result of the tool's function.
-        """
-        return self.server.call_tool(self.name, kwargs=self.kwargs)
+        return MCPToolCallResult(
+            tool_call_id=res["id"],
+            content=content,
+            error=error,
+        )
 
 
 def get_tools(
@@ -385,6 +575,7 @@ def get_tools(
 
 __all__ = [
     "Tool",
+    "ToolCallError",
     "FallbackError",
     "get_tools",
     "ToolWrapper",

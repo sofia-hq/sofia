@@ -43,7 +43,7 @@ class Session:
         start_step_id: str,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
-        tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        tools: Optional[List[Union[Callable, ToolWrapper, MCPServer]]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -62,7 +62,7 @@ class Session:
         :param start_step_id: ID of the starting step.
         :param system_message: Optional system message.
         :param persona: Optional persona string.
-        :param tools:  List of tool callables or package identifiers (e.g., "math:add").
+        :param tools:  List of tool callables, package identifiers or MCPServers (e.g., "math:add").
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -101,6 +101,16 @@ class Session:
             else {}
         )
         self.tools = get_tools(tools, tool_arg_descs)
+        remote_tools: Dict[str, Tool] = {}
+        for tool_name, tool in self.tools.items():
+            if Tool.is_mcp_tool(tool_name):
+                server_tools = Tool.from_mcp_server(tool)
+                remote_tools.update(
+                    {server_tool.name: server_tool for server_tool in server_tools}
+                )
+
+        self.tools.update(remote_tools)
+
         # Variable
         self.memory = memory
         self.memory.context = history or []
@@ -178,6 +188,7 @@ class Session:
             if not _tool:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
+
             tools.append(_tool)
         return tools
 
@@ -524,6 +535,7 @@ class Agent:
         # Remove duplicates of tools based on their names or IDs
         seen = set()
         self.tools = []
+        server_tools = []
         for tool in tools or []:
             tool_id = (
                 tool.name
@@ -538,6 +550,9 @@ class Agent:
             if tool_id not in seen:
                 seen.add(tool_id)
                 self.tools.append(tool)
+
+            if isinstance(tool, MCPServer):
+                server_tools.append(tool)
 
         # Initialize flow manager if flows are configured
         self.flow_manager: Optional[FlowManager] = None
@@ -562,6 +577,15 @@ class Agent:
         # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
+                if Tool.is_remote_tool(step_tool):
+                    tool_server_name = Tool.get_server_name_from_tool_identifier(
+                        step_tool
+                    )
+                    if tool_server_name in [
+                        server_tool.name for server_tool in server_tools
+                    ]:
+                        continue
+
                 for tool in self.tools:
                     if (isinstance(tool, ToolWrapper) and tool.name == step_tool) or (
                         callable(tool) and getattr(tool, "__name__", None) == step_tool
