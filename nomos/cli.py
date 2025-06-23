@@ -209,7 +209,7 @@ def init(
             generated_config = _handle_config_generation(
                 usecase=usecase, provider=_provider, model=_model, tools=tools  # type: ignore
             )
-            steps = generated_config.steps
+            steps = generated_config.to_agent_steps()
             name = generated_config.name
             persona = generated_config.persona
         except Exception as e:
