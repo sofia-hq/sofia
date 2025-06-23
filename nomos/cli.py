@@ -7,8 +7,6 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
-import jinja2
-
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
@@ -18,8 +16,17 @@ from rich.text import Text
 import typer
 
 from . import __version__
-from .config import AgentConfig
+from .config import AgentConfig, LoggingConfig, LoggingHandler
+from .constants import (
+    ERROR_COLOR,
+    LLM_CHOICES,
+    PRIMARY_COLOR,
+    SUCCESS_COLOR,
+    TEMPLATES,
+    WARNING_COLOR,
+)
 from .llms import LLMConfig
+from .models.agent import Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -27,40 +34,9 @@ from .utils.generator import AgentConfiguration, AgentGenerator
 console = Console()
 app = typer.Typer(
     name="nomos",
-    help="Nomos CLI - Configurable multi-step agent framework for building advanced LLM-powered assistants",
-    add_completion=False,
+    help="Nomos CLI - Build AI Agents you can audit.",
+    add_completion=True,
 )
-
-# Color constants for consistent styling
-PRIMARY_COLOR = "cyan"
-SUCCESS_COLOR = "green"
-WARNING_COLOR = "yellow"
-ERROR_COLOR = "red"
-
-
-LLM_CHOICES = {
-    "OpenAI": {
-        "provider": "openai",
-        "model": "gpt-4o-mini",
-    },
-    "Mistral": {
-        "provider": "mistral",
-        "model": "ministral-8b-latest",
-    },
-    "Gemini": {
-        "provider": "google",
-        "model": "gemini-2.0-flash",
-    },
-    "Ollama": {
-        "provider": "ollama",
-        "model": "llama3",
-    },
-    "HuggingFace": {
-        "provider": "huggingface",
-        "model": "",
-    },
-    "Custom": {},
-}
 
 
 def _version_callback(value: bool) -> None:
@@ -88,7 +64,7 @@ def cli_app(
 def print_banner() -> None:
     """Print the Nomos banner."""
     banner = Text("🏛️ NOMOS", style=f"bold {PRIMARY_COLOR}")
-    subtitle = Text("Configurable multi-step agent framework", style="dim")
+    subtitle = Text("Build AI Agents you can audit.", style="dim")
     console.print()
     console.print(banner, justify="center")
     console.print(subtitle, justify="center")
@@ -102,7 +78,7 @@ def init(
     ),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Name of the agent"),
     template: Optional[str] = typer.Option(
-        "basic",
+        None,
         "--template",
         "-t",
         help="Template to use (basic, conversational, workflow)",
@@ -123,9 +99,9 @@ def init(
     # Traditional interactive setup\n
     nomos init\n
     # AI-powered generation from use case\n
-    nomos init --generate --usecase "Create a weather agent" --tools "weather_api"\n
+    nomos init --generate --usecase "Create a weather agent" --tools "weather_api, calculator"\n
     # Load use case from file\n
-    nomos init --generate --usecase "./my_usecase.txt" --provider openai --model gpt-4o-mini
+    nomos init --generate --usecase "./my_usecase.txt"
     """
     print_banner()
 
@@ -152,20 +128,11 @@ def init(
 
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # Get agent name
-    if not name:
-        name = Prompt.ask(
-            "🤖 Agent name", default=target_dir.name.replace("-", "_").replace(" ", "_")
-        )
-
-    # Get agent persona
-    persona = Prompt.ask(
-        "🎭 Agent persona (describe your agent's role and personality)",
-        default="You are a helpful assistant.",
-    )
+    name = None
+    persona = None
+    steps: List[Step] = []
 
     # Choose LLM provider
-    llm_choices = ["OpenAI", "Mistral", "Gemini", "Ollama", "HuggingFace", "Custom"]
     llm_table = Table(title="Choose LLM Provider")
     llm_table.add_column("Option", style=PRIMARY_COLOR)
     llm_table.add_column("Provider")
@@ -179,58 +146,56 @@ def init(
         int(
             Prompt.ask(
                 "🧠 Select LLM provider",
-                choices=[str(i) for i in range(1, len(llm_choices) + 1)],
+                choices=[str(i) for i in range(1, len(LLM_CHOICES) + 1)],
                 default="1",
             )
         )
         - 1
     )
+    llm_choice = list(LLM_CHOICES.keys())[llm_choice_idx]
 
-    llm_choice = llm_choices[llm_choice_idx]
-
-    # Handle AI generation or traditional step collection
-    steps = []
-
-    # Add default steps based on template
-    if template == "basic":
-        steps = [
-            {
-                "step_id": "start",
-                "description": "Greet the user and understand their needs",
-                "available_tools": [],
-                "routes": [{"target": "help", "condition": "User needs assistance"}],
-            },
-            {
-                "step_id": "help",
-                "description": "Provide assistance to the user",
-                "available_tools": [],
-                "routes": [{"target": "end", "condition": "Task completed"}],
-            },
-            {
-                "step_id": "end",
-                "description": "End the conversation politely",
-                "available_tools": [],
-                "routes": [],
-            },
-        ]
-
-    # Generate project files
-    _generate_project_files(target_dir, name, persona, llm_choice, steps)  # type: ignore
-
-    if not generate:
+    if not generate and not template:
         generate = Confirm.ask(
             "🤖 Would you like to generate the agent configuration using AI?",
-            default=True,
+            default=False,
         )
 
-    if generate:
-        provider = Prompt.ask(
-            "Choose one of the following LLM providers you would like to use for generation",
-            choices=["openai", "mistral", "google", "ollama", "huggingface"],
-            default=None,
+    if not generate and not template:
+        template = Prompt.ask(
+            "Please select a template for your agent",
+            choices=list(TEMPLATES.keys()),
+            default="basic",
         )
-        model = Prompt.ask(
-            "Mention the model you would like to use for generation", default=None
+
+    if template:
+        # Load template configuration
+        template_config = TEMPLATES.get(template)
+        if not template_config:
+            console.print(
+                f"❌ Template '{template}' not found. Available templates: {', '.join(TEMPLATES.keys())}",
+                style=ERROR_COLOR,
+            )
+            raise typer.Exit(1)
+        name = template_config.get("name", "my_nomos_agent")  # type: ignore
+        persona = template_config.get("persona", "A Nomos agent")  # type: ignore
+        steps = template_config.get("steps", [])  # type: ignore
+
+    if generate:
+        llm_choice_idx = (
+            int(
+                Prompt.ask(
+                    "🧠 Select LLM provider",
+                    choices=[str(i) for i in range(1, len(LLM_CHOICES) + 1)],
+                    default="1",
+                )
+            )
+            - 1
+        )
+        _llm_choice = LLM_CHOICES[list(LLM_CHOICES.keys())[llm_choice_idx]]
+        _provider = _llm_choice["provider"]
+        _model = Prompt.ask(
+            "Mention the model you would like to use for generation",
+            default=_llm_choice["model"],
         )
         usecase = Prompt.ask(
             "Please provide a use case description or path to a text file containing the use case",
@@ -240,16 +205,21 @@ def init(
             "Mention the tools available for the agent (comma-separated, e.g. weather_api, calculator)",
             default=None,
         )
-        generated_config = _handle_config_generation(
-            usecase=usecase, provider=provider, model=model, tools=tools  # type: ignore
-        )
-        if generated_config:
-            config_path = target_dir / "config.agent.yaml"
-            generated_config.dump(str(config_path.absolute()))
-            console.print(
-                f"📄 Generated configuration saved to [bold]{config_path}[/bold]",
-                style=SUCCESS_COLOR,
+        try:
+            generated_config = _handle_config_generation(
+                usecase=usecase, provider=_provider, model=_model, tools=tools  # type: ignore
             )
+            steps = generated_config.steps
+            name = generated_config.name
+            persona = generated_config.persona
+        except Exception as e:
+            console.print(
+                f"❌ Failed to generate agent configuration: {e}.",
+                style=ERROR_COLOR,
+            )
+
+    # Generate project files
+    _generate_project_files(target_dir, name, persona, llm_choice, steps)  # type: ignore
 
     console.print(
         Panel(
@@ -265,7 +235,7 @@ def init(
 🔧 Edit configuration: [bold]config.agent.yaml[/bold]
 🛠️ Add tools: [bold]tools/[/bold] directory
 🏃 Run development mode: [bold]nomos run[/bold]
-🚀 Serve with Docker: [bold]nomos serve[/bold]
+🚀 Serve: [bold]nomos serve[/bold]
 """
 
     console.print(
@@ -283,9 +253,6 @@ def run(
         "--tools",
         "-t",
         help="Python files containing tool definitions (can be used multiple times)",
-    ),
-    port: int = typer.Option(
-        8000, "--port", "-p", help="Port to run the development server on"
     ),
     verbose: bool = typer.Option(
         False, "--verbose", "-v", help="Enable verbose logging"
@@ -316,20 +283,12 @@ def run(
                 raise typer.Exit(1)
             tool_paths.append(tool_path)
 
-    console.print(
-        Panel(
-            f"🏃 Starting development server on port [bold]{port}[/bold]",
-            title="Development Mode",
-            border_style=PRIMARY_COLOR,
-        )
-    )
-
     try:
-        _run_development_server(config_path, tool_paths, port, verbose)
+        _run(config_path, tool_paths, verbose)
     except KeyboardInterrupt:
-        console.print("\n👋 Development server stopped.", style=WARNING_COLOR)
+        console.print("\n👋 Development Run stopped.", style=WARNING_COLOR)
     except Exception as e:
-        console.print(f"❌ Error running development server: {e}", style=ERROR_COLOR)
+        console.print(f"❌ Error running development Run: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
 
 
@@ -467,320 +426,204 @@ def schema(
         console.print_json(schema_json)
 
 
-def _render_config_template(
-    name: str, persona: str, steps: List[dict], llm_choice: str
-) -> str:
-    """Render the config.agent.yaml template using Jinja2."""
-    # Get the template directory path
-    template_dir = Path(__file__).parent / "templates"
-
-    # Create Jinja2 environment
-    env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(template_dir),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-
-    # Load and render template
-    template = env.get_template("config.agent.yaml.j2")
-    llm_config = LLM_CHOICES[llm_choice]
-
-    context = {
-        "name": name,
-        "persona": persona,
-        "start_step_id": steps[0]["step_id"] if steps else "start",
-        "steps": steps,
-        "llm_config": llm_config,
-    }
-
-    return template.render(**context)
-
-
 def _generate_project_files(
-    target_dir: Path, name: str, persona: str, llm_choice: str, steps: List[dict]
+    target_dir: Path, name: str, persona: str, llm_choice: str, steps: List[Step]
 ) -> None:
     """Generate project files for the new agent."""
-    # Generate config.agent.yaml using template
-    config_content = _render_config_template(name, persona, steps, llm_choice)
-
-    # Write config file
-    with open(target_dir / "config.agent.yaml", "w") as f:
-        f.write(config_content)
+    # Generate config.agent.yaml
+    assert len(steps) > 0, "At least one step must be defined for the agent."
+    agent_config = AgentConfig(
+        name=name,
+        persona=persona,
+        steps=steps,
+        start_step_id=steps[0].step_id,
+        llm=LLMConfig(
+            provider=LLM_CHOICES[llm_choice]["provider"],
+            model=LLM_CHOICES[llm_choice]["model"],
+        ),
+        logging=LoggingConfig(
+            enable=True,
+            handlers=[
+                LoggingHandler(
+                    type="stderr",
+                    level="INFO",
+                    format="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
+                )
+            ],
+        ),
+    )
+    agent_config.to_yaml(str(target_dir / "config.agent.yaml"))
 
     # Create tools directory
     tools_dir = target_dir / "tools"
     tools_dir.mkdir(exist_ok=True)
 
-    # Generate tools/__init__.py (similar to base-image structure)
-    tools_init_content = '''"""This module imports all tools from the tools directory and makes them available in a list."""
-
-import os
-
-tool_list: list = []
-
-for filename in os.listdir(os.path.dirname(__file__)):
-    if filename.endswith(".py") and filename != "__init__.py":
-        module_name = filename[:-3]  # Remove the .py extension
-        try:
-            module = __import__(f"tools.{module_name}", fromlist=[""])
-            tool_list.extend(getattr(module, "tools", []))
-        except ImportError as e:
-            print(f"Warning: Could not import {module_name}: {e}")
-
-__all__ = ["tool_list"]
-'''
-
-    with open(tools_dir / "__init__.py", "w") as f:
-        f.write(tools_init_content)
-
-    # Generate sample tool file
-    sample_tool_content = f'''"""Sample tools for {name} agent."""
-
-def sample_tool(query: str) -> str:
-    """
-    A sample tool that echoes the input query.
-
-    Args:
-        query: The input query to echo
-
-    Returns:
-        The echoed query with a prefix
-    """
-    return f"You said: {{query}}"
-
-
-def get_current_time() -> str:
-    """
-    Get the current time as a string.
-
-    Returns:
-        Current time in ISO format
-    """
-    from datetime import datetime
-    return datetime.now().isoformat()
-
-
-# Export tools for discovery
-tools = [sample_tool, get_current_time]
-'''
-
-    with open(tools_dir / "sample_tools.py", "w") as f:
-        f.write(sample_tool_content)
-
-    # Generate main.py for development
-    main_content = f'''"""Main entry point for {name} agent."""
-
-import os
-import sys
-from pathlib import Path
-
-# Add tools directory to Python path
-sys.path.insert(0, str(Path(__file__).parent))
-
-import nomos
-from nomos.llms.openai import OpenAI
-from tools import tool_list
-
-
-def main():
-    """Run the agent interactively."""
-    # Load configuration
-    config_path = Path(__file__).parent / "config.agent.yaml"
-    config = nomos.AgentConfig.from_yaml(str(config_path))
-
-    # Initialize LLM
-    llm = config.get_llm()
-
-    # Create agent
-    agent = nomos.Agent.from_config(config, llm, tool_list)
-
-    # Create session
-    session = agent.create_session(verbose=True)
-
-    print(f"🤖 {{config.name}} agent is ready! Type 'quit' to exit.\\n")
-    print(f"Available tools: {{[tool.__name__ if callable(tool) else str(tool) for tool in tool_list]}}\\n")
-
-    while True:
-        try:
-            user_input = input("You: ").strip()
-            if user_input.lower() in ['quit', 'exit', 'bye']:
-                print("👋 Goodbye!")
-                break
-
-            if not user_input:
-                continue
-
-            decision, _ = session.next(user_input)
-
-            if hasattr(decision, 'response') and decision.response:
-                print(f"🤖 {{config.name}}: {{decision.response}}")
-
-        except KeyboardInterrupt:
-            print("\\n👋 Goodbye!")
-            break
-        except Exception as e:
-            print(f"❌ Error: {{e}}")
-
-
-if __name__ == "__main__":
-    main()
-'''
-
-    with open(target_dir / "main.py", "w") as f:
-        f.write(main_content)
-
-    # Generate Dockerfile
-    dockerfile_content = """FROM chandralegend/nomos-base:latest
-
-# Copy configuration and tools
-COPY config.agent.yaml /app/config.agent.yaml
-COPY tools/ /app/tools/
-
-# Expose port
-EXPOSE 8000
-
-# The base image already has the entrypoint configured
-"""
-
-    with open(target_dir / "Dockerfile", "w") as f:
-        f.write(dockerfile_content)
-
-    # Generate requirements.txt
-    requirements_content = f"""nomos[{llm_choice.lower()}]>=0.1.13
-"""
-
-    with open(target_dir / "requirements.txt", "w") as f:
-        f.write(requirements_content)
-
-    # Generate .env.example
-    env_content = """# Environment variables for your Nomos agent
-
-# LLM API Keys (uncomment the one you're using)
-# OPENAI_API_KEY=your_openai_api_key_here
-# MISTRAL_API_KEY=your_mistral_api_key_here
-# GOOGLE_API_KEY=your_google_api_key_here
-
-# Server configuration
-PORT=8000
-
-# Optional: Database configuration for persistent sessions
-# DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname
-# REDIS_URL=redis://localhost:6379/0
-
-# Optional: Tracing configuration
-# ENABLE_TRACING=true
-# ELASTIC_APM_SERVER_URL=http://localhost:8200
-# ELASTIC_APM_TOKEN=your_apm_token
-# SERVICE_NAME=my-nomos-agent
-# SERVICE_VERSION=1.0.0
-
-# To use this .env file with Docker:
-# 1. Copy this file to .env: cp .env.example .env
-# 2. Fill in your actual values above
-# 3. Run: nomos serve --env-file .env
-"""
-
-    with open(target_dir / ".env.example", "w") as f:
-        f.write(env_content)
-
-    # Generate README.md
-    readme_content = f"""# {name.title()} Agent
-
-A Nomos agent for {persona.lower()}.
-
-## Quick Start
-
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your API keys
-   ```
-
-3. **Run in development mode:**
-   ```bash
-   nomos run
-   ```
-
-4. **Or run directly:**
-   ```bash
-   python main.py
-   ```
-
-## Docker Deployment
-
-1. **Build and serve with Docker:**
-   ```bash
-   nomos serve
-   ```
-
-2. **Or with environment variables:**
-   ```bash
-   nomos serve --env-file .env
-   ```
-
-3. **Or manually:**
-   ```bash
-   docker build -t {name}-agent .
-   docker run -e OPENAI_API_KEY=your_key -p 8000:8000 {name}-agent
-   ```
-
-## Configuration
-
-- `config.agent.yaml`: Agent configuration and workflow steps
-- `tools/`: Directory containing tool modules
-- `main.py`: Development entry point
-
-## Adding Tools
-
-Add new tool files to the `tools/` directory. Each tool file should either:
-
-1. Export a `tools` list containing callable functions
-2. Export a `tool_list` containing callable functions
-3. Define functions that will be automatically discovered
-
-Example tool file (`tools/my_tools.py`):
-```python
-def my_custom_tool(input_text: str) -> str:
-    \"\"\"Description of what this tool does.\"\"\"
-    return f"Processed: {{input_text}}"
-
-# Export the tools
-tools = [my_custom_tool]
-```
-
-## API Endpoints
-
-When serving with Docker, the following endpoints are available:
-
-- `POST /chat`: Send messages to the agent
-- `GET /sessions/{{session_id}}`: Get session information
-- `GET /health`: Health check endpoint
-
-## Testing
-
-Run tests with:
-```bash
-nomos test
-```
-
-## Learn More
-
-- [Nomos Documentation](https://github.com/dowhiledev/nomos)
-- [Configuration Guide](https://github.com/dowhiledev/nomos/blob/main/README.md)
-"""
-
-    with open(target_dir / "README.md", "w") as f:
-        f.write(readme_content)
-
-
-def _run_development_server(
-    config_path: Path, tool_files: List[Path], port: int, verbose: bool
-) -> None:
+    tools_init_content = [
+        '"""This module imports all tools from the tools directory and makes them available in a list."""',
+        "",
+        "import os",
+        "",
+        "tool_list: list = []",
+        "",
+        "for filename in os.listdir(os.path.dirname(__file__)):",
+        "    if filename.endswith('.py') and filename != '__init__.py':",
+        "        module_name = filename[:-3]  # Remove the .py extension",
+        "        try:",
+        "            module = __import__(f'tools.{module_name}', fromlist=[''])",
+        "            tool_list.extend(getattr(module, 'tools', []))",
+        "        except ImportError as e:",
+        "            print(f'Warning: Could not import {module_name}: {e}')",
+        "",
+        "__all__ = ['tool_list']",
+    ]
+    sample_tool_content = [
+        '"""Sample tools for the Nomos agent."""',
+        "",
+        "def sample_tool(query: str) -> str:",
+        '    """',
+        "    A sample tool that echoes the input query.",
+        "",
+        "    Args:",
+        "        query: The input query to echo",
+        "",
+        "    Returns:",
+        "        The echoed query with a prefix",
+        '   """',
+        "    return f'You said: {query}'",
+        "",
+        "def get_current_time() -> str:",
+        '    """Get the current time as a string."""',
+        "",
+        "    from datetime import datetime",
+        "    return datetime.now().isoformat()",
+        "",
+        "# Export tools for discovery",
+        "tools = [sample_tool, get_current_time]",
+    ]
+    main_content = [
+        '"""Main entry point for the Nomos agent."""',
+        "",
+        "import os",
+        "import sys",
+        "from pathlib import Path",
+        "from dotenv import load_dotenv",
+        "",
+        "# Load environment variables from .env file if it exists",
+        "env_file = Path(__file__).parent / '.env'",
+        "if env_file.exists():",
+        "    load_dotenv(dotenv_path=env_file)",
+        "else:",
+        "    print('⚠️  .env file not found. Environment variables will not be loaded.')",
+        "",
+        "# Add tools directory to Python path",
+        "sys.path.insert(0, str(Path(__file__).parent))",
+        "",
+        "from nomos import *",
+        "from tools import tool_list",
+        "",
+        "def main():",
+        '    """Run the agent interactively."""',
+        "    # Load configuration",
+        "    config_path = Path(__file__).parent / 'config.agent.yaml'",
+        "    config = AgentConfig.from_yaml(str(config_path))",
+        "",
+        "    # Create agent",
+        "    agent = Agent.from_config(config, tools=tool_list)",
+        "",
+        "    # Create session",
+        "    session = agent.create_session(verbose=True)",
+        "",
+        "    print(f\"🤖 {config.name} agent is ready! Type 'quit' to exit.\\n\")"
+        '    print(f"Available tools: {[tool.__name__ if callable(tool) else str(tool) for tool in tool_list]}\\n")'
+        ""
+        "    while True:"
+        "        try:"
+        "            user_input = input('You: ').strip()"
+        "            if user_input.lower() in ['quit', 'exit', 'bye']:"
+        "                print('👋 Goodbye!')"
+        "                break",
+        "            if not user_input:" "                continue",
+        "            decision, *_ = session.next(user_input)",
+        "            if hasattr(decision, 'response') and decision.response:",
+        '                print(f"🤖 {config.name}: {decision.response}")'
+        "        except KeyboardInterrupt:"
+        '            print("\\n👋 Goodbye!")'
+        "            break",
+        "        except Exception as e:",
+        '            print(f"❌ Error: {e}")',
+        "",
+        "if __name__ == '__main__':",
+        "    main()",
+    ]
+    requirements_content = [
+        "nomos[cli,serve,traces] >=0.2.4",
+        f"nomos[{LLM_CHOICES[llm_choice]['provider'].lower()}] >=0.2.4",
+    ]
+    env_content = [
+        "# Environment variables for your Nomos agent",
+        "",
+        "# LLM API Keys (uncomment the one you're using)",
+        "# OPENAI_API_KEY=your_openai_api_key_here",
+        "# MISTRAL_API_KEY=your_mistral_api_key_here",
+        "# GOOGLE_API_KEY=your_google_api_key_here",
+        "",
+        "# Server configuration",
+        "PORT=8000",
+        "",
+        "# Optional: Database configuration for persistent sessions",
+        "# DATABASE_URL=postgresql+asyncpg://user:password@localhost/dbname",
+        "# REDIS_URL=redis://localhost:6379/0",
+        "",
+        "# Optional: Tracing configuration",
+        "# ENABLE_TRACING=true",
+        "# ELASTIC_APM_SERVER_URL=http://localhost:8200",
+        "# ELASTIC_APM_TOKEN=your_apm_token",
+        "# SERVICE_NAME=my-nomos-agent",
+        "# SERVICE_VERSION=1.0.0",
+        "",
+    ]
+    readme_content = [
+        "# Nomos Agent Project",
+        "",
+        "This is a Nomos agent project.",
+        "",
+        "## Configuration",
+        "Edit the `config.agent.yaml` file to customize your agent.",
+        "",
+        "## Tools",
+        "Add your custom tools in the `tools/` directory.",
+        "",
+        "> [!NOTE]"
+        "> Copy the `.env.example` file to `.env` using `cp .env.example .env` and fill in your environment variables.",
+        "",
+        "## Running the Agent",
+        "Run the agent in development mode with:",
+        "```bash",
+        "nomos run",
+        "```",
+        "",
+        "## Serving the Agent",
+        "Serve the agent using Uvicorn with:",
+        "```bash",
+        "nomos serve",
+        "```",
+    ]
+
+    # Write files
+    agent_config.to_yaml(str(target_dir / "config.agent.yaml"))
+    (target_dir / "tools" / "__init__.py").write_text("\n".join(tools_init_content))
+    (target_dir / "tools" / "sample_tool.py").write_text("\n".join(sample_tool_content))
+    (target_dir / "main.py").write_text("\n".join(main_content))
+    (target_dir / "requirements.txt").write_text("\n".join(requirements_content))
+    (target_dir / ".env").write_text("\n".join(env_content))
+    (target_dir / "README.md").write_text("\n".join(readme_content))
+    console.print(
+        f"✅ Project files generated in [bold]{target_dir}[/bold]",
+        style=SUCCESS_COLOR,
+    )
+
+
+def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
     """Run the agent in development mode."""
     current_dir = Path.cwd()
 
@@ -799,57 +642,64 @@ def _run_development_server(
         )
 
     # Create development server script
-    dev_server_code = f"""import sys
-import os
-from pathlib import Path
-
-sys.path.insert(0, str(Path.cwd()))
-
-import nomos as n
-from nomos.api.tools import tool_list
-
-def main():
-    try:
-        config = n.AgentConfig.from_yaml("{config_path}")
-        llm = config.get_llm()
-        agent = n.Agent.from_config(config, llm, tool_list)
-        session = agent.create_session(verbose={verbose})
-
-        print(f"🤖 {{config.name}} agent ready in interactive mode!")
-        print(f"📁 Config: {config_path}")
-        print(f"🔧 Tools: {{len(tool_list)}} loaded")
-        print("Type 'quit' to exit\\n")
-
-        while True:
-            try:
-                user_input = input('You: ').strip()
-                if user_input.lower() in ['quit', 'exit', 'bye']:
-                    break
-                if not user_input:
-                    continue
-                decision, _ = session.next(user_input)
-                print(f'Agent: {{decision.response}}')
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print(f'Error: {{e}}')
-                if {verbose}:
-                    import traceback
-                    traceback.print_exc()
-    except Exception as e:
-        print(f'❌ Failed to start agent: {{e}}')
-        if {verbose}:
-            import traceback
-            traceback.print_exc()
-
-if __name__ == '__main__':
-    main()
-"""
+    dev_server_code = [
+        '"""Development server for Nomos agents."""',
+        "",
+        "import sys",
+        "import os",
+        "from pathlib import Path",
+        "if Path(__file__).parent / '.env':",
+        "    from dotenv import load_dotenv",
+        "    load_dotenv(dotenv_path=Path(__file__).parent / '.env')",
+        "else:",
+        "    print('⚠️  .env file not found. Environment variables will not be loaded.')",
+        "",
+        "sys.path.insert(0, str(Path.cwd()))",
+        "",
+        "import nomos as n",
+        "from nomos.api.tools import tool_list",
+        "",
+        "def main():",
+        "    try:",
+        f'        config = n.AgentConfig.from_yaml("{config_path}")',
+        "        agent = n.Agent.from_config(config, tools=tool_list)"
+        f"        session = agent.create_session(verbose={verbose})",
+        "",
+        '        print(f"🤖 {config.name} agent ready in interactive mode!")',
+        '        print(f"📁 Config: {config_path}")',
+        '        print(f"🔧 Tools: {len(tool_list)} loaded")',
+        "        print('Type 'quit' to exit\\n')",
+        "",
+        "        while True:",
+        "            try:",
+        "                user_input = input('You: ').strip()",
+        "                if user_input.lower() in ['quit', 'exit', 'bye']:",
+        "                    break",
+        "                if not user_input:",
+        "                    continue",
+        "                decision, *_ = session.next(user_input)",
+        "                print(f'Agent: {decision.response}')",
+        "            except KeyboardInterrupt:",
+        "                break",
+        "            except Exception as e:",
+        "                print(f'Error: {e}')",
+        "                if {verbose}:",
+        "                    import traceback",
+        "                    traceback.print_exc()",
+        "    except Exception as e:",
+        "        print(f'❌ Failed to start agent: {e}')",
+        "        if {verbose}:",
+        "            import traceback",
+        "            traceback.print_exc()",
+        "",
+        "if __name__ == '__main__':",
+        "    main()",
+    ]
 
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".py", delete=False
     ) as temp_script:
-        temp_script.write(dev_server_code)
+        temp_script.write("\n".join(dev_server_code))
         temp_script_path = temp_script.name
 
     try:
@@ -934,7 +784,7 @@ def _handle_config_generation(
     provider: Optional[str] = None,
     model: Optional[str] = None,
     tools: Optional[str] = None,
-) -> Optional[AgentConfiguration]:
+) -> AgentConfiguration:
     """Handle AI generation of agent configuration."""
     llm_config: Optional[LLMConfig] = None
     if provider or model:
@@ -946,11 +796,7 @@ def _handle_config_generation(
         console=console,
         llm_config=llm_config,
     )
-    try:
-        config = generator.generate(usecase=usecase, tools_available=tools)
-        return config
-    except Exception:
-        return None
+    return generator.generate(usecase=usecase, tools_available=tools)
 
 
 def main() -> None:

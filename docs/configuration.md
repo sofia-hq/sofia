@@ -137,7 +137,7 @@ Include the schema in your YAML file:
 ```yaml
 # yaml-language-server: $schema=./agent.schema.json
 or
-# yaml-language-server: $schema=https://raw.githubusercontent.com/dowhiledev/nomos/main/schemas/.schema.json
+# yaml-language-server: $schema=https://https://raw.githubusercontent.com/dowhiledev/nomos/refs/heads/main/support/schemas/.nomos.json
 ```
 
 ## Tool Configuration
