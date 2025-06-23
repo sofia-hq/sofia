@@ -345,3 +345,21 @@ MULTI_LINE=line1\\nline2
         """Test parsing non-existent .env file."""
         with pytest.raises(FileNotFoundError):
             _parse_env_file(Path("/non/existent/.env"))
+
+
+class TestSchemaCommand(TestCLI):
+    """Test the schema command."""
+
+    def test_schema_stdout(self):
+        """Schema prints JSON to stdout."""
+        result = self.runner.invoke(app, ["schema"])
+        assert result.exit_code == 0
+        assert "AgentConfig" in result.stdout
+
+    def test_schema_output_file(self):
+        """Schema writes to the specified file."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output = Path(temp_dir) / "schema.json"
+            result = self.runner.invoke(app, ["schema", "--output", str(output)])
+            assert result.exit_code == 0
+            assert output.exists()

@@ -59,7 +59,7 @@ While NOMOS can be used standalone, it integrates with a growing ecosystem of to
 - **[Visual Flow Builder](https://nomos.dowhile.dev/try)** - Design and prototype agent flows with our drag-and-drop interface. Perfect for rapid iteration and collaboration between technical and non-technical team members.
 - **[TypeScript SDK](support/ts-sdk/README.md)** - Full-featured client library for web and Node.js applications, enabling seamless integration of NOMOS agents into your frontend applications.
 - **[Docker Base Images](docs/deployment.md#docker-base-image)** - Pre-configured containers for rapid deployment with built-in support for Redis, PostgreSQL, and monitoring integrations.
-- **[CLI Tools](docs/cli-usage.md)** - Comprehensive command-line interface for agent development, testing, and deployment with `nomos init`, `nomos run`, and `nomos serve` commands.
+- **[CLI Tools](docs/cli-usage.md)** - Comprehensive command-line interface for agent development, testing, and deployment with `nomos init`, `nomos run`, `nomos serve`, `nomos test`, `nomos schema`, and `nomos --version` commands.
 
 ## Key Features
 

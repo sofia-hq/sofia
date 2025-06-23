@@ -8,6 +8,15 @@ The Nomos CLI provides powerful commands to bootstrap, develop, and deploy your 
 - [`nomos run`](#development-mode) - Run agent in development mode
 - [`nomos serve`](#production-deployment) - Deploy agent with Docker
 - [`nomos test`](#testing) - Run agent tests
+- [`nomos schema`](#generate-yaml-schema) - Export JSON schema for your config
+- `nomos --version` - Display CLI version
+
+### Check Version and Help
+
+```bash
+nomos --version
+nomos --help
+```
 
 ## Initialize a New Agent
 
@@ -188,4 +197,18 @@ e2e:
   budget_flow:
     scenario: "User asks for budgeting advice"
     expectation: "Agent explains how to plan a budget"
+```
+
+## Generate YAML Schema
+
+Export the JSON schema for `config.agent.yaml` to enable editor validation and autocompletion:
+
+```bash
+nomos schema --output agent.schema.json
+```
+
+Reference the schema in your YAML file (works with VS Code YAML extension):
+
+```yaml
+# yaml-language-server: $schema=./agent.schema.json
 ```
