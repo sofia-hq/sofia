@@ -656,19 +656,19 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "",
         "sys.path.insert(0, str(Path.cwd()))",
         "",
-        "import nomos as n",
+        "from nomos import *",
         "from nomos.api.tools import tool_list",
         "",
         "def main():",
         "    try:",
-        f'        config = n.AgentConfig.from_yaml("{config_path}")',
-        "        agent = n.Agent.from_config(config, tools=tool_list)"
+        f'        config = AgentConfig.from_yaml("{config_path}")',
+        "        agent = Agent.from_config(config, tools=tool_list)",
         f"        session = agent.create_session(verbose={verbose})",
         "",
         '        print(f"🤖 {config.name} agent ready in interactive mode!")',
-        '        print(f"📁 Config: {config_path}")',
+        f'        print(f"📁 Config: {config_path}")',
         '        print(f"🔧 Tools: {len(tool_list)} loaded")',
-        "        print('Type 'quit' to exit\\n')",
+        "        print('Type quit to exit\\n')",
         "",
         "        while True:",
         "            try:",
@@ -683,12 +683,12 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "                break",
         "            except Exception as e:",
         "                print(f'Error: {e}')",
-        "                if {verbose}:",
+        f"                if {verbose}:",
         "                    import traceback",
         "                    traceback.print_exc()",
         "    except Exception as e:",
         "        print(f'❌ Failed to start agent: {e}')",
-        "        if {verbose}:",
+        f"        if {verbose}:",
         "            import traceback",
         "            traceback.print_exc()",
         "",
@@ -699,8 +699,8 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".py", delete=False
     ) as temp_script:
-        temp_script.write("\n".join(dev_server_code))
         temp_script_path = temp_script.name
+        temp_script.write("\n".join(dev_server_code))
 
     try:
         console.print(f"📂 Working directory: [dim]{current_dir}[/dim]")
@@ -735,48 +735,6 @@ def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) 
     else:
         console.print("❌ Some tests failed!", style=ERROR_COLOR)
         raise typer.Exit(result.returncode)
-
-
-def _parse_env_file(env_file_path: Path) -> dict:
-    """Parse a .env file and return a dictionary of environment variables."""
-    env_vars = {}
-
-    try:
-        with open(env_file_path, "r") as f:
-            for line_num, line in enumerate(f, 1):
-                line = line.strip()
-
-                # Skip empty lines and comments
-                if not line or line.startswith("#"):
-                    continue
-
-                # Look for KEY=VALUE format
-                if "=" in line:
-                    key, value = line.split("=", 1)
-                    key = key.strip()
-                    value = value.strip()
-
-                    # Remove quotes from value if present
-                    if (value.startswith('"') and value.endswith('"')) or (
-                        value.startswith("'") and value.endswith("'")
-                    ):
-                        value = value[1:-1]
-
-                    env_vars[key] = value
-                else:
-                    console.print(
-                        f"⚠️  Warning: Invalid line {line_num} in env file: {line}",
-                        style=WARNING_COLOR,
-                    )
-
-    except FileNotFoundError:
-        # Re-raise FileNotFoundError for testing purposes
-        raise
-    except Exception as e:
-        console.print(f"❌ Error reading env file: {e}", style=ERROR_COLOR)
-        raise typer.Exit(1)
-
-    return env_vars
 
 
 def _handle_config_generation(
