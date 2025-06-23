@@ -17,6 +17,7 @@ from rich.text import Text
 
 import typer
 
+from . import __version__
 from .config import AgentConfig
 from .llms import LLMConfig
 from .server import run_server
@@ -60,6 +61,28 @@ LLM_CHOICES = {
     },
     "Custom": {},
 }
+
+
+def _version_callback(value: bool) -> None:
+    """Show version and exit."""
+    if value:
+        console.print(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def cli_app(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show Nomos version and exit",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Nomos CLI."""
+    pass
 
 
 def print_banner() -> None:
@@ -418,6 +441,30 @@ def test(
     except Exception as e:
         console.print(f"❌ Error running tests: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
+
+
+@app.command()
+def schema(
+    output: Optional[str] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Write JSON schema to file instead of stdout",
+    ),
+) -> None:
+    """Generate JSON schema for agent configuration."""
+    import json
+
+    schema = AgentConfig.model_json_schema()
+    schema_json = json.dumps(schema, indent=2)
+    if output:
+        Path(output).write_text(schema_json)
+        console.print(
+            f"✅ Schema written to [bold]{output}[/bold]",
+            style=SUCCESS_COLOR,
+        )
+    else:
+        console.print_json(schema_json)
 
 
 def _render_config_template(
