@@ -1,14 +1,17 @@
 """Tool abstractions and related logic for the SOFIA package."""
 
+import asyncio
 import inspect
 from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union
 
 from docstring_parser import parse
 
+from fastmcp import Client
+from fastmcp.exceptions import ToolError
+
 from pydantic import BaseModel, HttpUrl, ValidationError
 
-from ..mcp.client import MCPClient
-from ..models.mcp import MCPServerTransport, MCPToolCallResult
+from ..models.mcp import MCPServerTransport
 from ..utils.url import join_urls
 from ..utils.utils import create_base_model
 
@@ -296,7 +299,7 @@ class Tool(BaseModel):
     @classmethod
     def _run_mcp_tool(
         cls, server: "MCPServer", tool_identifier: str, kwargs: Optional[dict] = None
-    ) -> str:
+    ) -> List[str]:
         """
         Run a MCP tool with the provided arguments.
 
@@ -305,11 +308,7 @@ class Tool(BaseModel):
         :param kwargs: Optional keyword arguments for the tool.
         :return: The result of the tool's function.
         """
-        res = server.call_tool(tool_identifier, kwargs)
-        if res.error:
-            raise ToolCallError(res.error)
-
-        return res.content or ""
+        return server.call_tool(tool_identifier, kwargs)
 
     def __str__(self) -> str:
         """String representation of the Tool instance."""
@@ -484,43 +483,9 @@ class MCPServer(BaseModel):
 
         :return: A list of Tool instances.
         """
-        tool_models = []
-        mcp_client = MCPClient(base_url=self.url_path, transport=self.transport)
-        tools = mcp_client.get_tools_list()
-        for t in tools:
-            input_parameters = t["inputSchema"].get("properties", {})
-            mapped_parameters = {}
-            for param_name, param_info in input_parameters.items():
-                param_type = self.get_builtin_type_from_mcp_type(param_info["type"])
-                mapped_parameters[param_name] = {
-                    "type": param_type,
-                    "description": param_info.get("description", ""),
-                }
-            data = {
-                "name": t["name"],
-                "description": t["description"],
-                "parameters": mapped_parameters,
-            }
-            params: Dict[str, Any] = {
-                "name": {
-                    "type": str,
-                },
-                "description": {
-                    "type": str,
-                },
-                "parameters": {
-                    "type": dict,
-                    "default": {},
-                },
-            }
-            ModelClass = create_base_model("MCPTool", params)
-            tool_models.append(ModelClass(**data))
+        return asyncio.run(self.list_tools_async())
 
-        return tool_models
-
-    def call_tool(
-        self, tool_name: str, kwargs: Optional[dict] = None
-    ) -> MCPToolCallResult:
+    def call_tool(self, tool_name: str, kwargs: Optional[dict] = None) -> List[str]:
         """
         Call a tool on the MCP server.
 
@@ -528,19 +493,69 @@ class MCPServer(BaseModel):
         :param kwargs: Optional keyword arguments for the tool.
         :return: The result of the tool's function.
         """
-        mcp_client = MCPClient(base_url=self.url_path, transport=self.transport)
+        return asyncio.run(self.call_tool_async(tool_name, kwargs))
+
+    async def list_tools_async(self) -> List[Tool]:
+        """
+        Asynchronously get a list of Tool instances from the MCP server.
+
+        :return: A list of Tool instances.
+        """
+        client = Client(self.url_path)
+        tool_models = []
+        async with client:
+            tools = await client.list_tools()
+            for t in tools:
+                input_parameters = t.inputSchema.get("properties", {})
+                mapped_parameters = {}
+                for param_name, param_info in input_parameters.items():
+                    param_type = self.get_builtin_type_from_mcp_type(param_info["type"])
+                    mapped_parameters[param_name] = {
+                        "type": param_type,
+                        "description": param_info.get("description", ""),
+                    }
+
+                data = {
+                    "name": t.name,
+                    "description": t.description,
+                    "parameters": mapped_parameters,
+                }
+                params: Dict[str, Any] = {
+                    "name": {
+                        "type": str,
+                    },
+                    "description": {
+                        "type": str,
+                    },
+                    "parameters": {
+                        "type": dict,
+                        "default": {},
+                    },
+                }
+                ModelClass = create_base_model("MCPTool", params)
+                tool_models.append(ModelClass(**data))
+
+        return tool_models
+
+    async def call_tool_async(
+        self, tool_name: str, kwargs: Optional[dict] = None
+    ) -> List[str]:
+        """
+        Asynchronously call a tool on the MCP server.
+
+        :param tool_name: Toll name to call.
+        :param kwargs: Optional keyword arguments for the tool.
+        :return: A list of strings representing the tool's output.
+        """
+        client = Client(self.url_path)
         params = kwargs.copy() if kwargs else {}
-        res = mcp_client.call_tool(tool_name, params)
+        async with client:
+            try:
+                res = await client.call_tool(tool_name, params)
+            except ToolError as e:
+                raise ToolCallError(str(e))
 
-        is_error = res["result"].get("isError", False)
-        content = res["result"]["content"][0].get("text", "") if not is_error else None
-        error = res["result"]["content"][0].get("text", "") if is_error else None
-
-        return MCPToolCallResult(
-            tool_call_id=res["id"],
-            content=content,
-            error=error,
-        )
+            return [r.text for r in res if r.type == "text"]
 
 
 def get_tools(
