@@ -9,6 +9,8 @@ docs/next-env.d.ts
 .dump
 *.dump/
 test_generated.py
+*.sql
+*.sqlite3
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
