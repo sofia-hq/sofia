@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional
 
+import jinja2
 
 from rich.console import Console
 from rich.panel import Panel
@@ -34,6 +35,31 @@ PRIMARY_COLOR = "cyan"
 SUCCESS_COLOR = "green"
 WARNING_COLOR = "yellow"
 ERROR_COLOR = "red"
+
+
+LLM_CHOICES = {
+    "OpenAI": {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+    },
+    "Mistral": {
+        "provider": "mistral",
+        "model": "ministral-8b-latest",
+    },
+    "Gemini": {
+        "provider": "google",
+        "model": "gemini-2.0-flash",
+    },
+    "Ollama": {
+        "provider": "ollama",
+        "model": "llama3",
+    },
+    "HuggingFace": {
+        "provider": "huggingface",
+        "model": "",
+    },
+    "Custom": {},
+}
 
 
 def print_banner() -> None:
@@ -121,7 +147,7 @@ def init(
     llm_table.add_column("Option", style=PRIMARY_COLOR)
     llm_table.add_column("Provider")
 
-    for i, choice in enumerate(llm_choices, 1):
+    for i, choice in enumerate(LLM_CHOICES.keys(), 1):
         llm_table.add_row(str(i), choice)
 
     console.print(llm_table)
@@ -394,45 +420,41 @@ def test(
         raise typer.Exit(1)
 
 
+def _render_config_template(
+    name: str, persona: str, steps: List[dict], llm_choice: str
+) -> str:
+    """Render the config.agent.yaml template using Jinja2."""
+    # Get the template directory path
+    template_dir = Path(__file__).parent / "templates"
+
+    # Create Jinja2 environment
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(template_dir),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+
+    # Load and render template
+    template = env.get_template("config.agent.yaml.j2")
+    llm_config = LLM_CHOICES[llm_choice]
+
+    context = {
+        "name": name,
+        "persona": persona,
+        "start_step_id": steps[0]["step_id"] if steps else "start",
+        "steps": steps,
+        "llm_config": llm_config,
+    }
+
+    return template.render(**context)
+
+
 def _generate_project_files(
     target_dir: Path, name: str, persona: str, llm_choice: str, steps: List[dict]
 ) -> None:
     """Generate project files for the new agent."""
-    # Generate config.agent.yaml
-    config_content = f"""# Nomos Agent Configuration
-name: {name}
-persona: |
-  {persona}
-start_step_id: {steps[0]['step_id'] if steps else 'start'}
-
-steps:
-"""
-
-    for step in steps:
-        config_content += f"""  - step_id: {step['step_id']}
-    description: |
-      {step['description']}
-"""
-        if step["available_tools"]:
-            config_content += "    available_tools:\n"
-            for tool in step["available_tools"]:
-                config_content += f"      - {tool}\n"
-
-        if step["routes"]:
-            config_content += "    routes:\n"
-            for route in step["routes"]:
-                config_content += f"""      - target: {route['target']}
-        condition: {route['condition']}
-"""
-
-    # Add logging configuration
-    config_content += """\nlogging:
-  enable: true
-  handlers:
-    - type: stderr
-      level: INFO
-      format: "{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
-"""
+    # Generate config.agent.yaml using template
+    config_content = _render_config_template(name, persona, steps, llm_choice)
 
     # Write config file
     with open(target_dir / "config.agent.yaml", "w") as f:
