@@ -49,6 +49,7 @@ def cli_app(
     version: Optional[bool] = typer.Option(
         None,
         "--version",
+        "-v",
         help="Show Nomos version and exit",
         callback=_version_callback,
         is_eager=True,
