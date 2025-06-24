@@ -13,13 +13,13 @@ from .llms import LLMBase
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
 from .models.agent import (
-    ACTION_ENUMS,
+    Action,
+    Decision,
     Message,
     SessionContext,
     Step,
     StepIdentifier,
     Summary,
-    create_decision_model,
 )
 from .models.flow import Flow, FlowContext, FlowManager
 from .models.tool import FallbackError, MCPServer, Tool, ToolWrapper, get_tools
@@ -320,13 +320,13 @@ class Session:
             self.current_flow = None
             self.flow_context = None
 
-    def _get_next_decision(self) -> BaseModel:
+    def _get_next_decision(self) -> Decision:
         """
         Get the next decision from the LLM based on the current step and history.
 
         :return: The decision made by the LLM.
         """
-        route_decision_model = create_decision_model(
+        _decision_model = self.llm._create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
         )
@@ -340,15 +340,18 @@ class Session:
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory_context = flow_memory.memory.context
 
-        decision = self.llm._get_output(
+        _decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
             history=flow_memory_context if flow_memory_context else memory_context,
-            response_format=route_decision_model,
+            response_format=_decision_model,
             system_message=self.system_message,
             persona=self.persona,
         )
+
+        # Convert to a Decision model
+        decision = self.llm._create_decision_from_output(output=_decision)
         log_debug(f"Model decision: {decision}")
         return decision
 
@@ -359,7 +362,7 @@ class Session:
         next_count: int = 0,
         return_tool: bool = False,
         return_step_transition: bool = False,
-    ) -> tuple[BaseModel, Any]:
+    ) -> tuple[Decision, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
@@ -404,22 +407,15 @@ class Session:
         log_debug(f"Action decided: {decision.action}")
 
         self._add_step_identifier(self.current_step.get_step_identifier())
-        action = decision.action.value
-        response = getattr(decision, "response", None)
-        tool_call = getattr(decision, "tool_call", None)
-        step_transition = getattr(decision, "step_transition", None)
-        if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
-            self._add_message(self.name, str(response))
+        if decision.action in [Action.ASK, Action.ANSWER]:
+            self._add_message(self.name, str(decision.response))
             return decision, None
-        elif action == ACTION_ENUMS["TOOL_CALL"]:
+        elif decision.action == Action.TOOL_CALL:
             _error: Optional[Exception] = None
             try:
-                assert (
-                    tool_call is not None and tool_call.__class__.__name__ == "ToolCall"
-                ), "Expected ToolCall response"
-                tool_name: str = tool_call.tool_name  # type: ignore
-                tool_kwargs_model: BaseModel = tool_call.tool_kwargs  # type: ignore
-                tool_kwargs: dict = tool_kwargs_model.model_dump()
+                assert decision.tool_call is not None, "Expected ToolCall response"
+                tool_name = decision.tool_call.tool_name  # type: ignore
+                tool_kwargs: dict = decision.tool_call.tool_kwargs.model_dump()
                 log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
                 try:
                     tool_results = self._run_tool(tool_name, tool_kwargs)
@@ -446,9 +442,9 @@ class Session:
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
             )
-        elif action == ACTION_ENUMS["MOVE"]:
+        elif decision.action == Action.MOVE:
             _error = None
-            if step_transition in self.current_step.get_available_routes():
+            if decision.step_transition in self.current_step.get_available_routes():
                 # Check if we need to exit current flow before moving
                 if self.current_flow and self.flow_context:
                     exit_flows = (
@@ -459,7 +455,7 @@ class Session:
                     if self.current_flow in exit_flows:
                         self._exit_flow(self.current_step.step_id)
 
-                self.current_step = self.steps[step_transition]
+                self.current_step = self.steps[decision.step_transition]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
@@ -469,10 +465,10 @@ class Session:
             else:
                 self._add_message(
                     "error",
-                    f"Invalid route: {step_transition} not in {self.current_step.get_available_routes()}",
+                    f"Invalid route: {decision.step_transition} not in {self.current_step.get_available_routes()}",
                 )
                 _error = ValueError(
-                    f"Invalid route: {step_transition} not in {self.current_step.get_available_routes()}"
+                    f"Invalid route: {decision.step_transition} not in {self.current_step.get_available_routes()}"
                 )
             if return_step_transition:
                 return decision, None
@@ -480,7 +476,7 @@ class Session:
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
             )
-        elif action == ACTION_ENUMS["END"]:
+        elif decision.action == Action.END:
             # Clean up any active flows before ending
             if self.current_flow and self.flow_context:
                 try:
@@ -499,7 +495,7 @@ class Session:
         else:
             self._add_message(
                 "error",
-                f"Unknown action: {action}. Please check the action type.",
+                f"Unknown action: {decision.action}. Please check the action type.",
             )
             return self.next(
                 no_errors=no_errors + 1,

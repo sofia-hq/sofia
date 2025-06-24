@@ -1,23 +1,31 @@
 """Flow models for Nomos's decision-making process."""
 
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from .tool import Tool
 from ..utils.utils import create_base_model, create_enum
 
-ACTION_ENUMS = {
-    "MOVE": "MOVE",
-    "ANSWER": "ANSWER",
-    "ASK": "ASK",
-    "TOOL_CALL": "TOOL_CALL",
-    "END": "END",
-}
 
-Action = create_enum("Action", ACTION_ENUMS)
+class Action(Enum):
+    """
+    Enum representing the possible actions in the agent's flow.
+
+    Attributes:
+        MOVE: Transition to another step.
+        ANSWER: Provide an answer to the user.
+        ASK: Ask the user for input.
+        TOOL_CALL: Call a tool with arguments.
+        END: End the flow.
+    """
+
+    MOVE = "MOVE"
+    ANSWER = "ANSWER"
+    ASK = "ASK"
+    TOOL_CALL = "TOOL_CALL"
+    END = "END"
 
 
 class Route(BaseModel):
@@ -209,98 +217,38 @@ class SessionContext(BaseModel):
     history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
 
 
-def create_decision_model(
-    current_step: Step, current_step_tools: List[Tool]
-) -> Type[BaseModel]:
+class ToolCall(BaseModel):
     """
-    Dynamically create a Pydantic model for route/tool decision output.
+    Represents a tool call made by the agent.
 
-    :param available_step_ids: List of available step IDs for routing.
-    :param tool_ids: List of available tool names.
-    :param tool_models: List of Pydantic models for tool arguments.
-    :return: A dynamically created Pydantic BaseModel for the decision.
+    Attributes:
+        tool_name (str): Name of the tool to call.
+        tool_kwargs (BaseModel): Arguments to pass to the tool.
     """
-    available_step_ids = current_step.get_available_routes()
-    tool_ids = [tool.name for tool in current_step_tools]
-    tool_models = [tool.get_args_model() for tool in current_step_tools]
-    action_ids = (
-        (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
-        + (["MOVE"] if available_step_ids else [])
-        + (["TOOL_CALL"] if tool_ids else [])
-    )
-    ActionEnum = create_action_enum(action_ids)  # noqa
 
-    params = {
-        "reasoning": {
-            "type": List[str],
-            "description": "Step by Step Reasoning to Decide",
-        },
-        "action": {"type": ActionEnum, "description": "Next Action"},
-    }
+    tool_name: str
+    tool_kwargs: BaseModel
 
-    if not current_step.auto_flow:
-        if current_step.answer_model:
-            answer_model = current_step.get_answer_model()
-            response_type = Union.__getitem__((str, answer_model))
-            response_desc = (
-                f"Response as string if ASK or {answer_model.__name__} if ANSWER."
-            )
-        else:
-            response_type = str
-            response_desc = "Response (String) if ASK or ANSWER."
-        params["response"] = {
-            "type": response_type,
-            "description": response_desc,
-            "optional": True,
-            "default": None,
-        }
-        if current_step.quick_suggestions:
-            params["suggestions"] = {
-                "type": List[str],
-                "description": "Quick User Input Suggestions for the User to Choose if ASK.",
-                "optional": True,
-                "default": None,
-            }
 
-    if len(available_step_ids) > 0:
-        params["step_transition"] = {
-            "type": Literal.__getitem__(tuple(available_step_ids)),
-            "description": "Step Id (String) if MOVE.",
-            "optional": True,
-            "default": None,
-        }
+class Decision(BaseModel):
+    """
+    Represents the decision made by the agent at a step.
 
-    if len(tool_ids) > 0 and len(tool_models) > 0:
-        tool_call_model = create_base_model(
-            "ToolCall",
-            {
-                "tool_name": {
-                    "type": Literal.__getitem__(tuple(tool_ids)),
-                    "description": "Tool name for TOOL_CALL.",
-                },
-                "tool_kwargs": {
-                    "type": (
-                        tool_models[0]
-                        if len(tool_models) == 1
-                        else Union.__getitem__(tuple(tool_models))
-                    ),
-                    "description": "Corresponding Tool arguments for TOOL_CALL.",
-                },
-            },
-        )
-        params["tool_call"] = {
-            "type": tool_call_model,
-            "description": "Tool Call (ToolCall) if TOOL_CALL.",
-            "optional": True,
-            "default": None,
-        }
+    Attributes:
+        reasoning (List[str]): Step by step reasoning to decide.
+        action (Action): The next action to take.
+        response (Optional[Union[str, BaseModel]]): Response if ASK or ANSWER.
+        suggestions (Optional[List[str]]): Quick user input suggestions if ASK.
+        step_transition (Optional[str]): Step ID to transition to if MOVE.
+        tool_call (Optional[Dict[str, Any]]): Tool call details if TOOL_CALL.
+    """
 
-    assert len(params) > 2, "Something went wrong, Please check the step configuration."
-
-    return create_base_model(
-        "Decision",
-        params,
-    )
+    reasoning: List[str]
+    action: Action
+    response: Optional[Union[str, BaseModel]] = None
+    suggestions: Optional[List[str]] = None
+    step_transition: Optional[str] = None
+    tool_call: Optional[ToolCall] = None
 
 
 def create_action_enum(actions: List[str]) -> Enum:
@@ -312,7 +260,7 @@ def create_action_enum(actions: List[str]) -> Enum:
     :return: A dynamically created Enum class.
     """
     actions_dict = {
-        action: ACTION_ENUMS[action] for action in actions if action in ACTION_ENUMS
+        action: action.upper() for action in actions if isinstance(action, str)
     }
     return create_enum("Action", actions_dict)
 
@@ -321,8 +269,10 @@ __all__ = [
     "Action",
     "Route",
     "Step",
+    "ToolCall",
     "Message",
     "Summary",
-    "create_decision_model",
     "SessionContext",
+    "Decision",
+    "create_action_enum",
 ]
