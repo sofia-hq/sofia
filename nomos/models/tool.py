@@ -1,13 +1,33 @@
-"""Tool abstractions and related logic for the SOFIA package."""
+"""Tool abstractions and related logic for the Nomos package."""
 
 import inspect
-from typing import Any, Callable, Dict, Literal, Optional, Type, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union
 
 from docstring_parser import parse
 
 from pydantic import BaseModel, ValidationError
 
-from ..utils.utils import create_base_model
+from ..utils.utils import create_base_model, parse_type
+
+
+class ArgDef(BaseModel):
+    """Documentation for an argument of a tool."""
+
+    key: str  # Name of the argument
+    desc: Optional[str] = None  # Description of the argument
+    type: Optional[str] = (
+        None  # Type of the argument (e.g., "str", "int", "float", "bool", "List[str]", etc.)
+    )
+
+    def get_type(self) -> Optional[Type]:
+        return parse_type(self.type) if self.type else None
+
+
+class ToolDef(BaseModel):
+    """Documentation for a tool."""
+
+    desc: Optional[str] = None  # Description of the tool
+    args: Optional[List[ArgDef]] = None  # Argument descriptions for the tool
 
 
 class Tool(BaseModel):
@@ -40,7 +60,7 @@ class Tool(BaseModel):
     def from_function(
         cls,
         function: Callable,
-        tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None,
+        tool_defs: Optional[Dict[str, ToolDef]] = None,
         name: Optional[str] = None,
     ) -> "Tool":
         """
@@ -51,42 +71,52 @@ class Tool(BaseModel):
         :return: An instance of Tool.
         """
         sig = inspect.signature(function)
+        name = name or function.__name__
         description = (
             parse(function.__doc__.strip()).short_description
             if function.__doc__
             else None
-        )
-        description = description or ""
+        ) or ""
 
-        tool_arg_desc_doc_params = (
-            parse(function.__doc__.strip()).params if function.__doc__ else []
-        )
-        tool_arg_desc_doc = {
-            param.arg_name: param.description
-            for param in tool_arg_desc_doc_params
-            if param.description
+        _doc_params = parse(function.__doc__.strip()).params if function.__doc__ else []
+        tool_arg_defs = {
+            param.arg_name: {
+                "description": param.description,
+                "type": param.type_name,
+            }
+            for param in _doc_params
         }
-        if tool_arg_descs is None:
-            tool_arg_descs = {}
-        tool_arg_desc = tool_arg_descs.get(function.__name__, {})
-        tool_arg_desc_doc.update(tool_arg_desc)
-        tool_arg_desc = tool_arg_desc_doc.copy()
+        if tool_defs is not None and name in tool_defs:
+            tool_def = tool_defs[name]
+            description = tool_def.desc or description
+            for arg in tool_def.args or []:
+                tool_arg_defs[arg.key] = {
+                    "description": arg.desc
+                    or tool_arg_defs.get(arg.key, {}).get("description"),
+                    "type": arg.type or tool_arg_defs.get(arg.key, {}).get("type"),
+                }
+
         params = {}
         for _name, param in sig.parameters.items():
-            param_info = {
-                "type": (
-                    param.annotation
-                    if param.annotation is not inspect.Parameter.empty
-                    else Any
-                )
+            _type = (
+                param.annotation
+                if param.annotation is not inspect.Parameter.empty
+                else tool_arg_defs.get(_name, {}).get("type")
+            )
+            _description = tool_arg_defs.get(_name, {}).get("description")
+            assert _type is not None, (
+                f"Type for parameter '{_name}' cannot be None. Please provide a valid type using "
+                "`tool.tool_defs`, add a type annotation to the function or write a docstring for the function."
+            )
+            params[_name] = {
+                "type": _type,
             }
-            if tool_arg_desc.get(_name):
-                param_info["description"] = tool_arg_desc[_name]
+            if _description:
+                params[_name]["description"] = _description
             if param.default is not inspect.Parameter.empty:
-                param_info["default"] = param.default
-            params[_name] = param_info
+                params[_name]["default"] = param.default
         return cls(
-            name=name or function.__name__,
+            name=name,
             description=description,
             function=function,
             parameters=params,
@@ -97,14 +127,13 @@ class Tool(BaseModel):
         cls,
         name: str,
         identifier: str,
-        tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None,
+        tool_defs: Optional[Dict[str, ToolDef]] = None,
     ) -> "Tool":
         """
         Create a Tool instance from a package identifier.
 
         :param identifier: The package identifier in the format "itertools.combinations", "package.submodule.submodule.function", etc.
         """
-        tool_arg_descs = tool_arg_descs or {}
         if "." not in identifier:
             raise ValueError(
                 f"Invalid tool identifier: {identifier}. It should be in the format 'package.submodule.function'."
@@ -119,7 +148,7 @@ class Tool(BaseModel):
             assert callable(
                 function
             ), f"'{function_name}' in module '{module_name}' is not callable."
-            return cls.from_function(function, tool_arg_descs, name)
+            return cls.from_function(function, tool_defs, name)
         except Exception as e:
             raise ValueError(f"Could not load tool {identifier}: {e}")
 
@@ -272,9 +301,7 @@ class ToolWrapper(BaseModel):
     name: str
     kwargs: Optional[dict] = None
 
-    def get_tool(
-        self, tool_arg_descs: Optional[Dict[str, Dict[str, str]]] = None
-    ) -> Tool:
+    def get_tool(self, tool_defs: Optional[Dict[str, ToolDef]] = None) -> Tool:
         """
         Get a Tool instance from the tool identifier.
 
@@ -284,7 +311,7 @@ class ToolWrapper(BaseModel):
             return Tool.from_pkg(
                 name=self.name,
                 identifier=self.tool_identifier,
-                tool_arg_descs=tool_arg_descs,
+                tool_defs=tool_defs,
             )
         if self.tool_type == "crewai":
             return Tool.from_crewai_tool(
@@ -300,22 +327,22 @@ class ToolWrapper(BaseModel):
 
 
 def get_tools(
-    tools: Optional[list[Union[Callable, ToolWrapper]]], tool_arg_desc: dict
+    tools: Optional[list[Union[Callable, ToolWrapper]]], tool_defs: Optional[Dict[str, ToolDef]] = None
 ) -> dict[str, Tool]:
     """
     Get a list of Tool instances from a list of functions or tool identifiers.
 
     :param tools: A list of functions or tool identifiers.
-    :param tool_arg_desc: A dictionary mapping function names to argument descriptions.
+    :param tool_defs: Optional dictionary of tool definitions for argument descriptions.
     :return: A dictionary mapping tool names to Tool instances.
     """
     _tools: dict[str, Tool] = {}
     for tool in tools or []:
         _tool = None
         if callable(tool):
-            _tool = Tool.from_function(tool, tool_arg_desc)
+            _tool = Tool.from_function(tool, tool_defs)
         if isinstance(tool, ToolWrapper):
-            _tool = tool.get_tool(tool_arg_desc)
+            _tool = tool.get_tool(tool_defs)
         assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
         _tools[_tool.name] = _tool
     return _tools
