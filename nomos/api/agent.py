@@ -1,4 +1,4 @@
-"""SOFIA Agent Initialization."""
+"""Nomos Agent Initialization."""
 
 import os
 

@@ -1,4 +1,4 @@
-"""LLM base classes and OpenAI LLM integration for SOFIA."""
+"""LLM base classes and OpenAI LLM integration for Nomos."""
 
 from typing import Dict, Literal
 
@@ -17,7 +17,7 @@ LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace]
 
 class LLMConfig(BaseModel):
     """
-    Configuration class for LLM integrations in SOFIA.
+    Configuration class for LLM integrations in Nomos.
 
     Attributes:
         type (str): Type of LLM integration (e.g., "openai", "mistral", "gemini").

@@ -1,4 +1,4 @@
-"""Ollama LLM integration for SOFIA."""
+"""Ollama LLM integration for Nomos."""
 
 from typing import List
 
@@ -9,7 +9,7 @@ from ..models.agent import Message
 
 
 class Ollama(LLMBase):
-    """Ollama LLM integration for SOFIA."""
+    """Ollama LLM integration for Nomos."""
 
     __provider__: str = "ollama"
 

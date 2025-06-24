@@ -1,4 +1,4 @@
-"""HuggingFace LLM integration for SOFIA."""
+"""HuggingFace LLM integration for Nomos."""
 
 from typing import List
 

@@ -1,4 +1,4 @@
-"""Utility functions and helpers for the SOFIA package."""
+"""Utility functions and helpers for the Nomos package."""
 
 import ast
 from enum import Enum

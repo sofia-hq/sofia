@@ -149,7 +149,7 @@
       "type": "object"
     },
     "LLMConfig": {
-      "description": "Configuration class for LLM integrations in SOFIA.\n\nAttributes:\n    type (str): Type of LLM integration (e.g., \"openai\", \"mistral\", \"gemini\").\n    model (str): Model name to use.\n    kwargs (dict): Additional parameters for the LLM API.",
+      "description": "Configuration class for LLM integrations in Nomos.\n\nAttributes:\n    type (str): Type of LLM integration (e.g., \"openai\", \"mistral\", \"gemini\").\n    model (str): Model name to use.\n    kwargs (dict): Additional parameters for the LLM API.",
       "properties": {
         "provider": {
           "enum": [
