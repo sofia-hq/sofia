@@ -423,6 +423,8 @@ class MCPServer(BaseModel):
     url: HttpUrl
     path: Optional[str] = None
     transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
+    use: Optional[List[str]] = None
+    exclude: Optional[List[str]] = None
 
     @classmethod
     def get_builtin_type_from_mcp_type(cls, mcp_type: str) -> Type[Any]:
@@ -506,6 +508,15 @@ class MCPServer(BaseModel):
         async with client:
             tools = await client.list_tools()
             for t in tools:
+                tool_name = t.name
+                if (
+                    self.use
+                    and tool_name not in self.use
+                    or self.exclude
+                    and tool_name in self.exclude
+                ):
+                    continue
+
                 input_parameters = t.inputSchema.get("properties", {})
                 mapped_parameters = {}
                 for param_name, param_info in input_parameters.items():
@@ -516,7 +527,7 @@ class MCPServer(BaseModel):
                     }
 
                 data = {
-                    "name": t.name,
+                    "name": tool_name,
                     "description": t.description,
                     "parameters": mapped_parameters,
                 }
@@ -547,6 +558,16 @@ class MCPServer(BaseModel):
         :param kwargs: Optional keyword arguments for the tool.
         :return: A list of strings representing the tool's output.
         """
+        if (
+            self.use
+            and tool_name not in self.use
+            or self.exclude
+            and tool_name in self.exclude
+        ):
+            raise ToolCallError(
+                f"Tool '{tool_name}' is not available on this server or is excluded."
+            )
+
         client = Client(self.url_path)
         params = kwargs.copy() if kwargs else {}
         async with client:

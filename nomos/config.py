@@ -70,6 +70,10 @@ class ToolServer(BaseModel):
     name: str  # Name of the tool server
     url: str  # URL of the tool server
     path: Optional[str] = None  # Optional path for the tool server
+    use: Optional[List[str]] = None  # Optional list of tools to use from the server
+    exclude: Optional[List[str]] = (
+        None  # Optional list of tools to exclude from the server
+    )
     kwargs: Optional[Dict[str, Union[str, int]]] = (
         None  # Optional keyword arguments for the Tool initialization
     )
@@ -84,7 +88,12 @@ class ToolServer(BaseModel):
             raise ValueError(f"Unsupported tool server type: {self.type}")
 
         return MCPServer(
-            name=self.name, url=self.url, path=self.path, **self.kwargs or {}
+            name=self.name,
+            url=self.url,
+            path=self.path,
+            use=self.use,
+            exclude=self.exclude,
+            **self.kwargs or {},
         )
 
 

@@ -209,8 +209,11 @@ class Session:
         :return: List of Tool instances available in the current step.
         """
         server_tool_names = list(self.server_tools.keys())
-        log_debug(f"Adding server tools to step: {server_tool_names}")
-        self.current_step.extend_tools(server_tool_names)
+        server_tool_names_for_step = list(
+            set(server_tool_names) & set(self.current_step.remote_tools)
+        )
+        log_debug(f"Adding server tools to step: {server_tool_names_for_step}")
+        self.current_step.extend_tools(server_tool_names_for_step)
         tools = []
         for tool in self.current_step.tool_ids:
             _tool = self.tools.get(tool) or self.server_tools.get(tool)
@@ -220,7 +223,7 @@ class Session:
 
             tools.append(_tool)
 
-        self.current_step.reduce_tools(server_tool_names)
+        self.current_step.reduce_tools(server_tool_names_for_step)
         return tools
 
     def _add_message(self, role: str, message: str) -> None:
@@ -611,6 +614,8 @@ class Agent:
         # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
+                if Tool.is_remote_tool(step_tool):
+                    continue
                 for tool in self.tools:
                     if (isinstance(tool, ToolWrapper) and tool.name == step_tool) or (
                         callable(tool) and getattr(tool, "__name__", None) == step_tool

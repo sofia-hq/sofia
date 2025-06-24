@@ -75,10 +75,25 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
+    remote_tools: List[str] = []
     answer_model: Optional[Union[Dict[str, Dict[str, Any]], BaseModel]] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
+
+    def __init__(self, **data) -> None:
+        """
+        Initialize a Step instance.
+
+        :param data: Keyword arguments for the step attributes.
+        """
+        available_tools = data.get("available_tools", [])
+        local_tools = list(
+            filter(lambda t: not Tool.is_remote_tool(t), available_tools)
+        )
+        data["available_tools"] = local_tools
+        data["remote_tools"] = list(set(available_tools) - set(local_tools))
+        super().__init__(**data)
 
     def __str__(self) -> str:
         """Return a string representation of the step."""
