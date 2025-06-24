@@ -256,7 +256,6 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     assert tool.parameters["arg0"]["description"] == "Test argument"
 
 
-@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
 def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_tool_1):
     """Test that external tools are properly registered in the session."""
     # Test whether crewai tool is registered

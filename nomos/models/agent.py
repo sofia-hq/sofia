@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from .tool import Tool
 from ..utils.utils import create_base_model, create_enum
 
 
