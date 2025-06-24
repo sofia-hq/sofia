@@ -2,7 +2,7 @@
 
 import sys
 import pytest
-from nomos.models.agent import Action, create_decision_model, Message
+from nomos.models.agent import Action, Message
 from nomos.core import Agent
 from nomos.config import AgentConfig
 from nomos.models.tool import Tool, ToolWrapper
@@ -46,7 +46,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     # Set up session
     session = basic_agent.create_session(verbose=True)
 
-    expected_decision_model = create_decision_model(
+    expected_decision_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
@@ -78,7 +78,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert session.llm.messages_received[0].role == "system"
     assert "Test persona" in session.llm.messages_received[0].content
     assert session.llm.messages_received[1].role == "user"
-    assert decision.action.value == Action.ASK.value
+    assert decision.action == Action.ASK
     assert decision.response == "How can I help?"
 
     ask_response = expected_decision_model(
@@ -93,7 +93,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert session.llm.messages_received[1].role == "user"
     assert "How can I help?" in session.llm.messages_received[1].content
     assert "I need help" in session.llm.messages_received[1].content
-    assert decision.action.value == Action.ANSWER.value
+    assert decision.action == Action.ANSWER
     assert decision.response == "I can help you with that."
 
 
@@ -104,7 +104,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     session = basic_agent.create_session(verbose=True)
 
     # Create response models with tool
-    tool_model = create_decision_model(
+    tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
@@ -134,7 +134,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[1].role == "user"
     assert "Use the tool" in session.llm.messages_received[1].content
-    assert decision.action.value == Action.TOOL_CALL.value
+    assert decision.action == Action.TOOL_CALL
     assert decision.tool_call.tool_name == "test_tool"
     assert tool_result == "Test tool 0 response: test_arg"
 
@@ -150,7 +150,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     session = basic_agent.create_session(verbose=True)
 
     # Create response models with tool
-    tool_model = create_decision_model(
+    tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),
@@ -188,7 +188,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
 
     session = basic_agent.create_session(verbose=True)
 
-    tool_model = create_decision_model(
+    tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
             Tool.from_function(test_tool_0),

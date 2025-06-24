@@ -1,13 +1,22 @@
 """LLMBase class for SOFIA agent framework."""
 
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 
 from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
-from ..models.agent import Message, Step, StepIdentifier, Summary
+from ..models.agent import (
+    Decision,
+    Message,
+    Step,
+    StepIdentifier,
+    Summary,
+    ToolCall,
+    create_action_enum,
+)
 from ..models.tool import Tool
 from ..utils.logging import log_error
+from ..utils.utils import create_base_model
 
 
 class LLMBase:
@@ -200,6 +209,130 @@ class LLMBase:
     def token_counter(self, text: str) -> int:
         """Count the number of tokens in a string."""
         return len(text.split())
+
+    @staticmethod
+    def _create_decision_model(
+        current_step: Step, current_step_tools: List[Tool]
+    ) -> Type[BaseModel]:
+        """
+        Dynamically create a Pydantic model for route/tool decision output.
+
+        :param available_step_ids: List of available step IDs for routing.
+        :param tool_ids: List of available tool names.
+        :param tool_models: List of Pydantic models for tool arguments.
+        :return: A dynamically created Pydantic BaseModel for the decision.
+        """
+        available_step_ids = current_step.get_available_routes()
+        tool_ids = [tool.name for tool in current_step_tools]
+        tool_models = [tool.get_args_model() for tool in current_step_tools]
+        action_ids = (
+            (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
+            + (["MOVE"] if available_step_ids else [])
+            + (["TOOL_CALL"] if tool_ids else [])
+        )
+        ActionEnum = create_action_enum(action_ids)  # noqa
+
+        params = {
+            "reasoning": {
+                "type": List[str],
+                "description": "Step by Step Reasoning to Decide",
+            },
+            "action": {"type": ActionEnum, "description": "Next Action"},
+        }
+
+        if not current_step.auto_flow:
+            if current_step.answer_model:
+                answer_model = current_step.get_answer_model()
+                response_type = Union.__getitem__((str, answer_model))
+                response_desc = (
+                    f"Response as string if ASK or {answer_model.__name__} if ANSWER."
+                )
+            else:
+                response_type = str
+                response_desc = "Response (String) if ASK or ANSWER."
+            params["response"] = {
+                "type": response_type,
+                "description": response_desc,
+                "optional": True,
+                "default": None,
+            }
+            if current_step.quick_suggestions:
+                params["suggestions"] = {
+                    "type": List[str],
+                    "description": "Quick User Input Suggestions for the User to Choose if ASK.",
+                    "optional": True,
+                    "default": None,
+                }
+
+        if len(available_step_ids) > 0:
+            params["step_transition"] = {
+                "type": Literal.__getitem__(tuple(available_step_ids)),
+                "description": "Step Id (String) if MOVE.",
+                "optional": True,
+                "default": None,
+            }
+
+        if len(tool_ids) > 0 and len(tool_models) > 0:
+            tool_call_model = create_base_model(
+                "ToolCall",
+                {
+                    "tool_name": {
+                        "type": Literal.__getitem__(tuple(tool_ids)),
+                        "description": "Tool name for TOOL_CALL.",
+                    },
+                    "tool_kwargs": {
+                        "type": (
+                            tool_models[0]
+                            if len(tool_models) == 1
+                            else Union.__getitem__(tuple(tool_models))
+                        ),
+                        "description": "Corresponding Tool arguments for TOOL_CALL.",
+                    },
+                },
+            )
+            params["tool_call"] = {
+                "type": tool_call_model,
+                "description": "Tool Call (ToolCall) if TOOL_CALL.",
+                "optional": True,
+                "default": None,
+            }
+
+        assert (
+            len(params) > 2
+        ), "Something went wrong, Please check the step configuration."
+
+        return create_base_model(
+            "Decision",
+            params,
+        )
+
+    @staticmethod
+    def _create_decision_from_output(
+        output: BaseModel,
+    ) -> Decision:
+        """
+        Create a Decision object from the LLM output.
+
+        :param output: LLM output as a BaseModel.
+        :return: Decision object.
+        """
+        return Decision(
+            reasoning=output.reasoning,
+            action=output.action.value,
+            response=output.response if hasattr(output, "response") else None,
+            suggestions=output.suggestions if hasattr(output, "suggestions") else None,
+            step_transition=(
+                output.step_transition if hasattr(output, "step_transition") else None
+            ),
+            tool_call=(
+                ToolCall(
+                    tool_name=output.tool_call.tool_name,
+                    tool_kwargs=output.tool_call.tool_kwargs,
+                )
+                if hasattr(output, "tool_call") and output.tool_call
+                else None
+            ),
+        )
 
 
 __all__ = ["LLMBase"]
