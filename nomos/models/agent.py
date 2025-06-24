@@ -7,8 +7,15 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from .tool import Tool
-from ..constants import ACTION_ENUMS
 from ..utils.utils import create_base_model, create_enum
+
+ACTION_ENUMS = {
+    "MOVE": "MOVE",
+    "ANSWER": "ANSWER",
+    "ASK": "ASK",
+    "TOOL_CALL": "TOOL_CALL",
+    "END": "END",
+}
 
 Action = create_enum("Action", ACTION_ENUMS)
 

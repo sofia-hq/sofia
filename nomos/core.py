@@ -9,11 +9,11 @@ from typing import Any, Callable, Dict, List, Optional, Union
 from pydantic import BaseModel
 
 from .config import AgentConfig
-from .constants import ACTION_ENUMS
 from .llms import LLMBase
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
 from .models.agent import (
+    ACTION_ENUMS,
     Message,
     SessionContext,
     Step,
