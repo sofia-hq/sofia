@@ -14,7 +14,7 @@ from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
-from .models.tool import ToolWrapper
+from .models.tool import ToolDef, ToolWrapper
 from .utils.utils import convert_camelcase_to_snakecase
 
 
@@ -68,7 +68,7 @@ class ToolsConfig(BaseModel):
 
     tool_files: List[str] = []  # List of tool files to load
     external_tools: Optional[List[ExternalTool]] = None  # List of external tools
-    tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]] = None
+    tool_defs: Optional[Dict[str, ToolDef]] = None
 
     def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
         """

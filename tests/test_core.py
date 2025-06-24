@@ -40,7 +40,7 @@ def test_pkg_tool_registration(basic_agent):
     assert session.tools["combinations"].name == "combinations"
 
 
-def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
+def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test a basic conversation flow with the agent."""
 
     # Set up session
@@ -49,13 +49,13 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     expected_decision_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
         current_step_tools=[
-            Tool.from_function(test_tool_0),
-            Tool.from_function(test_tool_1),
+            Tool.from_function(test_tool_0, tool_defs=tool_defs),
+            Tool.from_function(test_tool_1, tool_defs=tool_defs),
             ToolWrapper(
                 tool_type="pkg",
                 name="combinations",
                 tool_identifier="itertools.combinations",
-            ).get_tool(),
+            ).get_tool(tool_defs=tool_defs),
         ],
     )
     ask_response = expected_decision_model(
@@ -97,7 +97,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1):
     assert decision.response == "I can help you with that."
 
 
-def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
+def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
@@ -113,7 +113,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
                 tool_type="pkg",
                 name="combinations",
                 tool_identifier="itertools.combinations",
-            ).get_tool(),
+            ).get_tool(tool_defs=tool_defs),
         ],
     )
 
@@ -143,7 +143,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1):
     assert any(msg.role == "tool" for msg in messages)
 
 
-def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
+def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
@@ -159,7 +159,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
                 tool_type="pkg",
                 name="combinations",
                 tool_identifier="itertools.combinations",
-            ).get_tool(),
+            ).get_tool(tool_defs=tool_defs),
         ],
     )
 
@@ -169,7 +169,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
         action=Action.TOOL_CALL.value,
         tool_call={
             "tool_name": "combinations",
-            "tool_kwargs": {"iterable": "abc", "r": 2},
+            "tool_kwargs": {"iterable": [1, 2, 3], "r": 2},
         },
     )
 
@@ -183,7 +183,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1):
     assert any(msg.role == "tool" for msg in messages)
 
 
-def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
+def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test handling of invalid tool arguments."""
 
     session = basic_agent.create_session(verbose=True)
@@ -197,7 +197,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1):
                 tool_type="pkg",
                 name="combinations",
                 tool_identifier="itertools.combinations",
-            ).get_tool(),
+            ).get_tool(tool_defs=tool_defs),
         ],
     )
 
@@ -231,9 +231,19 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
         start_step_id="start",
         persona="Config test persona",
         tools={
-            "tool_arg_descriptions": {
-                "test_tool": {"arg0": "Test argument"},
-                "another_test_tool": {"arg1": "Another test argument"},
+            "tool_defs": {
+                "test_tool": {"args": [{"key": "arg0", "desc": "Test argument"}]},
+                "another_test_tool": {
+                    "desc": "Another test tool (overridden)",
+                    "args": [{"key": "arg1", "desc": "Another test argument"}],
+                },
+                "combinations": {
+                    "desc": "Test tool for combinations",
+                    "args": [
+                        {"key": "iterable", "type": "List", "desc": "Input iterable"},
+                        {"key": "r", "type": "int", "desc": "Length of combinations"},
+                    ],
+                },
             }
         },
     )
@@ -254,6 +264,8 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     # Test that tool arg descriptions were properly loaded
     tool = session.tools["test_tool"]
     assert tool.parameters["arg0"]["description"] == "Test argument"
+    tool = session.tools["another_test_tool"]
+    assert tool.description == "Another test tool (overridden)"
 
 
 @pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
@@ -282,6 +294,15 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
                     },
                 },
             ],
+            "tool_defs": {
+                "combinations": {
+                    "desc": "Test tool for combinations",
+                    "args": [
+                        {"key": "iterable", "type": "List", "desc": "Input iterable"},
+                        {"key": "r", "type": "int", "desc": "Length of combinations"},
+                    ],
+                },
+            },
         },
     )
 

@@ -6,8 +6,9 @@ from pydantic import BaseModel
 import pytest
 
 from nomos.models.agent import Message, Step, Route
-from nomos.models.tool import ToolWrapper
+from nomos.models.tool import ToolWrapper, ToolDef, ArgDef
 from nomos.llms import LLMBase
+from nomos.config import AgentConfig, ToolsConfig
 from nomos.core import Agent
 from nomos.utils.logging import log_error
 
@@ -114,17 +115,29 @@ def pkg_tool():
 
 
 @pytest.fixture
-def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1, pkg_tool):
+def tool_defs():
+    """Fixture providing tool definitions for testing."""
+    return {
+        "combinations": ToolDef(
+            desc="Test tool for combinations",
+            args=[
+                ArgDef(key="iterable", type="List", desc="Input iterable"),
+                ArgDef(key="r", type="int", desc="Length of combinations"),
+            ],
+        )
+    }
+
+
+@pytest.fixture
+def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1, pkg_tool, tool_defs):
     """Fixture providing a basic Nomos agent instance."""
-    return Agent(
+    config = AgentConfig(
         name="test_agent",
-        llm=mock_llm,
+        persona="Test persona",
         steps=basic_steps,
         start_step_id="start",
-        tools=[
-            test_tool_0,
-            test_tool_1,
-            pkg_tool,
-        ],
-        persona="Test persona",
+        tools=ToolsConfig(tool_defs=tool_defs),
+    )
+    return Agent.from_config(
+        config=config, llm=mock_llm, tools=[test_tool_0, test_tool_1, pkg_tool]
     )
