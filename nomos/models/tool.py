@@ -27,7 +27,7 @@ class ToolDef(BaseModel):
     """Documentation for a tool."""
 
     desc: Optional[str] = None  # Description of the tool
-    args: Optional[List[ArgDef]] = None  # Argument descriptions for the tool
+    args: List[ArgDef]  # Argument descriptions for the tool
 
 
 class Tool(BaseModel):
@@ -108,6 +108,7 @@ class Tool(BaseModel):
                 f"Type for parameter '{_name}' cannot be None. Please provide a valid type using "
                 "`tool.tool_defs`, add a type annotation to the function or write a docstring for the function."
             )
+            _type = parse_type(_type) if isinstance(_type, str) else _type
             params[_name] = {
                 "type": _type,
             }
@@ -115,6 +116,7 @@ class Tool(BaseModel):
                 params[_name]["description"] = _description
             if param.default is not inspect.Parameter.empty:
                 params[_name]["default"] = param.default
+
         return cls(
             name=name,
             description=description,
@@ -327,7 +329,8 @@ class ToolWrapper(BaseModel):
 
 
 def get_tools(
-    tools: Optional[list[Union[Callable, ToolWrapper]]], tool_defs: Optional[Dict[str, ToolDef]] = None
+    tools: Optional[list[Union[Callable, ToolWrapper]]],
+    tool_defs: Optional[Dict[str, ToolDef]] = None,
 ) -> dict[str, Tool]:
     """
     Get a list of Tool instances from a list of functions or tool identifiers.

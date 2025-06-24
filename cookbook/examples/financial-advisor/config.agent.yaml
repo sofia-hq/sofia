@@ -103,18 +103,29 @@ steps:
 tools:
   tool_files:
     - tools.py
-  tool_arg_descriptions:
+  tool_defs:
     calculate_budget:
-      monthly_income: User's monthly income amount
+      args:
+        - key: monthly_income
+          desc: "User's monthly income amount"
     add_expense:
-      amount: Expense amount
-      category: One of Housing, Transportation, Food, Utilities, Entertainment, Savings
-      description: Brief description of the expense
-      date: Optional date in YYYY-MM-DD format
+      args:
+        - key: amount
+          desc: "Expense amount"
+        - key: category
+          desc: "One of Housing, Transportation, Food, Utilities, Entertainment, Savings"
+        - key: description
+          desc: "Brief description of the expense"
+        - key: date
+          desc: "Optional date in YYYY-MM-DD format"
     set_savings_goal:
-      target_amount: Goal amount to save
-      target_date: Target date in YYYY-MM-DD format
-      description: Description of the savings goal
+      args:
+        - key: target_amount
+          desc: "Goal amount to save"
+        - key: target_date
+          desc: "Target date in YYYY-MM-DD format"
+        - key: description
+          desc: "Description of the savings goal"
 
 llm:
   provider: openai
