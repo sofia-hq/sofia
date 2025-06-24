@@ -73,6 +73,10 @@ class Step(BaseModel):
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
 
+    def __str__(self) -> str:
+        """Return a string representation of the step."""
+        return f"[Step] {self.step_id}: {self.description}"
+
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
         if self.auto_flow and not (self.routes or self.available_tools):
@@ -124,9 +128,21 @@ class Step(BaseModel):
         """
         return StepIdentifier(step_id=self.step_id)
 
-    def __str__(self) -> str:
-        """Return a string representation of the step."""
-        return f"[Step] {self.step_id}: {self.description}"
+    def extend_tools(self, tools: List[str]) -> None:
+        """
+        Extend the list of tools available in this step.
+
+        :param tools: List of tool names.
+        """
+        self.available_tools.extend(set(tools))
+
+    def reduce_tools(self, tools: List[str]) -> None:
+        """
+        Reduce the list of tools available in this step.
+
+        :param tools: List of tool names to remove.
+        """
+        self.available_tools = list(set(self.available_tools) - set(tools))
 
 
 class Message(BaseModel):

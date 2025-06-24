@@ -101,15 +101,10 @@ class Session:
             else {}
         )
         self.tools = get_tools(tools, tool_arg_descs)
-        remote_tools: Dict[str, Tool] = {}
-        for tool_name, tool in self.tools.items():
-            if Tool.is_mcp_tool(tool_name):
-                server_tools = Tool.from_mcp_server(tool)
-                remote_tools.update(
-                    {server_tool.name: server_tool for server_tool in server_tools}
-                )
-
-        self.tools.update(remote_tools)
+        self.tool_servers: List[Union[MCPServer]] = list(
+            filter(lambda t: isinstance(t, MCPServer), tools)  # type: ignore
+        )
+        self.server_tools: Dict[str, Tool] = {}
 
         # Variable
         self.memory = memory
@@ -159,6 +154,37 @@ class Session:
 
         return session_dict
 
+    def get_tools_from_servers(self) -> List[Tool]:
+        """
+        Get the list of tools available from all Remote servers.
+
+        :return: List of Tool instances from all Remote servers.
+        """
+        server_tools: List[Tool] = []
+        for server in self.tool_servers:
+            if isinstance(server, MCPServer):
+                try:
+                    server_tools.extend(Tool.from_mcp_server(server))
+                except Exception as e:
+                    log_error(f"Error getting tools from server {server.name}: {e}")
+        return server_tools
+
+    def extend_server_tools(self, server_tools: List[Tool]) -> None:
+        """
+        Extend the list of server tools available in this session.
+
+        :param server_tools: List of Tool instances to add.
+        """
+        self.server_tools.update({tool.name: tool for tool in server_tools})
+
+    def reset_server_tools(self) -> None:
+        """
+        Reset the list of server tools available in this session.
+
+        This is useful to clear any previously fetched tools.
+        """
+        self.server_tools = {}
+
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
         """
         Run a tool with the given name and arguments.
@@ -167,7 +193,7 @@ class Session:
         :param kwargs: Arguments to pass to the tool.
         :return: Result of the tool execution.
         """
-        tool = self.tools.get(tool_name)
+        tool = self.tools.get(tool_name) or self.server_tools.get(tool_name)
         if not tool:
             log_error(f"Tool '{tool_name}' not found in session tools.")
             raise ValueError(
@@ -182,14 +208,19 @@ class Session:
 
         :return: List of Tool instances available in the current step.
         """
+        server_tool_names = list(self.server_tools.keys())
+        log_debug(f"Adding server tools to step: {server_tool_names}")
+        self.current_step.extend_tools(server_tool_names)
         tools = []
         for tool in self.current_step.tool_ids:
-            _tool = self.tools.get(tool)
+            _tool = self.tools.get(tool) or self.server_tools.get(tool)
             if not _tool:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
 
             tools.append(_tool)
+
+        self.current_step.reduce_tools(server_tool_names)
         return tools
 
     def _add_message(self, role: str, message: str) -> None:
@@ -355,6 +386,9 @@ class Session:
                     f"Maximum iterations reached ({self.max_iter}). Stopping session."
                 )
 
+        self.reset_server_tools()
+        server_tools = self.get_tools_from_servers()
+        self.extend_server_tools(server_tools)
         log_debug(f"User input received: {user_input}")
         self._add_message("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
@@ -577,15 +611,6 @@ class Agent:
         # Validate tool names
         for step in self.steps.values():
             for step_tool in step.available_tools:
-                if Tool.is_remote_tool(step_tool):
-                    tool_server_name = Tool.get_server_name_from_tool_identifier(
-                        step_tool
-                    )
-                    if tool_server_name in [
-                        server_tool.name for server_tool in server_tools
-                    ]:
-                        continue
-
                 for tool in self.tools:
                     if (isinstance(tool, ToolWrapper) and tool.name == step_tool) or (
                         callable(tool) and getattr(tool, "__name__", None) == step_tool

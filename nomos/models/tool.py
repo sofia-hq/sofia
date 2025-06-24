@@ -579,8 +579,7 @@ def get_tools(
             _tool = tool.get_tool(tool_arg_desc)
             _tool_name = _tool.name
         if isinstance(tool, MCPServer):
-            _tool = tool
-            _tool_name = tool.id  # type: ignore
+            continue
         assert (
             _tool is not None and _tool_name is not None
         ), "Tool must be a callable or a ToolWrapper instance"
