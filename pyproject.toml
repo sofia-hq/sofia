@@ -25,6 +25,7 @@ cli = [
     "rich (>=13.0.0,<14.0.0)",
     "docker (>=7.1.0,<8.0.0)",
 ]
+anthropic = ["anthropic (>=0.55.0,<0.56.0)"]
 openai = ["openai (>=1.76.0,<2.0.0)", "tiktoken (>=0.9.0,<0.10.0)"]
 mistralai = ["mistralai (>=1.7.0,<2.0.0)"]
 google = ["google-genai (>=1.12.1,<2.0.0)"]
