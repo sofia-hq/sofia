@@ -101,7 +101,9 @@ class Step(BaseModel):
             filter(lambda t: not Tool.is_remote_tool(t), available_tools)
         )
         data["available_tools"] = local_tools
-        data["remote_tools"] = list(set(available_tools) - set(local_tools))
+        data["remote_tools"] = [
+            tool for tool in available_tools if tool not in local_tools
+        ]
         super().__init__(**data)
 
     def __str__(self) -> str:
@@ -173,7 +175,9 @@ class Step(BaseModel):
 
         :param tools: List of tool names to remove.
         """
-        self.available_tools = list(set(self.available_tools) - set(tools))
+        self.available_tools = [
+            tool for tool in self.available_tools if tool not in tools
+        ]
 
 
 class Message(BaseModel):

@@ -223,8 +223,10 @@ class LLMBase:
         :return: A dynamically created Pydantic BaseModel for the decision.
         """
         available_step_ids = current_step.get_available_routes()
-        tool_ids = [tool.name for tool in current_step_tools]
-        tool_models = [tool.get_args_model() for tool in current_step_tools]
+        # Sort tools by name to ensure deterministic schema generation
+        sorted_tools = sorted(current_step_tools, key=lambda t: t.name)
+        tool_ids = [tool.name for tool in sorted_tools]
+        tool_models = [tool.get_args_model() for tool in sorted_tools]
         action_ids = (
             (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
             + (["MOVE"] if available_step_ids else [])

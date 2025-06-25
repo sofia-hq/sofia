@@ -209,9 +209,9 @@ class Session:
         :return: List of Tool instances available in the current step.
         """
         server_tool_names = list(self.server_tools.keys())
-        server_tool_names_for_step = list(
-            set(server_tool_names) & set(self.current_step.remote_tools)
-        )
+        server_tool_names_for_step = [
+            tool for tool in server_tool_names if tool in self.current_step.remote_tools
+        ]
         log_debug(f"Adding server tools to step: {server_tool_names_for_step}")
         self.current_step.extend_tools(server_tool_names_for_step)
         tools = []
