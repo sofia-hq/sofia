@@ -1,4 +1,4 @@
-"""OpenAI LLM integration for SOFIA."""
+"""OpenAI LLM integration for Nomos."""
 
 from typing import List
 
@@ -9,7 +9,7 @@ from ..models.agent import Message
 
 
 class OpenAI(LLMBase):
-    """OpenAI Chat LLM integration for SOFIA."""
+    """OpenAI Chat LLM integration for Nomos."""
 
     __provider__: str = "openai"
 

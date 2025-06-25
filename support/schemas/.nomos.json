@@ -1,5 +1,43 @@
 {
   "$defs": {
+    "ArgDef": {
+      "description": "Documentation for an argument of a tool.",
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "desc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Desc"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Type"
+        }
+      },
+      "required": [
+        "key"
+      ],
+      "title": "ArgDef",
+      "type": "object"
+    },
     "BaseModel": {
       "properties": {},
       "title": "BaseModel",
@@ -111,7 +149,7 @@
       "type": "object"
     },
     "LLMConfig": {
-      "description": "Configuration class for LLM integrations in SOFIA.\n\nAttributes:\n    type (str): Type of LLM integration (e.g., \"openai\", \"mistral\", \"gemini\").\n    model (str): Model name to use.\n    kwargs (dict): Additional parameters for the LLM API.",
+      "description": "Configuration class for LLM integrations in Nomos.\n\nAttributes:\n    type (str): Type of LLM integration (e.g., \"openai\", \"mistral\", \"gemini\").\n    model (str): Model name to use.\n    kwargs (dict): Additional parameters for the LLM API.",
       "properties": {
         "provider": {
           "enum": [
@@ -362,6 +400,35 @@
       "title": "Step",
       "type": "object"
     },
+    "ToolDef": {
+      "description": "Documentation for a tool.",
+      "properties": {
+        "desc": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Desc"
+        },
+        "args": {
+          "items": {
+            "$ref": "#/$defs/ArgDef"
+          },
+          "title": "Args",
+          "type": "array"
+        }
+      },
+      "required": [
+        "args"
+      ],
+      "title": "ToolDef",
+      "type": "object"
+    },
     "ToolsConfig": {
       "description": "Configuration for tools used by the agent.",
       "properties": {
@@ -388,14 +455,11 @@
           "default": null,
           "title": "External Tools"
         },
-        "tool_arg_descriptions": {
+        "tool_defs": {
           "anyOf": [
             {
               "additionalProperties": {
-                "additionalProperties": {
-                  "type": "string"
-                },
-                "type": "object"
+                "$ref": "#/$defs/ToolDef"
               },
               "type": "object"
             },
@@ -404,7 +468,7 @@
             }
           ],
           "default": null,
-          "title": "Tool Arg Descriptions"
+          "title": "Tool Defs"
         }
       },
       "title": "ToolsConfig",
@@ -520,7 +584,7 @@
       "default": {
         "tool_files": [],
         "external_tools": null,
-        "tool_arg_descriptions": null
+        "tool_defs": null
       }
     },
     "logging": {

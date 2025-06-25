@@ -1,4 +1,4 @@
-"""LLMBase class for SOFIA agent framework."""
+"""LLMBase class for Nomos agent framework."""
 
 from typing import Dict, List, Literal, Optional, Type, Union
 
@@ -20,7 +20,7 @@ from ..utils.utils import create_base_model
 
 
 class LLMBase:
-    """Abstract base class for LLM integrations in SOFIA."""
+    """Abstract base class for LLM integrations in Nomos."""
 
     __provider__: str = "base"
 

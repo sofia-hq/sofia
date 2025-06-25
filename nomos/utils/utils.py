@@ -1,7 +1,8 @@
-"""Utility functions and helpers for the SOFIA package."""
+"""Utility functions and helpers for the Nomos package."""
 
+import ast
 from enum import Enum
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
@@ -73,8 +74,46 @@ def convert_camelcase_to_snakecase(name: str) -> str:
     return "".join(["_" + i.lower() if i.isupper() else i for i in name]).lstrip("_")
 
 
+def parse_type(type_str: str) -> type:
+    """Safely parse type strings without eval/exec."""
+    # Type mapping
+    TYPE_MAP = {
+        "str": str,
+        "bool": bool,
+        "int": int,
+        "float": float,
+        "Dict": Dict,
+        "List": List,
+        "Tuple": Tuple,
+        "Union": Union,
+        "Literal": Literal,
+    }
+
+    def parse_expression(node) -> Any:  # noqa
+        if isinstance(node, ast.Name):
+            return TYPE_MAP.get(node.id, getattr(__builtins__, node.id, None))
+        elif isinstance(node, ast.Subscript):
+            base = parse_expression(node.value)
+            if isinstance(node.slice, ast.Tuple):
+                args = tuple(parse_expression(elt) for elt in node.slice.elts)
+            else:
+                args = (parse_expression(node.slice),)
+            return base[args] if len(args) > 1 else base[args[0]]
+        elif isinstance(node, ast.Constant):
+            return node.value
+        else:
+            raise ValueError(f"Unsupported node type: {type(node)}")
+
+    try:
+        tree = ast.parse(type_str, mode="eval")
+        return parse_expression(tree.body)
+    except Exception as e:
+        raise ValueError(f"Invalid type: {type_str}") from e
+
+
 __all__ = [
     "create_base_model",
     "create_enum",
     "convert_camelcase_to_snakecase",
+    "parse_type",
 ]

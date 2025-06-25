@@ -95,12 +95,12 @@ class Session:
                 f"Flow manager initialized with {len(self.flow_manager.flows)} flows"
             )
 
-        tool_arg_descs = (
-            self.config.tools.tool_arg_descriptions
-            if self.config and self.config.tools.tool_arg_descriptions
-            else {}
+        tool_defs = (
+            self.config.tools.tool_defs
+            if self.config and self.config.tools.tool_defs
+            else None
         )
-        self.tools = get_tools(tools, tool_arg_descs)
+        self.tools = get_tools(tools, tool_defs)
         self.tool_servers: List[Union[MCPServer]] = list(
             filter(lambda t: isinstance(t, MCPServer), tools)  # type: ignore
         )

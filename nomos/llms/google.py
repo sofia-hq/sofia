@@ -1,4 +1,4 @@
-"""Gemini LLM integration for SOFIA."""
+"""Gemini LLM integration for Nomos."""
 
 from typing import List
 
@@ -9,7 +9,7 @@ from ..models.agent import Message
 
 
 class Gemini(LLMBase):
-    """Gemini LLM integration for SOFIA."""
+    """Gemini LLM integration for Nomos."""
 
     __provider__: str = "google"
 
