@@ -53,6 +53,12 @@ minversion = "7.0"
 addopts = "-ra -q --cov=nomos --cov-report=term-missing"
 testpaths = ["tests"]
 
+[tool.coverage.run]
+omit = [
+    "nomos/api/*"
+]
+
+
 [tool.poetry]
 packages = [{ include = "nomos" }]
 include = ["nomos/py.typed"]
