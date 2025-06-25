@@ -263,38 +263,6 @@ class Tool(BaseModel):
         """
         return tool_identifier.startswith("@mcp/")
 
-    @classmethod
-    def get_server_name_from_tool_identifier(
-        cls, tool_identifier: str
-    ) -> Optional[str]:
-        """
-        Get the server name from the tool identifier.
-
-        :param tool_identifier: The identifier of the tool.
-        :return: The server name if found, None otherwise.
-        """
-        if cls.is_mcp_tool(tool_identifier):
-            return tool_identifier.split("/")[1]
-
-        raise ValueError(
-            f"Invalid tool identifier: {tool_identifier}. Not a server tool."
-        )
-
-    @classmethod
-    def get_tool_name_from_tool_identifier(cls, tool_identifier: str) -> Optional[str]:
-        """
-        Get the tool name from the tool identifier.
-
-        :param tool_identifier: The identifier of the tool.
-        :return: The tool name if found, None otherwise.
-        """
-        if cls.is_mcp_tool(tool_identifier):
-            return tool_identifier.split("/")[2]
-
-        raise ValueError(
-            f"Invalid tool identifier: {tool_identifier}. Not a server tool."
-        )
-
     def get_args_model(self) -> Type[BaseModel]:
         """
         Get the Pydantic model for the tool's arguments.
@@ -455,25 +423,6 @@ class MCPServer(BaseModel):
     use: Optional[List[str]] = None
     exclude: Optional[List[str]] = None
 
-    @classmethod
-    def get_builtin_type_from_mcp_type(cls, mcp_type: str) -> Type[Any]:
-        """
-        Get the built-in Python type from the MCP type.
-
-        :param mcp_type: The MCP type as a string.
-        :return: The corresponding built-in Python type.
-        """
-        _server_type_to_builtin_type = {
-            "integer": int,
-            "string": str,
-            "boolean": bool,
-            "number": float,
-            "array": list,
-            "object": dict,
-            "null": type(None),
-        }
-        return _server_type_to_builtin_type.get(mcp_type, Any)
-
     @property
     def id(self) -> str:
         """
@@ -494,19 +443,6 @@ class MCPServer(BaseModel):
             return str(self.url)
 
         return join_urls(str(self.url), self.path)
-
-    @classmethod
-    def get_tool_name_from_tool_identifier(cls, tool_identifier: str) -> str:
-        """
-        Get the tool name from the tool identifier.
-
-        :param tool_identifier: The identifier of the tool.
-        :return: The tool name if found, None otherwise.
-        """
-        if Tool.is_mcp_tool(tool_identifier):
-            return tool_identifier.split("/")[2]
-
-        raise ValueError(f"Invalid tool identifier: {tool_identifier}. Not a MCP tool.")
 
     def get_tools(self) -> List[Tool]:
         """
@@ -549,7 +485,7 @@ class MCPServer(BaseModel):
                 input_parameters = t.inputSchema.get("properties", {})
                 mapped_parameters = {}
                 for param_name, param_info in input_parameters.items():
-                    param_type = self.get_builtin_type_from_mcp_type(param_info["type"])
+                    param_type = parse_type(param_info["type"])
                     mapped_parameters[param_name] = {
                         "type": param_type,
                         "description": param_info.get("description", ""),
