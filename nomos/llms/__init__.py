@@ -4,6 +4,7 @@ from typing import Dict, Literal
 
 from pydantic import BaseModel
 
+from .anthropic import Anthropic
 from .base import LLMBase
 from .google import Gemini
 from .huggingface import HuggingFace
@@ -12,7 +13,7 @@ from .ollama import Ollama
 from .openai import OpenAI
 
 
-LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace]
+LLMS: list = [OpenAI, Mistral, Gemini, Ollama, HuggingFace, Anthropic]
 
 
 class LLMConfig(BaseModel):
@@ -25,7 +26,9 @@ class LLMConfig(BaseModel):
         kwargs (dict): Additional parameters for the LLM API.
     """
 
-    provider: Literal["openai", "mistral", "google", "ollama", "huggingface"]
+    provider: Literal[
+        "openai", "mistral", "google", "ollama", "huggingface", "anthropic"
+    ]
     model: str
     kwargs: Dict[str, str] = {}
 
@@ -49,4 +52,5 @@ __all__ = [
     "Mistral",
     "Ollama",
     "HuggingFace",
+    "Anthropic",
 ]

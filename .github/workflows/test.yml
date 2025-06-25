@@ -39,7 +39,7 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        slug: chandralegend/nomos
+        slug: dowhiledev/nomos
 
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
