@@ -1,7 +1,7 @@
 """Flow models for Nomos's decision-making process."""
 
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -62,6 +62,17 @@ class StepIdentifier(BaseModel):
     step_id: str
 
 
+class DecisionExample(BaseModel):
+    context: str
+    decision: "Decision"
+    visibility: Literal["always", "never", "dynamic"] = "dynamic"
+    _ctx_embedding: Optional[List[float]] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the decision example."""
+        return f"{self.context} -> {self.decision}"
+
+
 class Step(BaseModel):
     """
     Represents a step in the agent's flow.
@@ -87,6 +98,7 @@ class Step(BaseModel):
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
+    examples: Optional[List[DecisionExample]] = None
 
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
@@ -142,6 +154,32 @@ class Step(BaseModel):
     def __str__(self) -> str:
         """Return a string representation of the step."""
         return f"[Step] {self.step_id}: {self.description}"
+
+    def get_examples(
+        self, similarity_fn: Callable, context: Optional[str] = None
+    ) -> List[Tuple[DecisionExample, int]]:
+        """
+        Get examples for this step based on the provided context.
+
+        :param similarity_fn: Function to compute similarity between contexts.
+        :param context: Context to compare against examples.
+        :return: List of tuples containing DecisionExample and its similarity score.
+        """
+        _always = [
+            (example, 1.0)
+            for example in self.examples or []
+            if example.visibility == "always"
+        ]
+        dynamic_examples = [
+            example
+            for example in self.examples or []
+            if example.visibility == "dynamic"
+        ]
+        _examples = [
+            (example, similarity_fn(example.context, context))
+            for example in dynamic_examples
+        ]
+        return _always + _examples
 
 
 class Message(BaseModel):
@@ -218,6 +256,21 @@ class Decision(BaseModel):
     suggestions: Optional[List[str]] = None
     step_transition: Optional[str] = None
     tool_call: Optional[ToolCall] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the decision."""
+        if self.action in [Action.ANSWER, Action.ASK]:
+            return f"action: {self.action.value}, response: {self.response}"
+        elif self.action == Action.MOVE:
+            return (
+                f"action: {self.action.value}, step_transition: {self.step_transition}"
+            )
+        elif self.action == Action.TOOL_CALL and self.tool_call:
+            return f"action: {self.action.value}, tool_call: {self.tool_call.tool_name} with args {self.tool_call.tool_kwargs.model_dump_json()}"
+        elif self.action == Action.END:
+            return f"action: {self.action.value}"
+        else:
+            raise ValueError(f"Unknown action: {self.action}")
 
 
 def create_action_enum(actions: List[str]) -> Enum:

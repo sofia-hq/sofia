@@ -134,8 +134,15 @@ class LLMBase:
             if current_step.tool_ids
             else ""
         )
-        messages.append(Message(role="system", content=system_prompt))
+        if current_step.examples:
+            example_str = ["\nExamples:"]
+            for i, example in enumerate(current_step.examples):
+                example_str.append(f"{i + 1}. {example}")
+            system_prompt += "\n".join(example_str) + "\n"
+
         user_prompt = f"History:\n{self.format_history(history)}"
+
+        messages.append(Message(role="system", content=system_prompt))
         messages.append(Message(role="user", content=user_prompt))
         return messages
 
