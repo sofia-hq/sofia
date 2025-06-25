@@ -10,8 +10,9 @@ NOMOS supports multiple LLM providers, allowing you to choose the best model for
 from nomos.llms import OpenAI
 
 llm = OpenAI(model="gpt-4o-mini")
-# or
+# Other supported models:
 llm = OpenAI(model="gpt-4o")
+llm = OpenAI(model="gpt-4-turbo")
 llm = OpenAI(model="gpt-3.5-turbo")
 ```
 
@@ -52,10 +53,11 @@ export MISTRAL_API_KEY=your-api-key-here
 ```python
 from nomos.llms import Gemini
 
-llm = Gemini(model="gemini-2.0-flash")
+llm = Gemini(model="gemini-2.0-flash-exp")
 # Other supported models:
 llm = Gemini(model="gemini-1.5-pro")
 llm = Gemini(model="gemini-1.5-flash")
+llm = Gemini(model="gemini-1.0-pro")
 ```
 
 **Installation:**
@@ -73,10 +75,12 @@ export GOOGLE_API_KEY=your-api-key-here
 ```python
 from nomos.llms import Ollama
 
-llm = Ollama(model="llama3")
-# or
-llm = Ollama(model="mistral")
-llm = Ollama(model="codellama")
+llm = Ollama(model="llama3.3")
+# Other popular models:
+llm = Ollama(model="qwen2.5:14b")
+llm = Ollama(model="codestral")
+llm = Ollama(model="deepseek-coder-v2")
+llm = Ollama(model="phi4")
 ```
 
 **Installation:**
@@ -86,7 +90,7 @@ pip install nomos[ollama]
 
 **Prerequisites:**
 - Install [Ollama](https://ollama.ai/)
-- Pull the desired model: `ollama pull llama3`
+- Pull the desired model: `ollama pull llama3.3`
 
 ### HuggingFace
 
@@ -106,6 +110,29 @@ pip install nomos[huggingface]
 **Environment Variable:**
 ```bash
 export HUGGINGFACE_API_TOKEN=your-token-here
+```
+
+### Anthropic
+
+```python
+from nomos.llms import Anthropic
+
+llm = Anthropic(model="claude-3-5-sonnet-20241022")
+# Other supported models:
+llm = Anthropic(model="claude-3-5-haiku-20241022")
+llm = Anthropic(model="claude-3-opus-20240229")
+llm = Anthropic(model="claude-3-sonnet-20240229")
+llm = Anthropic(model="claude-3-haiku-20240307")
+```
+
+**Installation:**
+```bash
+pip install nomos[anthropic]
+```
+
+**Environment Variable:**
+```bash
+export ANTHROPIC_API_KEY=your-api-key-here
 ```
 
 ## YAML Configuration
@@ -130,14 +157,14 @@ llm:
 ```yaml
 llm:
   provider: gemini
-  model: gemini-pro
+  model: gemini-2.0-flash-exp
 ```
 
 ### Ollama
 ```yaml
 llm:
   provider: ollama
-  model: llama3
+  model: llama3.3
   base_url: http://localhost:11434  # Optional: custom Ollama URL
 ```
 
@@ -146,6 +173,13 @@ llm:
 llm:
   provider: huggingface
   model: meta-llama/Meta-Llama-3-8B-Instruct
+```
+
+### Anthropic
+```yaml
+llm:
+  provider: anthropic
+  model: claude-3-5-sonnet-20241022
 ```
 
 ## Advanced Configuration
@@ -161,6 +195,13 @@ llm = OpenAI(
     max_tokens=1000,
     top_p=0.9
 )
+
+llm = Anthropic(
+    model="claude-3-5-sonnet-20241022",
+    temperature=0.3,
+    max_tokens=2048,
+    top_p=0.8
+)
 ```
 
 ### YAML Advanced Configuration
@@ -174,22 +215,34 @@ llm:
   top_p: 0.9
 ```
 
+```yaml
+llm:
+  provider: anthropic
+  model: claude-3-5-sonnet-20241022
+  temperature: 0.3
+  max_tokens: 2048
+  top_p: 0.8
+```
+
 ## Model Selection Guidelines
 
 ### For Production Use
 - **OpenAI GPT-4o**: Best overall performance, most reliable
+- **Anthropic Claude 3.5 Sonnet**: Excellent reasoning and coding capabilities
 - **Mistral Large**: Strong performance, competitive pricing
-- **Gemini Pro**: Good balance of speed and capability
+- **Google Gemini 2.0 Flash**: Fast and capable for most tasks
 
 ### For Development/Testing
 - **OpenAI GPT-4o-mini**: Fast and cost-effective
+- **Anthropic Claude 3.5 Sonnet**: Good balance of capability and speed
 - **Mistral Small**: Affordable option with good performance
 - **Ollama**: Local models, no API costs
 
 ### For Specialized Tasks
-- **Code Generation**: GPT-4o, CodeLlama (via Ollama)
-- **Conversational**: GPT-4o-mini, Mistral Medium
-- **Multilingual**: Gemini Pro, GPT-4o
+- **Code Generation**: GPT-4o, Claude 3.5 Sonnet, Codestral (via Ollama)
+- **Conversational**: GPT-4o-mini, Claude 3.5 Haiku, Mistral Medium
+- **Reasoning & Analysis**: Claude 3.5 Sonnet, GPT-4o, Claude 3 Opus
+- **Multilingual**: Gemini 2.0 Flash, GPT-4o
 
 ## Troubleshooting
 
@@ -218,3 +271,13 @@ max_errors: 3  # Retry up to 3 times on LLM errors
 2. **Configure Temperature**: Lower values (0.1-0.3) for consistent responses
 3. **Set Max Tokens**: Limit response length to control costs and latency
 4. **Use Local Models**: Ollama for development or when data privacy is important
+
+## Model Documentation
+
+For the most up-to-date list of available models, refer to the official documentation:
+
+- **Anthropic**: [Claude Models Overview](https://docs.anthropic.com/en/docs/about-claude/models/overview)
+- **OpenAI**: [OpenAI Models](https://platform.openai.com/docs/models)
+- **Google Gemini**: [Vertex AI Generative AI Models](https://cloud.google.com/vertex-ai/generative-ai/docs/models)
+- **Mistral AI**: [Mistral Models Overview](https://docs.mistral.ai/getting-started/models/models_overview/)
+- **Ollama**: [Ollama Model Library](https://ollama.com/search)
