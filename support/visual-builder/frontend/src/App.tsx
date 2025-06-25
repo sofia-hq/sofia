@@ -9,6 +9,7 @@ import '@xyflow/react/dist/style.css';
 export default function App() {
   const [chatOpen, setChatOpen] = useState(false);
   const chatRef = useRef<ChatPopupRef>(null);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
   const [builderData, setBuilderData] = useState<{
     nodes: Node[];
     edges: Edge[];
@@ -26,11 +27,19 @@ export default function App() {
     if (chatOpen && chatRef.current) chatRef.current.reset();
   };
 
+  const handleHighlightNode = (nodeId: string | null) => {
+    setHighlightedNodeId(nodeId);
+  };
+
   return (
     <ThemeProvider>
       <div className="h-screen w-screen bg-white dark:bg-gray-900 transition-colors">
         <ReactFlowProvider>
-          <FlowBuilder onPreview={handlePreview} onSaveConfig={handleSave} />
+          <FlowBuilder
+            onPreview={handlePreview}
+            onSaveConfig={handleSave}
+            highlightedNodeId={highlightedNodeId}
+          />
         </ReactFlowProvider>
         <ChatPopup
           ref={chatRef}
@@ -40,6 +49,7 @@ export default function App() {
           edges={builderData.edges}
           agentName={builderData.agent}
           persona={builderData.persona}
+          onHighlightNode={handleHighlightNode}
         />
       </div>
     </ThemeProvider>
