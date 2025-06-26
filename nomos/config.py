@@ -152,7 +152,7 @@ class AgentConfig(BaseSettings):
         threshold (float): Minimum similarity score to include an example.
         max_iter (int): Maximum number of iterations allowed.
         llm (Optional[LLMConfig]): Optional LLM configuration.
-        emdedding_model (Optional[LLMConfig]): Optional embedding model configuration.
+        embedding_model (Optional[LLMConfig]): Optional embedding model configuration.
         memory (Optional[MemoryConfig]): Optional memory configuration.
         flows (Optional[List[FlowConfig]]): Optional flow configurations.
         server (ServerConfig): Configuration for the FastAPI server.
@@ -177,7 +177,7 @@ class AgentConfig(BaseSettings):
     threshold: float = 0.5  # Minimum similarity score to include an example
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
-    emdedding_model: Optional[LLMConfig] = (
+    embedding_model: Optional[LLMConfig] = (
         None  # Optional embedding model configuration
     )
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
@@ -239,7 +239,7 @@ class AgentConfig(BaseSettings):
 
         :return: An instance of the defined embedding model integration.
         """
-        return self.emdedding_model.get_llm() if self.emdedding_model else None
+        return self.embedding_model.get_llm() if self.embedding_model else None
 
 
 __all__ = ["AgentConfig", "ServerConfig"]
