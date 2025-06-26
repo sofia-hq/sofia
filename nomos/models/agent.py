@@ -75,6 +75,8 @@ class StepIdentifier(BaseModel):
 
 
 class DecisionExample(BaseModel):
+    """Represents an example decision made by the agent."""
+
     context: str
     decision: Union["Decision", str]
     visibility: Literal["always", "never", "dynamic"] = "dynamic"
@@ -332,6 +334,29 @@ def create_action_enum(actions: List[str]) -> Enum:
     return create_enum("Action", actions_dict)
 
 
+def history_to_types(
+    context: List[dict],
+) -> List[Union[Message, Summary, StepIdentifier]]:
+    """
+    Convert a history dictionary to a list of Message, Summary, or StepIdentifier objects.
+
+    :param context: Dictionary containing the history.
+    :return: List of Message, Summary, or StepIdentifier objects.
+    """
+    history = []
+    for item in context:
+        if isinstance(item, dict):
+            if "role" in item and "content" in item:
+                history.append(Message(**item))
+            elif "summary" in item:
+                history.append(Summary(**item))
+            elif "step_id" in item:
+                history.append(StepIdentifier(**item))
+        else:
+            raise ValueError(f"Unknown history item type: {type(item)}")
+    return history
+
+
 __all__ = [
     "Action",
     "Route",
@@ -342,4 +367,7 @@ __all__ = [
     "SessionContext",
     "Decision",
     "create_action_enum",
+    "DecisionExample",
+    "StepIdentifier",
+    "history_to_types",
 ]

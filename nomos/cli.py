@@ -27,7 +27,7 @@ from .constants import (
 )
 from .core import Agent
 from .llms import LLMConfig
-from .models.agent import Action, DecisionExample, Step
+from .models.agent import Action, DecisionExample, Step, history_to_types
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -835,18 +835,40 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
             continue
 
         feedback = Prompt.ask("What should have happened?")
-        history = session_data.get("history", [])
-        step_id = session_data.get("current_step_id", config.start_step_id)
 
-        context_summary = config.get_llm().format_history(history)
-        print(context_summary)
+        history = session_data.get("history")  # type: ignore
+        flow_state = session_data.get("flow_state")
+        flow_memory_context = (
+            flow_state.get("flow_memory_context") if flow_state else None
+        )
+        step_id = session_data.get("current_step_id")  # type: ignore
+
+        # Take step back
+        history = history[:-1] if len(history) > 1 else []  # type: ignore
+        flow_memory_context = (
+            flow_memory_context[:-1]
+            if flow_memory_context and len(flow_memory_context) > 1
+            else []
+        )
+
+        session_data["history"] = history
+        if flow_state:
+            session_data["flow_state"]["context"] = flow_memory_context
+
+        context_summary = config.get_llm().generate_summary(
+            history_to_types(
+                flow_memory_context if flow_state else session_data["history"]
+            )
+        )
 
         for step in config.steps:
             if step.step_id == step_id:
                 if step.examples is None:
                     step.examples = []
                 step.examples.append(
-                    DecisionExample(context=context_summary, decision=feedback)
+                    DecisionExample(
+                        context=" ".join(context_summary.summary), decision=feedback
+                    )
                 )
                 break
 

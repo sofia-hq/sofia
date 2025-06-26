@@ -18,6 +18,7 @@ from .models.agent import (
     Step,
     StepIdentifier,
     Summary,
+    history_to_types,
 )
 from .models.flow import Flow, FlowContext, FlowManager
 from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
@@ -708,19 +709,7 @@ class Agent:
 
         # Convert the History items into list of Message or Step
         new_session_data = session_data.copy()
-        new_session_data["history"] = []
-        for history_item in session_data.get("history", []):
-            if isinstance(history_item, dict):
-                if "role" in history_item:
-                    new_session_data["history"].append(Message(**history_item))
-                elif "step_id" in history_item:
-                    new_session_data["history"].append(StepIdentifier(**history_item))
-                elif "summary" in history_item:
-                    new_session_data["history"].append(Summary(**history_item))
-            else:
-                raise ValueError(
-                    f"Invalid history item: {history_item}. Must be a dict."
-                )
+        new_session_data["history"] = history_to_types(session_data.get("history", []))
 
         memory = (
             self.config.memory.get_memory()
@@ -752,18 +741,7 @@ class Agent:
             flow_context_data = flow_state.get("flow_context")
             flow_memory_data = flow_state.get("flow_memory_context")
             if flow_memory_data:
-                flow_memory_data = [
-                    (
-                        Message(**msg)
-                        if "role" in msg
-                        else (
-                            StepIdentifier(**msg)
-                            if "step_id" in msg
-                            else Summary(**msg) if "summary" in msg else msg
-                        )
-                    )
-                    for msg in flow_memory_data
-                ]
+                flow_memory_data = history_to_types(flow_memory_data)
 
             if flow_id in session.flow_manager.flows and flow_context_data:
                 from .models.flow import FlowContext
