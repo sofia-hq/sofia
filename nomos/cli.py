@@ -834,7 +834,9 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
             break
         else:
             console.print(
-                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nUnknown Decision: {decision}",
+                "Agent:\nReasoning:{}\nUnknown action: {}".format(
+                    "\n".join(decision.reasoning), decision.action
+                ),
                 style=ERROR_COLOR,
             )
 
