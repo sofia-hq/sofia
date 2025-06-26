@@ -26,7 +26,8 @@ from .constants import (
     WARNING_COLOR,
 )
 from .llms import LLMConfig
-from .models.agent import Step
+from .models.agent import Step, DecisionExample, Action
+from .core import Agent
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -289,6 +290,51 @@ def run(
         console.print("\n👋 Development Run stopped.", style=WARNING_COLOR)
     except Exception as e:
         console.print(f"❌ Error running development Run: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
+
+
+@app.command()
+def train(
+    config: Optional[str] = typer.Option(
+        "config.agent.yaml", "--config", "-c", help="Path to agent configuration file"
+    ),
+    tools: Optional[List[str]] = typer.Option(
+        None,
+        "--tools",
+        "-t",
+        help="Python files containing tool definitions (can be used multiple times)",
+    ),
+) -> None:
+    """Run the Nomos agent in training mode."""
+    print_banner()
+
+    config_path = Path(config)  # type: ignore
+
+    if not config_path.exists():
+        console.print(
+            f"❌ Configuration file not found: [bold]{config_path}[/bold]",
+            style=ERROR_COLOR,
+        )
+        raise typer.Exit(1)
+
+    tool_paths: list[Path] = []
+    if tools:
+        for tool_file in tools:
+            tool_path = Path(tool_file)
+            if not tool_path.exists():
+                console.print(
+                    f"❌ Tool file not found: [bold]{tool_path}[/bold]",
+                    style=ERROR_COLOR,
+                )
+                raise typer.Exit(1)
+            tool_paths.append(tool_path)
+
+    try:
+        _train(config_path, tool_paths)
+    except KeyboardInterrupt:
+        console.print("\n👋 Training stopped.", style=WARNING_COLOR)
+    except Exception as e:
+        console.print(f"❌ Error during training: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
 
 
@@ -714,6 +760,82 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
             )
     finally:
         os.unlink(temp_script_path)
+
+
+def _train(config_path: Path, tool_files: List[Path]) -> None:
+    """Interactive training loop for refining agent decisions."""
+    current_dir = Path.cwd()
+
+    tool_dirs: set[str] = {str(p if p.is_dir() else p.parent) for p in tool_files}
+    default_tool_dir = current_dir / "tools"
+    if default_tool_dir.exists():
+        tool_dirs.add(str(default_tool_dir))
+
+    if tool_dirs:
+        os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
+    else:
+        console.print(
+            "⚠️  No tool files provided and no tools directory found. Running without tools.",
+            style=WARNING_COLOR,
+        )
+
+    from nomos.api.tools import tool_list
+
+    config = AgentConfig.from_yaml(str(config_path))
+    agent = Agent.from_config(config, tools=tool_list)
+
+    console.print(f"🤖 [bold]{config.name}[/bold] agent loaded in training mode.", style=PRIMARY_COLOR)
+    console.print("Type quit to exit\n")
+
+    session_data: Optional[dict] = None
+    while True:
+        user_input = Prompt.ask("You").strip()
+        if user_input.lower() in {"quit", "exit", "bye"}:
+            break
+        if not user_input:
+            continue
+        decision, tool_output, session_data = agent.next(user_input, session_data, verbose=True)
+        console.print(f"Agent: {decision.response}")
+        if tool_output:
+            console.print(f"Tool result: {tool_output}")
+        if decision.action == Action.END:
+            break
+
+        if Confirm.ask("Are you satisfied with this decision?", default=True):
+            continue
+
+        feedback = Prompt.ask("What should have happened?")
+        assert session_data is not None
+        history = session_data["history"][:-1]
+        step_id = None
+        for item in reversed(history):
+            if isinstance(item, dict) and "step_id" in item:
+                step_id = item["step_id"]
+                break
+        step_id = step_id or session_data["current_step_id"]
+
+        session_obj = agent.get_session_from_dict(
+            {"session_id": session_data["session_id"], "current_step_id": step_id, "history": history}
+        )
+        context_summary = agent.llm.format_history(session_obj.memory.context)
+
+        for step in config.steps:
+            if step.step_id == step_id:
+                if step.examples is None:
+                    step.examples = []
+                step.examples.append(DecisionExample(context=context_summary, decision=feedback))
+                break
+
+        config.to_yaml(str(config_path))
+        agent = Agent.from_config(config, tools=tool_list)
+        session_data = {"session_id": session_data["session_id"], "current_step_id": step_id, "history": history}
+        console.print(f"✅ Example added for step {step_id}. Agent reloaded.")
+        decision, tool_output, session_data = agent.next(None, session_data, verbose=True)
+        console.print(f"Agent: {decision.response}")
+        if tool_output:
+            console.print(f"Tool result: {tool_output}")
+        if decision.action == Action.END:
+            break
 
 
 def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) -> None:

@@ -45,6 +45,12 @@ class TestCLI:
         assert result.exit_code == 0
         assert "Run the Nomos agent in development mode" in result.stdout
 
+    def test_train_help(self):
+        """Test train command help."""
+        result = self.runner.invoke(app, ["train", "--help"])
+        assert result.exit_code == 0
+        assert "training mode" in result.stdout.lower()
+
     def test_serve_help(self):
         """Test serve command help."""
         result = self.runner.invoke(app, ["serve", "--help"])
