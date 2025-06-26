@@ -3,7 +3,7 @@
 import importlib
 import importlib.util
 import os
-from typing import Callable, Dict, List, Literal, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
@@ -14,7 +14,7 @@ from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
-from .models.tool import MCPServer, ToolDef, ToolWrapper
+from .models.tool import ToolDef, ToolWrapper
 from .utils.utils import convert_camelcase_to_snakecase
 
 
@@ -46,15 +46,20 @@ class ExternalTool(BaseModel):
         :return: ToolWrapper instance.
         """
         tool_type, tool_name = self.tag.split("/", 1)
-        name = self.name or convert_camelcase_to_snakecase(
-            self.tool_name.split(".")[-1]
-        )
         tool_type = tool_type.replace("@", "")
+        if tool_type in ["mcp"]:
+            name = self.name or tool_name
+        else:
+            name = self.name or convert_camelcase_to_snakecase(
+                self.tool_name.split(".")[-1]
+            )
+
         assert tool_type in [
             "pkg",
             "crewai",
             "langchain",
-        ], f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', and 'langchain'."
+            "mcp",
+        ], f"Unsupported tool type: {tool_type}. Supported types are 'pkg', 'crewai', 'mcp' and 'langchain'."
         return ToolWrapper(
             name=name,
             tool_type=tool_type,
@@ -63,46 +68,11 @@ class ExternalTool(BaseModel):
         )
 
 
-class ToolServer(BaseModel):
-    """Configuration for a tool server."""
-
-    type: Literal["mcp"]  # Type of the tool server (e.g., 'mcp', 'custom')
-    name: str  # Name of the tool server
-    url: str  # URL of the tool server
-    path: Optional[str] = None  # Optional path for the tool server
-    use: Optional[List[str]] = None  # Optional list of tools to use from the server
-    exclude: Optional[List[str]] = (
-        None  # Optional list of tools to exclude from the server
-    )
-    kwargs: Optional[Dict[str, Union[str, int]]] = (
-        None  # Optional keyword arguments for the Tool initialization
-    )
-
-    def get_server(self) -> Union[MCPServer]:
-        """
-        Get the Server instance for the tool server.
-
-        :return: Server instance.
-        """
-        if self.type not in ["mcp"]:
-            raise ValueError(f"Unsupported tool server type: {self.type}")
-
-        return MCPServer(
-            name=self.name,
-            url=self.url,
-            path=self.path,
-            use=self.use,
-            exclude=self.exclude,
-            **self.kwargs or {},
-        )
-
-
 class ToolsConfig(BaseModel):
     """Configuration for tools used by the agent."""
 
     tool_files: List[str] = []  # List of tool files to load
     external_tools: Optional[List[ExternalTool]] = None  # List of external tools
-    servers: Optional[List[ToolServer]] = None  # List of tool servers
     tool_defs: Optional[Dict[str, ToolDef]] = None
 
     def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
@@ -152,14 +122,6 @@ class ToolsConfig(BaseModel):
                     f"Failed to load external tool '{external_tool.tag}': {e}"
                 )
 
-        # Load tool servers
-        for server in self.servers or []:
-            try:
-                tool_server = server.get_server()
-            except ValueError as e:
-                raise ValueError(f"Failed to load tool server '{server.name}': {e}")
-            else:
-                tools_list.append(tool_server)
         return tools_list
 
 

@@ -230,38 +230,18 @@ class Tool(BaseModel):
         mcp_tools = server.get_tools()
         tools = []
         for mcp_tool in mcp_tools:
-            tool_name = f"{server.id}/{mcp_tool.name}"
+            tool_name = f"{server.name}/{mcp_tool.name}"
             tool = cls(
                 name=tool_name,
                 description=mcp_tool.description,
-                function=lambda name=mcp_tool.name, **kwargs: cls._run_mcp_tool(
-                    server, name, kwargs
+                function=lambda name=mcp_tool.name, **kwargs: server.call_tool(
+                    name, kwargs
                 ),
                 parameters=mcp_tool.parameters,
             )
             tools.append(tool)
 
         return tools
-
-    @classmethod
-    def is_remote_tool(cls, tool_identifier: str) -> bool:
-        """
-        Check if the tool identifier is a remote tool.
-
-        :param tool_identifier: The identifier of the tool.
-        :return: True if the tool is a remote tool, False otherwise.
-        """
-        return any([cls.is_mcp_tool(tool_identifier)])
-
-    @classmethod
-    def is_mcp_tool(cls, tool_identifier: str) -> bool:
-        """
-        Check if the tool identifier is a MCP tool.
-
-        :param tool_identifier: The identifier of the tool.
-        :return: True if the tool is a MCP tool, False otherwise.
-        """
-        return tool_identifier.startswith("@mcp/")
 
     def get_args_model(self) -> Type[BaseModel]:
         """
@@ -383,12 +363,26 @@ class InvalidArgumentsError(Exception):
 class ToolWrapper(BaseModel):
     """Represents a wrapper for a tool."""
 
-    tool_type: Literal["pkg", "crewai", "langchain"]
+    tool_type: Literal["pkg", "crewai", "langchain", "mcp"]
     tool_identifier: str
     name: str
     kwargs: Optional[dict] = None
 
-    def get_tool(self, tool_defs: Optional[Dict[str, ToolDef]] = None) -> Tool:
+    @property
+    def id(self) -> str:
+        """
+        Get the unique identifier for the tool.
+
+        :return: The unique identifier for the tool.
+        """
+        if self.tool_type == "mcp":
+            return f"@{self.tool_type}/{self.name}"
+
+        return self.name
+
+    def get_tool(
+        self, tool_defs: Optional[Dict[str, ToolDef]] = None
+    ) -> Union["Tool", "MCPServer"]:
         """
         Get a Tool instance from the tool identifier.
 
@@ -403,6 +397,12 @@ class ToolWrapper(BaseModel):
         if self.tool_type == "crewai":
             return Tool.from_crewai_tool(
                 name=self.name, tool_id=self.tool_identifier, tool_kwargs=self.kwargs
+            )
+        if self.tool_type == "mcp":
+            return MCPServer(
+                name=self.id,
+                url=self.tool_identifier,
+                path=self.kwargs.get("path") if self.kwargs else None,
             )
         # if self.tool_type == "langchain":
         #     return Tool.from_langchain_tool(
@@ -474,14 +474,6 @@ class MCPServer(BaseModel):
             tools = await client.list_tools()
             for t in tools:
                 tool_name = t.name
-                if (
-                    self.use
-                    and tool_name not in self.use
-                    or self.exclude
-                    and tool_name in self.exclude
-                ):
-                    continue
-
                 input_parameters = t.inputSchema.get("properties", {})
                 mapped_parameters = {}
                 for param_name, param_info in input_parameters.items():
@@ -523,16 +515,6 @@ class MCPServer(BaseModel):
         :param kwargs: Optional keyword arguments for the tool.
         :return: A list of strings representing the tool's output.
         """
-        if (
-            self.use
-            and tool_name not in self.use
-            or self.exclude
-            and tool_name in self.exclude
-        ):
-            raise ToolCallError(
-                f"Tool '{tool_name}' is not available on this server or is excluded."
-            )
-
         client = Client(self.url_path)
         params = kwargs.copy() if kwargs else {}
         async with client:
@@ -545,7 +527,7 @@ class MCPServer(BaseModel):
 
 
 def get_tools(
-    tools: Optional[list[Union[Callable, MCPServer, ToolWrapper]]],
+    tools: Optional[list[Union[Callable, ToolWrapper]]],
     tool_defs: Optional[Dict[str, ToolDef]] = None,
 ) -> dict[str, Tool]:
     """
@@ -562,10 +544,9 @@ def get_tools(
             _tool = Tool.from_function(tool, tool_defs)
         if isinstance(tool, ToolWrapper):
             _tool = tool.get_tool(tool_defs)
-        if isinstance(tool, MCPServer):
-            continue
         assert _tool is not None, "Tool must be a callable or a ToolWrapper instance"
-        _tools[_tool.name] = _tool
+        tool_name = _tool.id if isinstance(_tool, ToolWrapper) else _tool.name
+        _tools[tool_name] = _tool
     return _tools
 
 

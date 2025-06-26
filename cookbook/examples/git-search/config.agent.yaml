@@ -18,7 +18,7 @@ steps:
       - target: end
         condition: Task completed
     available_tools:
-      - '@mcp/gitmcp/search_nomos_code'
+      - '@mcp/gitmcp'
   - step_id: end
     description: |
       End the conversation politely
@@ -35,9 +35,6 @@ logging:
       format: "{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}"
 
 tools:
-  servers:
-    - type: mcp
-      name: gitmcp
-      url: https://gitmcp.io/dowhiledev/nomos
-      use:
-        - search_nomos_code
+  external_tools:
+    - name: gitmcp
+      tag: '@mcp/https://gitmcp.io/dowhiledev/nomos'

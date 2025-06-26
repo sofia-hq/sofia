@@ -6,7 +6,6 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from .tool import Tool
 from ..utils.utils import create_base_model, create_enum
 
 
@@ -84,31 +83,25 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
-    remote_tools: List[str] = []
     answer_model: Optional[Union[Dict[str, Dict[str, Any]], BaseModel]] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
 
-    def __init__(self, **data) -> None:
-        """
-        Initialize a Step instance.
-
-        :param data: Keyword arguments for the step attributes.
-        """
-        available_tools = data.get("available_tools", [])
-        local_tools = list(
-            filter(lambda t: not Tool.is_remote_tool(t), available_tools)
-        )
-        data["available_tools"] = local_tools
-        data["remote_tools"] = [
-            tool for tool in available_tools if tool not in local_tools
-        ]
-        super().__init__(**data)
-
     def __str__(self) -> str:
         """Return a string representation of the step."""
         return f"[Step] {self.step_id}: {self.description}"
+
+    @classmethod
+    def is_deferred_tool(cls, tool_identifier: str) -> bool:
+        """
+        Check if the tool identifier is a deferred tool. Tools of a deferred tool are fetch at runtime.
+
+        :param tool_identifier: The identifier of the tool.
+        :return: True if the tool is a deferred tool, False otherwise.
+        """
+        parts = tool_identifier.strip("/").split("/")
+        return len(parts) == 2 and parts[0] == "@mcp"
 
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
@@ -151,7 +144,18 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
-        return self.available_tools
+        return list(
+            filter(lambda t: not Step.is_deferred_tool(t), self.available_tools)
+        )
+
+    @property
+    def deferred_tool_ids(self) -> List[str]:
+        """
+        Get the list of available tool names that are deferred tools.
+
+        :return: List of tool names.
+        """
+        return list(filter(Step.is_deferred_tool, self.available_tools))
 
     def get_step_identifier(self) -> StepIdentifier:
         """
