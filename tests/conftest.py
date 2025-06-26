@@ -3,9 +3,15 @@
 import pytest
 from typing import List
 from pydantic import BaseModel
-import pytest
 
-from nomos.models.agent import Message, Step, Route
+from nomos.models.agent import (
+    Message,
+    Step,
+    Route,
+    DecisionExample,
+    Decision,
+    Action,
+)
 from nomos.models.tool import ToolWrapper, ToolDef, ArgDef
 from nomos.llms import LLMBase
 from nomos.config import AgentConfig, ToolsConfig
@@ -57,6 +63,18 @@ class MockLLM(LLMBase):
             response.model_json_schema() == response_format.model_json_schema()
         ), f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
         return response
+
+    def embed_text(self, text: str) -> List[float]:
+        """Return a simple letter frequency embedding for the given text."""
+        vector = [0.0] * 26
+        for ch in text.lower():
+            if "a" <= ch <= "z":
+                vector[ord(ch) - 97] += 1.0
+        return vector
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Embed a batch of texts using ``embed_text``."""
+        return [self.embed_text(t) for t in texts]
 
 
 @pytest.fixture
@@ -141,3 +159,49 @@ def basic_agent(mock_llm, basic_steps, test_tool_0, test_tool_1, pkg_tool, tool_
     return Agent.from_config(
         config=config, llm=mock_llm, tools=[test_tool_0, test_tool_1, pkg_tool]
     )
+
+
+@pytest.fixture
+def example_steps():
+    """Steps including decision examples for testing."""
+    example_decision = Decision(
+        reasoning=["example"],
+        action=Action.ANSWER.value,
+        response="Example time",
+    )
+
+    start_step = Step(
+        step_id="start",
+        description="Start with examples",
+        routes=[Route(target="end", condition="done")],
+        available_tools=["test_tool"],
+        examples=[
+            DecisionExample(
+                context="time question",
+                decision=example_decision,
+                visibility="always",
+            ),
+            DecisionExample(
+                context="sqrt 4",
+                decision="Use sqrt tool",
+                visibility="dynamic",
+            ),
+        ],
+    )
+
+    end_step = Step(step_id="end", description="End")
+    return [start_step, end_step]
+
+
+@pytest.fixture
+def example_agent(mock_llm, example_steps, test_tool_0, tool_defs):
+    """Agent instance with steps that include examples."""
+    config = AgentConfig(
+        name="example_agent",
+        persona="Example persona",
+        steps=example_steps,
+        start_step_id="start",
+        max_examples=2,
+        tools=ToolsConfig(tool_defs=tool_defs),
+    )
+    return Agent.from_config(config=config, llm=mock_llm, tools=[test_tool_0])

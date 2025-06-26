@@ -38,6 +38,7 @@ class Session:
         self,
         name: str,
         llm: LLMBase,
+        embedding_model: LLMBase,
         memory: Memory,
         steps: Dict[str, Step],
         start_step_id: str,
@@ -82,7 +83,17 @@ class Session:
         self.max_errors = max_errors
         self.max_iter = max_iter
         self.verbose = verbose
-        self.config = config
+        self.config = config or AgentConfig(
+            name=name,
+            steps=list(steps.values()),
+            start_step_id=start_step_id,
+            system_message=system_message,
+            persona=persona,
+            show_steps_desc=show_steps_desc,
+            max_errors=max_errors,
+            max_iter=max_iter,
+        )
+        self.embedding_model = embedding_model
 
         # Flow management
         self.flow_manager: Optional[FlowManager] = None
@@ -303,6 +314,8 @@ class Session:
             response_format=_decision_model,
             system_message=self.system_message,
             persona=self.persona,
+            max_examples=self.config.max_examples,
+            embedding_model=self.embedding_model,
         )
 
         # Convert to a Decision model
@@ -489,6 +502,7 @@ class Agent:
         max_errors: int = 3,
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
+        embedding_model: Optional[LLMBase] = None,
     ) -> None:
         """
         Initialize an Agent.
@@ -504,6 +518,7 @@ class Agent:
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
+        :param embedding_model: Optional LLMBase instance for embeddings.
         """
         self.llm = llm
         self.name = name
@@ -515,6 +530,11 @@ class Agent:
         self.max_errors = max_errors
         self.max_iter = max_iter
         self.config = config
+        self.embedding_model = (
+            embedding_model
+            or (config.get_embedding_model() if config else None)
+            or self.llm
+        )
         self._setup_logging()
 
         # Remove duplicates of tools based on their names or IDs
@@ -567,6 +587,14 @@ class Agent:
                         f"Tool {step_tool} not found in tools for step {step.step_id}\nAvailable tools: {self.tools}"
                     )
         log_debug(f"FlowManager initialized with start step '{start_step_id}'")
+
+        # Go through all the steps and if there are examples in them, perform batch embedding
+        for step in self.steps.values():
+            if step.examples:
+                log_debug(
+                    f"Step {step.step_id} has examples, performing batch embedding"
+                )
+                step.batch_embed_examples(embedding_model=self.embedding_model)
 
     @classmethod
     def from_config(
@@ -649,6 +677,7 @@ class Agent:
             max_iter=self.max_iter,
             verbose=verbose,
             config=self.config,
+            embedding_model=self.embedding_model,
         )
 
     def load_session(self, session_id: str) -> Session:
@@ -698,6 +727,7 @@ class Agent:
             memory=memory,
             tools=self.tools,
             config=self.config,
+            embedding_model=self.embedding_model,
             persona=self.persona,
             steps=self.steps,
             start_step_id=self.start,
