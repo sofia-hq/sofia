@@ -1,12 +1,24 @@
 """Flow models for Nomos's decision-making process."""
 
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 from ..utils.utils import create_base_model, create_enum
+
+if TYPE_CHECKING:
+    from ..llms.base import LLMBase
 
 
 class Action(Enum):
@@ -62,6 +74,24 @@ class StepIdentifier(BaseModel):
     step_id: str
 
 
+class DecisionExample(BaseModel):
+    context: str
+    decision: Union["Decision", str]
+    visibility: Literal["always", "never", "dynamic"] = "dynamic"
+    _ctx_embedding: Optional[List[float]] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the decision example."""
+        return f"{self.context} -> {self.decision}"
+
+    def embedding(self, EmbeddingModel: "LLMBase") -> List[float]:
+        """Get the context embedding if available."""
+        if self._ctx_embedding is not None:
+            return self._ctx_embedding
+        self._ctx_embedding = EmbeddingModel.embed_text(self.context)
+        return self._ctx_embedding
+
+
 class Step(BaseModel):
     """
     Represents a step in the agent's flow.
@@ -87,6 +117,7 @@ class Step(BaseModel):
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
+    examples: Optional[List[DecisionExample]] = None
 
     def __str__(self) -> str:
         """Return a string representation of the step."""
@@ -183,6 +214,57 @@ class Step(BaseModel):
             tool for tool in self.available_tools if tool not in tools
         ]
 
+    def get_examples(
+        self,
+        embedding_model: "LLMBase",
+        similarity_fn: Callable,
+        max_examples: int,
+        context_emb: List[float],
+        threshold: float = 0.5,
+    ) -> List[DecisionExample]:
+        """
+        Get examples for this step based on the provided context.
+
+        :param similarity_fn: Function to compute similarity between contexts.
+        :param max_examples: Maximum number of examples to return.
+        :param context_emb: Embedding of the context to compare against examples.
+        :param threshold: Minimum similarity score to include an example.
+        :return: List of tuples containing DecisionExample and its similarity score.
+        """
+        _always = [
+            (example, 1.0)
+            for example in self.examples or []
+            if example.visibility == "always"
+        ]
+        dynamic_examples = [
+            example
+            for example in self.examples or []
+            if example.visibility == "dynamic"
+        ]
+        _examples = [
+            (example, similarity_fn(example.embedding(embedding_model), context_emb))
+            for example in dynamic_examples
+        ]
+        _examples = sorted(_examples, key=lambda x: x[1], reverse=True)[
+            : max_examples - len(_always)
+        ]
+        examples = _always + _examples
+        return [example for example, similarity in examples if similarity >= threshold]
+
+    def batch_embed_examples(self, embedding_model: "LLMBase") -> None:
+        """
+        Batch embed examples for this step.
+
+        :param embedding_model: The LLMBase instance to use for embedding.
+        :param max_examples: Maximum number of examples to embed.
+        """
+        if not self.examples:
+            return
+        ctxs = [example.context for example in self.examples]
+        embeddings = embedding_model.embed_batch(ctxs)
+        for example, emb in zip(self.examples, embeddings):
+            example._ctx_embedding = emb
+
 
 class Message(BaseModel):
     """
@@ -258,6 +340,21 @@ class Decision(BaseModel):
     suggestions: Optional[List[str]] = None
     step_transition: Optional[str] = None
     tool_call: Optional[ToolCall] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the decision."""
+        if self.action in [Action.ANSWER, Action.ASK]:
+            return f"action: {self.action.value}, response: {self.response}"
+        elif self.action == Action.MOVE:
+            return (
+                f"action: {self.action.value}, step_transition: {self.step_transition}"
+            )
+        elif self.action == Action.TOOL_CALL and self.tool_call:
+            return f"action: {self.action.value}, tool_call: {self.tool_call.tool_name} with args {self.tool_call.tool_kwargs.model_dump_json()}"
+        elif self.action == Action.END:
+            return f"action: {self.action.value}"
+        else:
+            raise ValueError(f"Unknown action: {self.action}")
 
 
 def create_action_enum(actions: List[str]) -> Enum:

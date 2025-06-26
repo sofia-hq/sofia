@@ -20,6 +20,10 @@ steps:
     routes:
       - target: take_coffee_order
         condition: Customer is ready to place a new order
+    examples:
+      - context: "Customer asked for coffee options"
+        decision: "Call the `get_available_coffee_options` tool to get the available coffee options"
+        visibility: "always"
 
   - step_id: take_coffee_order
     description: |

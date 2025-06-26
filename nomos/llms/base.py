@@ -109,6 +109,8 @@ class LLMBase:
         history: List[Union[Message, Step, Summary]],
         system_message: str,
         persona: str,
+        max_examples: int = 5,
+        embedding_model: Optional["LLMBase"] = None,
     ) -> List[Message]:
         """
         Construct the list of messages to send to the LLM.
@@ -134,8 +136,22 @@ class LLMBase:
             if current_step.tool_ids
             else ""
         )
-        messages.append(Message(role="system", content=system_prompt))
+        if current_step.examples:
+            example_str = ["\nExamples:"]
+            for i, example in enumerate(
+                current_step.get_examples(
+                    embedding_model=embedding_model or self,
+                    similarity_fn=self.text_similarity,
+                    context_emb=self.embed_text(self.format_history(history)),
+                    max_examples=max_examples,
+                )
+            ):
+                example_str.append(f"{i + 1}. {str(example)}")
+            system_prompt += "\n".join(example_str) + "\n"
+
         user_prompt = f"History:\n{self.format_history(history)}"
+
+        messages.append(Message(role="system", content=system_prompt))
         messages.append(Message(role="user", content=user_prompt))
         return messages
 
@@ -164,6 +180,8 @@ class LLMBase:
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
+        max_examples: int = 5,
+        embedding_model: Optional["LLMBase"] = None,
     ) -> BaseModel:
         """
         Get a structured response from the LLM using the agent's context.
@@ -175,6 +193,7 @@ class LLMBase:
         :param response_format: Pydantic model for the expected response.
         :param system_message: Optional system prompt.
         :param persona: Optional agent persona.
+        :param max_examples: Maximum number of examples to include.
         :return: Parsed response as a BaseModel.
         """
         history = [
@@ -189,6 +208,8 @@ class LLMBase:
                 system_message if system_message else DEFAULT_SYSTEM_MESSAGE.strip()
             ),
             persona=persona if persona else DEFAULT_PERSONA.strip(),
+            max_examples=max_examples,
+            embedding_model=embedding_model,
         )
         return self.get_output(messages=messages, response_format=response_format)
 
@@ -335,6 +356,45 @@ class LLMBase:
                 else None
             ),
         )
+
+    def embed_text(self, text: str) -> List[float]:
+        """
+        Generate an embedding for the given text.
+
+        :param text: Text to embed.
+        :return: List of floats representing the embedding.
+        """
+        raise NotImplementedError(
+            "This LLM does not support text embedding. Please Specify an embedding model."
+        )
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings for a batch of texts.
+
+        :param texts: List of texts to embed.
+        :return: List of embeddings, each embedding is a list of floats.
+        """
+        raise NotImplementedError(
+            "This LLM does not support batch text embedding. Please Specify an embedding model."
+        )
+
+    def text_similarity(self, emb1: List[float], emb2: List[float]) -> float:
+        """
+        Calculate the similarity between two text embeddings (cosine similarity).
+
+        :param emb1: Embedding of the first text.
+        :param emb2: Embedding of the second text.
+        :return: Similarity score as a float.
+        """
+        import numpy as np
+
+        if len(emb1) != len(emb2):
+            raise ValueError("Embeddings must be of the same length.")
+        emb1 = np.array(emb1)
+        emb2 = np.array(emb2)
+        similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
+        return float(similarity)
 
 
 __all__ = ["LLMBase"]

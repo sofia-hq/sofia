@@ -1197,3 +1197,36 @@ class TestAgentNext:
         assert len(tools) == 3  # Original tools from basic_agent
         tool_names = [tool.name for tool in tools]
         assert "nonexistent_tool" not in tool_names
+
+
+class TestStepExamples:
+    """Tests related to step examples and embeddings."""
+
+    def test_example_embeddings_initialized(self, example_agent):
+        step = example_agent.steps["start"]
+        assert step.examples is not None
+        assert all(ex._ctx_embedding is not None for ex in step.examples)
+
+    def test_examples_in_system_prompt(self, example_agent):
+        session = example_agent.create_session()
+        decision_model = example_agent.llm._create_decision_model(
+            current_step=session.current_step,
+            current_step_tools=session._get_current_step_tools(),
+        )
+
+        response = decision_model(
+            reasoning=["r"], action=Action.ANSWER.value, response="ok"
+        )
+        example_agent.llm.set_response(response)
+        session.next("sqrt 4")
+        system_prompt = session.llm.messages_received[0].content
+        assert "Examples:" in system_prompt
+        assert "time question" in system_prompt
+        assert "sqrt 4" in system_prompt
+
+        session = example_agent.create_session()
+        example_agent.llm.set_response(response)
+        session.next("unrelated input")
+        system_prompt = session.llm.messages_received[0].content
+        assert "time question" in system_prompt
+        assert "sqrt 4" not in system_prompt
