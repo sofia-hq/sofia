@@ -77,6 +77,7 @@ While NOMOS can be used standalone, it integrates with a growing ecosystem of to
 | **LLM Support** | Multiple Providers | OpenAI, Mistral, Gemini, Ollama, and HuggingFace |
 | | Structured Responses | Step-level answer models for JSON/object responses |
 | | Persona-driven | Consistent, branded agent responses |
+| | Decision Examples | Retrieve relevant examples to guide step decisions |
 | **Production Ready** | Session Management | Redis/PostgreSQL storage for conversation persistence |
 | | Error Handling | Built-in recovery with configurable retry limits |
 | | API Integration | FastAPI endpoints for web and WebSocket interaction |
