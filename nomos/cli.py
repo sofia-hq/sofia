@@ -25,8 +25,9 @@ from .constants import (
     TEMPLATES,
     WARNING_COLOR,
 )
+from .core import Agent
 from .llms import LLMConfig
-from .models.agent import Step
+from .models.agent import Action, DecisionExample, Step, history_to_types
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -289,6 +290,51 @@ def run(
         console.print("\n👋 Development Run stopped.", style=WARNING_COLOR)
     except Exception as e:
         console.print(f"❌ Error running development Run: {e}", style=ERROR_COLOR)
+        raise typer.Exit(1)
+
+
+@app.command()
+def train(
+    config: Optional[str] = typer.Option(
+        "config.agent.yaml", "--config", "-c", help="Path to agent configuration file"
+    ),
+    tools: Optional[List[str]] = typer.Option(
+        None,
+        "--tools",
+        "-t",
+        help="Python files containing tool definitions (can be used multiple times)",
+    ),
+) -> None:
+    """Run the Nomos agent in training mode."""
+    print_banner()
+
+    config_path = Path(config)  # type: ignore
+
+    if not config_path.exists():
+        console.print(
+            f"❌ Configuration file not found: [bold]{config_path}[/bold]",
+            style=ERROR_COLOR,
+        )
+        raise typer.Exit(1)
+
+    tool_paths: list[Path] = []
+    if tools:
+        for tool_file in tools:
+            tool_path = Path(tool_file)
+            if not tool_path.exists():
+                console.print(
+                    f"❌ Tool file not found: [bold]{tool_path}[/bold]",
+                    style=ERROR_COLOR,
+                )
+                raise typer.Exit(1)
+            tool_paths.append(tool_path)
+
+    try:
+        _train(config_path, tool_paths)
+    except KeyboardInterrupt:
+        console.print("\n👋 Training stopped.", style=WARNING_COLOR)
+    except Exception as e:
+        console.print(f"❌ Error during training: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
 
 
@@ -714,6 +760,131 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
             )
     finally:
         os.unlink(temp_script_path)
+
+
+def _train(config_path: Path, tool_files: List[Path]) -> None:
+    """Interactive training loop for refining agent decisions."""
+    current_dir = Path.cwd()
+
+    tool_dirs: set[str] = {str(p if p.is_dir() else p.parent) for p in tool_files}
+    default_tool_dir = current_dir / "tools"
+    if default_tool_dir.exists():
+        tool_dirs.add(str(default_tool_dir))
+
+    if tool_dirs:
+        os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
+    else:
+        console.print(
+            "⚠️  No tool files provided and no tools directory found. Running without tools.",
+            style=WARNING_COLOR,
+        )
+
+    from nomos.api.tools import tool_list
+
+    config = AgentConfig.from_yaml(str(config_path))
+    agent = Agent.from_config(config, tools=tool_list)
+
+    console.print(
+        f"🤖 [bold]{config.name}[/bold] agent loaded in training mode.",
+        style=PRIMARY_COLOR,
+    )
+    console.print("Type quit to exit\n")
+
+    session_data: Optional[dict] = None
+    last_action: Action = Action.ANSWER
+    while True:
+        # print(session_data)
+        if last_action in [Action.ANSWER, Action.ASK]:
+            user_input = Prompt.ask("You").strip()
+            if user_input.lower() in {"quit", "exit", "bye"}:
+                break
+        else:
+            user_input = None
+        decision, tool_output, session_data = agent.next(
+            user_input, session_data, verbose=True
+        )
+        if decision.action in [Action.ANSWER, Action.ASK]:
+            console.print(
+                "Agent:\nReasoning:{}\nResponse: {}".format(
+                    "\n".join(decision.reasoning), decision.response
+                ),
+                style=PRIMARY_COLOR,
+            )
+        elif decision.action == Action.TOOL_CALL:
+            console.print(
+                "Agent:\nReasoning:{}\nTool call: {}\nTool Result: {}".format(
+                    "\n".join(decision.reasoning), decision.tool_call, tool_output
+                ),
+                style=PRIMARY_COLOR,
+            )
+        elif decision.action == Action.MOVE:
+            console.print(
+                "Agent:\nReasoning:{}\nMoving to step: {}".format(
+                    "\n".join(decision.reasoning), decision.step_id
+                ),
+                style=PRIMARY_COLOR,
+            )
+        elif decision.action == Action.END:
+            console.print(
+                "Agent:\nReasoning:{}\nEnding session.".format(
+                    "\n".join(decision.reasoning)
+                ),
+                style=PRIMARY_COLOR,
+            )
+            break
+        else:
+            console.print(
+                "Agent:\nReasoning:{}\nUnknown action: {}".format(
+                    "\n".join(decision.reasoning), decision.action
+                ),
+                style=ERROR_COLOR,
+            )
+
+        if Confirm.ask("Are you satisfied with this decision?", default=True):
+            last_action = decision.action
+            continue
+
+        feedback = Prompt.ask("What should have happened?")
+
+        history = session_data.get("history")  # type: ignore
+        flow_state = session_data.get("flow_state")
+        flow_memory_context = (
+            flow_state.get("flow_memory_context") if flow_state else None
+        )
+        step_id = session_data.get("current_step_id")  # type: ignore
+
+        # Take step back
+        history = history[:-1] if len(history) > 1 else []  # type: ignore
+        flow_memory_context = (
+            flow_memory_context[:-1]
+            if flow_memory_context and len(flow_memory_context) > 1
+            else []
+        )
+
+        session_data["history"] = history
+        if flow_state:
+            session_data["flow_state"]["context"] = flow_memory_context
+
+        context_summary = config.get_llm().generate_summary(
+            history_to_types(
+                flow_memory_context if flow_state else session_data["history"]
+            )
+        )
+
+        for step in config.steps:
+            if step.step_id == step_id:
+                if step.examples is None:
+                    step.examples = []
+                step.examples.append(
+                    DecisionExample(
+                        context=" ".join(context_summary.summary), decision=feedback
+                    )
+                )
+                break
+
+        config.to_yaml(str(config_path))
+        agent = Agent.from_config(config, tools=tool_list)
+        console.print(f"✅ Example added for step {step_id}. Agent reloaded.")
 
 
 def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) -> None:

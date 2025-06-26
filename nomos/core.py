@@ -6,8 +6,6 @@ import pickle
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from pydantic import BaseModel
-
 from .config import AgentConfig
 from .llms import LLMBase
 from .memory.base import Memory
@@ -20,6 +18,7 @@ from .models.agent import (
     Step,
     StepIdentifier,
     Summary,
+    history_to_types,
 )
 from .models.flow import Flow, FlowContext, FlowManager
 from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
@@ -53,6 +52,7 @@ class Session:
         current_step_id: Optional[str] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
+        **kwargs,
     ) -> None:
         """
         Initialize a Session.
@@ -153,8 +153,17 @@ class Session:
 
         # Include flow state if active
         if self.current_flow and self.flow_context:
+            flow_memory = self.current_flow.get_memory()
+            flow_memory_context = (
+                flow_memory.memory.context
+                if isinstance(flow_memory, FlowMemoryComponent)
+                else []
+            )
             session_dict["flow_state"] = {
                 "flow_id": self.current_flow.flow_id,
+                "flow_memory_context": [
+                    msg.model_dump(mode="json") for msg in flow_memory_context
+                ],
                 "flow_context": self.flow_context.model_dump(mode="json"),
             }  # type: ignore
 
@@ -305,7 +314,6 @@ class Session:
             flow_memory = self.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory_context = flow_memory.memory.context
-
         _decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
@@ -701,19 +709,7 @@ class Agent:
 
         # Convert the History items into list of Message or Step
         new_session_data = session_data.copy()
-        new_session_data["history"] = []
-        for history_item in session_data.get("history", []):
-            if isinstance(history_item, dict):
-                if "role" in history_item:
-                    new_session_data["history"].append(Message(**history_item))
-                elif "step_id" in history_item:
-                    new_session_data["history"].append(StepIdentifier(**history_item))
-                elif "content" in history_item:
-                    new_session_data["history"].append(Summary(**history_item))
-            else:
-                raise ValueError(
-                    f"Invalid history item: {history_item}. Must be a dict."
-                )
+        new_session_data["history"] = history_to_types(session_data.get("history", []))
 
         memory = (
             self.config.memory.get_memory()
@@ -743,11 +739,17 @@ class Agent:
             flow_state = session_data["flow_state"]
             flow_id = flow_state.get("flow_id")
             flow_context_data = flow_state.get("flow_context")
+            flow_memory_data = flow_state.get("flow_memory_context")
+            if flow_memory_data:
+                flow_memory_data = history_to_types(flow_memory_data)
 
             if flow_id in session.flow_manager.flows and flow_context_data:
                 from .models.flow import FlowContext
 
                 session.current_flow = session.flow_manager.flows[flow_id]
+                flow_memory = session.current_flow.get_memory()
+                if isinstance(flow_memory, FlowMemoryComponent):
+                    flow_memory.memory.context = flow_memory_data or []
                 session.flow_context = FlowContext(**flow_context_data)
                 log_debug(f"Restored flow state for flow '{flow_id}'")
 
@@ -758,7 +760,7 @@ class Agent:
         user_input: Optional[str] = None,
         session_data: Optional[Union[dict, SessionContext]] = None,
         verbose: bool = False,
-    ) -> tuple[BaseModel, str, dict]:
+    ) -> tuple[Decision, str, dict]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
