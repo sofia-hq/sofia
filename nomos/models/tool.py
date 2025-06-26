@@ -275,20 +275,6 @@ class Tool(BaseModel):
             raise InvalidArgumentsError(e)
         return str(self.function(*args, **kwargs))
 
-    @classmethod
-    def _run_mcp_tool(
-        cls, server: "MCPServer", tool_identifier: str, kwargs: Optional[dict] = None
-    ) -> List[str]:
-        """
-        Run a MCP tool with the provided arguments.
-
-        :param server: The MCP server instance.
-        :param tool_identifier: The identifier of the tool to call.
-        :param kwargs: Optional keyword arguments for the tool.
-        :return: The result of the tool's function.
-        """
-        return server.call_tool(tool_identifier, kwargs)
-
     def __str__(self) -> str:
         """String representation of the Tool instance."""
         return f"Tool(name={self.name}, description={self.description})"
@@ -420,8 +406,6 @@ class MCPServer(BaseModel):
     url: HttpUrl
     path: Optional[str] = None
     transport: Optional[MCPServerTransport] = MCPServerTransport.mcp
-    use: Optional[List[str]] = None
-    exclude: Optional[List[str]] = None
 
     @property
     def id(self) -> str:
