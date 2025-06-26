@@ -85,7 +85,7 @@ class Session:
         self.verbose = verbose
         self.config = config or AgentConfig(
             name=name,
-            steps=steps,
+            steps=list(steps.values()),
             start_step_id=start_step_id,
             system_message=system_message,
             persona=persona,
