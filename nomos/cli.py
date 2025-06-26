@@ -805,22 +805,30 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         )
         if decision.action in [Action.ANSWER, Action.ASK]:
             console.print(
-                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nResponse: {decision.response}",
+                "Agent:\nReasoning:{}\nResponse: {}".format(
+                    "\n".join(decision.reasoning), decision.response
+                ),
                 style=PRIMARY_COLOR,
             )
         elif decision.action == Action.TOOL_CALL:
             console.print(
-                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nTool call: {decision.tool_call}\nTool Result: {tool_output}",
+                "Agent:\nReasoning:{}\nTool call: {}\nTool Result: {}".format(
+                    "\n".join(decision.reasoning), decision.tool_call, tool_output
+                ),
                 style=PRIMARY_COLOR,
             )
         elif decision.action == Action.MOVE:
             console.print(
-                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nMoving to step: {decision.step_id}",
+                "Agent:\nReasoning:{}\nMoving to step: {}".format(
+                    "\n".join(decision.reasoning), decision.step_id
+                ),
                 style=PRIMARY_COLOR,
             )
         elif decision.action == Action.END:
             console.print(
-                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nEnding session.",
+                "Agent:\nReasoning:{}\nEnding session.".format(
+                    "\n".join(decision.reasoning)
+                ),
                 style=PRIMARY_COLOR,
             )
             break
