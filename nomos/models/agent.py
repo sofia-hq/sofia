@@ -9,7 +9,6 @@ from typing import (
     Literal,
     Optional,
     TYPE_CHECKING,
-    Tuple,
     Union,
 )
 from uuid import uuid4
@@ -85,7 +84,7 @@ class DecisionExample(BaseModel):
         """Return a string representation of the decision example."""
         return f"{self.context} -> {self.decision}"
 
-    def embedding(self, EmbeddingModel: LLMBase) -> List[float]:
+    def embedding(self, EmbeddingModel: "LLMBase") -> List[float]:
         """Get the context embedding if available."""
         if self._ctx_embedding is not None:
             return self._ctx_embedding
@@ -177,16 +176,19 @@ class Step(BaseModel):
 
     def get_examples(
         self,
-        embedding_model: LLMBase,
+        embedding_model: "LLMBase",
         similarity_fn: Callable,
         max_examples: int,
         context_emb: List[float],
-    ) -> List[Tuple[DecisionExample, float]]:
+        threshold: float = 0.5,
+    ) -> List[DecisionExample]:
         """
         Get examples for this step based on the provided context.
 
         :param similarity_fn: Function to compute similarity between contexts.
-        :param context: Context to compare against examples.
+        :param max_examples: Maximum number of examples to return.
+        :param context_emb: Embedding of the context to compare against examples.
+        :param threshold: Minimum similarity score to include an example.
         :return: List of tuples containing DecisionExample and its similarity score.
         """
         _always = [
@@ -206,7 +208,22 @@ class Step(BaseModel):
         _examples = sorted(_examples, key=lambda x: x[1], reverse=True)[
             : max_examples - len(_always)
         ]
-        return _always + _examples
+        examples = _always + _examples
+        return [example for example, similarity in examples if similarity >= threshold]
+
+    def batch_embed_examples(self, embedding_model: "LLMBase") -> None:
+        """
+        Batch embed examples for this step.
+
+        :param embedding_model: The LLMBase instance to use for embedding.
+        :param max_examples: Maximum number of examples to embed.
+        """
+        if not self.examples:
+            return
+        ctxs = [example.context for example in self.examples]
+        embeddings = embedding_model.embed_batch(ctxs)
+        for example, emb in zip(self.examples, embeddings):
+            example._ctx_embedding = emb
 
 
 class Message(BaseModel):

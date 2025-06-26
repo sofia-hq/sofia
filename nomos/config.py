@@ -149,6 +149,7 @@ class AgentConfig(BaseSettings):
         show_steps_desc (bool): Flag to show step descriptions.
         max_errors (int): Maximum number of errors allowed.
         max_examples (int): Maximum number of examples to use in decision-making.
+        threshold (float): Minimum similarity score to include an example.
         max_iter (int): Maximum number of iterations allowed.
         llm (Optional[LLMConfig]): Optional LLM configuration.
         emdedding_model (Optional[LLMConfig]): Optional embedding model configuration.
@@ -173,6 +174,7 @@ class AgentConfig(BaseSettings):
     max_errors: int = 3
     max_iter: int = 10
     max_examples: int = 5  # Maximum number of examples to use in decision-making
+    threshold: float = 0.5  # Minimum similarity score to include an example
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
     emdedding_model: Optional[LLMConfig] = (

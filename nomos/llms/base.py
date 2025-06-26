@@ -146,7 +146,7 @@ class LLMBase:
                     max_examples=max_examples,
                 )
             ):
-                example_str.append(f"{i + 1}. {example}")
+                example_str.append(f"{i + 1}. {str(example)}")
             system_prompt += "\n".join(example_str) + "\n"
 
         user_prompt = f"History:\n{self.format_history(history)}"

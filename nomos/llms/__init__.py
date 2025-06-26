@@ -42,7 +42,9 @@ class LLMConfig(BaseModel):
         for llm in LLMS:
             if llm.__provider__ == self.provider:
                 return llm(
-                    model=self.model, emedding_model=self.embedding_model, **self.kwargs
+                    model=self.model,
+                    embedding_model=self.embedding_model,
+                    **self.kwargs,
                 )
         raise ValueError(f"Unsupported LLM provider: {self.provider}")
 
