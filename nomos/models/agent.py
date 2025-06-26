@@ -1,12 +1,25 @@
 """Flow models for Nomos's decision-making process."""
 
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    Union,
+)
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
 from ..utils.utils import create_base_model, create_enum
+
+if TYPE_CHECKING:
+    from ..llms.base import LLMBase
 
 
 class Action(Enum):
@@ -64,13 +77,20 @@ class StepIdentifier(BaseModel):
 
 class DecisionExample(BaseModel):
     context: str
-    decision: "Decision"
+    decision: Union["Decision", str]
     visibility: Literal["always", "never", "dynamic"] = "dynamic"
     _ctx_embedding: Optional[List[float]] = None
 
     def __str__(self) -> str:
         """Return a string representation of the decision example."""
         return f"{self.context} -> {self.decision}"
+
+    def embedding(self, EmbeddingModel: LLMBase) -> List[float]:
+        """Get the context embedding if available."""
+        if self._ctx_embedding is not None:
+            return self._ctx_embedding
+        self._ctx_embedding = EmbeddingModel.embed_text(self.context)
+        return self._ctx_embedding
 
 
 class Step(BaseModel):
@@ -156,8 +176,12 @@ class Step(BaseModel):
         return f"[Step] {self.step_id}: {self.description}"
 
     def get_examples(
-        self, similarity_fn: Callable, context: Optional[str] = None
-    ) -> List[Tuple[DecisionExample, int]]:
+        self,
+        embedding_model: LLMBase,
+        similarity_fn: Callable,
+        max_examples: int,
+        context_emb: List[float],
+    ) -> List[Tuple[DecisionExample, float]]:
         """
         Get examples for this step based on the provided context.
 
@@ -176,8 +200,11 @@ class Step(BaseModel):
             if example.visibility == "dynamic"
         ]
         _examples = [
-            (example, similarity_fn(example.context, context))
+            (example, similarity_fn(example.embedding(embedding_model), context_emb))
             for example in dynamic_examples
+        ]
+        _examples = sorted(_examples, key=lambda x: x[1], reverse=True)[
+            : max_examples - len(_always)
         ]
         return _always + _examples
 

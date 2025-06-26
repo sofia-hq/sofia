@@ -1,6 +1,6 @@
 """OpenAI LLM integration for Nomos."""
 
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -13,11 +13,17 @@ class OpenAI(LLMBase):
 
     __provider__: str = "openai"
 
-    def __init__(self, model: str = "gpt-4o-mini", **kwargs) -> None:
+    def __init__(
+        self,
+        model: str = "gpt-4o-mini",
+        embedding_model: Optional[str] = None,
+        **kwargs,
+    ) -> None:
         """
         Initialize the OpenAIChatLLM.
 
         :param model: Model name to use (default: gpt-4o-mini).
+        :param embedding_model: Model name for embeddings (default: text-embedding-3-small).
         :param kwargs: Additional parameters for OpenAI API.
         """
         try:
@@ -28,6 +34,7 @@ class OpenAI(LLMBase):
             )
 
         self.model = model
+        self.embedding_model = embedding_model or "text-embedding-3-small"
         self.client = OpenAI(**kwargs)
 
     def get_output(
@@ -81,6 +88,26 @@ class OpenAI(LLMBase):
 
         enc = tiktoken.encoding_for_model(self.model)
         return len(enc.encode(text))
+
+    def embed_text(self, text: str) -> List[float]:
+        """Embed a single text using the OpenAI embeddings API."""
+        response = self.client.embeddings.create(
+            model=self.embedding_model,
+            input=text,
+            encoding_format="float",
+        )
+        emb = response.data[0].embedding
+        return emb
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """Embed a batch of texts using the OpenAI embeddings API."""
+        response = self.client.embeddings.create(
+            model=self.embedding_model,
+            input=texts,
+            encoding_format="float",
+        )
+        embs = [item.embedding for item in response.data]
+        return embs
 
 
 __all__ = ["OpenAI"]

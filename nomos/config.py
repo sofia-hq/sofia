@@ -148,8 +148,15 @@ class AgentConfig(BaseSettings):
         system_message (Optional[str]): System message for the agent. Default system message will be used if not provided.
         show_steps_desc (bool): Flag to show step descriptions.
         max_errors (int): Maximum number of errors allowed.
+        max_examples (int): Maximum number of examples to use in decision-making.
         max_iter (int): Maximum number of iterations allowed.
         llm (Optional[LLMConfig]): Optional LLM configuration.
+        emdedding_model (Optional[LLMConfig]): Optional embedding model configuration.
+        memory (Optional[MemoryConfig]): Optional memory configuration.
+        flows (Optional[List[FlowConfig]]): Optional flow configurations.
+        server (ServerConfig): Configuration for the FastAPI server.
+        tools (ToolsConfig): Configuration for tools.
+        logging (Optional[LoggingConfig]): Optional logging configuration.
     Methods:
         from_yaml(file_path: str) -> "AgentConfig": Load configuration from a YAML file.
         to_yaml(file_path: str) -> None: Save configuration to a YAML file.
@@ -165,8 +172,12 @@ class AgentConfig(BaseSettings):
     show_steps_desc: bool = False
     max_errors: int = 3
     max_iter: int = 10
+    max_examples: int = 5  # Maximum number of examples to use in decision-making
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
+    emdedding_model: Optional[LLMConfig] = (
+        None  # Optional embedding model configuration
+    )
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
@@ -219,6 +230,14 @@ class AgentConfig(BaseSettings):
         :return: An instance of the defined LLM integration.
         """
         return self.llm.get_llm() if self.llm else OpenAI()
+
+    def get_embedding_model(self) -> Optional[LLMBase]:
+        """
+        Get the appropriate embedding model instance based on the configuration.
+
+        :return: An instance of the defined embedding model integration.
+        """
+        return self.emdedding_model.get_llm() if self.emdedding_model else None
 
 
 __all__ = ["AgentConfig", "ServerConfig"]

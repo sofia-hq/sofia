@@ -82,7 +82,16 @@ class Session:
         self.max_errors = max_errors
         self.max_iter = max_iter
         self.verbose = verbose
-        self.config = config
+        self.config = config or AgentConfig(
+            name=name,
+            steps=steps,
+            start_step_id=start_step_id,
+            system_message=system_message,
+            persona=persona,
+            show_steps_desc=show_steps_desc,
+            max_errors=max_errors,
+            max_iter=max_iter,
+        )
 
         # Flow management
         self.flow_manager: Optional[FlowManager] = None
@@ -303,6 +312,8 @@ class Session:
             response_format=_decision_model,
             system_message=self.system_message,
             persona=self.persona,
+            max_examples=self.config.max_examples,
+            embedding_model=self.config.get_embedding_model(),
         )
 
         # Convert to a Decision model
