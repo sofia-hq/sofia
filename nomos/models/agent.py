@@ -266,6 +266,7 @@ class SessionContext(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid4()))
     current_step_id: Optional[str] = None
     history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
+    flow_state: Optional[Dict[str, Any]] = None
 
 
 class ToolCall(BaseModel):

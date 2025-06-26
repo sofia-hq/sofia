@@ -25,9 +25,9 @@ from .constants import (
     TEMPLATES,
     WARNING_COLOR,
 )
-from .llms import LLMConfig
-from .models.agent import Step, DecisionExample, Action
 from .core import Agent
+from .llms import LLMConfig
+from .models.agent import Action, DecisionExample, Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -784,58 +784,75 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
     config = AgentConfig.from_yaml(str(config_path))
     agent = Agent.from_config(config, tools=tool_list)
 
-    console.print(f"🤖 [bold]{config.name}[/bold] agent loaded in training mode.", style=PRIMARY_COLOR)
+    console.print(
+        f"🤖 [bold]{config.name}[/bold] agent loaded in training mode.",
+        style=PRIMARY_COLOR,
+    )
     console.print("Type quit to exit\n")
 
     session_data: Optional[dict] = None
+    last_action: Action = Action.ANSWER
     while True:
-        user_input = Prompt.ask("You").strip()
-        if user_input.lower() in {"quit", "exit", "bye"}:
+        # print(session_data)
+        if last_action in [Action.ANSWER, Action.ASK]:
+            user_input = Prompt.ask("You").strip()
+            if user_input.lower() in {"quit", "exit", "bye"}:
+                break
+        else:
+            user_input = None
+        decision, tool_output, session_data = agent.next(
+            user_input, session_data, verbose=True
+        )
+        last_action = decision.action
+        if decision.action in [Action.ANSWER, Action.ASK]:
+            console.print(
+                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nResponse: {decision.response}",
+                style=PRIMARY_COLOR,
+            )
+        elif decision.action == Action.TOOL_CALL:
+            console.print(
+                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nTool call: {decision.tool_call}\nTool Result: {tool_output}",
+                style=PRIMARY_COLOR,
+            )
+        elif decision.action == Action.MOVE:
+            console.print(
+                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nMoving to step: {decision.step_id}",
+                style=PRIMARY_COLOR,
+            )
+        elif decision.action == Action.END:
+            console.print(
+                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nEnding session.",
+                style=PRIMARY_COLOR,
+            )
             break
-        if not user_input:
-            continue
-        decision, tool_output, session_data = agent.next(user_input, session_data, verbose=True)
-        console.print(f"Agent: {decision.response}")
-        if tool_output:
-            console.print(f"Tool result: {tool_output}")
-        if decision.action == Action.END:
-            break
+        else:
+            console.print(
+                f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nUnknown Decision: {decision}",
+                style=ERROR_COLOR,
+            )
 
         if Confirm.ask("Are you satisfied with this decision?", default=True):
             continue
 
         feedback = Prompt.ask("What should have happened?")
-        assert session_data is not None
-        history = session_data["history"][:-1]
-        step_id = None
-        for item in reversed(history):
-            if isinstance(item, dict) and "step_id" in item:
-                step_id = item["step_id"]
-                break
-        step_id = step_id or session_data["current_step_id"]
+        history = session_data.get("history", [])
+        step_id = session_data.get("current_step_id", config.start_step_id)
 
-        session_obj = agent.get_session_from_dict(
-            {"session_id": session_data["session_id"], "current_step_id": step_id, "history": history}
-        )
-        context_summary = agent.llm.format_history(session_obj.memory.context)
+        context_summary = config.get_llm().format_history(history)
+        print(context_summary)
 
         for step in config.steps:
             if step.step_id == step_id:
                 if step.examples is None:
                     step.examples = []
-                step.examples.append(DecisionExample(context=context_summary, decision=feedback))
+                step.examples.append(
+                    DecisionExample(context=context_summary, decision=feedback)
+                )
                 break
 
         config.to_yaml(str(config_path))
         agent = Agent.from_config(config, tools=tool_list)
-        session_data = {"session_id": session_data["session_id"], "current_step_id": step_id, "history": history}
         console.print(f"✅ Example added for step {step_id}. Agent reloaded.")
-        decision, tool_output, session_data = agent.next(None, session_data, verbose=True)
-        console.print(f"Agent: {decision.response}")
-        if tool_output:
-            console.print(f"Tool result: {tool_output}")
-        if decision.action == Action.END:
-            break
 
 
 def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) -> None:
