@@ -803,7 +803,6 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         decision, tool_output, session_data = agent.next(
             user_input, session_data, verbose=True
         )
-        last_action = decision.action
         if decision.action in [Action.ANSWER, Action.ASK]:
             console.print(
                 f"Agent:\nReasoning:{'\n'.join(decision.reasoning)}\nResponse: {decision.response}",
@@ -832,6 +831,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
             )
 
         if Confirm.ask("Are you satisfied with this decision?", default=True):
+            last_action = decision.action
             continue
 
         feedback = Prompt.ask("What should have happened?")
