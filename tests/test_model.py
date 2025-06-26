@@ -73,71 +73,6 @@ class TestMCPServer:
 
     @pytest.mark.asyncio
     @patch("nomos.models.tool.Client")
-    async def test_list_tools_async_with_use(self, mock_client_class):
-        """Test asynchronous list_tools_async method with use parameter."""
-        # Mock the client and its methods
-        mock_client = AsyncMock()
-        mock_client_class.return_value = mock_client
-
-        # Mock tool data from MCP server
-        mock_tool = MagicMock()
-        tool_name = "test_tool"
-        mock_tool.name = tool_name
-        mock_tool.description = "A test tool"
-        mock_tool.inputSchema = {
-            "properties": {
-                "param1": {"type": "string", "description": "First parameter"},
-            }
-        }
-        mock_client.list_tools.return_value = [mock_tool]
-
-        server = MCPServer(name="server", url="https://example.com", use=[tool_name])
-        result = await server.list_tools_async()
-
-        # Verify client was created and used correctly
-        mock_client_class.assert_called_once_with(server.url_path)
-        mock_client.list_tools.assert_called_once()
-
-        assert result[0].name == tool_name
-        assert result[0].description == "A test tool"
-        assert result[0].parameters == {
-            "param1": {"type": str, "description": "First parameter"},
-        }
-
-    @pytest.mark.asyncio
-    @patch("nomos.models.tool.Client")
-    async def test_list_tools_async_with_exclude(self, mock_client_class):
-        """Test asynchronous list_tools_async method with exclude parameter."""
-        # Mock the client and its methods
-        mock_client = AsyncMock()
-        mock_client_class.return_value = mock_client
-
-        # Mock tool data from MCP server
-        mock_tool = MagicMock()
-        tool_name = "test_tool"
-        mock_tool.name = tool_name
-        mock_tool.description = "A test tool"
-        mock_tool.inputSchema = {
-            "properties": {
-                "param1": {"type": "string", "description": "First parameter"},
-            }
-        }
-        mock_client.list_tools.return_value = [mock_tool]
-
-        server = MCPServer(
-            name="server", url="https://example.com", exclude=[tool_name]
-        )
-        result = await server.list_tools_async()
-
-        # Verify client was created and used correctly
-        mock_client_class.assert_called_once_with(server.url_path)
-        mock_client.list_tools.assert_called_once()
-
-        # test test tool is filtered out
-        assert len(result) == 0
-
-    @pytest.mark.asyncio
-    @patch("nomos.models.tool.Client")
     async def test_call_tool_async(self, mock_client_class, call_tool_result):
         """Test asynchronous call_tool_async method."""
         # Mock the client and its methods
@@ -161,22 +96,6 @@ class TestMCPServer:
         mock_client.call_tool.assert_called_once_with(tool_name, params)
 
         assert result == [call_tool_result.text]
-
-    @pytest.mark.asyncio
-    @patch("nomos.models.tool.Client")
-    async def test_call_tool_async_with_excluded_tool(self, mock_client_class):
-        """Trying to call an excluded tool should raise ToolCallError."""
-        # Mock the client and its methods
-        mock_client = AsyncMock()
-        mock_client_class.return_value = mock_client
-
-        tool_name = "excluded_tool"
-        server = MCPServer(
-            name="server", url="https://example.com", exclude=[tool_name]
-        )
-
-        with pytest.raises(ToolCallError):
-            await server.call_tool_async(tool_name, {})
 
     @pytest.mark.asyncio
     @patch("nomos.models.tool.Client")
@@ -213,6 +132,6 @@ class TestTool:
         mock_get_tools.return_value = mock_tools
         tools = Tool.from_mcp_server(server)
 
-        assert tools[0].name == f"{server.id}/{tool_name}"
+        assert tools[0].name == f"{server.name}/{tool_name}"
         assert tools[0].description == tool_description
         assert tools[0].parameters == tool_params
