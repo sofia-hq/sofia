@@ -5,6 +5,7 @@ import contextlib
 import os
 import pickle
 import uuid
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from .config import AgentConfig
@@ -121,6 +122,7 @@ class Session:
         )
         self.pending_tasks: dict[str, asyncio.Task] = {}
         self.async_results: dict[str, Any] = {}
+        self._processing: bool = False
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
@@ -204,6 +206,22 @@ class Session:
             return await tool.function(**kwargs)
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(None, lambda: tool.function(**kwargs))
+
+    def _async_tool_done(self, name: str, task: asyncio.Task) -> None:
+        """Handle completion of an async tool and resume session."""
+        try:
+            result = task.result()
+            self.async_results[name] = result
+            self._add_message(
+                "tool",
+                f"Async tool {name} completed. Results: {result}",
+            )
+        except Exception as e:  # noqa: BLE001
+            self._add_message("error", str(e))
+        self.pending_tasks.pop(name, None)
+        if not self.pending_tasks and not self._processing:
+            loop = asyncio.get_event_loop()
+            loop.call_soon_threadsafe(self.next)
 
     def _get_current_step_tools(self) -> List[Tool]:
         """
@@ -368,6 +386,7 @@ class Session:
         :param return_step_transition: Whether to return step transition.
         :return: A tuple containing the decision and any tool results.
         """
+        self._processing = True
         if no_errors >= self.max_errors:
             raise ValueError(
                 f"Maximum errors reached ({self.max_errors}). Stopping session."
@@ -381,6 +400,7 @@ class Session:
                         "available context, produce a fallback response."
                     ),
                 )
+                self._processing = False
                 return self.next()
             else:
                 raise RecursionError(
@@ -409,14 +429,20 @@ class Session:
                 self.pending_tasks.pop(name)
             if self.pending_tasks:
                 decision = self._get_next_decision()
-                if decision.action == Action.WAIT:
+                if decision.action in [Action.ANSWER, Action.ASK, Action.WAIT]:
+                    if decision.response:
+                        self._add_message(self.name, str(decision.response))
+                    self._processing = False
                     return decision, None
-                wait_decision = Decision(
-                    reasoning=["Waiting for async tool"],
-                    action=Action.ASK,
-                    response="Tool is still running. Please wait...",
+                self._processing = False
+                return (
+                    Decision(
+                        reasoning=["Waiting"],
+                        action=Action.WAIT,
+                        response=decision.response or "Waiting for async task",
+                    ),
+                    None,
                 )
-                return wait_decision, None
 
         # Check for flow transitions
         self._handle_flow_transitions()
@@ -428,8 +454,12 @@ class Session:
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action in [Action.ASK, Action.ANSWER]:
             self._add_message(self.name, str(decision.response))
+            self._processing = False
             return decision, None
         elif decision.action == Action.WAIT:
+            if decision.response:
+                self._add_message(self.name, str(decision.response))
+            self._processing = False
             return decision, None
         elif decision.action == Action.TOOL_CALL:
             _error: Optional[Exception] = None
@@ -445,16 +475,15 @@ class Session:
                             self._run_tool_async(tool_name, tool_kwargs)
                         )
                         self.pending_tasks[tool_name] = task
+                        task.add_done_callback(
+                            partial(self._async_tool_done, tool_name)
+                        )
                         self._add_message(
                             "tool",
                             f"Started async tool {tool_name} with args {tool_kwargs}",
                         )
-                        wait_decision = Decision(
-                            reasoning=["Started async tool"],
-                            action=Action.ASK,
-                            response="Tool started, please wait...",
-                        )
-                        return wait_decision, None
+                        self._processing = False
+                        return self.next(no_errors=no_errors, next_count=next_count + 1)
                     tool_results = self._run_tool(tool_name, tool_kwargs)
                     self._add_message(
                         "tool",
@@ -474,7 +503,9 @@ class Session:
                 self._add_message("error", str(e))
 
             if return_tool and _error is None:
+                self._processing = False
                 return decision, tool_results
+            self._processing = False
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -508,7 +539,9 @@ class Session:
                     f"Invalid route: {decision.step_transition} not in {self.current_step.get_available_routes()}"
                 )
             if return_step_transition:
+                self._processing = False
                 return decision, None
+            self._processing = False
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -528,12 +561,14 @@ class Session:
                     self.flow_context = None
 
             self._add_message("end", "Session ended.")
+            self._processing = False
             return decision, None
         else:
             self._add_message(
                 "error",
                 f"Unknown action: {decision.action}. Please check the action type.",
             )
+            self._processing = False
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
