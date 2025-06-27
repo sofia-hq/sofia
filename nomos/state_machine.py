@@ -17,13 +17,16 @@ class StateMachine:
         flows: Optional[List[Flow]] = None,
         config: Optional[AgentConfig] = None,
         memory: Optional[Memory] = None,
+        start_step_id: Optional[str] = None,
     ) -> None:
         # Map of step -> allowed next step ids
+        self.steps = steps
         self.transitions: Dict[str, List[str]] = {
             step_id: step.get_available_routes() for step_id, step in steps.items()
         }
 
         self.memory = memory
+        self.current_step_id = start_step_id or next(iter(steps))
 
         if not flow_manager:
             if flows:
@@ -50,11 +53,25 @@ class StateMachine:
                     flow.flow_id for flow in flow_manager.find_exit_flows(step_id)
                 ]
 
+    @property
+    def current_step(self) -> Step:
+        """Return the current step object."""
+        return self.steps[self.current_step_id]
+
     def can_transition(self, current: str, target: str) -> bool:
         """Return True if transition is allowed."""
         if current not in self.transitions:
             raise ValueError(f"Unknown step: {current}")
         return target in self.transitions[current]
+
+    def move(self, target: str) -> str:
+        """Move to the target step if allowed and return new step id."""
+        if not self.can_transition(self.current_step_id, target):
+            raise ValueError(
+                f"Invalid transition from {self.current_step_id} to {target}"
+            )
+        self.current_step_id = target
+        return target
 
     def transition(self, current: str, target: str) -> str:
         """Validate transition and return next state."""

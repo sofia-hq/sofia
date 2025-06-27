@@ -46,8 +46,7 @@ class Session:
         max_errors: int = 3,
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
-        history: Optional[List[Union[Message, StepIdentifier, Summary]]] = None,
-        current_step_id: Optional[str] = None,
+        state: Optional[SessionContext] = None,
         session_id: Optional[str] = None,
         verbose: bool = False,
         **kwargs,
@@ -66,12 +65,11 @@ class Session:
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
-        :param history: List of messages and steps in the session. (Optional)
-        :param current_step_id: Current step ID. (Defaults to start_step_id)
+        :param state: Optional session state data.
         :param session_id: Unique session ID. (Defaults to a UUID)
         """
         # Fixed
-        self.session_id = session_id or f"{name}_{str(uuid.uuid4())}"
+        self.session_id = session_id or (state.session_id if state else None) or f"{name}_{str(uuid.uuid4())}"
         self.name = name
         self.llm = llm
         self.steps = steps
@@ -100,21 +98,35 @@ class Session:
             else None
         )
         self.tools = get_tools(tools, tool_defs)
-        # Variable
-        self.memory = memory
-        self.memory.context = history or []
-        self.current_step: Step = (
-            steps[current_step_id] if current_step_id else steps[start_step_id]
-        )
         # Compile state machine for fast transitions and flow lookups
         self.state_machine = StateMachine(
             self.steps,
             flows=flows,
             config=self.config,
-            memory=self.memory,
+            memory=memory,
+            start_step_id=(state.current_step_id if state and state.current_step_id else start_step_id),
         )
+
+        # Load memory and flow state
+        if state and state.history:
+            self.state_machine.memory.context = state.history
+        if state and state.flow_state:
+            self.state_machine.load_state(state.flow_state)
+
+        self.session_id = session_id or (state.session_id if state else None) or f"{name}_{str(uuid.uuid4())}"
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
+
+    # ------------------------------------------------------------------
+    # Convenience properties
+    # ------------------------------------------------------------------
+    @property
+    def current_step(self) -> Step:
+        return self.state_machine.current_step
+
+    @property
+    def memory(self) -> Memory:
+        return self.state_machine.memory
 
     def save_session(self) -> None:
         """Save the current session to disk as a pickle file."""
@@ -332,28 +344,28 @@ class Session:
         elif decision.action == Action.MOVE:
             _error = None
             if self.state_machine.can_transition(
-                self.current_step.step_id, decision.step_transition
+                self.state_machine.current_step_id, decision.step_transition
             ):
                 # Check if we need to exit current flow before moving
                 if self.state_machine.current_flow and self.state_machine.flow_context:
                     _, exits = self.state_machine.get_flow_transitions(
-                        self.current_step.step_id
+                        self.state_machine.current_step_id
                     )
                     if self.state_machine.current_flow.flow_id in exits:
-                        self.state_machine._exit_flow(self.current_step.step_id)
+                        self.state_machine._exit_flow(self.state_machine.current_step_id)
 
-                self.current_step = self.steps[decision.step_transition]
-                log_debug(f"Moving to next step: {self.current_step.step_id}")
+                self.state_machine.move(decision.step_transition)
+                log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
                 # Check if we need to enter a new flow after moving
                 self.state_machine.handle_flow_transitions(
-                    self.current_step.step_id, self.session_id
+                    self.state_machine.current_step_id, self.session_id
                 )
 
             else:
                 allowed = self.state_machine.transitions.get(
-                    self.current_step.step_id, []
+                    self.state_machine.current_step_id, []
                 )
                 self._add_message(
                     "error",
@@ -626,9 +638,21 @@ class Agent:
         """
         log_debug(f"Creating session from dict: {session_data}")
 
-        # Convert the History items into list of Message or Step
-        new_session_data = session_data.copy()
-        new_session_data["history"] = history_to_types(session_data.get("history", []))
+        # Support both legacy and new state keys
+        state_data = session_data.get("state", {})
+        if not state_data:
+            state_data = {
+                "current_step_id": session_data.get("current_step_id"),
+                "history": session_data.get("history", []),
+                "flow_state": session_data.get("flow_state"),
+            }
+
+        state = SessionContext(
+            session_id=session_data.get("session_id", str(uuid.uuid4())),
+            current_step_id=state_data.get("current_step_id"),
+            history=history_to_types(state_data.get("history", [])),
+            flow_state=state_data.get("flow_state"),
+        )
 
         memory = (
             self.config.memory.get_memory()
@@ -651,12 +675,8 @@ class Agent:
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
-            **new_session_data,
+            state=state,
         )
-
-        # Restore flow state if present
-        if "flow_state" in session_data:
-            session.state_machine.load_state(session_data["flow_state"])
 
         return session
 

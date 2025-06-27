@@ -271,6 +271,10 @@ class SessionContext(BaseModel):
     flow_state: Optional[Dict[str, Any]] = None
 
 
+# Backwards compatible alias for session state
+State = SessionContext
+
+
 class ToolCall(BaseModel):
     """
     Represents a tool call made by the agent.
