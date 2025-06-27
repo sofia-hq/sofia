@@ -19,6 +19,7 @@ from ..utils.utils import create_base_model, create_enum
 
 if TYPE_CHECKING:
     from ..llms.base import LLMBase
+    from ..models.flow import FlowContext
 
 
 class Action(Enum):
@@ -262,13 +263,23 @@ class Summary(BaseModel):
         return f"[Past Summary] {self.content}"
 
 
-class SessionContext(BaseModel):
-    """Container for session data required by `Agent.next`."""
+class FlowState(BaseModel):
+    """Represents the state of a flow in the agent's session."""
+
+    flow_id: str
+    flow_context: "FlowContext"
+    flow_memory_context: List[Union[Message, Summary, StepIdentifier]] = Field(
+        default_factory=list
+    )
+
+
+class State(BaseModel):
+    """Container for session data required by ``Agent.next``."""
 
     session_id: str = Field(default_factory=lambda: str(uuid4()))
-    current_step_id: Optional[str] = None
+    current_step_id: str
     history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
-    flow_state: Optional[Dict[str, Any]] = None
+    flow_state: Optional[FlowState] = None
 
 
 class ToolCall(BaseModel):
@@ -364,10 +375,26 @@ __all__ = [
     "ToolCall",
     "Message",
     "Summary",
-    "SessionContext",
+    "State",
     "Decision",
     "create_action_enum",
     "DecisionExample",
     "StepIdentifier",
     "history_to_types",
 ]
+
+
+# Fix forward reference after all models are defined
+def _rebuild_models() -> None:
+    """Rebuild models to resolve forward references."""
+    try:
+        from .flow import FlowContext  # noqa
+
+        FlowState.model_rebuild()
+        State.model_rebuild()
+    except ImportError:
+        # Handle case where flow module is not available
+        pass
+
+
+_rebuild_models()
