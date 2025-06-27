@@ -1133,10 +1133,10 @@ class TestAgentNext:
     """Test Agent.next method variations."""
 
     def test_agent_next_with_session_context_object(self, basic_agent):
-        """Test Agent.next with SessionContext object."""
-        from nomos.models.agent import SessionContext
+        """Test Agent.next with session State object."""
+        from nomos.models.agent import State
 
-        session_context = SessionContext(
+        session_context = State(
             current_step_id="start", history=[Message(role="user", content="Hello")]
         )
 

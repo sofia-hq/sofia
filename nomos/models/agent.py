@@ -262,17 +262,13 @@ class Summary(BaseModel):
         return f"[Past Summary] {self.content}"
 
 
-class SessionContext(BaseModel):
-    """Container for session data required by `Agent.next`."""
+class State(BaseModel):
+    """Container for session data required by ``Agent.next``."""
 
     session_id: str = Field(default_factory=lambda: str(uuid4()))
     current_step_id: Optional[str] = None
     history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
     flow_state: Optional[Dict[str, Any]] = None
-
-
-# Backwards compatible alias for session state
-State = SessionContext
 
 
 class ToolCall(BaseModel):
@@ -368,7 +364,7 @@ __all__ = [
     "ToolCall",
     "Message",
     "Summary",
-    "SessionContext",
+    "State",
     "Decision",
     "create_action_enum",
     "DecisionExample",

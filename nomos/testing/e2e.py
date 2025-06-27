@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Any, List, Optional, Tuple
 
 from nomos.core import Agent
-from nomos.models.agent import Message, SessionContext
+from nomos.models.agent import Message, State
 
 from pydantic import BaseModel, Field
 
@@ -60,7 +60,7 @@ class ScenarioRunner:
         :return: List of tuples containing the timestamp and session data at each turn.
         """
         llm = agent.llm
-        context = SessionContext()
+        context = State()
         session_data: dict[str, Any] = context.model_dump(mode="json")
         session_history: List[tuple[datetime, dict[str, Any]]] = []
         chat_history: List[Message] = []

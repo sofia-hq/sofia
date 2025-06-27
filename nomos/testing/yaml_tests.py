@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from nomos.llms import LLMConfig
-from nomos.models.agent import Message, SessionContext, StepIdentifier, Summary
+from nomos.models.agent import Message, StepIdentifier, Summary, State
 
 from pydantic import BaseModel, Field
 
@@ -42,11 +42,11 @@ class UnitTestCase(BaseModel):
     expectation: str
     invalid: bool = False
 
-    def build_context(self) -> Optional[SessionContext]:
-        """Build a SessionContext from the provided context data."""
+    def build_context(self) -> Optional[State]:
+        """Build a session ``State`` from the provided context data."""
         if not self.context:
             return None
-        ctx = SessionContext()
+        ctx = State()
         if "current_step_id" in self.context:
             ctx.current_step_id = self.context["current_step_id"]
         history = self.context.get("history") or []

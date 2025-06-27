@@ -14,10 +14,10 @@ from .models.agent import (
     Action,
     Decision,
     Message,
-    SessionContext,
     Step,
     StepIdentifier,
     Summary,
+    State,
     history_to_types,
 )
 from .models.flow import Flow, FlowContext
@@ -46,8 +46,7 @@ class Session:
         max_errors: int = 3,
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
-        state: Optional[SessionContext] = None,
-        session_id: Optional[str] = None,
+        state: Optional[State] = None,
         verbose: bool = False,
         **kwargs,
     ) -> None:
@@ -66,10 +65,9 @@ class Session:
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
         :param state: Optional session state data.
-        :param session_id: Unique session ID. (Defaults to a UUID)
         """
         # Fixed
-        self.session_id = session_id or (state.session_id if state else None) or f"{name}_{str(uuid.uuid4())}"
+        self.session_id = state.session_id if state else f"{name}_{str(uuid.uuid4())}"
         self.name = name
         self.llm = llm
         self.steps = steps
@@ -104,16 +102,11 @@ class Session:
             flows=flows,
             config=self.config,
             memory=memory,
-            start_step_id=(state.current_step_id if state and state.current_step_id else start_step_id),
+            start_step_id=start_step_id,
         )
 
-        # Load memory and flow state
-        if state and state.history:
-            self.state_machine.memory.context = state.history
-        if state and state.flow_state:
-            self.state_machine.load_state(state.flow_state)
-
-        self.session_id = session_id or (state.session_id if state else None) or f"{name}_{str(uuid.uuid4())}"
+        if state:
+            self.state_machine.load_state(state)
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
@@ -647,7 +640,7 @@ class Agent:
                 "flow_state": session_data.get("flow_state"),
             }
 
-        state = SessionContext(
+        state = State(
             session_id=session_data.get("session_id", str(uuid.uuid4())),
             current_step_id=state_data.get("current_step_id"),
             history=history_to_types(state_data.get("history", [])),
@@ -683,7 +676,7 @@ class Agent:
     def next(
         self,
         user_input: Optional[str] = None,
-        session_data: Optional[Union[dict, SessionContext]] = None,
+        session_data: Optional[Union[dict, State]] = None,
         verbose: bool = False,
     ) -> tuple[Decision, str, dict]:
         """
@@ -694,7 +687,7 @@ class Agent:
         :param verbose: Whether to return verbose output.
         :return: A tuple containing the decision and session data.
         """
-        if isinstance(session_data, SessionContext):
+        if isinstance(session_data, State):
             session_data = session_data.model_dump(mode="json")
         session = (
             self.get_session_from_dict(session_data)

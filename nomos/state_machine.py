@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 from .config import AgentConfig
-from .models.agent import Message, Step, Summary, history_to_types
+from .models.agent import Message, Step, Summary, State, history_to_types
 from .models.flow import Flow, FlowContext, FlowManager
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
@@ -159,19 +159,44 @@ class StateMachine:
             }
         return None
 
-    def load_state(self, state: Optional[Dict[str, Any]]) -> None:
-        """Restore flow state from a dictionary."""
-        if not state or not self.flow_manager:
+    def load_state(self, state: Optional[Dict[str, Any] | State]) -> None:
+        """Restore step, memory, and flow state."""
+        if not state:
             return
 
-        flow_id = state.get("flow_id")
-        if flow_id in self.flow_manager.flows and state.get("flow_context"):
-            self.current_flow = self.flow_manager.flows[flow_id]
-            self.flow_context = FlowContext(**state["flow_context"])
-            flow_memory_data = state.get("flow_memory_context")
-            if flow_memory_data:
-                flow_memory = self.current_flow.get_memory()
-                if isinstance(flow_memory, FlowMemoryComponent):
-                    flow_memory.memory.context = history_to_types(flow_memory_data)
+        if isinstance(state, dict):
+            if "flow_id" in state:
+                # Legacy flow-only state
+                step_id = None
+                history = None
+                flow_state = state
+            else:
+                step_id = state.get("current_step_id")
+                history = state.get("history")
+                flow_state = state.get("flow_state")
+        else:
+            step_id = state.current_step_id
+            history = state.history
+            flow_state = state.flow_state
+
+        if step_id:
+            self.current_step_id = step_id
+
+        if history is not None and self.memory is not None:
+            if history and isinstance(history[0], (dict,)):
+                self.memory.context = history_to_types(history)  # type: ignore[arg-type]
+            else:
+                self.memory.context = history  # type: ignore[assignment]
+
+        if flow_state and self.flow_manager:
+            flow_id = flow_state.get("flow_id")
+            if flow_id in self.flow_manager.flows and flow_state.get("flow_context"):
+                self.current_flow = self.flow_manager.flows[flow_id]
+                self.flow_context = FlowContext(**flow_state["flow_context"])
+                flow_memory_data = flow_state.get("flow_memory_context")
+                if flow_memory_data:
+                    flow_memory = self.current_flow.get_memory()
+                    if isinstance(flow_memory, FlowMemoryComponent):
+                        flow_memory.memory.context = history_to_types(flow_memory_data)
 
 __all__ = ["StateMachine"]
