@@ -19,6 +19,7 @@ from sqlmodel import Field, SQLModel, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from .agent import agent
+from ..models.agent import State
 
 
 class Session(SQLModel, table=True):  # type: ignore
@@ -159,7 +160,7 @@ class SessionStore:
             result = await self.db.exec(stmt)
             existing_session = result.first()
 
-            session_data = session.to_dict()
+            session_data = session.get_state().model_dump(mode="json")
 
             if existing_session:
                 # Update existing session
@@ -194,7 +195,8 @@ class SessionStore:
                 session_model = result.first()
 
                 if session_model:
-                    session = agent.get_session_from_dict(session_model.session_data)
+                    session_data = State.model_validate(session_model.session_data)
+                    session = agent.get_session_from_state(session_data)
                     assert session is not None, "Session should not be None"
                     await self._set_to_cache(session_id, session)
                     return session

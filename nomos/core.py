@@ -1,6 +1,5 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
-import contextlib
 import os
 import pickle
 import uuid
@@ -14,13 +13,11 @@ from .models.agent import (
     Action,
     Decision,
     Message,
+    State,
     Step,
     StepIdentifier,
-    Summary,
-    State,
-    history_to_types,
 )
-from .models.flow import Flow, FlowContext
+from .models.flow import Flow
 from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
 from .state_machine import StateMachine
 from .utils.flow_utils import create_flows_from_config
@@ -89,7 +86,6 @@ class Session:
         )
         self.embedding_model = embedding_model
 
-
         tool_defs = (
             self.config.tools.tool_defs
             if self.config and self.config.tools.tool_defs
@@ -104,21 +100,19 @@ class Session:
             memory=memory,
             start_step_id=start_step_id,
         )
+        self.state_machine.load_state(state)
 
-        if state:
-            self.state_machine.load_state(state)
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
-    # ------------------------------------------------------------------
-    # Convenience properties
-    # ------------------------------------------------------------------
     @property
     def current_step(self) -> Step:
+        """Get the current step object."""
         return self.state_machine.current_step
 
     @property
     def memory(self) -> Memory:
+        """Get the session memory."""
         return self.state_machine.memory
 
     def save_session(self) -> None:
@@ -139,24 +133,19 @@ class Session:
             log_debug(f"Session {session_id} loaded from disk.")
             return pickle.load(f)
 
-    def to_dict(self) -> dict[str, Any]:
+    def get_state(self) -> State:
         """
-        Convert the session to a dictionary representation.
+        Get the current session state as a State object.
 
-        :return: Dictionary representation of the session.
+        :return: The current session state.
         """
-        session_dict = {
-            "session_id": self.session_id,
-            "current_step_id": self.current_step.step_id,
-            "history": [msg.model_dump(mode="json") for msg in self.memory.context],
-        }
-
-        # Include flow state if active
-        flow_state = self.state_machine.state_dict()
-        if flow_state:
-            session_dict["flow_state"] = flow_state  # type: ignore
-
-        return session_dict
+        state = State(
+            session_id=self.session_id,
+            current_step_id=self.current_step.step_id,
+            history=self.memory.context,
+            flow_state=self.state_machine.get_flow_state(),
+        )
+        return state
 
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
         """
@@ -210,7 +199,6 @@ class Session:
             self.memory.add(message_obj)
 
         log_debug(f"{role.title()} added: {message}")
-
 
     def _get_next_decision(self) -> Decision:
         """
@@ -334,7 +322,7 @@ class Session:
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
             )
-        elif decision.action == Action.MOVE:
+        elif decision.action == Action.MOVE and decision.step_transition:
             _error = None
             if self.state_machine.can_transition(
                 self.state_machine.current_step_id, decision.step_transition
@@ -345,7 +333,9 @@ class Session:
                         self.state_machine.current_step_id
                     )
                     if self.state_machine.current_flow.flow_id in exits:
-                        self.state_machine._exit_flow(self.state_machine.current_step_id)
+                        self.state_machine._exit_flow(
+                            self.state_machine.current_step_id
+                        )
 
                 self.state_machine.move(decision.step_transition)
                 log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
@@ -377,7 +367,9 @@ class Session:
             # Clean up any active flows before ending
             if self.state_machine.current_flow and self.state_machine.flow_context:
                 try:
-                    self.state_machine.current_flow.cleanup(self.state_machine.flow_context)
+                    self.state_machine.current_flow.cleanup(
+                        self.state_machine.flow_context
+                    )
                     log_debug(
                         f"Cleaned up flow '{self.state_machine.current_flow.flow_id}' on session end"
                     )
@@ -471,7 +463,9 @@ class Agent:
         )
         self._setup_logging()
         self.flows = flows or (
-            list(create_flows_from_config(config).flows.values()) if config and config.flows else None
+            list(create_flows_from_config(config).flows.values())
+            if config and config.flows
+            else None
         )
 
         # Remove duplicates of tools based on their names or IDs
@@ -487,7 +481,6 @@ class Agent:
             if tool_id not in seen:
                 seen.add(tool_id)
                 self.tools.append(tool)
-
 
         # Validate start step ID
         if start_step_id not in self.steps:
@@ -622,30 +615,14 @@ class Agent:
         log_debug(f"Loading session {session_id}")
         return Session.load_session(session_id)
 
-    def get_session_from_dict(self, session_data: dict) -> Session:
+    def get_session_from_state(self, state: State) -> Session:
         """
-        Create a Session from a dictionary.
+        Create a Session from a State object.
 
-        :param session_data: Dictionary containing session data.
+        :param state: The session state
         :return: Session instance.
         """
-        log_debug(f"Creating session from dict: {session_data}")
-
-        # Support both legacy and new state keys
-        state_data = session_data.get("state", {})
-        if not state_data:
-            state_data = {
-                "current_step_id": session_data.get("current_step_id"),
-                "history": session_data.get("history", []),
-                "flow_state": session_data.get("flow_state"),
-            }
-
-        state = State(
-            session_id=session_data.get("session_id", str(uuid.uuid4())),
-            current_step_id=state_data.get("current_step_id"),
-            history=history_to_types(state_data.get("history", [])),
-            flow_state=state_data.get("flow_state"),
-        )
+        log_debug(f"Creating session from state: {state}")
 
         memory = (
             self.config.memory.get_memory()
@@ -678,26 +655,27 @@ class Agent:
         user_input: Optional[str] = None,
         session_data: Optional[Union[dict, State]] = None,
         verbose: bool = False,
-    ) -> tuple[Decision, str, dict]:
+    ) -> tuple[Decision, str, State]:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
-        :param session_data: Optional session data dictionary.
+        :param session_data: Optional session data as a dictionary or State object.
         :param verbose: Whether to return verbose output.
-        :return: A tuple containing the decision and session data.
+        :return: A tuple containing the decision and tool output, along with the updated session state.
+        :raises ValueError: If session_data is provided but not a valid State object.
         """
-        if isinstance(session_data, State):
-            session_data = session_data.model_dump(mode="json")
+        if isinstance(session_data, dict):
+            session_data = State.model_validate(session_data)
         session = (
-            self.get_session_from_dict(session_data)
-            if session_data
+            self.get_session_from_state(session_data)
+            if session_data is not None and isinstance(session_data, State)
             else self.create_session()
         )
         decision, tool_output = session.next(
             user_input=user_input, return_tool=verbose, return_step_transition=verbose
         )
-        return decision, tool_output, session.to_dict()
+        return decision, tool_output, session.get_state()
 
 
 __all__ = ["Session", "Agent"]

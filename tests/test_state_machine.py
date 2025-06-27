@@ -8,10 +8,15 @@ from nomos.state_machine import StateMachine
 
 def test_state_machine_valid_transition():
     steps = {
-        "start": Step(step_id="start", description="start", routes=[Route(target="end", condition="")]),
+        "start": Step(
+            step_id="start",
+            description="start",
+            routes=[Route(target="end", condition="")],
+        ),
         "end": Step(step_id="end", description="end", routes=[]),
     }
-    sm = StateMachine(steps)
+    memory = Memory()
+    sm = StateMachine(steps, memory)
     assert sm.can_transition("start", "end")
     assert sm.transition("start", "end") == "end"
 
@@ -20,14 +25,17 @@ def test_state_machine_invalid_transition():
     steps = {
         "a": Step(step_id="a", description="a", routes=[]),
     }
-    sm = StateMachine(steps)
+    memory = Memory()
+    sm = StateMachine(steps, memory)
     with pytest.raises(ValueError):
         sm.transition("a", "b")
 
 
 def test_state_machine_flow_transitions():
     steps = {
-        "s1": Step(step_id="s1", description="s1", routes=[Route(target="s2", condition="")]),
+        "s1": Step(
+            step_id="s1", description="s1", routes=[Route(target="s2", condition="")]
+        ),
         "s2": Step(step_id="s2", description="s2", routes=[]),
     }
     flow_cfg = FlowConfig(flow_id="f1", enters=["s1"], exits=["s2"])
@@ -35,7 +43,8 @@ def test_state_machine_flow_transitions():
     manager = FlowManager()
     manager.register_flow(flow)
 
-    sm = StateMachine(steps, manager)
+    memory = Memory()
+    sm = StateMachine(steps, memory, flow_manager=manager)
 
     enters, exits = sm.get_flow_transitions("s1")
     assert enters == ["f1"]
@@ -47,6 +56,8 @@ def test_state_machine_flow_transitions():
 
 
 def test_state_machine_state_restore():
+    from nomos.models.agent import State
+
     steps = {
         "a": Step(step_id="a", description="a", routes=[]),
     }
@@ -55,11 +66,19 @@ def test_state_machine_state_restore():
     manager = FlowManager()
     manager.register_flow(flow)
 
-    sm = StateMachine(steps, manager, memory=Memory())
+    memory = Memory()
+    sm = StateMachine(steps, memory, flow_manager=manager)
     sm.handle_flow_transitions("a", "session")
-    state = sm.state_dict()
+
+    # Create a state object representing the current state
+    state = State(
+        current_step_id=sm.current_step_id,
+        history=memory.context,
+        flow_state=sm.get_flow_state(),
+    )
     assert state is not None
 
-    new_sm = StateMachine(steps, manager, memory=Memory())
+    new_memory = Memory()
+    new_sm = StateMachine(steps, new_memory, flow_manager=manager)
     new_sm.load_state(state)
     assert new_sm.current_flow.flow_id == "f1"
