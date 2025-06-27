@@ -549,8 +549,8 @@ class TestMemoryOperations:
         session = basic_agent.create_session()
 
         # Ensure no flow is active
-        session.current_flow = None
-        session.flow_context = None
+        session.state_machine.current_flow = None
+        session.state_machine.flow_context = None
 
         session._add_message("user", "Test message")
 
@@ -565,8 +565,8 @@ class TestMemoryOperations:
         session = basic_agent.create_session()
 
         # Ensure no flow is active
-        session.current_flow = None
-        session.flow_context = None
+        session.state_machine.current_flow = None
+        session.state_machine.flow_context = None
 
         step_id = StepIdentifier(step_id="test_step")
         session._add_step_identifier(step_id)
@@ -807,8 +807,8 @@ class TestSessionDictOperationsExtended:
         mock_flow_context = MagicMock(spec=FlowContext)
         mock_flow_context.model_dump.return_value = {"test": "data"}
 
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         session_dict = session.to_dict()
 
@@ -1021,8 +1021,8 @@ class TestFlowIntegration:
         mock_flow.get_memory.return_value = mock_flow_memory
         mock_flow_context = MagicMock(spec=FlowContext)
 
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         # Add message should go to flow memory, not session memory
         session._add_message("user", "Test message")
@@ -1044,8 +1044,8 @@ class TestFlowIntegration:
         mock_flow.get_memory.return_value = mock_flow_memory
         mock_flow_context = MagicMock(spec=FlowContext)
 
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         step_id = StepIdentifier(step_id="test_step")
         session._add_step_identifier(step_id)
@@ -1067,8 +1067,8 @@ class TestEndActionFlow:
 
         mock_flow = MagicMock(spec=Flow)
         mock_flow_context = MagicMock(spec=FlowContext)
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
@@ -1087,8 +1087,8 @@ class TestEndActionFlow:
 
         # Verify flow cleanup was called
         mock_flow.cleanup.assert_called_once_with(mock_flow_context)
-        assert session.current_flow is None
-        assert session.flow_context is None
+        assert session.state_machine.current_flow is None
+        assert session.state_machine.flow_context is None
 
         # Verify end message was added
         messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -1106,8 +1106,8 @@ class TestEndActionFlow:
         mock_flow = MagicMock(spec=Flow)
         mock_flow.cleanup.side_effect = Exception("Cleanup error")
         mock_flow_context = MagicMock(spec=FlowContext)
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
@@ -1125,8 +1125,8 @@ class TestEndActionFlow:
         assert result is None
 
         # Flow state should be cleaned up even if there was an error
-        assert session.current_flow is None
-        assert session.flow_context is None
+        assert session.state_machine.current_flow is None
+        assert session.state_machine.flow_context is None
 
 
 class TestAgentNext:

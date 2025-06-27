@@ -9,6 +9,7 @@ from .core import Agent
 from .models.agent import Action, Route, SessionContext, Step, StepIdentifier, Summary
 from .models.flow import Flow, FlowComponent, FlowConfig, FlowContext, FlowManager
 from .server import run_server
+from .state_machine import StateMachine
 from .testing import smart_assert
 from .testing.e2e import Scenario, ScenarioRunner
 
@@ -34,4 +35,5 @@ __all__ = [
     "smart_assert",
     "ScenarioRunner",
     "Scenario",
+    "StateMachine",
 ]
