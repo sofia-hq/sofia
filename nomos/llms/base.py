@@ -251,7 +251,11 @@ class LLMBase:
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
         action_ids = (
-            (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
+            (
+                ["ASK", "ANSWER", "WAIT", "END"]
+                if not current_step.auto_flow
+                else ["END"]
+            )
             + (["MOVE"] if available_step_ids else [])
             + (["TOOL_CALL"] if tool_ids else [])
         )

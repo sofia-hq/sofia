@@ -30,6 +30,7 @@ class Action(Enum):
         ANSWER: Provide an answer to the user.
         ASK: Ask the user for input.
         TOOL_CALL: Call a tool with arguments.
+        WAIT: Pause execution until asynchronous tasks complete.
         END: End the flow.
     """
 
@@ -37,6 +38,7 @@ class Action(Enum):
     ANSWER = "ANSWER"
     ASK = "ASK"
     TOOL_CALL = "TOOL_CALL"
+    WAIT = "WAIT"
     END = "END"
 
 
@@ -115,6 +117,7 @@ class Step(BaseModel):
     description: str
     routes: List[Route] = []
     available_tools: List[str] = []
+    async_tools: List[str] = []
     answer_model: Optional[Union[Dict[str, Dict[str, Any]], BaseModel]] = None
     auto_flow: bool = False
     quick_suggestions: bool = False
@@ -131,6 +134,11 @@ class Step(BaseModel):
             raise ValueError(
                 f"Step '{self.step_id}': When auto_flow is True, quick_suggestions cannot be True"
             )
+        for tool in self.async_tools:
+            if tool not in self.available_tools:
+                raise ValueError(
+                    f"Step '{self.step_id}': async_tool '{tool}' must be listed in available_tools"
+                )
 
     def get_answer_model(self) -> BaseModel:
         """
@@ -162,7 +170,12 @@ class Step(BaseModel):
 
         :return: List of tool names.
         """
-        return self.available_tools
+        return list(dict.fromkeys(self.available_tools + self.async_tools))
+
+    @property
+    def async_tool_ids(self) -> List[str]:
+        """Return list of asynchronous tool names."""
+        return self.async_tools
 
     def get_step_identifier(self) -> StepIdentifier:
         """
@@ -314,7 +327,7 @@ class Decision(BaseModel):
             )
         elif self.action == Action.TOOL_CALL and self.tool_call:
             return f"action: {self.action.value}, tool_call: {self.tool_call.tool_name} with args {self.tool_call.tool_kwargs.model_dump_json()}"
-        elif self.action == Action.END:
+        elif self.action in [Action.END, Action.WAIT]:
             return f"action: {self.action.value}"
         else:
             raise ValueError(f"Unknown action: {self.action}")
