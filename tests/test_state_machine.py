@@ -1,7 +1,8 @@
 import pytest
 
 from nomos.models.agent import Step, Route
-from nomos.models.flow import FlowConfig, Flow, FlowManager
+from nomos.models.flow import FlowConfig, Flow, FlowManager, FlowContext
+from nomos.memory.base import Memory
 from nomos.state_machine import StateMachine
 
 
@@ -43,3 +44,22 @@ def test_state_machine_flow_transitions():
     enters, exits = sm.get_flow_transitions("s2")
     assert enters == []
     assert exits == ["f1"]
+
+
+def test_state_machine_state_restore():
+    steps = {
+        "a": Step(step_id="a", description="a", routes=[]),
+    }
+    flow_cfg = FlowConfig(flow_id="f1", enters=["a"], exits=[])
+    flow = Flow(config=flow_cfg, steps=list(steps.values()))
+    manager = FlowManager()
+    manager.register_flow(flow)
+
+    sm = StateMachine(steps, manager, memory=Memory())
+    sm.handle_flow_transitions("a", "session")
+    state = sm.state_dict()
+    assert state is not None
+
+    new_sm = StateMachine(steps, manager, memory=Memory())
+    new_sm.load_state(state)
+    assert new_sm.current_flow.flow_id == "f1"

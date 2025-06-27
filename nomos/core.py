@@ -20,7 +20,7 @@ from .models.agent import (
     Summary,
     history_to_types,
 )
-from .models.flow import FlowContext, FlowManager
+from .models.flow import Flow, FlowContext
 from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
 from .state_machine import StateMachine
 from .utils.flow_utils import create_flows_from_config
@@ -41,6 +41,7 @@ class Session:
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        flows: Optional[List[Flow]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -92,12 +93,6 @@ class Session:
         )
         self.embedding_model = embedding_model
 
-        flow_manager: Optional[FlowManager] = None
-        if config and config.flows:
-            flow_manager = create_flows_from_config(config)
-            log_debug(
-                f"Flow manager initialized with {len(flow_manager.flows)} flows"
-            )
 
         tool_defs = (
             self.config.tools.tool_defs
@@ -112,7 +107,12 @@ class Session:
             steps[current_step_id] if current_step_id else steps[start_step_id]
         )
         # Compile state machine for fast transitions and flow lookups
-        self.state_machine = StateMachine(self.steps, flow_manager)
+        self.state_machine = StateMachine(
+            self.steps,
+            flows=flows,
+            config=self.config,
+            memory=self.memory,
+        )
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
 
@@ -147,20 +147,9 @@ class Session:
         }
 
         # Include flow state if active
-        if self.state_machine.current_flow and self.state_machine.flow_context:
-            flow_memory = self.state_machine.current_flow.get_memory()
-            flow_memory_context = (
-                flow_memory.memory.context
-                if isinstance(flow_memory, FlowMemoryComponent)
-                else []
-            )
-            session_dict["flow_state"] = {
-                "flow_id": self.state_machine.current_flow.flow_id,
-                "flow_memory_context": [
-                    msg.model_dump(mode="json") for msg in flow_memory_context
-                ],
-                "flow_context": self.state_machine.flow_context.model_dump(mode="json"),
-            }  # type: ignore
+        flow_state = self.state_machine.state_dict()
+        if flow_state:
+            session_dict["flow_state"] = flow_state  # type: ignore
 
         return session_dict
 
@@ -297,7 +286,7 @@ class Session:
 
         # Check for flow transitions
         self.state_machine.handle_flow_transitions(
-            self.current_step.step_id, self.memory, self.session_id
+            self.current_step.step_id, self.session_id
         )
 
         decision = self._get_next_decision()
@@ -351,7 +340,7 @@ class Session:
                         self.current_step.step_id
                     )
                     if self.state_machine.current_flow.flow_id in exits:
-                        self.state_machine._exit_flow(self.current_step.step_id, self.memory)
+                        self.state_machine._exit_flow(self.current_step.step_id)
 
                 self.current_step = self.steps[decision.step_transition]
                 log_debug(f"Moving to next step: {self.current_step.step_id}")
@@ -359,7 +348,7 @@ class Session:
 
                 # Check if we need to enter a new flow after moving
                 self.state_machine.handle_flow_transitions(
-                    self.current_step.step_id, self.memory, self.session_id
+                    self.current_step.step_id, self.session_id
                 )
 
             else:
@@ -436,6 +425,7 @@ class Agent:
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        flows: Optional[List[Flow]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
@@ -452,6 +442,7 @@ class Agent:
         :param persona: Optional persona string.
         :param system_message: Optional system message.
         :param tools: List of tool callables or ToolWrapper instances.
+        :param flows: Optional list of Flow objects.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
@@ -474,6 +465,9 @@ class Agent:
             or self.llm
         )
         self._setup_logging()
+        self.flows = flows or (
+            list(create_flows_from_config(config).flows.values()) if config and config.flows else None
+        )
 
         # Remove duplicates of tools based on their names or IDs
         seen = set()
@@ -489,11 +483,6 @@ class Agent:
                 seen.add(tool_id)
                 self.tools.append(tool)
 
-        # Initialize flow manager if flows are configured
-        self.flow_manager: Optional[FlowManager] = None
-        if config and config.flows:
-            self.flow_manager = create_flows_from_config(config)
-            log_debug(f"Agent initialized with {len(self.flow_manager.flows)} flows")
 
         # Validate start step ID
         if start_step_id not in self.steps:
@@ -524,7 +513,6 @@ class Agent:
                     raise ValueError(
                         f"Tool {step_tool} not found in tools for step {step.step_id}\nAvailable tools: {self.tools}"
                     )
-        log_debug(f"FlowManager initialized with start step '{start_step_id}'")
 
         # Go through all the steps and if there are examples in them, perform batch embedding
         for step in self.steps.values():
@@ -610,6 +598,7 @@ class Agent:
             system_message=self.system_message,
             persona=self.persona,
             tools=self.tools,
+            flows=list(self.flows) if self.flows else None,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
@@ -658,6 +647,7 @@ class Agent:
             steps=self.steps,
             start_step_id=self.start,
             system_message=self.system_message,
+            flows=list(self.flows) if self.flows else None,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
@@ -665,23 +655,8 @@ class Agent:
         )
 
         # Restore flow state if present
-        if "flow_state" in session_data and session.state_machine.flow_manager:
-            flow_state = session_data["flow_state"]
-            flow_id = flow_state.get("flow_id")
-            flow_context_data = flow_state.get("flow_context")
-            flow_memory_data = flow_state.get("flow_memory_context")
-            if flow_memory_data:
-                flow_memory_data = history_to_types(flow_memory_data)
-
-            if flow_id in session.state_machine.flow_manager.flows and flow_context_data:
-                from .models.flow import FlowContext
-
-                session.state_machine.current_flow = session.state_machine.flow_manager.flows[flow_id]
-                flow_memory = session.state_machine.current_flow.get_memory()
-                if isinstance(flow_memory, FlowMemoryComponent):
-                    flow_memory.memory.context = flow_memory_data or []
-                session.state_machine.flow_context = FlowContext(**flow_context_data)
-                log_debug(f"Restored flow state for flow '{flow_id}'")
+        if "flow_state" in session_data:
+            session.state_machine.load_state(session_data["flow_state"])
 
         return session
 

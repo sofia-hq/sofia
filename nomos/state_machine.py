@@ -1,17 +1,37 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from .models.agent import Message, Step, Summary
+from .config import AgentConfig
+from .models.agent import Message, Step, Summary, history_to_types
 from .models.flow import Flow, FlowContext, FlowManager
 from .memory.base import Memory
+from .memory.flow import FlowMemoryComponent
+from .utils.flow_utils import create_flows_from_config
 
 class StateMachine:
     """Compile step and flow transitions for fast lookups."""
 
-    def __init__(self, steps: Dict[str, Step], flow_manager: Optional[FlowManager] = None) -> None:
+    def __init__(
+        self,
+        steps: Dict[str, Step],
+        flow_manager: Optional[FlowManager] = None,
+        flows: Optional[List[Flow]] = None,
+        config: Optional[AgentConfig] = None,
+        memory: Optional[Memory] = None,
+    ) -> None:
         # Map of step -> allowed next step ids
         self.transitions: Dict[str, List[str]] = {
             step_id: step.get_available_routes() for step_id, step in steps.items()
         }
+
+        self.memory = memory
+
+        if not flow_manager:
+            if flows:
+                flow_manager = FlowManager()
+                for flow in flows:
+                    flow_manager.register_flow(flow)
+            elif config and config.flows:
+                flow_manager = create_flows_from_config(config)
 
         # Flow handling
         self.flow_manager = flow_manager
@@ -51,10 +71,12 @@ class StateMachine:
     # ------------------------------------------------------------------
     # Flow management helpers
     # ------------------------------------------------------------------
-    def _enter_flow(self, flow: Flow, entry_step: str, memory: Memory, session_id: str) -> None:
+    def _enter_flow(self, flow: Flow, entry_step: str, session_id: str) -> None:
         """Enter a flow at the specified step."""
         try:
-            recent_history = memory.get_history()[-10:] if memory.get_history() else []
+            recent_history = (
+                self.memory.get_history()[-10:] if self.memory and self.memory.get_history() else []
+            )
             previous_context = [msg for msg in recent_history if isinstance(msg, (Message, Summary))]
 
             self.flow_context = flow.enter(
@@ -68,20 +90,24 @@ class StateMachine:
             self.current_flow = None
             self.flow_context = None
 
-    def _exit_flow(self, exit_step: str, memory: Memory) -> None:
+    def _exit_flow(self, exit_step: str) -> None:
         """Exit the current flow."""
         if not self.current_flow or not self.flow_context:
             return
 
         try:
             exit_data = self.current_flow.exit(exit_step, self.flow_context)
-            if "memory" in exit_data and exit_data["memory"]:
-                memory.add(exit_data["memory"])
+            if (
+                self.memory
+                and "memory" in exit_data
+                and exit_data["memory"]
+            ):
+                self.memory.add(exit_data["memory"])
         finally:
             self.current_flow = None
             self.flow_context = None
 
-    def handle_flow_transitions(self, step_id: str, memory: Memory, session_id: str) -> None:
+    def handle_flow_transitions(self, step_id: str, session_id: str) -> None:
         """Enter or exit flows based on current step."""
         if not self.flow_manager:
             return
@@ -90,9 +116,45 @@ class StateMachine:
 
         if enters and not self.current_flow:
             flow_to_enter = self.flow_manager.flows[enters[0]]
-            self._enter_flow(flow_to_enter, step_id, memory, session_id)
+            self._enter_flow(flow_to_enter, step_id, session_id)
 
         if self.current_flow and self.flow_context and self.current_flow.flow_id in exits:
-            self._exit_flow(step_id, memory)
+            self._exit_flow(step_id)
+
+    # ------------------------------------------------------------------
+    # Persistence helpers
+    # ------------------------------------------------------------------
+    def state_dict(self) -> Optional[Dict[str, Any]]:
+        """Return the flow state as a dictionary."""
+        if self.current_flow and self.flow_context:
+            flow_memory = self.current_flow.get_memory()
+            flow_memory_context = (
+                flow_memory.memory.context
+                if isinstance(flow_memory, FlowMemoryComponent)
+                else []
+            )
+            return {
+                "flow_id": self.current_flow.flow_id,
+                "flow_memory_context": [
+                    msg.model_dump(mode="json") for msg in flow_memory_context
+                ],
+                "flow_context": self.flow_context.model_dump(mode="json"),
+            }
+        return None
+
+    def load_state(self, state: Optional[Dict[str, Any]]) -> None:
+        """Restore flow state from a dictionary."""
+        if not state or not self.flow_manager:
+            return
+
+        flow_id = state.get("flow_id")
+        if flow_id in self.flow_manager.flows and state.get("flow_context"):
+            self.current_flow = self.flow_manager.flows[flow_id]
+            self.flow_context = FlowContext(**state["flow_context"])
+            flow_memory_data = state.get("flow_memory_context")
+            if flow_memory_data:
+                flow_memory = self.current_flow.get_memory()
+                if isinstance(flow_memory, FlowMemoryComponent):
+                    flow_memory.memory.context = history_to_types(flow_memory_data)
 
 __all__ = ["StateMachine"]
