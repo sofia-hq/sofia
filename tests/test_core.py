@@ -616,7 +616,9 @@ class TestSessionDictOperations:
             "history": ["invalid_item"],  # Not a dict
         }
 
-        with pytest.raises(ValueError, match="Invalid history item"):
+        with pytest.raises(
+            ValueError, match="Unknown history item type: <class 'str'>"
+        ):
             basic_agent.get_session_from_dict(session_data)
 
 

@@ -4,7 +4,11 @@ from typing import Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 
-from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
+from ..constants import (
+    DEFAULT_PERSONA,
+    DEFAULT_SYSTEM_MESSAGE,
+    PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE,
+)
 from ..models.agent import (
     Decision,
     Message,
@@ -395,6 +399,29 @@ class LLMBase:
         emb2 = np.array(emb2)
         similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
         return float(similarity)
+
+    def generate_summary(
+        self, history: List[Union[Message, StepIdentifier, Summary]]
+    ) -> Summary:
+        """
+        Generate a summary of the conversation history.
+
+        :param history: List of Message or StepIdentifier objects.
+        :return: Summary object containing the summarized content.
+        """
+        items_str = "\n".join([str(item) for item in history])
+        summary = self.get_output(
+            messages=[
+                Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
+                Message(
+                    role="user",
+                    content=f"Summarize the following Context:\n\n{items_str}",
+                ),
+            ],
+            response_format=Summary,
+        )
+        assert isinstance(summary, Summary), "Summary generation failed."
+        return summary
 
 
 __all__ = ["LLMBase"]

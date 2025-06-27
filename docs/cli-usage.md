@@ -6,6 +6,7 @@ The Nomos CLI provides powerful commands to bootstrap, develop, and deploy your 
 
 - [`nomos init`](#initialize-a-new-agent) - Create a new agent project
 - [`nomos run`](#development-mode) - Run agent in development mode
+- [`nomos train`](#training-mode) - Interactively refine agent decisions
 - [`nomos serve`](#production-deployment) - Deploy agent with Docker
 - [`nomos test`](#testing) - Run agent tests
 - [`nomos schema`](#generate-yaml-schema) - Export JSON schema for your config
@@ -77,6 +78,16 @@ nomos run --config my-config.yaml --tools tools.py --tools utils.py
 # With verbose logging on custom port
 nomos run --verbose --port 3000
 ```
+
+## Training Mode
+
+Run the agent interactively and record new decision examples:
+
+```bash
+nomos train
+```
+
+During training, the CLI shows each step transition and tool result. If you're not satisfied with the response, you can provide feedback which will be stored as an example for the current step.
 
 ## Production Deployment
 
