@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.2.3] - 2025-06-17
 
 ### Added
-- Evaluation helpers `SessionContext` and `smart_assert` for validating agent responses.
+- Evaluation helpers `State` and `smart_assert` for validating agent responses.
 - `ScenarioRunner` framework for simulating conversations.
 - Example tests for the Financial Planning Assistant.
 - YAML-based test configuration loaded by `nomos test`.

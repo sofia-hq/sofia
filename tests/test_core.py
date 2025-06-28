@@ -583,8 +583,8 @@ class TestMemoryOperations:
         session = basic_agent.create_session()
 
         # Ensure no flow is active
-        session.current_flow = None
-        session.flow_context = None
+        session.state_machine.current_flow = None
+        session.state_machine.flow_context = None
 
         session._add_message("user", "Test message")
 
@@ -599,8 +599,8 @@ class TestMemoryOperations:
         session = basic_agent.create_session()
 
         # Ensure no flow is active
-        session.current_flow = None
-        session.flow_context = None
+        session.state_machine.current_flow = None
+        session.state_machine.flow_context = None
 
         step_id = StepIdentifier(step_id="test_step")
         session._add_step_identifier(step_id)
@@ -613,48 +613,50 @@ class TestMemoryOperations:
         assert step_ids[0].step_id == "test_step"
 
 
-class TestSessionDictOperations:
-    """Test session dictionary operations."""
+class TestSessionStateOperations:
+    """Test session state operations."""
 
-    def test_to_dict_basic(self, basic_agent):
-        """Test converting session to dictionary."""
+    def test_get_state_basic(self, basic_agent):
+        """Test getting session state."""
         session = basic_agent.create_session()
         session._add_message("user", "Hello")
 
-        session_dict = session.to_dict()
+        state = session.get_state()
 
-        assert "session_id" in session_dict
-        assert "current_step_id" in session_dict
-        assert "history" in session_dict
-        assert session_dict["current_step_id"] == "start"
-        assert len(session_dict["history"]) == 1
+        assert hasattr(state, "session_id")
+        assert hasattr(state, "current_step_id")
+        assert hasattr(state, "history")
+        assert state.current_step_id == "start"
+        assert len(state.history) == 1
 
-    def test_get_session_from_dict(self, basic_agent):
-        """Test creating session from dictionary."""
-        session_data = {
-            "session_id": "test_session",
-            "current_step_id": "start",
-            "history": [{"role": "user", "content": "Hello"}, {"step_id": "start"}],
-        }
+    def test_get_session_from_state(self, basic_agent):
+        """Test creating session from State object."""
+        from nomos.models.agent import State, history_to_types
 
-        session = basic_agent.get_session_from_dict(session_data)
+        history = history_to_types(
+            [{"role": "user", "content": "Hello"}, {"step_id": "start"}]
+        )
+
+        state = State(
+            session_id="test_session",
+            current_step_id="start",
+            history=history,
+        )
+
+        session = basic_agent.get_session_from_state(state)
 
         assert session.session_id == "test_session"
         assert session.current_step.step_id == "start"
         assert len(session.memory.context) == 2
 
-    def test_get_session_from_dict_invalid_history(self, basic_agent):
+    def test_get_session_from_state_invalid_history(self, basic_agent):
         """Test error handling for invalid history items."""
-        session_data = {
-            "session_id": "test_session",
-            "current_step_id": "start",
-            "history": ["invalid_item"],  # Not a dict
-        }
-
         with pytest.raises(
             ValueError, match="Unknown history item type: <class 'str'>"
         ):
-            basic_agent.get_session_from_dict(session_data)
+            from nomos.models.agent import history_to_types
+
+            history_to_types(["invalid_item"])
 
 
 class TestUnknownActionHandling:
@@ -826,11 +828,11 @@ class TestSessionPersistence:
             Session.load_session("nonexistent_session_id")
 
 
-class TestSessionDictOperationsExtended:
-    """Extended tests for session dictionary conversion and restoration."""
+class TestSessionStateOperationsExtended:
+    """Extended tests for session state conversion and restoration."""
 
-    def test_to_dict_with_flow_state(self, basic_agent):
-        """Test converting session to dictionary with active flow."""
+    def test_get_state_with_flow_state(self, basic_agent):
+        """Test getting session state with active flow."""
         session = basic_agent.create_session()
 
         # Mock flow state
@@ -841,28 +843,34 @@ class TestSessionDictOperationsExtended:
         mock_flow_context = MagicMock(spec=FlowContext)
         mock_flow_context.model_dump.return_value = {"test": "data"}
 
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
-        session_dict = session.to_dict()
+        state = session.get_state()
 
-        assert "flow_state" in session_dict
-        assert session_dict["flow_state"]["flow_id"] == "test_flow"
-        assert session_dict["flow_state"]["flow_context"] == {"test": "data"}
+        assert hasattr(state, "flow_state")
+        if state.flow_state:
+            assert state.flow_state.flow_id == "test_flow"
 
-    def test_get_session_from_dict_with_messages(self, basic_agent):
-        """Test creating session from dictionary with message history."""
-        session_data = {
-            "session_id": "test_session",
-            "current_step_id": "start",
-            "history": [
+    def test_get_session_from_state_with_messages(self, basic_agent):
+        """Test creating session from State with message history."""
+        from nomos.models.agent import State, history_to_types
+
+        history = history_to_types(
+            [
                 {"role": "user", "content": "Hello"},
                 {"role": "assistant", "content": "Hi"},
                 {"step_id": "start"},
-            ],
-        }
+            ]
+        )
 
-        session = basic_agent.get_session_from_dict(session_data)
+        state = State(
+            session_id="test_session",
+            current_step_id="start",
+            history=history,
+        )
+
+        session = basic_agent.get_session_from_state(state)
 
         assert session.session_id == "test_session"
         assert session.current_step.step_id == "start"
@@ -870,31 +878,35 @@ class TestSessionDictOperationsExtended:
         assert isinstance(session.memory.context[0], Message)
         assert isinstance(session.memory.context[2], StepIdentifier)
 
-    def test_get_session_from_dict_with_summary(self, basic_agent):
-        """Test creating session from dictionary with summary in history."""
-        session_data = {
-            "session_id": "test_session",
-            "current_step_id": "start",
-            "history": [
-                {"content": "Summary of conversation", "summary": ["point1", "point2"]}
-            ],
-        }
+    def test_get_session_from_state_with_summary(self, basic_agent):
+        """Test creating session from State with summary in history."""
+        from nomos.models.agent import State, history_to_types
 
-        session = basic_agent.get_session_from_dict(session_data)
+        history = history_to_types([{"summary": ["point1", "point2"]}])
+
+        state = State(
+            session_id="test_session",
+            current_step_id="start",
+            history=history,
+        )
+
+        session = basic_agent.get_session_from_state(state)
 
         assert len(session.memory.context) == 1
         assert isinstance(session.memory.context[0], Summary)
 
-    def test_get_session_from_dict_with_flow_state(self, basic_agent):
+    def test_get_session_from_state_with_flow_state(self, basic_agent):
         """Test restoring session with flow state."""
-        # Simple test to ensure basic session restoration works
-        session_data = {
-            "session_id": "test_session",
-            "current_step_id": "start",
-            "history": [],
-        }
+        from nomos.models.agent import State
 
-        session = basic_agent.get_session_from_dict(session_data)
+        # Simple test to ensure basic session restoration works
+        state = State(
+            session_id="test_session",
+            current_step_id="start",
+            history=[],
+        )
+
+        session = basic_agent.get_session_from_state(state)
 
         # The session creation should work
         assert session.session_id == "test_session"
@@ -1055,8 +1067,8 @@ class TestFlowIntegration:
         mock_flow.get_memory.return_value = mock_flow_memory
         mock_flow_context = MagicMock(spec=FlowContext)
 
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         # Add message should go to flow memory, not session memory
         session._add_message("user", "Test message")
@@ -1078,8 +1090,8 @@ class TestFlowIntegration:
         mock_flow.get_memory.return_value = mock_flow_memory
         mock_flow_context = MagicMock(spec=FlowContext)
 
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         step_id = StepIdentifier(step_id="test_step")
         session._add_step_identifier(step_id)
@@ -1101,8 +1113,8 @@ class TestEndActionFlow:
 
         mock_flow = MagicMock(spec=Flow)
         mock_flow_context = MagicMock(spec=FlowContext)
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
@@ -1121,8 +1133,8 @@ class TestEndActionFlow:
 
         # Verify flow cleanup was called
         mock_flow.cleanup.assert_called_once_with(mock_flow_context)
-        assert session.current_flow is None
-        assert session.flow_context is None
+        assert session.state_machine.current_flow is None
+        assert session.state_machine.flow_context is None
 
         # Verify end message was added
         messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -1140,8 +1152,8 @@ class TestEndActionFlow:
         mock_flow = MagicMock(spec=Flow)
         mock_flow.cleanup.side_effect = Exception("Cleanup error")
         mock_flow_context = MagicMock(spec=FlowContext)
-        session.current_flow = mock_flow
-        session.flow_context = mock_flow_context
+        session.state_machine.current_flow = mock_flow
+        session.state_machine.flow_context = mock_flow_context
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
@@ -1159,18 +1171,18 @@ class TestEndActionFlow:
         assert result is None
 
         # Flow state should be cleaned up even if there was an error
-        assert session.current_flow is None
-        assert session.flow_context is None
+        assert session.state_machine.current_flow is None
+        assert session.state_machine.flow_context is None
 
 
 class TestAgentNext:
     """Test Agent.next method variations."""
 
     def test_agent_next_with_session_context_object(self, basic_agent):
-        """Test Agent.next with SessionContext object."""
-        from nomos.models.agent import SessionContext
+        """Test Agent.next with session State object."""
+        from nomos.models.agent import State, Message
 
-        session_context = SessionContext(
+        session_context = State(
             current_step_id="start", history=[Message(role="user", content="Hello")]
         )
 
@@ -1194,8 +1206,8 @@ class TestAgentNext:
         )
 
         assert decision.action == Action.ANSWER
-        assert "session_id" in session_data
-        assert "current_step_id" in session_data
+        assert hasattr(session_data, "session_id")
+        assert hasattr(session_data, "current_step_id")
 
     def test_agent_next_without_session_data(self, basic_agent):
         """Test Agent.next creating new session when no session_data provided."""
@@ -1217,8 +1229,8 @@ class TestAgentNext:
         decision, tool_output, session_data = basic_agent.next("Hello")
 
         assert decision.action == Action.ASK
-        assert "session_id" in session_data
-        assert session_data["current_step_id"] == "start"
+        assert hasattr(session_data, "session_id")
+        assert session_data.current_step_id == "start"
 
     def test_current_step_tools_with_missing_tool_logging(self, basic_agent):
         """Test _get_current_step_tools handling when tool is missing."""

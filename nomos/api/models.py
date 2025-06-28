@@ -2,6 +2,8 @@
 
 from typing import Optional
 
+from nomos.models.agent import State
+
 from pydantic import BaseModel
 
 
@@ -18,19 +20,11 @@ class SessionResponse(BaseModel):
     message: dict
 
 
-class SessionData(BaseModel):
-    """Model for session data."""
-
-    session_id: str
-    current_step_id: str
-    history: list
-
-
 class ChatRequest(BaseModel):
     """Request model for chat endpoint."""
 
     user_input: Optional[str] = None
-    session_data: Optional[SessionData] = None
+    session_data: Optional[State] = None
 
 
 class ChatResponse(BaseModel):
@@ -38,4 +32,4 @@ class ChatResponse(BaseModel):
 
     response: dict
     tool_output: Optional[str] = None
-    session_data: SessionData
+    session_data: State

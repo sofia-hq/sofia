@@ -157,11 +157,11 @@ Use `smart_assert` to validate agent responses using LLM-based evaluation:
 
 ```python
 from nomos.testing import smart_assert
-from nomos import SessionContext, Summary, StepIdentifier
+from nomos import State, Summary, StepIdentifier
 from nomos.models.agent import Message
 
 def test_greeting(agent):
-    context = SessionContext(
+    context = State(
         history=[
             Summary(content="Initial summary"),
             Message(role="user", content="Hello"),

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from nomos.core import Agent
-from nomos.models.agent import Message, SessionContext
+from nomos.models.agent import Message, State
 
 from pydantic import BaseModel, Field
 
@@ -50,7 +50,7 @@ class ScenarioRunner:
     @staticmethod
     def run(
         agent: Agent, scenario: Scenario, max_turns: int = 5
-    ) -> Tuple[List[Message], List[Tuple[datetime, dict[str, Any]]]]:
+    ) -> Tuple[List[Message], List[Tuple[datetime, State]]]:
         """
         Run a scenario against an agent and verify expectations.
 
@@ -60,9 +60,8 @@ class ScenarioRunner:
         :return: List of tuples containing the timestamp and session data at each turn.
         """
         llm = agent.llm
-        context = SessionContext()
-        session_data: dict[str, Any] = context.model_dump(mode="json")
-        session_history: List[tuple[datetime, dict[str, Any]]] = []
+        session_data = None
+        session_history: List[tuple[datetime, State]] = []
         chat_history: List[Message] = []
 
         user_input = None
