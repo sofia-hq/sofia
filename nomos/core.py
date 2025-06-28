@@ -12,20 +12,27 @@ from .memory.flow import FlowMemoryComponent
 from .models.agent import (
     Action,
     Decision,
+    DecisionConstraints,
     Message,
     State,
     Step,
     StepIdentifier,
 )
 from .models.flow import Flow
-from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
+from .models.tool import (
+    FallbackError,
+    InvalidArgumentsError,
+    Tool,
+    ToolWrapper,
+    get_tools,
+)
 from .state_machine import StateMachine
 from .utils.flow_utils import create_flows_from_config
 from .utils.logging import log_debug, log_error, log_info
 
 
 class Session:
-    """Manages a single agent session, including step transitions, tool calls, and history."""
+    """Manages a single agent session, including step IDs, tool calls, and history."""
 
     def __init__(
         self,
@@ -200,7 +207,9 @@ class Session:
 
         log_debug(f"{role.title()} added: {message}")
 
-    def _get_next_decision(self) -> Decision:
+    def _get_next_decision(
+        self, decision_constraints: Optional[DecisionConstraints] = None
+    ) -> Decision:
         """
         Get the next decision from the LLM based on the current step and history.
 
@@ -209,6 +218,7 @@ class Session:
         _decision_model = self.llm._create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
+            constraints=decision_constraints,
         )
 
         # Get memory context - use flow memory if available, otherwise use session memory
@@ -242,7 +252,8 @@ class Session:
         no_errors: int = 0,
         next_count: int = 0,
         return_tool: bool = False,
-        return_step_transition: bool = False,
+        return_step_id: bool = False,
+        decision_constraints: Optional[DecisionConstraints] = None,
     ) -> tuple[Decision, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -251,7 +262,8 @@ class Session:
         :param no_errors: Number of consecutive errors encountered.
         :param next_count: Number of times the next function has been called.
         :param return_tool: Whether to return tool results.
-        :param return_step_transition: Whether to return step transition.
+        :param return_step_id: Whether to return step id.
+        :param decision_constraints: Optional constraints for the decision model on retry.
         :return: A tuple containing the decision and any tool results.
         """
         if no_errors >= self.max_errors:
@@ -282,12 +294,31 @@ class Session:
             self.current_step.step_id, self.session_id
         )
 
-        decision = self._get_next_decision()
+        decision = self._get_next_decision(decision_constraints=decision_constraints)
         log_info(str(decision)) if self.verbose else log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
+        if decision.action == Action.RESPOND and decision.response is None:
+            self._add_message(
+                "error", "RESPOND action requires a response, but none was provided."
+            )
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(fields=["response"]),
+            )
+        if decision.action == Action.MOVE and decision.step_id is None:
+            self._add_message(
+                "error", "MOVE action requires a step_id, but none was provided."
+            )
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(fields=["step_id"]),
+            )
+
         self._add_step_identifier(self.current_step.get_step_identifier())
-        if decision.action in [Action.ASK, Action.ANSWER]:
+        if decision.action == Action.RESPOND:
             self._add_message(self.name, str(decision.response))
             return decision, None
         elif decision.action == Action.TOOL_CALL:
@@ -312,20 +343,32 @@ class Session:
             except FallbackError as e:
                 _error = e
                 self._add_message("fallback", str(e))
+            except InvalidArgumentsError as e:
+                _error = e
+                self._add_message("error", str(e))
             except Exception as e:
                 _error = e
                 self._add_message("error", str(e))
 
             if return_tool and _error is None:
                 return decision, tool_results
+            _constraints = None
+            if _error:
+                if isinstance(_error, AssertionError):
+                    _constraints = DecisionConstraints(fields=["tool_call"])
+                elif isinstance(_error, InvalidArgumentsError) and decision.tool_call:
+                    _constraints = DecisionConstraints(
+                        fields=["tool_call"], tool_name=decision.tool_call.tool_name
+                    )
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
+                decision_constraints=_constraints,
             )
-        elif decision.action == Action.MOVE and decision.step_transition:
+        elif decision.action == Action.MOVE and decision.step_id:
             _error = None
             if self.state_machine.can_transition(
-                self.state_machine.current_step_id, decision.step_transition
+                self.state_machine.current_step_id, decision.step_id
             ):
                 # Check if we need to exit current flow before moving
                 if self.state_machine.current_flow and self.state_machine.flow_context:
@@ -337,7 +380,7 @@ class Session:
                             self.state_machine.current_step_id
                         )
 
-                self.state_machine.move(decision.step_transition)
+                self.state_machine.move(decision.step_id)
                 log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
@@ -352,12 +395,12 @@ class Session:
                 )
                 self._add_message(
                     "error",
-                    f"Invalid route: {decision.step_transition} not in {allowed}",
+                    f"Invalid route: {decision.step_id} not in {allowed}",
                 )
                 _error = ValueError(
-                    f"Invalid route: {decision.step_transition} not in {allowed}"
+                    f"Invalid route: {decision.step_id} not in {allowed}"
                 )
-            if return_step_transition:
+            if return_step_id:
                 return decision, None
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
@@ -655,6 +698,7 @@ class Agent:
         user_input: Optional[str] = None,
         session_data: Optional[Union[dict, State]] = None,
         verbose: bool = False,
+        decision_constraints: Optional[DecisionConstraints] = None,
     ) -> tuple[Decision, str, State]:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -662,6 +706,7 @@ class Agent:
         :param user_input: Optional user input string.
         :param session_data: Optional session data as a dictionary or State object.
         :param verbose: Whether to return verbose output.
+        :param decision_constraints: Optional constraints for the decision model on retry.
         :return: A tuple containing the decision and tool output, along with the updated session state.
         :raises ValueError: If session_data is provided but not a valid State object.
         """
@@ -673,7 +718,10 @@ class Agent:
             else self.create_session()
         )
         decision, tool_output = session.next(
-            user_input=user_input, return_tool=verbose, return_step_transition=verbose
+            user_input=user_input,
+            return_tool=verbose,
+            return_step_id=verbose,
+            decision_constraints=decision_constraints,
         )
         return decision, tool_output, session.get_state()
 

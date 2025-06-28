@@ -11,6 +11,7 @@ from ..constants import (
 )
 from ..models.agent import (
     Decision,
+    DecisionConstraints,
     Message,
     Step,
     StepIdentifier,
@@ -237,7 +238,9 @@ class LLMBase:
 
     @staticmethod
     def _create_decision_model(
-        current_step: Step, current_step_tools: List[Tool]
+        current_step: Step,
+        current_step_tools: List[Tool],
+        constraints: Optional["DecisionConstraints"] = None,
     ) -> Type[BaseModel]:
         """
         Dynamically create a Pydantic model for route/tool decision output.
@@ -247,11 +250,21 @@ class LLMBase:
         :param tool_models: List of Pydantic models for tool arguments.
         :return: A dynamically created Pydantic BaseModel for the decision.
         """
-        available_step_ids = current_step.get_available_routes()
+        available_step_ids = (
+            constraints.step_ids
+            if constraints and constraints.step_ids is not None
+            else current_step.get_available_routes()
+        )
+        if constraints and constraints.tool_name:
+            current_step_tools = [
+                tool
+                for tool in current_step_tools
+                if tool.name == constraints.tool_name
+            ]
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
         action_ids = (
-            (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
+            (["RESPOND", "END"] if not current_step.auto_flow else ["END"])
             + (["MOVE"] if available_step_ids else [])
             + (["TOOL_CALL"] if tool_ids else [])
         )
@@ -265,39 +278,57 @@ class LLMBase:
             "action": {"type": ActionEnum, "description": "Next Action"},
         }
 
-        if not current_step.auto_flow:
+        if not current_step.auto_flow and (
+            not constraints
+            or not constraints.fields
+            or "response" in constraints.fields
+        ):
             if current_step.answer_model:
                 answer_model = current_step.get_answer_model()
                 response_type = Union.__getitem__((str, answer_model))
                 response_desc = (
-                    f"Response as string if ASK or {answer_model.__name__} if ANSWER."
+                    f"Response as string or {answer_model.__name__} if RESPOND."
                 )
             else:
                 response_type = str
-                response_desc = "Response (String) if ASK or ANSWER."
+                response_desc = "Response (String) if RESPOND."
             params["response"] = {
                 "type": response_type,
                 "description": response_desc,
                 "optional": True,
                 "default": None,
             }
-            if current_step.quick_suggestions:
+            if current_step.quick_suggestions and (
+                not constraints
+                or not constraints.fields
+                or "suggestions" in constraints.fields
+            ):
                 params["suggestions"] = {
                     "type": List[str],
-                    "description": "Quick User Input Suggestions for the User to Choose if ASK.",
+                    "description": "Quick User Input Suggestions for the User to Choose if RESPOND.",
                     "optional": True,
                     "default": None,
                 }
 
-        if len(available_step_ids) > 0:
-            params["step_transition"] = {
+        if len(available_step_ids) > 0 and (
+            not constraints or not constraints.fields or "step_id" in constraints.fields
+        ):
+            params["step_id"] = {
                 "type": Literal.__getitem__(tuple(available_step_ids)),
                 "description": "Step Id (String) if MOVE.",
                 "optional": True,
                 "default": None,
             }
 
-        if len(tool_ids) > 0 and len(tool_models) > 0:
+        if (
+            len(tool_ids) > 0
+            and len(tool_models) > 0
+            and (
+                not constraints
+                or not constraints.fields
+                or "tool_call" in constraints.fields
+            )
+        ):
             tool_call_model = create_base_model(
                 "ToolCall",
                 {
@@ -346,9 +377,7 @@ class LLMBase:
             action=output.action.value,
             response=output.response if hasattr(output, "response") else None,
             suggestions=output.suggestions if hasattr(output, "suggestions") else None,
-            step_transition=(
-                output.step_transition if hasattr(output, "step_transition") else None
-            ),
+            step_id=(output.step_id if hasattr(output, "step_id") else None),
             tool_call=(
                 ToolCall(
                     tool_name=output.tool_call.tool_name,
