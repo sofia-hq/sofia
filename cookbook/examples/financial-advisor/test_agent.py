@@ -8,7 +8,7 @@ from nomos import *
 def test_greets_user(financial_advisor_agent: Agent):
     """Test that the financial advisor agent greets the user."""
     decision, _, _ = financial_advisor_agent.next("Hello")
-    assert decision.action.value == "ASK"
+    assert decision.action.value == "RESPOND"
     smart_assert(decision, "Greets the User", financial_advisor_agent.llm)
 
 

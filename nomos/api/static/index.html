@@ -799,11 +799,11 @@
                             messageElement.appendChild(accordion);
                         }
 
-                        // 2. Step transition
+                        // 2. Step id
                         if (extras.nextStepId) {
                             const stepTransitionHtml = `<p class="text-sm">Transitioning to: <code class="bg-gray-100 px-1 rounded">${escapeHtml(extras.nextStepId)}</code></p>`;
                             const accordion = createAccordion(
-                                'View step transition',
+                                'View step id',
                                 'text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 transition',
                                 stepTransitionHtml
                             );
@@ -1388,7 +1388,7 @@
                     // Create a map to track steps
                     const stepMap = new Map();
 
-                    // First pass: collect step transitions
+                    // First pass: collect step ids
                     sessionData.history.forEach((item, index) => {
                         if (item.step_id) {
                             stepMap.set(index, item.step_id);
@@ -1409,7 +1409,7 @@
                             if (item.role === 'user') {
                                 addMessageToUI('user', item.content);
                             } else if (['assistant', 'system', 'financial_advisor'].includes(item.role)) {
-                                // Check if the next item is a step transition
+                                // Check if the next item is a step id
                                 const nextStepId = stepMap.get(i + 1);
                                 addMessageToUI('assistant', item.content, { nextStepId });
                             } else if (item.role === 'tool') {

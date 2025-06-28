@@ -791,10 +791,10 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
     console.print("Type quit to exit\n")
 
     session_data: Optional[dict] = None
-    last_action: Action = Action.ANSWER
+    last_action: Action = Action.RESPOND
     while True:
         # print(session_data)
-        if last_action in [Action.ANSWER, Action.ASK]:
+        if last_action == Action.RESPOND:
             user_input = Prompt.ask("You").strip()
             if user_input.lower() in {"quit", "exit", "bye"}:
                 break
@@ -803,7 +803,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         decision, tool_output, session_data = agent.next(
             user_input, session_data, verbose=True
         )
-        if decision.action in [Action.ANSWER, Action.ASK]:
+        if decision.action == Action.RESPOND:
             console.print(
                 "Agent:\nReasoning:{}\nResponse: {}".format(
                     "\n".join(decision.reasoning), decision.response
