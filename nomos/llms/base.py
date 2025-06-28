@@ -251,7 +251,7 @@ class LLMBase:
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
         action_ids = (
-            (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
+            (["RESPOND", "END"] if not current_step.auto_flow else ["END"])
             + (["MOVE"] if available_step_ids else [])
             + (["TOOL_CALL"] if tool_ids else [])
         )
@@ -270,11 +270,11 @@ class LLMBase:
                 answer_model = current_step.get_answer_model()
                 response_type = Union.__getitem__((str, answer_model))
                 response_desc = (
-                    f"Response as string if ASK or {answer_model.__name__} if ANSWER."
+                    f"Response as string or {answer_model.__name__} if RESPOND."
                 )
             else:
                 response_type = str
-                response_desc = "Response (String) if ASK or ANSWER."
+                response_desc = "Response (String) if RESPOND."
             params["response"] = {
                 "type": response_type,
                 "description": response_desc,
@@ -284,13 +284,13 @@ class LLMBase:
             if current_step.quick_suggestions:
                 params["suggestions"] = {
                     "type": List[str],
-                    "description": "Quick User Input Suggestions for the User to Choose if ASK.",
+                    "description": "Quick User Input Suggestions for the User to Choose if RESPOND.",
                     "optional": True,
                     "default": None,
                 }
 
         if len(available_step_ids) > 0:
-            params["step_transition"] = {
+            params["step_id"] = {
                 "type": Literal.__getitem__(tuple(available_step_ids)),
                 "description": "Step Id (String) if MOVE.",
                 "optional": True,
@@ -346,9 +346,7 @@ class LLMBase:
             action=output.action.value,
             response=output.response if hasattr(output, "response") else None,
             suggestions=output.suggestions if hasattr(output, "suggestions") else None,
-            step_transition=(
-                output.step_transition if hasattr(output, "step_transition") else None
-            ),
+            step_id=(output.step_id if hasattr(output, "step_id") else None),
             tool_call=(
                 ToolCall(
                     tool_name=output.tool_call.tool_name,

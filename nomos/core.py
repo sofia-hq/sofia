@@ -242,7 +242,7 @@ class Session:
         no_errors: int = 0,
         next_count: int = 0,
         return_tool: bool = False,
-        return_step_transition: bool = False,
+        return_step_id: bool = False,
     ) -> tuple[Decision, Any]:
         """
         Advance the session to the next step based on user input and LLM decision.
@@ -251,7 +251,7 @@ class Session:
         :param no_errors: Number of consecutive errors encountered.
         :param next_count: Number of times the next function has been called.
         :param return_tool: Whether to return tool results.
-        :param return_step_transition: Whether to return step transition.
+        :param return_step_id: Whether to return step id.
         :return: A tuple containing the decision and any tool results.
         """
         if no_errors >= self.max_errors:
@@ -287,7 +287,7 @@ class Session:
         log_debug(f"Action decided: {decision.action}")
 
         self._add_step_identifier(self.current_step.get_step_identifier())
-        if decision.action in [Action.ASK, Action.ANSWER]:
+        if decision.action == Action.RESPOND:
             self._add_message(self.name, str(decision.response))
             return decision, None
         elif decision.action == Action.TOOL_CALL:
@@ -322,10 +322,10 @@ class Session:
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
             )
-        elif decision.action == Action.MOVE and decision.step_transition:
+        elif decision.action == Action.MOVE and decision.step_id:
             _error = None
             if self.state_machine.can_transition(
-                self.state_machine.current_step_id, decision.step_transition
+                self.state_machine.current_step_id, decision.step_id
             ):
                 # Check if we need to exit current flow before moving
                 if self.state_machine.current_flow and self.state_machine.flow_context:
@@ -337,7 +337,7 @@ class Session:
                             self.state_machine.current_step_id
                         )
 
-                self.state_machine.move(decision.step_transition)
+                self.state_machine.move(decision.step_id)
                 log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
@@ -352,12 +352,12 @@ class Session:
                 )
                 self._add_message(
                     "error",
-                    f"Invalid route: {decision.step_transition} not in {allowed}",
+                    f"Invalid route: {decision.step_id} not in {allowed}",
                 )
                 _error = ValueError(
-                    f"Invalid route: {decision.step_transition} not in {allowed}"
+                    f"Invalid route: {decision.step_id} not in {allowed}"
                 )
-            if return_step_transition:
+            if return_step_id:
                 return decision, None
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
@@ -673,7 +673,7 @@ class Agent:
             else self.create_session()
         )
         decision, tool_output = session.next(
-            user_input=user_input, return_tool=verbose, return_step_transition=verbose
+            user_input=user_input, return_tool=verbose, return_step_id=verbose
         )
         return decision, tool_output, session.get_state()
 

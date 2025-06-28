@@ -87,7 +87,7 @@ Run the agent interactively and record new decision examples:
 nomos train
 ```
 
-During training, the CLI shows each step transition and tool result. If you're not satisfied with the response, you can provide feedback which will be stored as an example for the current step.
+During training, the CLI shows each step ID and tool result. If you're not satisfied with the response, you can provide feedback which will be stored as an example for the current step.
 
 ## Production Deployment
 
