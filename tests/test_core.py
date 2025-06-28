@@ -17,7 +17,7 @@ from nomos.models.agent import (
 )
 from nomos.core import Agent, Session
 from nomos.config import AgentConfig, ToolsConfig
-from nomos.models.tool import Tool, ToolWrapper, ToolDef, ArgDef
+from nomos.models.tool import MCPServer, Tool, ToolWrapper, ToolDef, ArgDef
 
 
 def test_agent_initialization(basic_agent):
@@ -356,6 +356,41 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
         .get("query")
         is not None
     )
+
+
+def test_external_tools_name(basic_steps):
+    """Name is required for only for mcp tools."""
+
+    config = AgentConfig(
+        name="config_test",
+        steps=basic_steps,
+        start_step_id="start",
+        persona="Config test persona",
+        tools=ToolsConfig(
+            external_tools=[
+                {"tag": "@pkg/itertools.combinations", "name": "combinations"},
+                {
+                    "tag": "@mcp/https://mcpserver.com/mcp",
+                    "kwargs": {},
+                    "name": "mcp_tool",
+                },
+            ],
+        ),
+    )
+    assert config
+
+    with pytest.raises(Exception):
+        AgentConfig(
+            name="config_test",
+            steps=basic_steps,
+            start_step_id="start",
+            persona="Config test persona",
+            tools=ToolsConfig(
+                external_tools=[
+                    {"tag": "@mcp/https://mcpserver.com/mcp", "kwargs": {}},
+                ],
+            ),
+        )
 
 
 # ======================================================================
@@ -1232,3 +1267,42 @@ class TestStepExamples:
         system_prompt = session.llm.messages_received[0].content
         assert "time question" in system_prompt
         assert "sqrt 4" not in system_prompt
+
+
+class TestDeferredTools:
+    """Tests related to deferred tools."""
+
+    def test_deferred_tool_registration(self, mcp_agent, mcp_tool):
+        """Test that deferred tools are registered correctly."""
+        session = mcp_agent.create_session()
+        mcp_server = session.tools.get(mcp_tool.id)
+        assert isinstance(mcp_server, MCPServer)
+        assert mcp_server.name == mcp_tool.id
+        assert str(mcp_server.url) == mcp_tool.tool_identifier
+
+    @patch("nomos.models.tool.Tool.from_mcp_server")
+    def test_deferred_tool_loading(self, tool_mock, mcp_agent, mcp_server_name):
+        """Test that deferred tools are loaded correctly at run time."""
+        tool_name = "test_tool"
+        tool_description = "A test tool"
+        tool_params = {"properties": {}}
+        tool_instance = MagicMock(
+            name=tool_name, description=tool_description, parameters=tool_params
+        )
+        tools_response = [tool_instance]
+        tool_mock.return_value = tools_response
+
+        session = mcp_agent.create_session()
+
+        # tool_ids should be empty, but deferred_tool_ids should contain the MCP server.
+        current_step = session.current_step
+        assert current_step.tool_ids == []
+        assert current_step.deferred_tool_ids == [f"@mcp/{mcp_server_name}"]
+
+        tools = session._get_current_step_tools()
+        tool_mock.assert_called()
+        assert len(tools) == 1
+        assert tools[0] == tool_instance
+
+        # make sure that tool_ids are still the same
+        assert current_step.tool_ids == []

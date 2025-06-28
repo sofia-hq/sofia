@@ -47,8 +47,10 @@ class ExternalTool(BaseModel):
         """
         tool_type, tool_name = self.tag.split("/", 1)
         tool_type = tool_type.replace("@", "")
+        if tool_type == "mcp" and not self.name:
+            raise ValueError("For MCP tools, the 'name' field is required.")
         if tool_type in ["mcp"]:
-            name = self.name or tool_name
+            name = self.name
         else:
             name = self.name or convert_camelcase_to_snakecase(
                 self.tool_name.split(".")[-1]
