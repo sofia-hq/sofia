@@ -298,8 +298,8 @@ class ToolCall(BaseModel):
 class DecisionConstraints:
     """Constraints for dynamically creating decision models."""
 
+    actions: Optional[List[str]] = None
     fields: Optional[List[str]] = None
-    step_ids: Optional[List[str]] = None
     tool_name: Optional[str] = None
 
 

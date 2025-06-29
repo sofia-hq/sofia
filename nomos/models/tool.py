@@ -223,9 +223,11 @@ class Tool(BaseModel):
             return self.args_model
         camel_case_fn_name = self.name.replace("_", " ").title().replace(" ", "")
         basemodel_name = f"{camel_case_fn_name}Args"
+        description = f"Arguments for the {self.name} tool."
         args_model = create_base_model(
             basemodel_name,
             self.parameters,
+            desc=description,
         )
         self.args_model = args_model
         return args_model

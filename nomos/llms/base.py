@@ -250,11 +250,7 @@ class LLMBase:
         :param tool_models: List of Pydantic models for tool arguments.
         :return: A dynamically created Pydantic BaseModel for the decision.
         """
-        available_step_ids = (
-            constraints.step_ids
-            if constraints and constraints.step_ids is not None
-            else current_step.get_available_routes()
-        )
+        available_step_ids = current_step.get_available_routes()
         if constraints and constraints.tool_name:
             current_step_tools = [
                 tool
@@ -263,11 +259,15 @@ class LLMBase:
             ]
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
-        action_ids = (
-            (["RESPOND", "END"] if not current_step.auto_flow else ["END"])
-            + (["MOVE"] if available_step_ids else [])
-            + (["TOOL_CALL"] if tool_ids else [])
-        )
+
+        if constraints and constraints.actions:
+            action_ids = constraints.actions
+        else:
+            action_ids = (
+                (["RESPOND", "END"] if not current_step.auto_flow else ["END"])
+                + (["MOVE"] if available_step_ids else [])
+                + (["TOOL_CALL"] if tool_ids else [])
+            )
         ActionEnum = create_action_enum(action_ids)  # noqa
 
         params = {
@@ -295,7 +295,7 @@ class LLMBase:
             params["response"] = {
                 "type": response_type,
                 "description": response_desc,
-                "optional": True,
+                "optional": bool(not constraints),
                 "default": None,
             }
             if current_step.quick_suggestions and (
@@ -306,7 +306,7 @@ class LLMBase:
                 params["suggestions"] = {
                     "type": List[str],
                     "description": "Quick User Input Suggestions for the User to Choose if RESPOND.",
-                    "optional": True,
+                    "optional": bool(not constraints),
                     "default": None,
                 }
 
@@ -316,7 +316,7 @@ class LLMBase:
             params["step_id"] = {
                 "type": Literal.__getitem__(tuple(available_step_ids)),
                 "description": "Step Id (String) if MOVE.",
-                "optional": True,
+                "optional": bool(not constraints),
                 "default": None,
             }
 
@@ -349,13 +349,13 @@ class LLMBase:
             params["tool_call"] = {
                 "type": tool_call_model,
                 "description": "Tool Call (ToolCall) if TOOL_CALL.",
-                "optional": True,
+                "optional": bool(not constraints),
                 "default": None,
             }
 
         assert (
             len(params) > 2
-        ), "Something went wrong, Please check the step configuration."
+        ), f"Something went wrong, Please check the step configuration. Params {params}"
 
         return create_base_model(
             "Decision",

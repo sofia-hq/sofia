@@ -298,6 +298,7 @@ class Session:
         log_info(str(decision)) if self.verbose else log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
+        # Validate decision
         if decision.action == Action.RESPOND and decision.response is None:
             self._add_message(
                 "error", "RESPOND action requires a response, but none was provided."
@@ -305,7 +306,9 @@ class Session:
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
-                decision_constraints=DecisionConstraints(fields=["response"]),
+                decision_constraints=DecisionConstraints(
+                    actions=["RESPOND"], fields=["response"]
+                ),
             )
         if decision.action == Action.MOVE and decision.step_id is None:
             self._add_message(
@@ -314,17 +317,29 @@ class Session:
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
-                decision_constraints=DecisionConstraints(fields=["step_id"]),
+                decision_constraints=DecisionConstraints(
+                    actions=["MOVE"], fields=["step_id"]
+                ),
+            )
+        if decision.action == Action.TOOL_CALL and decision.tool_call is None:
+            self._add_message(
+                "error", "TOOL_CALL action requires a tool_call, but none was provided."
+            )
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(
+                    actions=["TOOL_CALL"], fields=["tool_call"]
+                ),
             )
 
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action == Action.RESPOND:
             self._add_message(self.name, str(decision.response))
             return decision, None
-        elif decision.action == Action.TOOL_CALL:
+        elif decision.action == Action.TOOL_CALL and decision.tool_call:
             _error: Optional[Exception] = None
             try:
-                assert decision.tool_call is not None, "Expected ToolCall response"
                 tool_name = decision.tool_call.tool_name  # type: ignore
                 tool_kwargs: dict = decision.tool_call.tool_kwargs.model_dump()
                 log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
@@ -353,13 +368,16 @@ class Session:
             if return_tool and _error is None:
                 return decision, tool_results
             _constraints = None
-            if _error:
-                if isinstance(_error, AssertionError):
-                    _constraints = DecisionConstraints(fields=["tool_call"])
-                elif isinstance(_error, InvalidArgumentsError) and decision.tool_call:
-                    _constraints = DecisionConstraints(
-                        fields=["tool_call"], tool_name=decision.tool_call.tool_name
-                    )
+            if (
+                _error
+                and isinstance(_error, InvalidArgumentsError)
+                and decision.tool_call
+            ):
+                _constraints = DecisionConstraints(
+                    actions=["TOOL_CALL"],
+                    fields=["tool_call"],
+                    tool_name=decision.tool_call.tool_name,
+                )
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -405,6 +423,9 @@ class Session:
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(
+                    actions=["MOVE"], fields=["step_id"]
+                ),
             )
         elif decision.action == Action.END:
             # Clean up any active flows before ending

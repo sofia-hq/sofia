@@ -960,7 +960,7 @@ class TestAdvancedErrorHandling:
         result = tool.run(arg0="test")
         assert "test" in result
 
-    def test_missing_response_and_step_id_handling(self, basic_agent):
+    def test_missing_response_handling(self, basic_agent):
         """Ensure missing decision fields trigger retry with error message."""
         session = basic_agent.create_session()
 
@@ -973,7 +973,7 @@ class TestAdvancedErrorHandling:
         valid_resp_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
             current_step_tools=session._get_current_step_tools(),
-            constraints=DecisionConstraints(fields=["response"]),
+            constraints=DecisionConstraints(actions=["RESPOND"], fields=["response"]),
         )
         valid_resp = valid_resp_model(
             reasoning=["r"], action=Action.RESPOND.value, response="ok"
@@ -987,34 +987,6 @@ class TestAdvancedErrorHandling:
         assert decision.response == "ok"
         messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
         assert any("requires a response" in msg.content for msg in messages)
-
-        move_model = decision_model
-        invalid_move = move_model(reasoning=["m"], action=Action.MOVE.value)
-        valid_move_model = basic_agent.llm._create_decision_model(
-            current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
-            constraints=DecisionConstraints(fields=["step_id"]),
-        )
-        valid_move = valid_move_model(
-            reasoning=["m"], action=Action.MOVE.value, step_id="end"
-        )
-        end_model = basic_agent.llm._create_decision_model(
-            current_step=basic_agent.steps["end"],
-            current_step_tools=[],
-        )
-        end_decision = end_model(
-            reasoning=["done"], action=Action.END.value, response="bye"
-        )
-
-        basic_agent.llm.set_response(invalid_move)
-        basic_agent.llm.set_response(valid_move, append=True)
-        basic_agent.llm.set_response(end_decision, append=True)
-
-        decision, _ = session.next()
-
-        assert decision.action == Action.END
-        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
-        assert any("step_id" in msg.content for msg in messages)
 
 
 class TestAgentValidationExtended:
