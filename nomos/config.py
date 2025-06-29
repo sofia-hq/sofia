@@ -32,9 +32,9 @@ class ExternalTool(BaseModel):
     """Configuration for an external tool."""
 
     tag: str  # Tag of the external tool (eg - @pkg/itertools.combinations, @crewai/FileReadTool, @langchain/BingSearchAPIWrapper)
-    name: Optional[
-        str
-    ]  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    name: Optional[str] = (
+        None  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    )
     kwargs: Optional[Dict[str, Union[str, int, float]]] = (
         None  # Optional keyword arguments for the Tool initialization
     )
@@ -46,9 +46,7 @@ class ExternalTool(BaseModel):
         :return: ToolWrapper instance.
         """
         tool_type, tool_name = self.tag.split("/", 1)
-        name = self.name or convert_camelcase_to_snakecase(
-            self.tool_name.split(".")[-1]
-        )
+        name = self.name or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
         tool_type = tool_type.replace("@", "")
         assert tool_type in [
             "pkg",
