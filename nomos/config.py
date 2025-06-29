@@ -32,9 +32,9 @@ class ExternalTool(BaseModel):
     """Configuration for an external tool."""
 
     tag: str  # Tag of the external tool (eg - @pkg/itertools.combinations, @crewai/FileReadTool, @langchain/BingSearchAPIWrapper)
-    name: Optional[
-        str
-    ]  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    name: Optional[str] = (
+        None  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    )
     kwargs: Optional[Dict[str, Union[str, int, float]]] = (
         None  # Optional keyword arguments for the Tool initialization
     )
@@ -49,13 +49,8 @@ class ExternalTool(BaseModel):
         tool_type = tool_type.replace("@", "")
         if tool_type == "mcp" and not self.name:
             raise ValueError("For MCP tools, the 'name' field is required.")
-        if tool_type in ["mcp"]:
-            name = self.name
-        else:
-            name = self.name or convert_camelcase_to_snakecase(
-                self.tool_name.split(".")[-1]
-            )
 
+        name = self.name or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
         assert tool_type in [
             "pkg",
             "crewai",
