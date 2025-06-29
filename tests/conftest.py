@@ -1,6 +1,7 @@
 """Common test fixtures for Nomos agent tests."""
 
 import pytest
+import asyncio
 from typing import List
 from pydantic import BaseModel
 
@@ -205,3 +206,38 @@ def example_agent(mock_llm, example_steps, test_tool_0, tool_defs):
         tools=ToolsConfig(tool_defs=tool_defs),
     )
     return Agent.from_config(config=config, llm=mock_llm, tools=[test_tool_0])
+
+
+@pytest.fixture
+def async_tool():
+    """Asynchronous test tool."""
+
+    async def long_tool(wait: float = 0.01) -> str:
+        await asyncio.sleep(wait)
+        return "done"
+
+    return long_tool
+
+
+@pytest.fixture
+def async_steps():
+    start_step = Step(
+        step_id="start",
+        description="Start async",
+        routes=[Route(target="end", condition="done")],
+        available_tools=["long_tool"],
+        async_tools=["long_tool"],
+    )
+    end_step = Step(step_id="end", description="End")
+    return [start_step, end_step]
+
+
+@pytest.fixture
+def async_agent(mock_llm, async_steps, async_tool):
+    config = AgentConfig(
+        name="async_agent",
+        persona="Async persona",
+        steps=async_steps,
+        start_step_id="start",
+    )
+    return Agent.from_config(config=config, llm=mock_llm, tools=[async_tool])

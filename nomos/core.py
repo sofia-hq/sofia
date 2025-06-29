@@ -1,8 +1,10 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
+import asyncio
 import os
 import pickle
 import uuid
+from functools import partial
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from .config import AgentConfig
@@ -101,6 +103,9 @@ class Session:
             start_step_id=start_step_id,
         )
         self.state_machine.load_state(state)
+        self.pending_tasks: dict[str, asyncio.Task] = {}
+        self.async_results: dict[str, Any] = {}
+        self._processing: bool = False
 
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
@@ -163,6 +168,38 @@ class Session:
             )
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
         return tool.run(**kwargs)
+
+    async def _run_tool_async(
+        self, tool_name: str, kwargs: Dict[str, Any]
+    ) -> Any:  # noqa: ANN401
+        """Run a tool asynchronously using asyncio."""
+        tool = self.tools.get(tool_name)
+        if not tool:
+            log_error(f"Tool '{tool_name}' not found in session tools.")
+            raise ValueError(
+                f"Tool '{tool_name}' not found in session tools. Please check the tool name."
+            )
+        log_debug(f"Running async tool: {tool_name} with args: {kwargs}")
+        if asyncio.iscoroutinefunction(tool.function):
+            return await tool.function(**kwargs)
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(None, lambda: tool.function(**kwargs))
+
+    def _async_tool_done(self, name: str, task: asyncio.Task) -> None:
+        """Handle completion of an async tool and resume session."""
+        try:
+            result = task.result()
+            self.async_results[name] = result
+            self._add_message(
+                "tool",
+                f"Async tool {name} completed. Results: {result}",
+            )
+        except Exception as e:  # noqa: BLE001
+            self._add_message("error", str(e))
+        self.pending_tasks.pop(name, None)
+        if not self.pending_tasks and not self._processing:
+            loop = asyncio.get_event_loop()
+            loop.call_soon_threadsafe(self.next)
 
     def _get_current_step_tools(self) -> List[Tool]:
         """
@@ -254,6 +291,7 @@ class Session:
         :param return_step_transition: Whether to return step transition.
         :return: A tuple containing the decision and any tool results.
         """
+        self._processing = True
         if no_errors >= self.max_errors:
             raise ValueError(
                 f"Maximum errors reached ({self.max_errors}). Stopping session."
@@ -267,6 +305,7 @@ class Session:
                         "available context, produce a fallback response."
                     ),
                 )
+                self._processing = False
                 return self.next()
             else:
                 raise RecursionError(
@@ -276,6 +315,39 @@ class Session:
         log_debug(f"User input received: {user_input}")
         self._add_message("user", user_input) if user_input else None
         log_debug(f"Current step: {self.current_step.step_id}")
+
+        if self.pending_tasks:
+            completed = []
+            for name, task in self.pending_tasks.items():
+                if task.done():
+                    try:
+                        result = task.result()
+                        self.async_results[name] = result
+                        self._add_message(
+                            "tool",
+                            f"Async tool {name} completed. Results: {result}",
+                        )
+                    except Exception as e:
+                        self._add_message("error", str(e))
+                    completed.append(name)
+            for name in completed:
+                self.pending_tasks.pop(name)
+            if self.pending_tasks:
+                decision = self._get_next_decision()
+                if decision.action in [Action.ANSWER, Action.ASK, Action.WAIT]:
+                    if decision.response:
+                        self._add_message(self.name, str(decision.response))
+                    self._processing = False
+                    return decision, None
+                self._processing = False
+                return (
+                    Decision(
+                        reasoning=["Waiting"],
+                        action=Action.WAIT,
+                        response=decision.response or "Waiting for async task",
+                    ),
+                    None,
+                )
 
         # Check for flow transitions
         self.state_machine.handle_flow_transitions(
@@ -289,6 +361,12 @@ class Session:
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action in [Action.ASK, Action.ANSWER]:
             self._add_message(self.name, str(decision.response))
+            self._processing = False
+            return decision, None
+        elif decision.action == Action.WAIT:
+            if decision.response:
+                self._add_message(self.name, str(decision.response))
+            self._processing = False
             return decision, None
         elif decision.action == Action.TOOL_CALL:
             _error: Optional[Exception] = None
@@ -298,6 +376,21 @@ class Session:
                 tool_kwargs: dict = decision.tool_call.tool_kwargs.model_dump()
                 log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
                 try:
+                    if tool_name in self.current_step.async_tool_ids:
+                        loop = asyncio.get_event_loop()
+                        task = loop.create_task(
+                            self._run_tool_async(tool_name, tool_kwargs)
+                        )
+                        self.pending_tasks[tool_name] = task
+                        task.add_done_callback(
+                            partial(self._async_tool_done, tool_name)
+                        )
+                        self._add_message(
+                            "tool",
+                            f"Started async tool {tool_name} with args {tool_kwargs}",
+                        )
+                        self._processing = False
+                        return self.next(no_errors=no_errors, next_count=next_count + 1)
                     tool_results = self._run_tool(tool_name, tool_kwargs)
                     self._add_message(
                         "tool",
@@ -317,7 +410,9 @@ class Session:
                 self._add_message("error", str(e))
 
             if return_tool and _error is None:
+                self._processing = False
                 return decision, tool_results
+            self._processing = False
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -358,7 +453,9 @@ class Session:
                     f"Invalid route: {decision.step_transition} not in {allowed}"
                 )
             if return_step_transition:
+                self._processing = False
                 return decision, None
+            self._processing = False
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -380,12 +477,14 @@ class Session:
                     self.state_machine.flow_context = None
 
             self._add_message("end", "Session ended.")
+            self._processing = False
             return decision, None
         else:
             self._add_message(
                 "error",
                 f"Unknown action: {decision.action}. Please check the action type.",
             )
+            self._processing = False
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
