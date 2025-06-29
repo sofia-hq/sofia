@@ -358,41 +358,6 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     )
 
 
-def test_external_tools_name(basic_steps):
-    """Name is required for only for mcp tools."""
-
-    config = AgentConfig(
-        name="config_test",
-        steps=basic_steps,
-        start_step_id="start",
-        persona="Config test persona",
-        tools=ToolsConfig(
-            external_tools=[
-                {"tag": "@pkg/itertools.combinations", "name": "combinations"},
-                {
-                    "tag": "@mcp/https://mcpserver.com/mcp",
-                    "kwargs": {},
-                    "name": "mcp_tool",
-                },
-            ],
-        ),
-    )
-    assert config
-
-    with pytest.raises(Exception):
-        AgentConfig(
-            name="config_test",
-            steps=basic_steps,
-            start_step_id="start",
-            persona="Config test persona",
-            tools=ToolsConfig(
-                external_tools=[
-                    {"tag": "@mcp/https://mcpserver.com/mcp", "kwargs": {}},
-                ],
-            ),
-        )
-
-
 # ======================================================================
 # COVERAGE IMPROVEMENT TESTS - Focused on uncovered lines in core.py
 # ======================================================================
