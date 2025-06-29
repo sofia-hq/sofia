@@ -7,7 +7,9 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, Type, Union
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
 
-def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[BaseModel]:
+def create_base_model(
+    name: str, params: Dict[str, Dict[str, Any]], desc: Optional[str] = None
+) -> Type[BaseModel]:
     """
     Dynamically create a Pydantic BaseModel with the given name and fields.
 
@@ -55,7 +57,9 @@ def create_base_model(name: str, params: Dict[str, Dict[str, Any]]) -> Type[Base
 
         fields[field_name] = (field_type, field_info)
 
-    return create_model(name, **fields, __config__=ConfigDict(extra="ignore"))
+    return create_model(
+        name, **fields, __config__=ConfigDict(extra="ignore"), __doc__=desc
+    )
 
 
 def create_enum(name: str, values: Dict[str, Any]) -> Enum:
