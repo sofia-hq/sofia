@@ -217,7 +217,7 @@ class Session:
         """
         _decision_model = self.llm._create_decision_model(
             current_step=self.current_step,
-            current_step_tools=self._get_current_step_tools(),
+            current_step_tools=tuple(self._get_current_step_tools()),
             constraints=decision_constraints,
         )
 

@@ -1,12 +1,14 @@
 """Flow-specific memory module that preserves complete information within an specified flow."""
 
+import heapq
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
+
 from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
-from ..llms import LLMConfig
+from ..llms import LLMBase, LLMConfig
 from ..models.agent import Message, StepIdentifier, Summary
 from ..models.flow import FlowComponent, FlowContext
 
@@ -61,18 +63,53 @@ class BM25Retriever(Retriver):
         return results
 
 
+class EmbeddingRetriever(Retriver):
+    """Retriever that uses embeddings for similarity search."""
+
+    def __init__(self, embedding_model: LLMBase) -> None:
+        """Initialize embedding retriever."""
+        super().__init__()
+        self.embedding_model = embedding_model
+        self.embeddings: list[list[float]] = []
+
+    def index(self, items: List[str], **kwargs) -> None:
+        """Index items using embeddings."""
+        self.context = items
+        self.embeddings = self.embedding_model.embed_batch(items)
+
+    def update(self, items: List[str], **kwargs) -> None:
+        """Update indexed items with new items."""
+        self.context.extend(items)
+        self.embeddings.extend(self.embedding_model.embed_batch(items))
+
+    def retrieve(self, query: str, top_k: int = 5, **kwargs) -> list:
+        """Retrieve items based on a query using embeddings."""
+        if not self.context:
+            return []
+        query_emb = self.embedding_model.embed_text(query)
+        scores = [
+            (item, self.embedding_model.text_similarity(query_emb, emb))
+            for item, emb in zip(self.context, self.embeddings)
+        ]
+        top_scores = heapq.nlargest(top_k, scores, key=lambda x: x[1])
+        return [item for item, _ in top_scores]
+
+
 class RetrieverConfig(BaseModel):
     """Configuration for a retriever."""
 
     method: str
     kwargs: Dict[str, Any] = {}
 
-    def get_retriever(self) -> Retriver:
+    def get_retriever(self, embedding_model: Optional["LLMBase"] = None) -> Retriver:
         """Get an instance of the retriever based on the configuration."""
         if self.method == "bm25":
             return BM25Retriever(**self.kwargs)
-        else:
-            raise ValueError(f"Unsupported retriever method: {self.method}")
+        if self.method == "embedding":
+            if embedding_model is None:
+                raise ValueError("Embedding model required for embedding retriever")
+            return EmbeddingRetriever(embedding_model)
+        raise ValueError(f"Unsupported retriever method: {self.method}")
 
 
 class FlowMemory(Memory):
@@ -85,10 +122,10 @@ class FlowMemory(Memory):
     ) -> None:
         """Initialize FlowMemory."""
         super().__init__()
-        retriever = retriever or RetrieverConfig(method="bm25")
+        retriever = retriever or RetrieverConfig(method="embedding")
         llm = llm or LLMConfig(provider="openai", model="gpt-4o-mini")
         self.llm = llm.get_llm()
-        self.retriever = retriever.get_retriever()
+        self.retriever = retriever.get_retriever(self.llm)
         self.context = []
 
     def _enter(
@@ -96,19 +133,15 @@ class FlowMemory(Memory):
     ) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
-            self.context.append(self._generate_summary(previous_context))
-            self._index()
+            summary = self._generate_summary(previous_context)
+            self.context.append(summary)
+            self.retriever.index([str(summary)])
 
     def _exit(self) -> Summary:
         """Exit the flow memory and return a summary of the context."""
         return self._generate_summary(
             [item for item in self.context if isinstance(item, (Message, Summary))]
         )
-
-    def _index(self) -> None:
-        """Index the current context for retrieval."""
-        context_items = [str(item) for item in self.context]
-        self.retriever.index(context_items)
 
     def _generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
@@ -133,7 +166,7 @@ class FlowMemory(Memory):
     def add_message(self, message: Message) -> None:
         """Add a message to the flow context."""
         self.context.append(message)
-        self._index()
+        self.retriever.update([str(message)])
 
     def get_context_summary(self) -> str:
         """Get a summary of the current context."""
@@ -177,7 +210,12 @@ class FlowMemoryComponent(FlowComponent):
     def add_to_context(self, item: Union[Message, Summary, StepIdentifier]) -> None:
         """Add item to flow memory context."""
         self.memory.context.append(item)
-        self.memory._index()
+        self.memory.retriever.update([str(item)])
 
 
-__all__ = ["FlowMemory", "RetrieverConfig", "FlowMemoryComponent"]
+__all__ = [
+    "FlowMemory",
+    "RetrieverConfig",
+    "FlowMemoryComponent",
+    "EmbeddingRetriever",
+]

@@ -1,5 +1,6 @@
 """LLMBase class for Nomos agent framework."""
 
+from functools import cache
 from typing import Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
@@ -237,9 +238,10 @@ class LLMBase:
         return len(text.split())
 
     @staticmethod
+    @cache
     def _create_decision_model(
         current_step: Step,
-        current_step_tools: List[Tool],
+        current_step_tools: tuple[Tool, ...],
         constraints: Optional["DecisionConstraints"] = None,
     ) -> Type[BaseModel]:
         """
@@ -252,11 +254,11 @@ class LLMBase:
         """
         available_step_ids = current_step.get_available_routes()
         if constraints and constraints.tool_name:
-            current_step_tools = [
+            current_step_tools = tuple(
                 tool
                 for tool in current_step_tools
                 if tool.name == constraints.tool_name
-            ]
+            )
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
 
@@ -357,10 +359,11 @@ class LLMBase:
             len(params) > 2
         ), f"Something went wrong, Please check the step configuration. Params {params}"
 
-        return create_base_model(
+        model = create_base_model(
             "Decision",
             params,
         )
+        return model
 
     @staticmethod
     def _create_decision_from_output(
