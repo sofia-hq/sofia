@@ -672,8 +672,9 @@ def _generate_project_files(
         "# SERVICE_VERSION=1.0.0",
         "",
     ]
+    project_title = name.replace("_", " ").title() if name else "My Nomos Agent"
     readme_content = [
-        f"# {name.replace("_", " ").title()} Agent [![Nomos Badge](https://img.shields.io/badge/Powered%20By-NOMOS-brightgreen)](https://github.com/dowhiledev/nomos)",
+        f"# {project_title} Agent [![Nomos Badge](https://img.shields.io/badge/Powered%20By-NOMOS-brightgreen)](https://github.com/dowhiledev/nomos)",
         f"Persona: {persona}",
         "",
         "## Configuration",
