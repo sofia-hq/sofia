@@ -310,6 +310,16 @@ class DecisionConstraints:
     fields: Optional[List[str]] = None
     tool_name: Optional[str] = None
 
+    def __hash__(self) -> int:
+        """Get the hash of the constraints based on their attributes."""
+        return hash(
+            (
+                tuple(self.actions) if self.actions else None,
+                tuple(self.fields) if self.fields else None,
+                self.tool_name,
+            )
+        )
+
 
 class Decision(BaseModel):
     """

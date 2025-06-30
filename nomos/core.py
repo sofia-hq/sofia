@@ -171,7 +171,7 @@ class Session:
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
         return tool.run(**kwargs)
 
-    def _get_current_step_tools(self) -> List[Tool]:
+    def _get_current_step_tools(self) -> tuple[Tool, ...]:
         """
         Get the list of tools available in the current step.
 
@@ -184,7 +184,7 @@ class Session:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
             tools.append(_tool)
-        return tools
+        return tuple(tools)
 
     def _add_message(self, role: str, message: str) -> None:
         """
@@ -217,7 +217,7 @@ class Session:
         """
         _decision_model = self.llm._create_decision_model(
             current_step=self.current_step,
-            current_step_tools=tuple(self._get_current_step_tools()),
+            current_step_tools=self._get_current_step_tools(),
             constraints=decision_constraints,
         )
 
