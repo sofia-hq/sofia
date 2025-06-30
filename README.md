@@ -1,6 +1,6 @@
 <h1>
   <a href="https://github.com/dowhiledev/nomos">
-    <img src="docs/assets/banner.png" alt="NOMOS">
+    <img src="docs/assets/banner.jpg" alt="NOMOS">
   </a>
 </h1>
 
