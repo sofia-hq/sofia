@@ -1,12 +1,14 @@
 """Flow-specific memory module that preserves complete information within an specified flow."""
 
+import heapq
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel
 
+
 from .base import Memory
 from ..constants import PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE
-from ..llms import LLMConfig
+from ..llms import LLMBase, LLMConfig
 from ..models.agent import Message, StepIdentifier, Summary
 from ..models.flow import FlowComponent, FlowContext
 
@@ -64,20 +66,24 @@ class BM25Retriever(Retriver):
 class EmbeddingRetriever(Retriver):
     """Retriever that uses embeddings for similarity search."""
 
-    def __init__(self, embedding_model: "BaseLLM") -> None:
+    def __init__(self, embedding_model: LLMBase) -> None:
+        """Initialize embedding retriever."""
         super().__init__()
         self.embedding_model = embedding_model
         self.embeddings: list[list[float]] = []
 
     def index(self, items: List[str], **kwargs) -> None:
+        """Index items using embeddings."""
         self.context = items
         self.embeddings = self.embedding_model.embed_batch(items)
 
     def update(self, items: List[str], **kwargs) -> None:
+        """Update indexed items with new items."""
         self.context.extend(items)
         self.embeddings.extend(self.embedding_model.embed_batch(items))
 
     def retrieve(self, query: str, top_k: int = 5, **kwargs) -> list:
+        """Retrieve items based on a query using embeddings."""
         if not self.context:
             return []
         query_emb = self.embedding_model.embed_text(query)
@@ -136,7 +142,6 @@ class FlowMemory(Memory):
         return self._generate_summary(
             [item for item in self.context if isinstance(item, (Message, Summary))]
         )
-
 
     def _generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""

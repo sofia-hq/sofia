@@ -57,6 +57,7 @@ class Tool(BaseModel):
     args_model: Optional[Type[BaseModel]] = None
 
     def __hash__(self) -> int:
+        """Get the hash of the Tool instance based on its name."""
         return hash(self.name)
 
     @classmethod
