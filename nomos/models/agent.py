@@ -1,5 +1,6 @@
 """Flow models for Nomos's decision-making process."""
 
+import heapq
 from enum import Enum
 from typing import (
     Any,
@@ -13,7 +14,9 @@ from typing import (
 )
 from uuid import uuid4
 
+
 from pydantic import BaseModel, Field
+
 
 from ..utils.utils import create_base_model, create_enum
 
@@ -122,6 +125,10 @@ class Step(BaseModel):
     flow_id: Optional[str] = None  # Add this to associate steps with flows
     examples: Optional[List[DecisionExample]] = None
 
+    def __hash__(self) -> int:
+        """Get the hash of the step based on its ID."""
+        return hash(self.step_id)
+
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
         if self.auto_flow and not (self.routes or self.available_tools):
@@ -208,9 +215,10 @@ class Step(BaseModel):
             (example, similarity_fn(example.embedding(embedding_model), context_emb))
             for example in dynamic_examples
         ]
-        _examples = sorted(_examples, key=lambda x: x[1], reverse=True)[
-            : max_examples - len(_always)
-        ]
+        # Only keep the top (max_examples - len(_always)) dynamic examples by similarity
+        _examples = heapq.nlargest(
+            max_examples - len(_always), _examples, key=lambda x: x[1]
+        )
         examples = _always + _examples
         return [example for example, similarity in examples if similarity >= threshold]
 
