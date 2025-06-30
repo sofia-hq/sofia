@@ -8,6 +8,7 @@ from pathlib import Path
 
 from nomos.models.agent import (
     Action,
+    DecisionConstraints,
     Message,
     StepIdentifier,
     Summary,
@@ -71,7 +72,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
         ),
     )
     ask_response = expected_decision_model(
-        reasoning=["Greeting"], action=Action.ASK.value, response="How can I help?"
+        reasoning=["Greeting"], action=Action.RESPOND.value, response="How can I help?"
     )
 
     assert session.current_step.get_available_routes() == ["end"]
@@ -90,12 +91,12 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
     assert session.llm.messages_received[0].role == "system"
     assert "Test persona" in session.llm.messages_received[0].content
     assert session.llm.messages_received[1].role == "user"
-    assert decision.action == Action.ASK
+    assert decision.action == Action.RESPOND
     assert decision.response == "How can I help?"
 
     ask_response = expected_decision_model(
         reasoning=["User input"],
-        action=Action.ANSWER.value,
+        action=Action.RESPOND.value,
         response="I can help you with that.",
     )
     session.llm.set_response(ask_response)
@@ -105,7 +106,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
     assert session.llm.messages_received[1].role == "user"
     assert "How can I help?" in session.llm.messages_received[1].content
     assert "I need help" in session.llm.messages_received[1].content
-    assert decision.action == Action.ANSWER
+    assert decision.action == Action.RESPOND
     assert decision.response == "I can help you with that."
 
 
@@ -459,28 +460,28 @@ class TestErrorHandling:
 
 
 class TestStepTransitions:
-    """Test step transition scenarios."""
+    """Test step ID transition scenarios."""
 
     def test_valid_step_transition(self, basic_agent):
-        """Test valid step transition (lines 401-416)."""
+        """Test valid step ID transition (lines 401-416)."""
         session = basic_agent.create_session()
 
         # Mock decision for valid move
         valid_decision = Decision(
-            reasoning=["Move to end"], action=Action.MOVE, step_transition="end"
+            reasoning=["Move to end"], action=Action.MOVE, step_id="end"
         )
 
         with patch.object(session, "_get_next_decision", return_value=valid_decision):
             initial_step = session.current_step.step_id
-            decision, _ = session.next("Move to end", return_step_transition=True)
+            decision, _ = session.next("Move to end", return_step_id=True)
 
             assert decision.action == Action.MOVE
-            assert decision.step_transition == "end"
+            assert decision.step_id == "end"
             assert session.current_step.step_id == "end"
             assert session.current_step.step_id != initial_step
 
     def test_step_transition_structure(self, basic_agent):
-        """Test step transition structure without complex mocking."""
+        """Test step ID structure without complex mocking."""
         session = basic_agent.create_session()
 
         # Test basic step access
@@ -633,15 +634,13 @@ class TestUnknownActionHandling:
         session = basic_agent.create_session()
 
         # Test that Action enum has expected values
-        assert hasattr(Action, "ASK")
-        assert hasattr(Action, "ANSWER")
+        assert hasattr(Action, "RESPOND")
         assert hasattr(Action, "END")
         assert hasattr(Action, "MOVE")
         assert hasattr(Action, "TOOL_CALL")
 
         # Test string values
-        assert Action.ASK.value == "ASK"
-        assert Action.ANSWER.value == "ANSWER"
+        assert Action.RESPOND.value == "RESPOND"
         assert Action.END.value == "END"
         assert Action.MOVE.value == "MOVE"
         assert Action.TOOL_CALL.value == "TOOL_CALL"
@@ -674,7 +673,7 @@ class TestMaxIterationsBehavior:
 
         fallback_response = decision_model(
             reasoning=["Providing fallback response"],
-            action=Action.ANSWER.value,
+            action=Action.RESPOND.value,
             response="I apologize, but I've reached the maximum number of attempts.",
         )
         basic_agent.llm.set_response(fallback_response)
@@ -687,7 +686,7 @@ class TestMaxIterationsBehavior:
         fallback_msgs = [msg for msg in messages if msg.role == "fallback"]
         assert len(fallback_msgs) == 1
         assert "Maximum iterations reached" in fallback_msgs[0].content
-        assert decision.action == Action.ANSWER
+        assert decision.action == Action.RESPOND
 
 
 class TestToolExecutionScenarios:
@@ -918,7 +917,7 @@ class TestAdvancedErrorHandling:
             pytest.fail("FallbackError should be importable")
 
     def test_invalid_step_transition(self, basic_agent):
-        """Test error handling for invalid step transitions."""
+        """Test error handling for invalid step IDs."""
         session = basic_agent.create_session()
 
         # Test that only valid routes are available
@@ -935,15 +934,13 @@ class TestAdvancedErrorHandling:
     def test_unknown_action_error(self, basic_agent):
         """Test error handling for unknown actions."""
         # Test that the Action enum has expected values
-        assert hasattr(Action, "ASK")
-        assert hasattr(Action, "ANSWER")
+        assert hasattr(Action, "RESPOND")
         assert hasattr(Action, "END")
         assert hasattr(Action, "MOVE")
         assert hasattr(Action, "TOOL_CALL")
 
         # Test string values
-        assert Action.ASK.value == "ASK"
-        assert Action.ANSWER.value == "ANSWER"
+        assert Action.RESPOND.value == "RESPOND"
         assert Action.END.value == "END"
         assert Action.MOVE.value == "MOVE"
         assert Action.TOOL_CALL.value == "TOOL_CALL"
@@ -962,6 +959,34 @@ class TestAdvancedErrorHandling:
         # Test tool with valid arguments works
         result = tool.run(arg0="test")
         assert "test" in result
+
+    def test_missing_response_handling(self, basic_agent):
+        """Ensure missing decision fields trigger retry with error message."""
+        session = basic_agent.create_session()
+
+        decision_model = basic_agent.llm._create_decision_model(
+            current_step=session.current_step,
+            current_step_tools=session._get_current_step_tools(),
+        )
+
+        invalid_resp = decision_model(reasoning=["r"], action=Action.RESPOND.value)
+        valid_resp_model = basic_agent.llm._create_decision_model(
+            current_step=session.current_step,
+            current_step_tools=session._get_current_step_tools(),
+            constraints=DecisionConstraints(actions=["RESPOND"], fields=["response"]),
+        )
+        valid_resp = valid_resp_model(
+            reasoning=["r"], action=Action.RESPOND.value, response="ok"
+        )
+        basic_agent.llm.set_response(invalid_resp)
+        basic_agent.llm.set_response(valid_resp, append=True)
+
+        decision, _ = session.next()
+
+        assert decision.action == Action.RESPOND
+        assert decision.response == "ok"
+        messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
+        assert any("requires a response" in msg.content for msg in messages)
 
 
 class TestAgentValidationExtended:
@@ -1162,7 +1187,7 @@ class TestAgentNext:
 
         response = decision_model(
             reasoning=["Respond to greeting"],
-            action=Action.ANSWER.value,
+            action=Action.RESPOND.value,
             response="Hello there!",
         )
         basic_agent.llm.set_response(response)
@@ -1171,7 +1196,7 @@ class TestAgentNext:
             user_input="Hello", session_data=session_context, verbose=True
         )
 
-        assert decision.action == Action.ANSWER
+        assert decision.action == Action.RESPOND
         assert hasattr(session_data, "session_id")
         assert hasattr(session_data, "current_step_id")
 
@@ -1187,14 +1212,14 @@ class TestAgentNext:
 
         response = decision_model(
             reasoning=["Initial response"],
-            action=Action.ASK.value,
+            action=Action.RESPOND.value,
             response="How can I help?",
         )
         basic_agent.llm.set_response(response)
 
         decision, tool_output, session_data = basic_agent.next("Hello")
 
-        assert decision.action == Action.ASK
+        assert decision.action == Action.RESPOND
         assert hasattr(session_data, "session_id")
         assert session_data.current_step_id == "start"
 
@@ -1230,7 +1255,7 @@ class TestStepExamples:
         )
 
         response = decision_model(
-            reasoning=["r"], action=Action.ANSWER.value, response="ok"
+            reasoning=["r"], action=Action.RESPOND.value, response="ok"
         )
         example_agent.llm.set_response(response)
         session.next("sqrt 4")

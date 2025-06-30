@@ -1,6 +1,7 @@
 """Flow models for Nomos's decision-making process."""
 
 import heapq
+from dataclasses import dataclass
 from enum import Enum
 from typing import (
     Any,
@@ -31,15 +32,13 @@ class Action(Enum):
 
     Attributes:
         MOVE: Transition to another step.
-        ANSWER: Provide an answer to the user.
-        ASK: Ask the user for input.
+        RESPOND: Provide or request information from the user.
         TOOL_CALL: Call a tool with arguments.
         END: End the flow.
     """
 
     MOVE = "MOVE"
-    ANSWER = "ANSWER"
-    ASK = "ASK"
+    RESPOND = "RESPOND"
     TOOL_CALL = "TOOL_CALL"
     END = "END"
 
@@ -303,6 +302,25 @@ class ToolCall(BaseModel):
     tool_kwargs: BaseModel
 
 
+@dataclass
+class DecisionConstraints:
+    """Constraints for dynamically creating decision models."""
+
+    actions: Optional[List[str]] = None
+    fields: Optional[List[str]] = None
+    tool_name: Optional[str] = None
+
+    def __hash__(self) -> int:
+        """Get the hash of the constraints based on their attributes."""
+        return hash(
+            (
+                tuple(self.actions) if self.actions else None,
+                tuple(self.fields) if self.fields else None,
+                self.tool_name,
+            )
+        )
+
+
 class Decision(BaseModel):
     """
     Represents the decision made by the agent at a step.
@@ -310,9 +328,9 @@ class Decision(BaseModel):
     Attributes:
         reasoning (List[str]): Step by step reasoning to decide.
         action (Action): The next action to take.
-        response (Optional[Union[str, BaseModel]]): Response if ASK or ANSWER.
-        suggestions (Optional[List[str]]): Quick user input suggestions if ASK.
-        step_transition (Optional[str]): Step ID to transition to if MOVE.
+        response (Optional[Union[str, BaseModel]]): Response if RESPOND.
+        suggestions (Optional[List[str]]): Quick user input suggestions if RESPOND.
+        step_id (Optional[str]): Step ID to transition to if MOVE.
         tool_call (Optional[Dict[str, Any]]): Tool call details if TOOL_CALL.
     """
 
@@ -320,17 +338,15 @@ class Decision(BaseModel):
     action: Action
     response: Optional[Union[str, BaseModel]] = None
     suggestions: Optional[List[str]] = None
-    step_transition: Optional[str] = None
+    step_id: Optional[str] = None
     tool_call: Optional[ToolCall] = None
 
     def __str__(self) -> str:
         """Return a string representation of the decision."""
-        if self.action in [Action.ANSWER, Action.ASK]:
+        if self.action == Action.RESPOND:
             return f"action: {self.action.value}, response: {self.response}"
         elif self.action == Action.MOVE:
-            return (
-                f"action: {self.action.value}, step_transition: {self.step_transition}"
-            )
+            return f"action: {self.action.value}, step_id: {self.step_id}"
         elif self.action == Action.TOOL_CALL and self.tool_call:
             return f"action: {self.action.value}, tool_call: {self.tool_call.tool_name} with args {self.tool_call.tool_kwargs.model_dump_json()}"
         elif self.action == Action.END:
@@ -385,6 +401,7 @@ __all__ = [
     "Summary",
     "State",
     "Decision",
+    "DecisionConstraints",
     "create_action_enum",
     "DecisionExample",
     "StepIdentifier",

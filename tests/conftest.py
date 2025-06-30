@@ -166,7 +166,7 @@ def example_steps():
     """Steps including decision examples for testing."""
     example_decision = Decision(
         reasoning=["example"],
-        action=Action.ANSWER.value,
+        action=Action.RESPOND.value,
         response="Example time",
     )
 
