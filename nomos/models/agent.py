@@ -122,6 +122,9 @@ class Step(BaseModel):
     flow_id: Optional[str] = None  # Add this to associate steps with flows
     examples: Optional[List[DecisionExample]] = None
 
+    def __hash__(self) -> int:
+        return hash(self.step_id)
+
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
         if self.auto_flow and not (self.routes or self.available_tools):

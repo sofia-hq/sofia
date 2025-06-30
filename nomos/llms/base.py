@@ -1,5 +1,6 @@
 """LLMBase class for Nomos agent framework."""
 
+from functools import cache
 from typing import Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
@@ -27,7 +28,6 @@ class LLMBase:
     """Abstract base class for LLM integrations in Nomos."""
 
     __provider__: str = "base"
-    _decision_model_cache: Dict[str, Type[BaseModel]] = {}
 
     def __init__(self) -> None:
         """Initialize the LLMBase class."""
@@ -237,8 +237,9 @@ class LLMBase:
         return len(text.split())
 
     @staticmethod
+    @cache
     def _create_decision_model(
-        current_step: Step, current_step_tools: List[Tool]
+        current_step: Step, current_step_tools: tuple[Tool, ...]
     ) -> Type[BaseModel]:
         """
         Dynamically create a Pydantic model for route/tool decision output.
@@ -248,11 +249,6 @@ class LLMBase:
         :param tool_models: List of Pydantic models for tool arguments.
         :return: A dynamically created Pydantic BaseModel for the decision.
         """
-        cache_key = current_step.step_id
-        cached = LLMBase._decision_model_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
         available_step_ids = current_step.get_available_routes()
         tool_ids = [tool.name for tool in current_step_tools]
         tool_models = [tool.get_args_model() for tool in current_step_tools]
@@ -336,7 +332,6 @@ class LLMBase:
             "Decision",
             params,
         )
-        LLMBase._decision_model_cache[cache_key] = model
         return model
 
     @staticmethod

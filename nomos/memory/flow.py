@@ -95,7 +95,7 @@ class RetrieverConfig(BaseModel):
     method: str
     kwargs: Dict[str, Any] = {}
 
-    def get_retriever(self, embedding_model: Optional[Any] = None) -> Retriver:
+    def get_retriever(self, embedding_model: Optional["LLMBase"] = None) -> Retriver:
         """Get an instance of the retriever based on the configuration."""
         if self.method == "bm25":
             return BM25Retriever(**self.kwargs)
@@ -127,8 +127,9 @@ class FlowMemory(Memory):
     ) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
-            self.context.append(self._generate_summary(previous_context))
-            self._index()
+            summary = self._generate_summary(previous_context)
+            self.context.append(summary)
+            self.retriever.index([str(summary)])
 
     def _exit(self) -> Summary:
         """Exit the flow memory and return a summary of the context."""
@@ -136,10 +137,6 @@ class FlowMemory(Memory):
             [item for item in self.context if isinstance(item, (Message, Summary))]
         )
 
-    def _index(self) -> None:
-        """Index the current context for retrieval."""
-        context_items = [str(item) for item in self.context]
-        self.retriever.index(context_items)
 
     def _generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""

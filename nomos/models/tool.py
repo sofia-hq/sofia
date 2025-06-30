@@ -56,6 +56,9 @@ class Tool(BaseModel):
     parameters: Dict[str, Dict[str, Any]] = {}
     args_model: Optional[Type[BaseModel]] = None
 
+    def __hash__(self) -> int:
+        return hash(self.name)
+
     @classmethod
     def from_function(
         cls,

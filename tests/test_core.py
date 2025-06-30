@@ -60,7 +60,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
 
     expected_decision_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
-        current_step_tools=[
+        current_step_tools=(
             Tool.from_function(test_tool_0, tool_defs=tool_defs),
             Tool.from_function(test_tool_1, tool_defs=tool_defs),
             ToolWrapper(
@@ -68,7 +68,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
                 name="combinations",
                 tool_identifier="itertools.combinations",
             ).get_tool(tool_defs=tool_defs),
-        ],
+        ),
     )
     ask_response = expected_decision_model(
         reasoning=["Greeting"], action=Action.ASK.value, response="How can I help?"
@@ -118,7 +118,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     # Create response models with tool
     tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
-        current_step_tools=[
+        current_step_tools=(
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
             ToolWrapper(
@@ -126,7 +126,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
                 name="combinations",
                 tool_identifier="itertools.combinations",
             ).get_tool(tool_defs=tool_defs),
-        ],
+        ),
     )
 
     # Set up mock responses
@@ -164,7 +164,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     # Create response models with tool
     tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
-        current_step_tools=[
+        current_step_tools=(
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
             ToolWrapper(
@@ -172,7 +172,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
                 name="combinations",
                 tool_identifier="itertools.combinations",
             ).get_tool(tool_defs=tool_defs),
-        ],
+        ),
     )
 
     # Set up mock responses
@@ -202,7 +202,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
 
     tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
-        current_step_tools=[
+        current_step_tools=(
             Tool.from_function(test_tool_0),
             Tool.from_function(test_tool_1),
             ToolWrapper(
@@ -210,7 +210,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
                 name="combinations",
                 tool_identifier="itertools.combinations",
             ).get_tool(tool_defs=tool_defs),
-        ],
+        ),
     )
 
     # Set up response with invalid args
@@ -502,7 +502,7 @@ class TestEndAction:
         # Mock decision for END action using session tools to get correct schema
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         end_response = decision_model(
@@ -669,7 +669,7 @@ class TestMaxIterationsBehavior:
         # Then mock a normal response for the recursive call
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         fallback_response = decision_model(
@@ -700,7 +700,7 @@ class TestToolExecutionScenarios:
         # Use the existing session tools from basic_agent
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         tool_response = decision_model(
@@ -890,7 +890,7 @@ class TestAdvancedErrorHandling:
         # Mock the LLM to provide a response that won't trigger early exit
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         # With auto_flow=True, only END, MOVE, and TOOL_CALL are allowed
@@ -1084,7 +1084,7 @@ class TestEndActionFlow:
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         end_response = decision_model(
@@ -1123,7 +1123,7 @@ class TestEndActionFlow:
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         end_response = decision_model(
@@ -1157,7 +1157,7 @@ class TestAgentNext:
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=basic_agent.steps["start"],
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         response = decision_model(
@@ -1182,7 +1182,7 @@ class TestAgentNext:
 
         decision_model = basic_agent.llm._create_decision_model(
             current_step=basic_agent.steps["start"],
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         response = decision_model(
@@ -1226,7 +1226,7 @@ class TestStepExamples:
         session = example_agent.create_session()
         decision_model = example_agent.llm._create_decision_model(
             current_step=session.current_step,
-            current_step_tools=session._get_current_step_tools(),
+            current_step_tools=tuple(session._get_current_step_tools()),
         )
 
         response = decision_model(
