@@ -249,8 +249,9 @@ def init(
     console.print(
         Panel(
             f"[bold green]SUCCESS:[/bold green] Project created successfully in [bold]{target_dir}[/bold]",
-            title="Success",
             border_style=SUCCESS_COLOR,
+            padding=(1, 2),
+            expand=False,
         )
     )
 
@@ -598,7 +599,7 @@ def _generate_project_files(
         "from dotenv import load_dotenv",
         "",
         "# Load environment variables from .env file if it exists",
-        "env_file = Path(__file__).parent / '.env'",
+        "env_file = Path(__file__).parent / '.env.local'",
         "if env_file.exists():",
         "    load_dotenv(dotenv_path=env_file)",
         "else:",
@@ -672,9 +673,8 @@ def _generate_project_files(
         "",
     ]
     readme_content = [
-        "# Nomos Agent Project",
-        "",
-        "This is a Nomos agent project.",
+        f"# {name.replace("_", " ").title()} Agent [![Nomos Badge](https://img.shields.io/badge/Powered%20By-NOMOS-brightgreen)](https://github.com/dowhiledev/nomos)",
+        f"Persona: {persona}",
         "",
         "## Configuration",
         "Edit the `config.agent.yaml` file to customize your agent.",
@@ -683,7 +683,7 @@ def _generate_project_files(
         "Add your custom tools in the `tools/` directory.",
         "",
         "> [!NOTE]"
-        "> Copy the `.env.example` file to `.env` using `cp .env.example .env` and fill in your environment variables.",
+        "> Copy the `.env.example` file to `.env` using `cp .env.example .env.local` and fill in your environment variables.",
         "",
         "## Running the Agent",
         "Run the agent in development mode with:",
