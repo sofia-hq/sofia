@@ -64,7 +64,7 @@ class BM25Retriever(Retriver):
 class EmbeddingRetriever(Retriver):
     """Retriever that uses embeddings for similarity search."""
 
-    def __init__(self, embedding_model) -> None:
+    def __init__(self, embedding_model: "BaseLLM") -> None:
         super().__init__()
         self.embedding_model = embedding_model
         self.embeddings: list[list[float]] = []
@@ -102,7 +102,7 @@ class RetrieverConfig(BaseModel):
         if self.method == "embedding":
             if embedding_model is None:
                 raise ValueError("Embedding model required for embedding retriever")
-            return EmbeddingRetriever(embedding_model, **self.kwargs)
+            return EmbeddingRetriever(embedding_model)
         raise ValueError(f"Unsupported retriever method: {self.method}")
 
 
