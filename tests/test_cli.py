@@ -31,7 +31,7 @@ class TestCLI:
         """Test help command."""
         result = self.runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        assert "Build AI Agents you can audit" in result.stdout
+        assert "Build Agents you can audit" in result.stdout
 
     def test_init_help(self):
         """Test init command help."""
