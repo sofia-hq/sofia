@@ -354,10 +354,12 @@ class LLMBase:
                 "optional": bool(not constraints),
                 "default": None,
             }
-
+        print(
+            f"Creating Decision Model with params: {params}, current_step: {current_step.step_id}, constraints: {constraints}"
+        )
         assert (
             len(params) > 2
-        ), f"Something went wrong, Please check the step configuration. Params {params}"
+        ), f"Something went wrong, Please check the step configuration for {current_step.step_id}. Params {params}"
 
         model = create_base_model(
             "Decision",

@@ -367,21 +367,22 @@ class Session:
 
             if return_tool and _error is None:
                 return decision, tool_results
-            _constraints = None
-            if (
-                _error
-                and isinstance(_error, InvalidArgumentsError)
-                and decision.tool_call
-            ):
-                _constraints = DecisionConstraints(
-                    actions=["TOOL_CALL"],
-                    fields=["tool_call"],
-                    tool_name=decision.tool_call.tool_name,
-                )
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
-                decision_constraints=_constraints,
+                decision_constraints=(
+                    DecisionConstraints(
+                        actions=["TOOL_CALL"],
+                        fields=["tool_call"],
+                        tool_name=decision.tool_call.tool_name,
+                    )
+                    if (
+                        _error
+                        and isinstance(_error, InvalidArgumentsError)
+                        and decision.tool_call
+                    )
+                    else None
+                ),
             )
         elif decision.action == Action.MOVE and decision.step_id:
             _error = None
@@ -423,8 +424,10 @@ class Session:
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
-                decision_constraints=DecisionConstraints(
-                    actions=["MOVE"], fields=["step_id"]
+                decision_constraints=(
+                    DecisionConstraints(actions=["MOVE"], fields=["step_id"])
+                    if _error
+                    else None
                 ),
             )
         elif decision.action == Action.END:
