@@ -85,8 +85,8 @@ class EmbeddingRetriever(Retriver):
             (item, self.embedding_model.text_similarity(query_emb, emb))
             for item, emb in zip(self.context, self.embeddings)
         ]
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return [item for item, _ in scores[:top_k]]
+        top_scores = heapq.nlargest(top_k, scores, key=lambda x: x[1])
+        return [item for item, _ in top_scores]
 
 
 class RetrieverConfig(BaseModel):
