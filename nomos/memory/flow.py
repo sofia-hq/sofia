@@ -64,7 +64,7 @@ class BM25Retriever(Retriver):
 class EmbeddingRetriever(Retriver):
     """Retriever that uses embeddings for similarity search."""
 
-    def __init__(self, embedding_model, **kwargs) -> None:
+    def __init__(self, embedding_model) -> None:
         super().__init__()
         self.embedding_model = embedding_model
         self.embeddings: list[list[float]] = []
