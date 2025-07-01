@@ -169,6 +169,7 @@ class Session:
                 f"Tool '{tool_name}' not found in session tools. Please check the tool name."
             )
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
+
         return tool.run(**kwargs)
 
     def _get_current_step_tools(self) -> tuple[Tool, ...]:
