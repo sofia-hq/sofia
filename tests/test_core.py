@@ -473,7 +473,7 @@ class TestStepTransitions:
 
         with patch.object(session, "_get_next_decision", return_value=valid_decision):
             initial_step = session.current_step.step_id
-            decision, _ = session.next("Move to end", return_step_id=True)
+            decision, _ = session.next("Move to end", return_step=True)
 
             assert decision.action == Action.MOVE
             assert decision.step_id == "end"

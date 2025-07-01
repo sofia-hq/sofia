@@ -252,7 +252,7 @@ class Session:
         no_errors: int = 0,
         next_count: int = 0,
         return_tool: bool = False,
-        return_step_id: bool = False,
+        return_step: bool = False,
         decision_constraints: Optional[DecisionConstraints] = None,
     ) -> tuple[Decision, Any]:
         """
@@ -262,7 +262,7 @@ class Session:
         :param no_errors: Number of consecutive errors encountered.
         :param next_count: Number of times the next function has been called.
         :param return_tool: Whether to return tool results.
-        :param return_step_id: Whether to return step id.
+        :param return_step: Whether to return step Transitions.
         :param decision_constraints: Optional constraints for the decision model on retry.
         :return: A tuple containing the decision and any tool results.
         """
@@ -419,7 +419,7 @@ class Session:
                 _error = ValueError(
                     f"Invalid route: {decision.step_id} not in {allowed}"
                 )
-            if return_step_id:
+            if return_step:
                 return decision, None
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
@@ -744,7 +744,7 @@ class Agent:
         decision, tool_output = session.next(
             user_input=user_input,
             return_tool=verbose,
-            return_step_id=verbose,
+            return_step=verbose,
             decision_constraints=decision_constraints,
         )
         return decision, tool_output, session.get_state()
