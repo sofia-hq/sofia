@@ -392,12 +392,32 @@ def history_to_types(
     return history
 
 
+class Response(BaseModel):
+    """
+    Represents a response from the agent's session.
+
+    Attributes:
+        decision (Decision): The decision made by the agent.
+        tool_output (Optional[Any]): Output from the tool call, if any.
+        state (State): The updated session state after the decision.
+    """
+
+    decision: Decision
+    tool_output: Optional[Any] = None
+    state: Optional[State] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the response."""
+        return f"Decision: {self.decision}, Tool Output: {self.tool_output}, State: {self.state}"
+
+
 __all__ = [
     "Action",
     "Route",
     "Step",
     "ToolCall",
     "Message",
+    "Response",
     "Summary",
     "State",
     "Decision",

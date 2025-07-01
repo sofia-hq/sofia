@@ -4,8 +4,12 @@ import os
 import sys
 from functools import lru_cache
 from logging import Logger
+from typing import TYPE_CHECKING
 
 from loguru import logger
+
+if TYPE_CHECKING:
+    from nomos.models.agent import Response
 
 
 @lru_cache(maxsize=1)
@@ -52,3 +56,11 @@ def log_error(message: str) -> None:
     """Log an error message."""
     logger = get_logger()
     logger.error(message)
+
+
+def print_response(response: "Response") -> None:
+    """Print the response from a Nomos session."""
+    decision = response.decision
+    tool_output = response.tool_output
+    print(f"Decision: {decision}")
+    print(f"Tool Output: {tool_output if tool_output is not None else 'None'}")

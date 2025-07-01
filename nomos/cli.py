@@ -27,7 +27,7 @@ from .constants import (
 )
 from .core import Agent
 from .llms import LLMConfig
-from .models.agent import Action, DecisionExample, Step, history_to_types
+from .models.agent import Action, DecisionExample, Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -633,9 +633,9 @@ def _generate_project_files(
         "                print('Goodbye!')"
         "                break",
         "            if not user_input:" "                continue",
-        "            decision, *_ = session.next(user_input)",
-        "            if hasattr(decision, 'response') and decision.response:",
-        '                print(f"Agent {config.name}: {decision.response}")'
+        "            res = session.next(user_input, verbose=True)",
+        "            if hasattr(res.decision, 'response') and res.decision.response:",
+        '                print(f"Agent {config.name}: {res.decision.response}")'
         "        except KeyboardInterrupt:"
         '            print("\\nGoodbye!")'
         "            break",
@@ -767,9 +767,9 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "                    break",
         "                if not user_input:",
         "                    continue",
-        "                decision, *_ = session.next(user_input)",
-        "                print(f'Agent: {decision.response}')",
-        "                if decision.action == Action.END:",
+        "                res = session.next(user_input, verbose=True)",
+        "                print(f'Agent: {res.decision.response}')",
+        "                if res.decision.action == Action.END:",
         "                    print('Session ended.')",
         "                    break",
         "            except KeyboardInterrupt:",
@@ -850,34 +850,34 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
                 break
         else:
             user_input = None
-        decision, tool_output, session_data = agent.next(
-            user_input, session_data, verbose=True
-        )
-        if decision.action == Action.RESPOND:
+        res = agent.next(user_input, session_data, verbose=True)
+        if res.decision.action == Action.RESPOND:
             console.print(
                 "Agent:\nReasoning:{}\nResponse: {}".format(
-                    "\n".join(decision.reasoning), decision.response
+                    "\n".join(res.decision.reasoning), res.decision.response
                 ),
                 style=PRIMARY_COLOR,
             )
-        elif decision.action == Action.TOOL_CALL:
+        elif res.decision.action == Action.TOOL_CALL:
             console.print(
                 "Agent:\nReasoning:{}\nTool call: {}\nTool Result: {}".format(
-                    "\n".join(decision.reasoning), decision.tool_call, tool_output
+                    "\n".join(res.decision.reasoning),
+                    res.decision.tool_call,
+                    res.tool_output,
                 ),
                 style=PRIMARY_COLOR,
             )
-        elif decision.action == Action.MOVE:
+        elif res.decision.action == Action.MOVE:
             console.print(
                 "Agent:\nReasoning:{}\nMoving to step: {}".format(
-                    "\n".join(decision.reasoning), decision.step_id
+                    "\n".join(res.decision.reasoning), res.decision.step_id
                 ),
                 style=PRIMARY_COLOR,
             )
-        elif decision.action == Action.END:
+        elif res.decision.action == Action.END:
             console.print(
                 "Agent:\nReasoning:{}\nEnding session.".format(
-                    "\n".join(decision.reasoning)
+                    "\n".join(res.decision.reasoning)
                 ),
                 style=PRIMARY_COLOR,
             )
@@ -885,44 +885,30 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         else:
             console.print(
                 "Agent:\nReasoning:{}\nUnknown action: {}".format(
-                    "\n".join(decision.reasoning), decision.action
+                    "\n".join(res.decision.reasoning), res.decision.action
                 ),
                 style=ERROR_COLOR,
             )
 
         if Confirm.ask("Are you satisfied with this decision?", default=True):
-            last_action = decision.action
+            last_action = res.decision.action
             continue
 
         feedback = Prompt.ask("What should have happened?")
 
-        history = session_data.get("history")  # type: ignore
-        flow_state = session_data.get("flow_state")
-        flow_memory_context = (
-            flow_state.get("flow_memory_context") if flow_state else None
-        )
-        step_id = session_data.get("current_step_id")  # type: ignore
+        assert res.state is not None, "Session state is None. Cannot take step back."
 
-        # Take step back
-        history = history[:-1] if len(history) > 1 else []  # type: ignore
         flow_memory_context = (
+            res.state.flow_state.flow_memory_context if res.state.flow_state else None
+        )
+        context_summary = config.get_llm().generate_summary(
             flow_memory_context[:-1]
             if flow_memory_context and len(flow_memory_context) > 1
-            else []
-        )
-
-        session_data["history"] = history
-        if flow_state:
-            session_data["flow_state"]["context"] = flow_memory_context
-
-        context_summary = config.get_llm().generate_summary(
-            history_to_types(
-                flow_memory_context if flow_state else session_data["history"]
-            )
+            else res.state.history[:-1] if len(res.state.history) > 1 else []
         )
 
         for step in config.steps:
-            if step.step_id == step_id:
+            if step.step_id == res.state.current_step_id:
                 if step.examples is None:
                     step.examples = []
                 step.examples.append(
@@ -935,7 +921,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         config.to_yaml(str(config_path))
         agent = Agent.from_config(config, tools=tool_list)
         console.print(
-            f"[green]SUCCESS:[/green] Example added for step {step_id}. Agent reloaded."
+            f"[green]SUCCESS:[/green] Example added for step {res.state.current_step_id}. Agent reloaded."
         )
 
 
