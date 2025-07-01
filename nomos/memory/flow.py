@@ -2,6 +2,8 @@
 
 import heapq
 from typing import Any, Dict, List, Optional, Union
+from concurrent.futures import Future, ThreadPoolExecutor
+import threading
 
 from pydantic import BaseModel
 
@@ -127,21 +129,47 @@ class FlowMemory(Memory):
         self.llm = llm.get_llm()
         self.retriever = retriever.get_retriever(self.llm)
         self.context = []
+        self._executor = ThreadPoolExecutor(max_workers=1)
+        self._enter_future: Optional[Future] = None
+        self._exit_future: Optional[Future] = None
+        self._lock = threading.Lock()
 
     def _enter(
         self, previous_context: Optional[List[Union[Message, Summary]]] = None
     ) -> None:
         """Enter the flow memory, optionally using previous context."""
         if previous_context:
-            summary = self._generate_summary(previous_context)
-            self.context.append(summary)
-            self.retriever.index([str(summary)])
+            def task() -> Summary:
+                return self._generate_summary(previous_context)
 
-    def _exit(self) -> Summary:
-        """Exit the flow memory and return a summary of the context."""
-        return self._generate_summary(
-            [item for item in self.context if isinstance(item, (Message, Summary))]
-        )
+            def callback(fut: Future) -> None:
+                try:
+                    summary = fut.result()
+                    with self._lock:
+                        self.context.append(summary)
+                        self.retriever.index([str(summary)])
+                finally:
+                    self._enter_future = None
+
+            self._enter_future = self._executor.submit(task)
+            self._enter_future.add_done_callback(callback)
+
+    def _exit(self) -> Future:
+        """Exit the flow memory and return a future summary of the context."""
+
+        def task() -> Summary:
+            if self._enter_future:
+                try:
+                    self._enter_future.result()
+                finally:
+                    self._enter_future = None
+            items = [
+                item for item in self.context if isinstance(item, (Message, Summary))
+            ]
+            return self._generate_summary(items)
+
+        self._exit_future = self._executor.submit(task)
+        return self._exit_future
 
     def _generate_summary(self, items: List[Union[Message, Summary]]) -> Summary:
         """Generate a summary from a list of items."""
@@ -194,7 +222,7 @@ class FlowMemoryComponent(FlowComponent):
         """Initialize memory when entering flow."""
         self.memory._enter(context.previous_context)
 
-    def exit(self, context: FlowContext) -> Summary:
+    def exit(self, context: FlowContext) -> Future:
         """Generate summary when exiting flow."""
         return self.memory._exit()
 
