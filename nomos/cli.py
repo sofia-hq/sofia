@@ -730,7 +730,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
             "[yellow]WARNING:[/yellow] No tool files provided and no tools directory found. Running without tools.",
             style=WARNING_COLOR,
         )
-
+    env_file = current_dir / ".env.local"
     # Create development server script
     dev_server_code = [
         '"""Development server for Nomos agents."""',
@@ -738,9 +738,9 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "import sys",
         "import os",
         "from pathlib import Path",
-        "if Path(__file__).parent / '.env':",
+        f'if Path("{str(env_file)}").exists():',
         "    from dotenv import load_dotenv",
-        "    load_dotenv(dotenv_path=Path(__file__).parent / '.env')",
+        f'    load_dotenv(dotenv_path="{str(env_file)}")',
         "else:",
         "    print('WARNING: .env file not found. Environment variables will not be loaded.')",
         "",
