@@ -403,11 +403,6 @@ class Session:
                 log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
-                # Check if we need to enter a new flow after moving
-                self.state_machine.handle_flow_transitions(
-                    self.state_machine.current_step_id, self.session_id
-                )
-
             else:
                 allowed = self.state_machine.transitions.get(
                     self.state_machine.current_step_id, []
@@ -420,6 +415,9 @@ class Session:
                     f"Invalid route: {decision.step_id} not in {allowed}"
                 )
             if return_step_id:
+                self.state_machine.handle_flow_transitions(
+                    self.state_machine.current_step_id, self.session_id
+                )
                 return decision, None
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
