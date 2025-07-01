@@ -168,6 +168,7 @@ class Session:
                 f"Tool '{tool_name}' not found in session tools. Please check the tool name."
             )
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
+
         return tool.run(**kwargs)
 
     def _get_current_step_tools(self) -> tuple[Tool, ...]:
@@ -420,11 +421,6 @@ class Session:
                 log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
-                # Check if we need to enter a new flow after moving
-                self.state_machine.handle_flow_transitions(
-                    self.state_machine.current_step_id, self.session_id, verbose=verbose
-                )
-
             else:
                 allowed = self.state_machine.transitions.get(
                     self.state_machine.current_step_id, []
@@ -440,6 +436,9 @@ class Session:
             if verbose:
                 pp_response(res)
             if return_step:
+                self.state_machine.handle_flow_transitions(
+                    self.state_machine.current_step_id, self.session_id, verbose=verbose
+                )
                 return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
