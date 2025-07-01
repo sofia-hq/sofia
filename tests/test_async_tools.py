@@ -34,7 +34,7 @@ def test_async_tool_execution(mock_llm):
     )
     agent = Agent.from_config(config=config, llm=mock_llm, tools=[async_tool])
 
-    session = agent.create_session(verbose=True)
+    session = agent.create_session()
 
     tool_model = agent.llm._create_decision_model(
         current_step=session.current_step,
@@ -48,9 +48,9 @@ def test_async_tool_execution(mock_llm):
     session.llm.set_response(response)
 
     start = time.monotonic()
-    decision, result = session.next("run", return_tool=True)
+    res = session.next("run", return_tool=True)
     duration = time.monotonic() - start
 
-    assert decision.action == Action.TOOL_CALL
-    assert result == "async value"
+    assert res.decision.action == Action.TOOL_CALL
+    assert res.tool_output == "async value"
     assert duration < 0.5
