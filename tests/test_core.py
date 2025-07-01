@@ -32,7 +32,7 @@ def test_agent_initialization(basic_agent):
 
 def test_session_creation(basic_agent):
     """Test that agent can create a new session."""
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
     assert session.current_step.step_id == "start"
     assert len(session.memory.context) == 0
 
@@ -40,14 +40,14 @@ def test_session_creation(basic_agent):
 def test_tool_registration(basic_agent, test_tool_0):
     """Test that tools are properly registered and converted to Tool objects."""
     tool_name = test_tool_0.__name__
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
     assert len(session.tools) == 3
     assert isinstance(session.tools[tool_name], Tool)
 
 
 def test_pkg_tool_registration(basic_agent):
     """Test that package tools are properly registered."""
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
     assert len(session.tools) == 3
     assert "combinations" in session.tools
     assert session.tools["combinations"].name == "combinations"
@@ -57,7 +57,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
     """Test a basic conversation flow with the agent."""
 
     # Set up session
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     expected_decision_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
@@ -86,13 +86,13 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
     session.llm.set_response(ask_response)
 
     # First interaction
-    decision, _ = session.next()
+    res = session.next()
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[0].role == "system"
     assert "Test persona" in session.llm.messages_received[0].content
     assert session.llm.messages_received[1].role == "user"
-    assert decision.action == Action.RESPOND
-    assert decision.response == "How can I help?"
+    assert res.decision.action == Action.RESPOND
+    assert res.decision.response == "How can I help?"
 
     ask_response = expected_decision_model(
         reasoning=["User input"],
@@ -101,20 +101,20 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
     )
     session.llm.set_response(ask_response)
     # User response
-    decision, _ = session.next("I need help")
+    res = session.next("I need help")
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[1].role == "user"
     assert "How can I help?" in session.llm.messages_received[1].content
     assert "I need help" in session.llm.messages_received[1].content
-    assert decision.action == Action.RESPOND
-    assert decision.response == "I can help you with that."
+    assert res.decision.action == Action.RESPOND
+    assert res.decision.response == "I can help you with that."
 
 
 def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     # Create response models with tool
     tool_model = basic_agent.llm._create_decision_model(
@@ -143,13 +143,13 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.llm.set_response(tool_response)
 
     # Tool usage
-    decision, tool_result = session.next("Use the tool", return_tool=True)
+    res = session.next("Use the tool", return_tool=True)
     assert len(session.llm.messages_received) == 2
     assert session.llm.messages_received[1].role == "user"
     assert "Use the tool" in session.llm.messages_received[1].content
-    assert decision.action == Action.TOOL_CALL
-    assert decision.tool_call.tool_name == "test_tool"
-    assert tool_result == "Test tool 0 response: test_arg"
+    assert res.decision.action == Action.TOOL_CALL
+    assert res.decision.tool_call.tool_name == "test_tool"
+    assert res.tool_output == "Test tool 0 response: test_arg"
 
     # Verify tool message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -160,7 +160,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     # Create response models with tool
     tool_model = basic_agent.llm._create_decision_model(
@@ -189,7 +189,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.llm.set_response(tool_response)
 
     # Tool usage
-    decision, _ = session.next("Use the tool", return_tool=True)
+    res = session.next("Use the tool", return_tool=True)
 
     # Verify tool message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -199,7 +199,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
 def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test handling of invalid tool arguments."""
 
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
@@ -227,7 +227,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.llm.set_response(invalid_response)
 
     with pytest.raises(ValueError, match="Maximum errors reached"):
-        decision, _ = session.next("Use tool with invalid args", return_tool=True)
+        res = session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -272,7 +272,7 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     assert len(agent.steps) == 2
     assert len(agent.tools) == 3
 
-    session = agent.create_session(verbose=True)
+    session = agent.create_session()
 
     # Test that tool arg descriptions were properly loaded
     tool = session.tools["test_tool"]
@@ -330,7 +330,7 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     assert len(agent.steps) == 2
     assert len(agent.tools) == 5
 
-    session = agent.create_session(verbose=True)
+    session = agent.create_session()
 
     # Test that package tool was properly registered
     pkg_tool = session.tools["combinations"]
@@ -473,10 +473,10 @@ class TestStepTransitions:
 
         with patch.object(session, "_get_next_decision", return_value=valid_decision):
             initial_step = session.current_step.step_id
-            decision, _ = session.next("Move to end", return_step_id=True)
+            res = session.next("Move to end", return_step=True)
 
-            assert decision.action == Action.MOVE
-            assert decision.step_id == "end"
+            assert res.decision.action == Action.MOVE
+            assert res.decision.step_id == "end"
             assert session.current_step.step_id == "end"
             assert session.current_step.step_id != initial_step
 
@@ -511,10 +511,10 @@ class TestEndAction:
         )
         basic_agent.llm.set_response(end_response)
 
-        decision, result = session.next("End session")
+        res = session.next("End session")
 
-        assert decision.action == Action.END
-        assert result is None
+        assert res.decision.action == Action.END
+        assert res.tool_output is None
 
         # Check that end message was added
         messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -679,14 +679,14 @@ class TestMaxIterationsBehavior:
         basic_agent.llm.set_response(fallback_response)
 
         # This should trigger the fallback behavior instead of raising RecursionError
-        decision, _ = session.next(next_count=5)
+        res = session.next(next_count=5)
 
         # Verify fallback message was added and response was generated
         messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
         fallback_msgs = [msg for msg in messages if msg.role == "fallback"]
         assert len(fallback_msgs) == 1
         assert "Maximum iterations reached" in fallback_msgs[0].content
-        assert decision.action == Action.RESPOND
+        assert res.decision.action == Action.RESPOND
 
 
 class TestToolExecutionScenarios:
@@ -709,10 +709,10 @@ class TestToolExecutionScenarios:
         )
         basic_agent.llm.set_response(tool_response)
 
-        decision, tool_result = session.next("Use tool", return_tool=True)
+        res = session.next("Use tool", return_tool=True)
 
-        assert decision.action == Action.TOOL_CALL
-        assert tool_result == "Test tool 0 response: test_value"
+        assert res.decision.action == Action.TOOL_CALL
+        assert res.tool_output == "Test tool 0 response: test_value"
 
     def test_tool_structure_coverage(self, basic_agent):
         """Test tool structure and error handling coverage."""
@@ -981,10 +981,10 @@ class TestAdvancedErrorHandling:
         basic_agent.llm.set_response(invalid_resp)
         basic_agent.llm.set_response(valid_resp, append=True)
 
-        decision, _ = session.next()
+        res = session.next()
 
-        assert decision.action == Action.RESPOND
-        assert decision.response == "ok"
+        assert res.decision.action == Action.RESPOND
+        assert res.decision.response == "ok"
         messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
         assert any("requires a response" in msg.content for msg in messages)
 
@@ -1117,10 +1117,10 @@ class TestEndActionFlow:
         )
         session.llm.set_response(end_response)
 
-        decision, result = session.next("End the session")
+        res = session.next("End the session")
 
-        assert decision.action == Action.END
-        assert result is None
+        assert res.decision.action == Action.END
+        assert res.tool_output is None
 
         # Verify flow cleanup was called
         mock_flow.cleanup.assert_called_once_with(mock_flow_context)
@@ -1156,10 +1156,10 @@ class TestEndActionFlow:
         )
         session.llm.set_response(end_response)
 
-        decision, result = session.next("End the session")
+        res = session.next("End the session")
 
-        assert decision.action == Action.END
-        assert result is None
+        assert res.decision.action == Action.END
+        assert res.tool_output is None
 
         # Flow state should be cleaned up even if there was an error
         assert session.state_machine.current_flow is None
@@ -1192,13 +1192,13 @@ class TestAgentNext:
         )
         basic_agent.llm.set_response(response)
 
-        decision, tool_output, session_data = basic_agent.next(
+        res = basic_agent.next(
             user_input="Hello", session_data=session_context, verbose=True
         )
 
-        assert decision.action == Action.RESPOND
-        assert hasattr(session_data, "session_id")
-        assert hasattr(session_data, "current_step_id")
+        assert res.decision.action == Action.RESPOND
+        assert hasattr(res.state, "session_id")
+        assert hasattr(res.state, "current_step_id")
 
     def test_agent_next_without_session_data(self, basic_agent):
         """Test Agent.next creating new session when no session_data provided."""
@@ -1217,11 +1217,11 @@ class TestAgentNext:
         )
         basic_agent.llm.set_response(response)
 
-        decision, tool_output, session_data = basic_agent.next("Hello")
+        res = basic_agent.next("Hello")
 
-        assert decision.action == Action.RESPOND
-        assert hasattr(session_data, "session_id")
-        assert session_data.current_step_id == "start"
+        assert res.decision.action == Action.RESPOND
+        assert hasattr(res.state, "session_id")
+        assert res.state.current_step_id == "start"
 
     def test_current_step_tools_with_missing_tool_logging(self, basic_agent):
         """Test _get_current_step_tools handling when tool is missing."""

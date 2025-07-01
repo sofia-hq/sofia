@@ -14,6 +14,7 @@ from .models.agent import (
     Decision,
     DecisionConstraints,
     Message,
+    Response,
     State,
     Step,
     StepIdentifier,
@@ -28,7 +29,7 @@ from .models.tool import (
 )
 from .state_machine import StateMachine
 from .utils.flow_utils import create_flows_from_config
-from .utils.logging import log_debug, log_error, log_info
+from .utils.logging import log_debug, log_error, pp_response
 
 
 class Session:
@@ -51,7 +52,6 @@ class Session:
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
         state: Optional[State] = None,
-        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -80,7 +80,6 @@ class Session:
         self.persona = persona
         self.max_errors = max_errors
         self.max_iter = max_iter
-        self.verbose = verbose
         self.config = config or AgentConfig(
             name=name,
             steps=list(steps.values()),
@@ -253,9 +252,10 @@ class Session:
         no_errors: int = 0,
         next_count: int = 0,
         return_tool: bool = False,
-        return_step_id: bool = False,
+        return_step: bool = False,
+        verbose: bool = False,
         decision_constraints: Optional[DecisionConstraints] = None,
-    ) -> tuple[Decision, Any]:
+    ) -> Response:
         """
         Advance the session to the next step based on user input and LLM decision.
 
@@ -263,7 +263,8 @@ class Session:
         :param no_errors: Number of consecutive errors encountered.
         :param next_count: Number of times the next function has been called.
         :param return_tool: Whether to return tool results.
-        :param return_step_id: Whether to return step id.
+        :param return_step: Whether to return step Transitions.
+        :param verbose: Whether to print verbose output.
         :param decision_constraints: Optional constraints for the decision model on retry.
         :return: A tuple containing the decision and any tool results.
         """
@@ -280,7 +281,12 @@ class Session:
                         "available context, produce a fallback response."
                     ),
                 )
-                return self.next()
+                return self.next(
+                    verbose=verbose,
+                    decision_constraints=DecisionConstraints(
+                        actions=["RESPOND"], fields=["response"]
+                    ),
+                )
             else:
                 raise RecursionError(
                     f"Maximum iterations reached ({self.max_iter}). Stopping session."
@@ -292,11 +298,11 @@ class Session:
 
         # Check for flow transitions
         self.state_machine.handle_flow_transitions(
-            self.current_step.step_id, self.session_id
+            self.current_step.step_id, self.session_id, verbose=verbose
         )
 
         decision = self._get_next_decision(decision_constraints=decision_constraints)
-        log_info(str(decision)) if self.verbose else log_debug(str(decision))
+        log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
         # Validate decision
@@ -310,6 +316,7 @@ class Session:
                 decision_constraints=DecisionConstraints(
                     actions=["RESPOND"], fields=["response"]
                 ),
+                verbose=verbose,
             )
         if decision.action == Action.MOVE and decision.step_id is None:
             self._add_message(
@@ -321,6 +328,7 @@ class Session:
                 decision_constraints=DecisionConstraints(
                     actions=["MOVE"], fields=["step_id"]
                 ),
+                verbose=verbose,
             )
         if decision.action == Action.TOOL_CALL and decision.tool_call is None:
             self._add_message(
@@ -332,14 +340,19 @@ class Session:
                 decision_constraints=DecisionConstraints(
                     actions=["TOOL_CALL"], fields=["tool_call"]
                 ),
+                verbose=verbose,
             )
 
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action == Action.RESPOND:
             self._add_message(self.name, str(decision.response))
-            return decision, None
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            return res
         elif decision.action == Action.TOOL_CALL and decision.tool_call:
             _error: Optional[Exception] = None
+            tool_results = None
             try:
                 tool_name = decision.tool_call.tool_name  # type: ignore
                 tool_kwargs: dict = decision.tool_call.tool_kwargs.model_dump()
@@ -355,7 +368,7 @@ class Session:
                         "tool", f"Running tool {tool_name} with args {tool_kwargs}"
                     )
                     raise e
-                log_info(f"Tool Results: {tool_results}") if self.verbose else None
+                log_debug(f"Tool Results: {tool_results}")
             except FallbackError as e:
                 _error = e
                 self._add_message("fallback", str(e))
@@ -366,8 +379,11 @@ class Session:
                 _error = e
                 self._add_message("error", str(e))
 
+            res = Response(decision=decision, tool_output=tool_results)
+            if verbose:
+                pp_response(res)
             if return_tool and _error is None:
-                return decision, tool_results
+                return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -384,6 +400,7 @@ class Session:
                     )
                     else None
                 ),
+                verbose=verbose,
             )
         elif decision.action == Action.MOVE and decision.step_id:
             _error = None
@@ -415,11 +432,14 @@ class Session:
                 _error = ValueError(
                     f"Invalid route: {decision.step_id} not in {allowed}"
                 )
-            if return_step_id:
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            if return_step:
                 self.state_machine.handle_flow_transitions(
-                    self.state_machine.current_step_id, self.session_id
+                    self.state_machine.current_step_id, self.session_id, verbose=verbose
                 )
-                return decision, None
+                return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -428,6 +448,7 @@ class Session:
                     if _error
                     else None
                 ),
+                verbose=verbose,
             )
         elif decision.action == Action.END:
             # Clean up any active flows before ending
@@ -446,7 +467,10 @@ class Session:
                     self.state_machine.flow_context = None
 
             self._add_message("end", "Session ended.")
-            return decision, None
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            return res
         else:
             self._add_message(
                 "error",
@@ -455,6 +479,7 @@ class Session:
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
+                verbose=verbose,
             )
 
     def _add_step_identifier(self, step_identifier: StepIdentifier) -> None:
@@ -636,14 +661,11 @@ class Agent:
                     "NOMOS_LOG_LEVEL", logging_config.handlers[0].level.upper()
                 )
 
-    def create_session(
-        self, memory: Optional[Memory] = None, verbose: bool = False
-    ) -> Session:
+    def create_session(self, memory: Optional[Memory] = None) -> Session:
         """
         Create a new Session for this agent.
 
         :param memory: Optional Memory instance.
-        :param verbose: Whether to return verbose output.
         :return: Session instance.
         """
         log_debug("Creating new session")
@@ -666,7 +688,6 @@ class Agent:
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
-            verbose=verbose,
             config=self.config,
             embedding_model=self.embedding_model,
         )
@@ -720,14 +741,18 @@ class Agent:
         self,
         user_input: Optional[str] = None,
         session_data: Optional[Union[dict, State]] = None,
+        return_tool: bool = False,
+        return_step: bool = False,
         verbose: bool = False,
         decision_constraints: Optional[DecisionConstraints] = None,
-    ) -> tuple[Decision, str, State]:
+    ) -> Response:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
         :param session_data: Optional session data as a dictionary or State object.
+        :param return_tool: Whether to return tool results.
+        :param return_step: Whether to return step Transitions.
         :param verbose: Whether to return verbose output.
         :param decision_constraints: Optional constraints for the decision model on retry.
         :return: A tuple containing the decision and tool output, along with the updated session state.
@@ -740,13 +765,15 @@ class Agent:
             if session_data is not None and isinstance(session_data, State)
             else self.create_session()
         )
-        decision, tool_output = session.next(
+        res = session.next(
             user_input=user_input,
-            return_tool=verbose,
-            return_step_id=verbose,
+            return_tool=return_tool,
+            return_step=return_step,
             decision_constraints=decision_constraints,
+            verbose=verbose,
         )
-        return decision, tool_output, session.get_state()
+        res.state = session.get_state()
+        return res
 
 
 __all__ = ["Session", "Agent"]

@@ -27,7 +27,7 @@ from .constants import (
 )
 from .core import Agent
 from .llms import LLMConfig
-from .models.agent import Action, DecisionExample, Step, history_to_types
+from .models.agent import Action, DecisionExample, Step
 from .server import run_server
 from .utils.generator import AgentConfiguration, AgentGenerator
 
@@ -35,7 +35,7 @@ from .utils.generator import AgentConfiguration, AgentGenerator
 console = Console()
 app = typer.Typer(
     name="nomos",
-    help="Nomos CLI - Build AI Agents you can audit.",
+    help="Nomos CLI - Build Agents you can audit.",
     add_completion=True,
 )
 
@@ -62,13 +62,27 @@ def cli_app(
     pass
 
 
+banner_text = r"""
+ __  _  __  __ __  __    __
+|  \| |/__\|  V  |/__\ /' _/
+| | ' | \/ | \_/ | \/ |`._`.
+|_|\__|\__/|_| |_|\__/ |___/
+
+Build Agents you can audit.
+"""
+
+
 def print_banner() -> None:
     """Print the Nomos banner."""
-    banner = Text("🏛️ NOMOS", style=f"bold {PRIMARY_COLOR}")
-    subtitle = Text("Build AI Agents you can audit.", style="dim")
+    banner = Panel(
+        Text.from_markup(banner_text, justify="center"),
+        border_style=PRIMARY_COLOR,
+        title_align="left",
+        padding=(1, 2),
+        expand=False,
+    )
     console.print()
-    console.print(banner, justify="center")
-    console.print(subtitle, justify="center")
+    console.print(banner)
     console.print()
 
 
@@ -111,12 +125,17 @@ def init(
             "Welcome to Nomos! Let's create your new agent project.",
             title="Project Initialization",
             border_style=PRIMARY_COLOR,
+            title_align="left",
+            padding=(1, 2),
+            expand=False,
         )
     )
 
     # Get target directory
     if not directory:
-        directory = Prompt.ask("📁 Project directory", default="./my-nomos-agent")
+        directory = Prompt.ask(
+            "[bold cyan]Project directory[/bold cyan]", default="./my-nomos-agent"
+        )
 
     target_dir = Path(directory).resolve()  # type: ignore
 
@@ -124,7 +143,9 @@ def init(
         if not Confirm.ask(
             f"Directory [bold]{target_dir}[/bold] already exists and is not empty. Continue?"
         ):
-            console.print("❌ Project initialization cancelled.", style=ERROR_COLOR)
+            console.print(
+                "[red]ERROR:[/red] Project initialization cancelled.", style=ERROR_COLOR
+            )
             raise typer.Exit(1)
 
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -146,7 +167,7 @@ def init(
     llm_choice_idx = (
         int(
             Prompt.ask(
-                "🧠 Select LLM provider",
+                "[bold blue]Select LLM provider[/bold blue]",
                 choices=[str(i) for i in range(1, len(LLM_CHOICES) + 1)],
                 default="1",
             )
@@ -157,7 +178,7 @@ def init(
 
     if not generate and not template:
         generate = Confirm.ask(
-            "🤖 Would you like to generate the agent configuration using AI?",
+            "[bold green]Would you like to generate the agent configuration using AI?[/bold green]",
             default=False,
         )
 
@@ -173,7 +194,7 @@ def init(
         template_config = TEMPLATES.get(template)
         if not template_config:
             console.print(
-                f"❌ Template '{template}' not found. Available templates: {', '.join(TEMPLATES.keys())}",
+                f"[red]ERROR:[/red] Template '{template}' not found. Available templates: {', '.join(TEMPLATES.keys())}",
                 style=ERROR_COLOR,
             )
             raise typer.Exit(1)
@@ -185,7 +206,7 @@ def init(
         llm_choice_idx = (
             int(
                 Prompt.ask(
-                    "🧠 Select LLM provider",
+                    "[bold blue]Select LLM provider[/bold blue]",
                     choices=[str(i) for i in range(1, len(LLM_CHOICES) + 1)],
                     default="1",
                 )
@@ -215,7 +236,7 @@ def init(
             persona = generated_config.persona
         except Exception as e:
             console.print(
-                f"❌ Failed to generate agent configuration: {e}.",
+                f"[red]ERROR:[/red] Failed to generate agent configuration: {e}.",
                 style=ERROR_COLOR,
             )
 
@@ -224,23 +245,37 @@ def init(
 
     console.print(
         Panel(
-            f"✅ Project created successfully in [bold]{target_dir}[/bold]",
-            title="Success",
+            f"[bold green]SUCCESS:[/bold green] Project created successfully in [bold]{target_dir}[/bold]",
             border_style=SUCCESS_COLOR,
+            padding=(1, 2),
+            expand=False,
         )
     )
 
-    # Show next steps
-    next_steps = f"""
-📁 Navigate to your project: [bold]cd {target_dir}[/bold]
-🔧 Edit configuration: [bold]config.agent.yaml[/bold]
-🛠️ Add tools: [bold]tools/[/bold] directory
-🏃 Run development mode: [bold]nomos run[/bold]
-🚀 Serve: [bold]nomos serve[/bold]
-"""
+    # Show next steps in a nicely formatted panel
+    next_steps_content = f"""[bold cyan]1. Navigate to your project:[/bold cyan]
+   [bold]cd {target_dir}[/bold]
+
+[bold cyan]2. Edit configuration:[/bold cyan]
+   [bold]config.agent.yaml[/bold]
+
+[bold cyan]3. Add tools:[/bold cyan]
+   [bold]tools/[/bold] directory
+
+[bold cyan]4. Run development mode:[/bold cyan]
+   [bold]nomos run[/bold]
+
+[bold cyan]5. Serve your agent:[/bold cyan]
+   [bold]nomos serve[/bold]"""
 
     console.print(
-        Panel(next_steps.strip(), title="Next Steps", border_style=PRIMARY_COLOR)
+        Panel(
+            next_steps_content,
+            title="[bold]Next Steps[/bold]",
+            border_style=PRIMARY_COLOR,
+            padding=(1, 2),
+            expand=False,
+        )
     )
 
 
@@ -267,7 +302,7 @@ def run(
     # Validate config file exists
     if not config_path.exists():
         console.print(
-            f"❌ Configuration file not found: [bold]{config_path}[/bold]",
+            f"[red]ERROR:[/red] Configuration file not found: [bold]{config_path}[/bold]",
             style=ERROR_COLOR,
         )
         raise typer.Exit(1)
@@ -278,7 +313,7 @@ def run(
             tool_path = Path(tool_file)
             if not tool_path.exists():
                 console.print(
-                    f"❌ Tool file not found: [bold]{tool_path}[/bold]",
+                    f"[red]ERROR:[/red] Tool file not found: [bold]{tool_path}[/bold]",
                     style=ERROR_COLOR,
                 )
                 raise typer.Exit(1)
@@ -287,9 +322,13 @@ def run(
     try:
         _run(config_path, tool_paths, verbose)
     except KeyboardInterrupt:
-        console.print("\n👋 Development Run stopped.", style=WARNING_COLOR)
+        console.print(
+            "\n[yellow]Development Run stopped.[/yellow]", style=WARNING_COLOR
+        )
     except Exception as e:
-        console.print(f"❌ Error running development Run: {e}", style=ERROR_COLOR)
+        console.print(
+            f"[red]ERROR:[/red] Error running development Run: {e}", style=ERROR_COLOR
+        )
         raise typer.Exit(1)
 
 
@@ -312,7 +351,7 @@ def train(
 
     if not config_path.exists():
         console.print(
-            f"❌ Configuration file not found: [bold]{config_path}[/bold]",
+            f"[red]ERROR:[/red] Configuration file not found: [bold]{config_path}[/bold]",
             style=ERROR_COLOR,
         )
         raise typer.Exit(1)
@@ -323,7 +362,7 @@ def train(
             tool_path = Path(tool_file)
             if not tool_path.exists():
                 console.print(
-                    f"❌ Tool file not found: [bold]{tool_path}[/bold]",
+                    f"[red]ERROR:[/red] Tool file not found: [bold]{tool_path}[/bold]",
                     style=ERROR_COLOR,
                 )
                 raise typer.Exit(1)
@@ -332,9 +371,11 @@ def train(
     try:
         _train(config_path, tool_paths)
     except KeyboardInterrupt:
-        console.print("\n👋 Training stopped.", style=WARNING_COLOR)
+        console.print("\n[yellow]Training stopped.[/yellow]", style=WARNING_COLOR)
     except Exception as e:
-        console.print(f"❌ Error during training: {e}", style=ERROR_COLOR)
+        console.print(
+            f"[red]ERROR:[/red] Error during training: {e}", style=ERROR_COLOR
+        )
         raise typer.Exit(1)
 
 
@@ -363,7 +404,7 @@ def serve(
 
     if not config_path.exists():
         console.print(
-            f"❌ Configuration file not found: [bold]{config_path}[/bold]",
+            f"[red]ERROR:[/red] Configuration file not found: [bold]{config_path}[/bold]",
             style=ERROR_COLOR,
         )
         raise typer.Exit(1)
@@ -374,7 +415,7 @@ def serve(
             tool_path = Path(tool_file)
             if not tool_path.exists():
                 console.print(
-                    f"❌ Tool file not found: [bold]{tool_path}[/bold]",
+                    f"[red]ERROR:[/red] Tool file not found: [bold]{tool_path}[/bold]",
                     style=ERROR_COLOR,
                 )
                 raise typer.Exit(1)
@@ -382,7 +423,7 @@ def serve(
 
     console.print(
         Panel(
-            f"🚀 Starting server on port [bold]{port or 'config'}[/bold]",
+            f"[bold green]Starting server on port [bold]{port or 'config'}[/bold][/bold green]",
             title="Serve",
             border_style=PRIMARY_COLOR,
         )
@@ -424,7 +465,7 @@ def test(
 
     console.print(
         Panel(
-            "🧪 Running Nomos agent tests",
+            "[bold cyan]Running Nomos agent tests[/bold cyan]",
             title="Testing Framework",
             border_style=PRIMARY_COLOR,
         )
@@ -438,13 +479,13 @@ def test(
 
             result = run_yaml_tests(yaml_path, pytest_args, coverage)
             if result != 0:
-                console.print("❌ Some tests failed!", style=ERROR_COLOR)
+                console.print("[red]Some tests failed![/red]", style=ERROR_COLOR)
                 raise typer.Exit(result)
-            console.print("✅ All tests passed!", style=SUCCESS_COLOR)
+            console.print("[green]All tests passed![/green]", style=SUCCESS_COLOR)
         else:
             _run_tests(pytest_args, coverage)
     except Exception as e:
-        console.print(f"❌ Error running tests: {e}", style=ERROR_COLOR)
+        console.print(f"[red]ERROR:[/red] Error running tests: {e}", style=ERROR_COLOR)
         raise typer.Exit(1)
 
 
@@ -465,7 +506,7 @@ def schema(
     if output:
         Path(output).write_text(schema_json)
         console.print(
-            f"✅ Schema written to [bold]{output}[/bold]",
+            f"[green]SUCCESS:[/green] Schema written to [bold]{output}[/bold]",
             style=SUCCESS_COLOR,
         )
     else:
@@ -555,11 +596,11 @@ def _generate_project_files(
         "from dotenv import load_dotenv",
         "",
         "# Load environment variables from .env file if it exists",
-        "env_file = Path(__file__).parent / '.env'",
+        "env_file = Path(__file__).parent / '.env.local'",
         "if env_file.exists():",
         "    load_dotenv(dotenv_path=env_file)",
         "else:",
-        "    print('⚠️  .env file not found. Environment variables will not be loaded.')",
+        "    print('WARNING: .env file not found. Environment variables will not be loaded.')",
         "",
         "# Add tools directory to Python path",
         "sys.path.insert(0, str(Path(__file__).parent))",
@@ -579,24 +620,24 @@ def _generate_project_files(
         "    # Create session",
         "    session = agent.create_session(verbose=True)",
         "",
-        "    print(f\"🤖 {config.name} agent is ready! Type 'quit' to exit.\\n\")"
-        '    print(f"Available tools: {[tool.__name__ if callable(tool) else str(tool) for tool in tool_list]}\\n")'
-        ""
+        "    print(f\"Agent {config.name} is ready! Type 'quit' to exit.\\n\")",
+        '    print(f"Available tools: {[tool.__name__ if callable(tool) else str(tool) for tool in tool_list]}\\n")',
+        "",
         "    while True:"
         "        try:"
         "            user_input = input('You: ').strip()"
         "            if user_input.lower() in ['quit', 'exit', 'bye']:"
-        "                print('👋 Goodbye!')"
+        "                print('Goodbye!')"
         "                break",
         "            if not user_input:" "                continue",
-        "            decision, *_ = session.next(user_input)",
-        "            if hasattr(decision, 'response') and decision.response:",
-        '                print(f"🤖 {config.name}: {decision.response}")'
+        "            res = session.next(user_input, verbose=True)",
+        "            if hasattr(res.decision, 'response') and res.decision.response:",
+        '                print(f"\nAgent {config.name}: {res.decision.response}")'
         "        except KeyboardInterrupt:"
-        '            print("\\n👋 Goodbye!")'
+        '            print("\\nGoodbye!")'
         "            break",
         "        except Exception as e:",
-        '            print(f"❌ Error: {e}")',
+        '            print(f"ERROR: {e}")',
         "",
         "if __name__ == '__main__':",
         "    main()",
@@ -628,10 +669,10 @@ def _generate_project_files(
         "# SERVICE_VERSION=1.0.0",
         "",
     ]
+    project_title = name.replace("_", " ").title() if name else "My Nomos Agent"
     readme_content = [
-        "# Nomos Agent Project",
-        "",
-        "This is a Nomos agent project.",
+        f"# {project_title} Agent [![Nomos Badge](https://img.shields.io/badge/Powered%20By-NOMOS-brightgreen)](https://github.com/dowhiledev/nomos)",
+        f"Persona: {persona}",
         "",
         "## Configuration",
         "Edit the `config.agent.yaml` file to customize your agent.",
@@ -640,7 +681,7 @@ def _generate_project_files(
         "Add your custom tools in the `tools/` directory.",
         "",
         "> [!NOTE]"
-        "> Copy the `.env.example` file to `.env` using `cp .env.example .env` and fill in your environment variables.",
+        "> Copy the `.env.example` file to `.env` using `cp .env.example .env.local` and fill in your environment variables.",
         "",
         "## Running the Agent",
         "Run the agent in development mode with:",
@@ -664,7 +705,7 @@ def _generate_project_files(
     (target_dir / ".env").write_text("\n".join(env_content))
     (target_dir / "README.md").write_text("\n".join(readme_content))
     console.print(
-        f"✅ Project files generated in [bold]{target_dir}[/bold]",
+        f"[green]SUCCESS:[/green] Project files generated in [bold]{target_dir}[/bold]",
         style=SUCCESS_COLOR,
     )
 
@@ -681,12 +722,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
 
     if tool_dirs:
         os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
-    else:
-        console.print(
-            "⚠️  No tool files provided and no tools directory found. Running without tools.",
-            style=WARNING_COLOR,
-        )
-
+    env_file = current_dir / ".env.local"
     # Create development server script
     dev_server_code = [
         '"""Development server for Nomos agents."""',
@@ -694,11 +730,11 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "import sys",
         "import os",
         "from pathlib import Path",
-        "if Path(__file__).parent / '.env':",
+        f'if Path("{str(env_file)}").exists():',
         "    from dotenv import load_dotenv",
-        "    load_dotenv(dotenv_path=Path(__file__).parent / '.env')",
+        f'    load_dotenv(dotenv_path="{str(env_file)}")',
         "else:",
-        "    print('⚠️  .env file not found. Environment variables will not be loaded.')",
+        "    print('WARNING: .env file not found. Environment variables will not be loaded.')",
         "",
         "sys.path.insert(0, str(Path.cwd()))",
         "",
@@ -709,12 +745,11 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "    try:",
         f'        config = AgentConfig.from_yaml("{config_path}")',
         "        agent = Agent.from_config(config, tools=tool_list)",
-        f"        session = agent.create_session(verbose={verbose})",
+        "        session = agent.create_session()",
         "",
-        '        print(f"🤖 {config.name} agent ready in interactive mode!")',
-        f'        print(f"📁 Config: {config_path}")',
-        '        print(f"🔧 Tools: {len(tool_list)} loaded")',
-        "        print('Type quit to exit\\n')",
+        '        print(f"Agent {config.name} ready in interactive mode!")',
+        f'        print(f"Config: {config_path}")',
+        "        print('Type (quit, exit, bye) to exit\\n')",
         "",
         "        while True:",
         "            try:",
@@ -723,8 +758,12 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "                    break",
         "                if not user_input:",
         "                    continue",
-        "                decision, *_ = session.next(user_input)",
-        "                print(f'Agent: {decision.response}')",
+        f"                res = session.next(user_input, verbose={verbose})",
+        "                print(f'Agent: {res.decision.response}')",
+        "                print()",
+        "                if res.decision.action == Action.END:",
+        "                    print('Session ended.')",
+        "                    break",
         "            except KeyboardInterrupt:",
         "                break",
         "            except Exception as e:",
@@ -732,8 +771,9 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         f"                if {verbose}:",
         "                    import traceback",
         "                    traceback.print_exc()",
+        "                    break",
         "    except Exception as e:",
-        "        print(f'❌ Failed to start agent: {e}')",
+        "        print(f'ERROR: Failed to start agent: {e}')",
         f"        if {verbose}:",
         "            import traceback",
         "            traceback.print_exc()",
@@ -749,13 +789,13 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         temp_script.write("\n".join(dev_server_code))
 
     try:
-        console.print(f"📂 Working directory: [dim]{current_dir}[/dim]")
+        console.print(f"[bold cyan]Working directory:[/bold cyan] {current_dir}")
         result = subprocess.run(
             [sys.executable, temp_script_path], cwd=current_dir, check=False
         )
         if result.returncode not in (0, 130):
             console.print(
-                f"❌ Development server exited with code {result.returncode}",
+                f"[red]ERROR:[/red] Development server exited with code {result.returncode}",
                 style=ERROR_COLOR,
             )
     finally:
@@ -775,7 +815,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
     else:
         console.print(
-            "⚠️  No tool files provided and no tools directory found. Running without tools.",
+            "[yellow]WARNING:[/yellow] No tool files provided and no tools directory found. Running without tools.",
             style=WARNING_COLOR,
         )
 
@@ -785,7 +825,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
     agent = Agent.from_config(config, tools=tool_list)
 
     console.print(
-        f"🤖 [bold]{config.name}[/bold] agent loaded in training mode.",
+        f"[bold cyan]Agent[/bold cyan] [bold]{config.name}[/bold] [cyan]loaded in training mode.[/cyan]",
         style=PRIMARY_COLOR,
     )
     console.print("Type quit to exit\n")
@@ -800,34 +840,34 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
                 break
         else:
             user_input = None
-        decision, tool_output, session_data = agent.next(
-            user_input, session_data, verbose=True
-        )
-        if decision.action == Action.RESPOND:
+        res = agent.next(user_input, session_data, return_step=True, return_tool=True)
+        if res.decision.action == Action.RESPOND:
             console.print(
                 "Agent:\nReasoning:{}\nResponse: {}".format(
-                    "\n".join(decision.reasoning), decision.response
+                    "\n".join(res.decision.reasoning), res.decision.response
                 ),
                 style=PRIMARY_COLOR,
             )
-        elif decision.action == Action.TOOL_CALL:
+        elif res.decision.action == Action.TOOL_CALL:
             console.print(
                 "Agent:\nReasoning:{}\nTool call: {}\nTool Result: {}".format(
-                    "\n".join(decision.reasoning), decision.tool_call, tool_output
+                    "\n".join(res.decision.reasoning),
+                    res.decision.tool_call,
+                    res.tool_output,
                 ),
                 style=PRIMARY_COLOR,
             )
-        elif decision.action == Action.MOVE:
+        elif res.decision.action == Action.MOVE:
             console.print(
                 "Agent:\nReasoning:{}\nMoving to step: {}".format(
-                    "\n".join(decision.reasoning), decision.step_id
+                    "\n".join(res.decision.reasoning), res.decision.step_id
                 ),
                 style=PRIMARY_COLOR,
             )
-        elif decision.action == Action.END:
+        elif res.decision.action == Action.END:
             console.print(
                 "Agent:\nReasoning:{}\nEnding session.".format(
-                    "\n".join(decision.reasoning)
+                    "\n".join(res.decision.reasoning)
                 ),
                 style=PRIMARY_COLOR,
             )
@@ -835,44 +875,30 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
         else:
             console.print(
                 "Agent:\nReasoning:{}\nUnknown action: {}".format(
-                    "\n".join(decision.reasoning), decision.action
+                    "\n".join(res.decision.reasoning), res.decision.action
                 ),
                 style=ERROR_COLOR,
             )
 
         if Confirm.ask("Are you satisfied with this decision?", default=True):
-            last_action = decision.action
+            last_action = res.decision.action
             continue
 
         feedback = Prompt.ask("What should have happened?")
 
-        history = session_data.get("history")  # type: ignore
-        flow_state = session_data.get("flow_state")
-        flow_memory_context = (
-            flow_state.get("flow_memory_context") if flow_state else None
-        )
-        step_id = session_data.get("current_step_id")  # type: ignore
+        assert res.state is not None, "Session state is None. Cannot take step back."
 
-        # Take step back
-        history = history[:-1] if len(history) > 1 else []  # type: ignore
         flow_memory_context = (
+            res.state.flow_state.flow_memory_context if res.state.flow_state else None
+        )
+        context_summary = config.get_llm().generate_summary(
             flow_memory_context[:-1]
             if flow_memory_context and len(flow_memory_context) > 1
-            else []
-        )
-
-        session_data["history"] = history
-        if flow_state:
-            session_data["flow_state"]["context"] = flow_memory_context
-
-        context_summary = config.get_llm().generate_summary(
-            history_to_types(
-                flow_memory_context if flow_state else session_data["history"]
-            )
+            else res.state.history[:-1] if len(res.state.history) > 1 else []
         )
 
         for step in config.steps:
-            if step.step_id == step_id:
+            if step.step_id == res.state.current_step_id:
                 if step.examples is None:
                     step.examples = []
                 step.examples.append(
@@ -884,7 +910,9 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
 
         config.to_yaml(str(config_path))
         agent = Agent.from_config(config, tools=tool_list)
-        console.print(f"✅ Example added for step {step_id}. Agent reloaded.")
+        console.print(
+            f"[green]SUCCESS:[/green] Example added for step {res.state.current_step_id}. Agent reloaded."
+        )
 
 
 def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) -> None:
@@ -902,9 +930,9 @@ def _run_tests(pytest_args: Optional[List[str]] = None, coverage: bool = False) 
     result = subprocess.run(cmd)
 
     if result.returncode == 0:
-        console.print("✅ All tests passed!", style=SUCCESS_COLOR)
+        console.print("[green]All tests passed![/green]", style=SUCCESS_COLOR)
     else:
-        console.print("❌ Some tests failed!", style=ERROR_COLOR)
+        console.print("[red]Some tests failed![/red]", style=ERROR_COLOR)
         raise typer.Exit(result.returncode)
 
 
