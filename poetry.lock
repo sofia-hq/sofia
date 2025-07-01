@@ -352,7 +352,6 @@ files = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
-markers = {main = "sys_platform == \"win32\" or platform_system == \"Windows\"", dev = "platform_system == \"Windows\" or sys_platform == \"win32\""}
 
 [[package]]
 name = "coverage"
@@ -2966,4 +2965,4 @@ traces = ["opentelemetry-api", "opentelemetry-exporter-otlp", "opentelemetry-ins
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9,<4.0"
-content-hash = "cb2a772aae0b1f6fd943c1294687f71f6cd3d2fce05b02a2c2e40e57bca8af61"
+content-hash = "6c097a898dbe9e9c082b5c11c93523802b543708d08408d1915ac8fdcfce36bd"
