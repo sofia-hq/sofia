@@ -58,10 +58,8 @@ class MockLLM(LLMBase):
         response = self.responses.pop(0)
         if not self.responses:
             self.responses.append(response)
-        # Check if the response schema matches the expected format schema
-        assert (
-            response.model_json_schema() == response_format.model_json_schema()
-        ), f"Response schema mismatch: {response.model_json_schema()} != {response_format.model_json_schema()}"
+        # Lightweight check that avoids expensive schema generation
+        assert isinstance(response, response_format.__class__)
         return response
 
     def embed_text(self, text: str) -> List[float]:

@@ -237,9 +237,14 @@ class LLMBase:
         """Count the number of tokens in a string."""
         return len(text.split())
 
-    @staticmethod
-    @cache
+    _decision_model_cache: dict[
+        tuple[str, tuple[str, ...], Optional["DecisionConstraints"]],
+        Type[BaseModel],
+    ] = {}
+
+    @classmethod
     def _create_decision_model(
+        cls,
         current_step: Step,
         current_step_tools: tuple[Tool, ...],
         constraints: Optional["DecisionConstraints"] = None,
@@ -252,6 +257,14 @@ class LLMBase:
         :param tool_models: List of Pydantic models for tool arguments.
         :return: A dynamically created Pydantic BaseModel for the decision.
         """
+        key = (
+            current_step.step_id,
+            tuple(t.name for t in current_step_tools),
+            constraints,
+        )
+        if key in cls._decision_model_cache:
+            return cls._decision_model_cache[key]
+
         available_step_ids = current_step.get_available_routes()
         if constraints and constraints.tool_name:
             current_step_tools = tuple(
@@ -354,9 +367,7 @@ class LLMBase:
                 "optional": bool(not constraints),
                 "default": None,
             }
-        print(
-            f"Creating Decision Model with params: {params}, current_step: {current_step.step_id}, constraints: {constraints}"
-        )
+        # Debug log of decision model creation can be added here if needed
         assert (
             len(params) > 2
         ), f"Something went wrong, Please check the step configuration for {current_step.step_id}. Params {params}"
@@ -365,6 +376,7 @@ class LLMBase:
             "Decision",
             params,
         )
+        cls._decision_model_cache[key] = model
         return model
 
     @staticmethod
