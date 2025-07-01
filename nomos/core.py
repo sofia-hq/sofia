@@ -280,7 +280,12 @@ class Session:
                         "available context, produce a fallback response."
                     ),
                 )
-                return self.next()
+                return self.next(
+                    verbose=verbose,
+                    decision_constraints=DecisionConstraints(
+                        actions=["RESPOND"], fields=["response"]
+                    ),
+                )
             else:
                 raise RecursionError(
                     f"Maximum iterations reached ({self.max_iter}). Stopping session."
@@ -292,7 +297,7 @@ class Session:
 
         # Check for flow transitions
         self.state_machine.handle_flow_transitions(
-            self.current_step.step_id, self.session_id
+            self.current_step.step_id, self.session_id, verbose=verbose
         )
 
         decision = self._get_next_decision(decision_constraints=decision_constraints)
@@ -310,6 +315,7 @@ class Session:
                 decision_constraints=DecisionConstraints(
                     actions=["RESPOND"], fields=["response"]
                 ),
+                verbose=verbose,
             )
         if decision.action == Action.MOVE and decision.step_id is None:
             self._add_message(
@@ -321,6 +327,7 @@ class Session:
                 decision_constraints=DecisionConstraints(
                     actions=["MOVE"], fields=["step_id"]
                 ),
+                verbose=verbose,
             )
         if decision.action == Action.TOOL_CALL and decision.tool_call is None:
             self._add_message(
@@ -332,6 +339,7 @@ class Session:
                 decision_constraints=DecisionConstraints(
                     actions=["TOOL_CALL"], fields=["tool_call"]
                 ),
+                verbose=verbose,
             )
 
         self._add_step_identifier(self.current_step.get_step_identifier())
@@ -369,10 +377,10 @@ class Session:
                 _error = e
                 self._add_message("error", str(e))
 
+            res = Response(decision=decision, tool_output=tool_results)
+            if verbose:
+                pp_response(res)
             if return_tool and _error is None:
-                res = Response(decision=decision, tool_output=tool_results)
-                if verbose:
-                    pp_response(res)
                 return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
@@ -390,6 +398,7 @@ class Session:
                     )
                     else None
                 ),
+                verbose=verbose,
             )
         elif decision.action == Action.MOVE and decision.step_id:
             _error = None
@@ -412,7 +421,7 @@ class Session:
 
                 # Check if we need to enter a new flow after moving
                 self.state_machine.handle_flow_transitions(
-                    self.state_machine.current_step_id, self.session_id
+                    self.state_machine.current_step_id, self.session_id, verbose=verbose
                 )
 
             else:
@@ -426,10 +435,10 @@ class Session:
                 _error = ValueError(
                     f"Invalid route: {decision.step_id} not in {allowed}"
                 )
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
             if return_step:
-                res = Response(decision=decision)
-                if verbose:
-                    pp_response(res)
                 return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
@@ -439,6 +448,7 @@ class Session:
                     if _error
                     else None
                 ),
+                verbose=verbose,
             )
         elif decision.action == Action.END:
             # Clean up any active flows before ending
@@ -469,6 +479,7 @@ class Session:
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
+                verbose=verbose,
             )
 
     def _add_step_identifier(self, step_identifier: StepIdentifier) -> None:
