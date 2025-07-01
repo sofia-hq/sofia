@@ -753,7 +753,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "    try:",
         f'        config = AgentConfig.from_yaml("{config_path}")',
         "        agent = Agent.from_config(config, tools=tool_list)",
-        f"        session = agent.create_session(verbose={verbose})",
+        "        session = agent.create_session()",
         "",
         '        print(f"Agent {config.name} ready in interactive mode!")',
         f'        print(f"Config: {config_path}")',
@@ -767,7 +767,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "                    break",
         "                if not user_input:",
         "                    continue",
-        "                res = session.next(user_input, verbose=True)",
+        f"                res = session.next(user_input, verbose={verbose})",
         "                print(f'Agent: {res.decision.response}')",
         "                if res.decision.action == Action.END:",
         "                    print('Session ended.')",
@@ -850,7 +850,7 @@ def _train(config_path: Path, tool_files: List[Path]) -> None:
                 break
         else:
             user_input = None
-        res = agent.next(user_input, session_data, verbose=True)
+        res = agent.next(user_input, session_data, return_step=True, return_tool=True)
         if res.decision.action == Action.RESPOND:
             console.print(
                 "Agent:\nReasoning:{}\nResponse: {}".format(

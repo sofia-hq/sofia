@@ -29,7 +29,7 @@ from .models.tool import (
 )
 from .state_machine import StateMachine
 from .utils.flow_utils import create_flows_from_config
-from .utils.logging import log_debug, log_error, log_info
+from .utils.logging import log_debug, log_error, pp_response
 
 
 class Session:
@@ -52,7 +52,6 @@ class Session:
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
         state: Optional[State] = None,
-        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -81,7 +80,6 @@ class Session:
         self.persona = persona
         self.max_errors = max_errors
         self.max_iter = max_iter
-        self.verbose = verbose
         self.config = config or AgentConfig(
             name=name,
             steps=list(steps.values()),
@@ -298,7 +296,7 @@ class Session:
         )
 
         decision = self._get_next_decision(decision_constraints=decision_constraints)
-        log_info(str(decision)) if self.verbose else log_debug(str(decision))
+        log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
         # Validate decision
@@ -339,7 +337,10 @@ class Session:
         self._add_step_identifier(self.current_step.get_step_identifier())
         if decision.action == Action.RESPOND:
             self._add_message(self.name, str(decision.response))
-            return Response(decision=decision)
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            return res
         elif decision.action == Action.TOOL_CALL and decision.tool_call:
             _error: Optional[Exception] = None
             try:
@@ -357,7 +358,7 @@ class Session:
                         "tool", f"Running tool {tool_name} with args {tool_kwargs}"
                     )
                     raise e
-                log_info(f"Tool Results: {tool_results}") if self.verbose else None
+                log_debug(f"Tool Results: {tool_results}")
             except FallbackError as e:
                 _error = e
                 self._add_message("fallback", str(e))
@@ -369,7 +370,10 @@ class Session:
                 self._add_message("error", str(e))
 
             if return_tool and _error is None:
-                return Response(decision=decision, tool_output=tool_results)
+                res = Response(decision=decision, tool_output=tool_results)
+                if verbose:
+                    pp_response(res)
+                return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -423,7 +427,10 @@ class Session:
                     f"Invalid route: {decision.step_id} not in {allowed}"
                 )
             if return_step:
-                return Response(decision=decision)
+                res = Response(decision=decision)
+                if verbose:
+                    pp_response(res)
+                return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
@@ -450,7 +457,10 @@ class Session:
                     self.state_machine.flow_context = None
 
             self._add_message("end", "Session ended.")
-            return Response(decision=decision)
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            return res
         else:
             self._add_message(
                 "error",
@@ -640,14 +650,11 @@ class Agent:
                     "NOMOS_LOG_LEVEL", logging_config.handlers[0].level.upper()
                 )
 
-    def create_session(
-        self, memory: Optional[Memory] = None, verbose: bool = False
-    ) -> Session:
+    def create_session(self, memory: Optional[Memory] = None) -> Session:
         """
         Create a new Session for this agent.
 
         :param memory: Optional Memory instance.
-        :param verbose: Whether to return verbose output.
         :return: Session instance.
         """
         log_debug("Creating new session")
@@ -670,7 +677,6 @@ class Agent:
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
-            verbose=verbose,
             config=self.config,
             embedding_model=self.embedding_model,
         )

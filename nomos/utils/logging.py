@@ -58,7 +58,7 @@ def log_error(message: str) -> None:
     logger.error(message)
 
 
-def print_response(response: "Response") -> None:
+def pp_response(response: "Response") -> None:
     """Print the response from a Nomos session."""
     decision = response.decision
     tool_output = response.tool_output
