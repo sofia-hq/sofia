@@ -2,6 +2,9 @@
 
 from typing import Dict, List, Optional, Tuple
 
+import colorama
+from colorama import Fore, Style
+
 from .config import AgentConfig
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
@@ -163,9 +166,15 @@ class StateMachine:
 
     @staticmethod
     def pp_flow_transitions(type: str, step_id: str, flow_id: str) -> None:
-        """Pretty print flow transitions for debugging."""
+        """Pretty print flow transitions for debugging with colors."""
+        colorama.init(autoreset=True)
+
         type_str = "Entering" if type == "enter" else "Exiting"
-        print(f"{type_str} flows: {flow_id} at step {step_id}")
+
+        print(
+            f"\n{Style.BRIGHT}{Fore.CYAN}{type_str} flow{Style.RESET_ALL}: "
+            f"{flow_id} at step {step_id}"
+        )
 
     # ------------------------------------------------------------------
     # Persistence helpers

@@ -62,30 +62,27 @@ def cli_app(
     pass
 
 
-banner_text = '''
- _____                                                                               _____
-( ___ )-----------------------------------------------------------------------------( ___ )
- |   |                                                                               |   |
- |   | 888b      88    ,ad8888ba,    88b           d88    ,ad8888ba,     ad88888ba   |   |
- |   | 8888b     88   d8"'    `"8b   888b         d888   d8"'    `"8b   d8"     "8b  |   |
- |   | 88 `8b    88  d8'        `8b  88`8b       d8'88  d8'        `8b  Y8,          |   |
- |   | 88  `8b   88  88          88  88 `8b     d8' 88  88          88  `Y8aaaaa,    |   |
- |   | 88   `8b  88  88          88  88  `8b   d8'  88  88          88    `"""""8b,  |   |
- |   | 88    `8b 88  Y8,        ,8P  88   `8b d8'   88  Y8,        ,8P          `8b  |   |
- |   | 88     `8888   Y8a.    .a8P   88    `888'    88   Y8a.    .a8P   Y8a     a8P  |   |
- |   | 88      `888    `"Y8888Y"'    88     `8'     88    `"Y8888Y"'     "Y88888P"   |   |
- |___|                                                                               |___|
-(_____)-----------------------------------------------------------------------------(_____)
-'''
+banner_text = r"""
+ __  _  __  __ __  __    __
+|  \| |/__\|  V  |/__\ /' _/
+| | ' | \/ | \_/ | \/ |`._`.
+|_|\__|\__/|_| |_|\__/ |___/
+
+Build Agents you can audit.
+"""
 
 
 def print_banner() -> None:
     """Print the Nomos banner."""
-    banner = Text(banner_text, style=PRIMARY_COLOR)
-    subtitle = Text("Build Agents you can audit.", style="dim")
+    banner = Panel(
+        Text.from_markup(banner_text, justify="center"),
+        border_style=PRIMARY_COLOR,
+        title_align="left",
+        padding=(1, 2),
+        expand=False,
+    )
     console.print()
     console.print(banner)
-    console.print(subtitle)
     console.print()
 
 
@@ -635,7 +632,7 @@ def _generate_project_files(
         "            if not user_input:" "                continue",
         "            res = session.next(user_input, verbose=True)",
         "            if hasattr(res.decision, 'response') and res.decision.response:",
-        '                print(f"Agent {config.name}: {res.decision.response}")'
+        '                print(f"\nAgent {config.name}: {res.decision.response}")'
         "        except KeyboardInterrupt:"
         '            print("\\nGoodbye!")'
         "            break",
@@ -725,11 +722,6 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
 
     if tool_dirs:
         os.environ["TOOLS_PATH"] = os.pathsep.join(tool_dirs)
-    else:
-        console.print(
-            "[yellow]WARNING:[/yellow] No tool files provided and no tools directory found. Running without tools.",
-            style=WARNING_COLOR,
-        )
     env_file = current_dir / ".env.local"
     # Create development server script
     dev_server_code = [
@@ -757,8 +749,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "",
         '        print(f"Agent {config.name} ready in interactive mode!")',
         f'        print(f"Config: {config_path}")',
-        '        print(f"Tools: {len(tool_list)} loaded")',
-        "        print('Type quit to exit\\n')",
+        "        print('Type (quit, exit, bye) to exit\\n')",
         "",
         "        while True:",
         "            try:",
@@ -768,6 +759,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         "                if not user_input:",
         "                    continue",
         f"                res = session.next(user_input, verbose={verbose})",
+        "                print()",
         "                print(f'Agent: {res.decision.response}')",
         "                if res.decision.action == Action.END:",
         "                    print('Session ended.')",
@@ -797,9 +789,7 @@ def _run(config_path: Path, tool_files: List[Path], verbose: bool) -> None:
         temp_script.write("\n".join(dev_server_code))
 
     try:
-        console.print(
-            f"[bold cyan]Working directory:[/bold cyan] [dim]{current_dir}[/dim]"
-        )
+        console.print(f"[bold cyan]Working directory:[/bold cyan] {current_dir}")
         result = subprocess.run(
             [sys.executable, temp_script_path], cwd=current_dir, check=False
         )
