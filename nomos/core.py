@@ -351,6 +351,7 @@ class Session:
             return res
         elif decision.action == Action.TOOL_CALL and decision.tool_call:
             _error: Optional[Exception] = None
+            tool_results = None
             try:
                 tool_name = decision.tool_call.tool_name  # type: ignore
                 tool_kwargs: dict = decision.tool_call.tool_kwargs.model_dump()

@@ -32,7 +32,7 @@ def test_agent_initialization(basic_agent):
 
 def test_session_creation(basic_agent):
     """Test that agent can create a new session."""
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
     assert session.current_step.step_id == "start"
     assert len(session.memory.context) == 0
 
@@ -40,14 +40,14 @@ def test_session_creation(basic_agent):
 def test_tool_registration(basic_agent, test_tool_0):
     """Test that tools are properly registered and converted to Tool objects."""
     tool_name = test_tool_0.__name__
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
     assert len(session.tools) == 3
     assert isinstance(session.tools[tool_name], Tool)
 
 
 def test_pkg_tool_registration(basic_agent):
     """Test that package tools are properly registered."""
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
     assert len(session.tools) == 3
     assert "combinations" in session.tools
     assert session.tools["combinations"].name == "combinations"
@@ -57,7 +57,7 @@ def test_basic_conversation_flow(basic_agent, test_tool_0, test_tool_1, tool_def
     """Test a basic conversation flow with the agent."""
 
     # Set up session
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     expected_decision_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
@@ -114,7 +114,7 @@ def test_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     # Create response models with tool
     tool_model = basic_agent.llm._create_decision_model(
@@ -160,7 +160,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test that the agent can properly use tools."""
 
     # Start session and use tool
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     # Create response models with tool
     tool_model = basic_agent.llm._create_decision_model(
@@ -199,7 +199,7 @@ def test_pkg_tool_usage(basic_agent, test_tool_0, test_tool_1, tool_defs):
 def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
     """Test handling of invalid tool arguments."""
 
-    session = basic_agent.create_session(verbose=True)
+    session = basic_agent.create_session()
 
     tool_model = basic_agent.llm._create_decision_model(
         current_step=session.current_step,
@@ -227,7 +227,7 @@ def test_invalid_tool_args(basic_agent, test_tool_0, test_tool_1, tool_defs):
     session.llm.set_response(invalid_response)
 
     with pytest.raises(ValueError, match="Maximum errors reached"):
-        decision, _ = session.next("Use tool with invalid args", return_tool=True)
+        res = session.next("Use tool with invalid args", return_tool=True)
 
     # Verify error message in history
     messages = [msg for msg in session.memory.context if isinstance(msg, Message)]
@@ -272,7 +272,7 @@ def test_config_loading(mock_llm, basic_steps, test_tool_0, test_tool_1):
     assert len(agent.steps) == 2
     assert len(agent.tools) == 3
 
-    session = agent.create_session(verbose=True)
+    session = agent.create_session()
 
     # Test that tool arg descriptions were properly loaded
     tool = session.tools["test_tool"]
@@ -330,7 +330,7 @@ def test_external_tools_registration(mock_llm, basic_steps, test_tool_0, test_to
     assert len(agent.steps) == 2
     assert len(agent.tools) == 5
 
-    session = agent.create_session(verbose=True)
+    session = agent.create_session()
 
     # Test that package tool was properly registered
     pkg_tool = session.tools["combinations"]
