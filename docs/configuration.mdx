@@ -10,9 +10,10 @@ NOMOS provides flexible configuration options through both Python API and YAML f
 ### Basic Agent Setup
 
 ```python
-from nomos import Agent, AgentConfig, Step, Route
-from nomos.llms import OpenAI
+from nomos import Agent, AgentConfig
+from nomos.models.agent import Step, Route
 from nomos.models.flow import FlowConfig
+from nomos.llms import LLMConfig
 from math import sqrt, pow
 
 def get_time():
@@ -62,17 +63,16 @@ flows = [
 
 config = AgentConfig(
     name="clockbot",
-    llm={"provider": "openai", "model": "gpt-4o-mini"},
+    llm=LLMConfig(provider="openai", model="gpt-4o-mini"),
     steps=steps,
     flows=flows,
     start_step_id="start",
     persona="You are a friendly assistant that can tell time and perform calculations.",
     max_errors=3,
-    max_iter=5,
+    max_iter=10,
 )
 
-llm = config.get_llm()
-agent = Agent.from_config(config, llm, [get_time, sqrt, pow])
+agent = Agent.from_config(config, tools=[get_time, sqrt, pow])
 session = agent.create_session()
 # ... interact with session.next(user_input)
 ```
@@ -98,6 +98,7 @@ steps:
     description: Say goodbye to the user.
 start_step_id: start
 max_errors: 3  # Maximum consecutive errors before stopping
+max_iter: 10  # Maximum iterations per interaction
 ```
 
 ### Advanced YAML Configuration
@@ -117,33 +118,33 @@ max_errors: 3  # Maximum consecutive errors before stopping
 <CodeGroup>
 
 ```python OpenAI
-from nomos.llms import OpenAI
-llm = OpenAI(model="gpt-4o-mini")
+from nomos.llms import LLMConfig
+llm = LLMConfig(provider="openai", model="gpt-4o-mini")
 ```
 
 ```python Mistral
-from nomos.llms import Mistral
-llm = Mistral(model="mistral-medium")
+from nomos.llms import LLMConfig
+llm = LLMConfig(provider="mistral", model="mistral-medium")
 ```
 
 ```python Google Gemini
-from nomos.llms import Gemini
-llm = Gemini(model="gemini-pro")
+from nomos.llms import LLMConfig
+llm = LLMConfig(provider="google", model="gemini-pro")
 ```
 
 ```python Ollama
-from nomos.llms import Ollama
-llm = Ollama(model="llama3")
+from nomos.llms import LLMConfig
+llm = LLMConfig(provider="ollama", model="llama3")
 ```
 
 ```python HuggingFace
-from nomos.llms import HuggingFace
-llm = HuggingFace(model="meta-llama/Meta-Llama-3-8B-Instruct")
+from nomos.llms import LLMConfig
+llm = LLMConfig(provider="huggingface", model="meta-llama/Meta-Llama-3-8B-Instruct")
 ```
 
 ```python Anthropic
-from nomos.llms import Anthropic
-llm = Anthropic(model="claude-3-sonnet-20240229")
+from nomos.llms import LLMConfig
+llm = LLMConfig(provider="anthropic", model="claude-3-sonnet-20240229")
 ```
 
 </CodeGroup>
@@ -304,7 +305,7 @@ Make sure the package is installed in your environment and function returns an o
 name: my-agent
 # ... other config
 max_errors: 3  # Maximum consecutive errors before stopping
-max_iter: 5   # Maximum iterations per interaction
+max_iter: 10   # Maximum iterations per interaction
 ```
 
 ## Environment Variables
