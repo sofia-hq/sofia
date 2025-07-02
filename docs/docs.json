@@ -60,9 +60,16 @@
             "group": "Building Blocks",
             "pages": [
               "steps",
-              "tools",
               "flows",
               "llm-support"
+            ]
+          },
+          {
+            "group": "Tools",
+            "pages": [
+              "tools/introduction",
+              "tools/external-tools",
+              "tools/security-best-practices"
             ]
           },
           {

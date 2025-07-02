@@ -37,7 +37,7 @@ NOMOS enables comprehensive testing through its **step-based architecture**:
 <Info>
 **Unit Testing for AI**
 
-Each step in your agent can be tested independently, allowing you to verify specific behaviors without the complexity of end-to-end interactions.
+Each step in your agent can be tested independently with **unit testing**, while complete user scenarios can be validated with **end-to-end testing**.
 </Info>
 
 ### Testing Architecture
@@ -264,6 +264,97 @@ test_tool_parameters:
   input: "Add a large cappuccino to my order"
   expectation: "Calls add_to_cart with coffee_type='Cappuccino', size='Large'"
 ```
+
+## End-to-End Testing
+
+While unit testing validates individual steps, **end-to-end (E2E) testing** validates complete user scenarios from start to finish. NOMOS provides scenario-based testing to simulate real user interactions.
+
+### Scenario Testing
+
+E2E tests use scenarios that describe complete user journeys:
+
+```python
+from nomos.testing.e2e import ScenarioRunner, Scenario
+
+# Define a complete user scenario
+scenario = Scenario(
+    scenario="Customer wants to order a large latte and pay with cash",
+    expectation="Successfully processes the order from greeting to payment completion"
+)
+
+# Run the scenario against your agent
+runner = ScenarioRunner()
+result = await runner.run_scenario(agent, scenario, max_turns=10)
+
+if result.success:
+    print("Scenario passed!")
+else:
+    print(f"Scenario failed: {result.reason}")
+```
+
+### Scenario Configuration
+
+Define E2E test scenarios in your test configuration:
+
+```yaml
+# e2e_tests.yaml
+llm:
+  provider: openai
+  model: gpt-4o-mini
+
+scenarios:
+  complete_coffee_order:
+    scenario: "New customer wants to order a medium cappuccino with an extra shot and pay by card"
+    expectation: "Agent should greet, show menu, take order, confirm details, and process payment"
+    max_turns: 15
+
+  handle_unavailable_item:
+    scenario: "Customer orders an item that's not available and needs an alternative"
+    expectation: "Agent politely explains unavailability and suggests alternatives"
+    max_turns: 8
+
+  complex_multi_item_order:
+    scenario: "Customer orders multiple different drinks with modifications for a group"
+    expectation: "Agent accurately captures all items and modifications, confirms total"
+    max_turns: 20
+```
+
+### Running E2E Tests
+
+Execute end-to-end tests using the NOMOS CLI:
+
+```bash
+# Run all E2E scenarios
+nomos test --e2e ./e2e_tests.yaml
+
+# Run specific scenario
+nomos test --e2e ./e2e_tests.yaml --scenario complete_coffee_order
+
+# Run with detailed output
+nomos test --e2e ./e2e_tests.yaml --verbose
+```
+
+<Info>
+**When to Use E2E Testing**
+
+- Validate complete user workflows
+- Test complex multi-step interactions
+- Verify agent behavior across step transitions
+- Ensure agents handle edge cases gracefully
+- Test integration with external systems
+</Info>
+
+### E2E Best Practices
+
+<Tip>
+**Effective E2E Testing**
+
+1. **Representative Scenarios**: Test real user journeys, not just happy paths
+2. **Edge Cases**: Include scenarios for errors, unavailable items, and unusual requests
+3. **Conversation Limits**: Set reasonable `max_turns` to prevent infinite loops
+4. **Clear Expectations**: Write specific, measurable success criteria
+5. **Incremental Testing**: Start with simple scenarios, add complexity gradually
+</Tip>
 
 ## Evaluation Metrics
 
