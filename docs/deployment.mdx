@@ -1,0 +1,162 @@
+---
+title: 'Deployment Guide'
+description: 'Learn how to deploy NOMOS agents in various environments'
+---
+
+NOMOS provides multiple deployment options to suit different environments and requirements.
+
+## CLI Deployment
+
+### Quick Deployment with CLI
+
+The simplest way to deploy your agent is using the NOMOS CLI:
+
+<CodeGroup>
+
+```bash Basic Deployment
+# Deploy with FastAPI server
+nomos serve --config config.agent.yaml
+```
+
+```bash Custom Configuration
+# Custom port and workers
+nomos serve --config config.agent.yaml --port 9000 --workers 4
+```
+
+```bash With Tools
+# Load additional tools
+nomos serve --config config.agent.yaml --tools tools.py --tools utils.py
+```
+
+</CodeGroup>
+
+<Card
+  title="CLI Usage Guide"
+  icon="terminal"
+  href="/cli-usage"
+>
+  See complete deployment options in the CLI documentation
+</Card>
+
+## Docker Base Image
+
+NOMOS provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/nomos-base`.
+
+### Using the Base Image
+
+<Steps>
+  <Step title="Create a Dockerfile">
+    ```dockerfile
+    FROM chandralegend/nomos-base:latest
+
+    # Copy your config file
+    COPY config.agent.yaml /app/config.agent.yaml
+
+    # Copy your tools
+    COPY tools.py /app/src/tools/
+    ```
+  </Step>
+  <Step title="Build and run your container">
+    ```bash
+    docker build -t my-nomos-agent .
+    docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-nomos-agent
+    ```
+  </Step>
+</Steps>
+
+## Environment Variables
+
+Essential environment variables for deployment:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `OPENAI_API_KEY` | OpenAI API key | If using OpenAI |
+| `ANTHROPIC_API_KEY` | Anthropic API key | If using Anthropic |
+| `MISTRAL_API_KEY` | Mistral API key | If using Mistral |
+| `GOOGLE_API_KEY` | Google API key | If using Gemini |
+| `HUGGINGFACE_API_TOKEN` | HuggingFace token | If using HuggingFace |
+
+## Production Considerations
+
+<CardGroup cols={2}>
+  <Card
+    title="Security"
+    icon="shield"
+  >
+    Use environment variables for API keys and secrets
+  </Card>
+  <Card
+    title="Scaling"
+    icon="chart-line"
+  >
+    Configure multiple workers for high traffic
+  </Card>
+  <Card
+    title="Monitoring"
+    icon="chart-mixed"
+  >
+    Enable logging and monitoring for production
+  </Card>
+  <Card
+    title="Health Checks"
+    icon="heart-pulse"
+  >
+    Implement health check endpoints
+  </Card>
+</CardGroup>
+
+## Cloud Deployment
+
+### Docker Compose
+
+For orchestrated deployments:
+
+```yaml
+version: '3.8'
+services:
+  nomos-agent:
+    image: chandralegend/nomos-base:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./config.agent.yaml:/app/config.agent.yaml
+      - ./tools.py:/app/src/tools/
+```
+
+### Kubernetes
+
+Basic Kubernetes deployment:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nomos-agent
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nomos-agent
+  template:
+    metadata:
+      labels:
+        app: nomos-agent
+    spec:
+      containers:
+      - name: nomos-agent
+        image: chandralegend/nomos-base:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: openai-key
+```
+
+<Warning>
+Remember to properly manage secrets and API keys in production environments.
+</Warning>
