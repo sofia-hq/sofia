@@ -20,24 +20,22 @@
   "navbar": {
     "links": [
       {
-        "label": "GitHub",
-        "href": "https://github.com/dowhiledev/nomos"
-      },
-      {
-        "label": "Try Visual Builder",
-        "href": "https://nomos.dowhile.dev/try"
+        "label": "Community",
+        "href": "https://discord.gg/your-discord"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Get Started",
-      "href": "https://github.com/dowhiledev/nomos"
+      "label": "Try Visual Builder",
+      "href": "https://nomos.dowhile.dev/try"
     }
   },
   "navigation": {
-    "tabs": [
+    "dropdowns": [
       {
-        "tab": "Documentation",
+        "dropdown": "Documentation",
+        "icon": "book",
+        "description": "Learn how to build agents with NOMOS",
         "groups": [
           {
             "group": "Getting Started",
@@ -55,45 +53,74 @@
             ]
           },
           {
-            "group": "Usage & Deployment",
+            "group": "Development & Deployment",
             "pages": [
               "cli-usage",
               "deployment"
             ]
           },
           {
-            "group": "Community & Examples",
+            "group": "Examples & Guides",
             "pages": [
-              "examples",
+              "examples"
+            ]
+          }
+        ]
+      },
+      {
+        "dropdown": "Community",
+        "icon": "users",
+        "description": "Connect with the NOMOS community",
+        "groups": [
+          {
+            "group": "Community",
+            "pages": [
               "community"
             ]
           }
         ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Community",
-          "icon": "discord",
-          "href": "https://discord.gg/your-discord"
-        },
-        {
-          "anchor": "GitHub",
-          "icon": "github",
-          "href": "https://github.com/dowhiledev/nomos"
-        },
-        {
-          "anchor": "NPM Package",
-          "icon": "npm",
-          "href": "https://www.npmjs.com/package/nomos-sdk"
-        }
-      ]
-    }
+    ]
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/dowhiledev/nomos"
-    }
+      "github": "https://github.com/dowhiledev/nomos",
+      "x": "https://x.com/dowhiledev"
+    },
+    "links": [
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "Visual Builder",
+            "href": "https://nomos.dowhile.dev/try"
+          },
+          {
+            "label": "Examples",
+            "href": "https://github.com/dowhiledev/nomos/tree/main/cookbook/examples"
+          },
+          {
+            "label": "TypeScript SDK",
+            "href": "https://www.npmjs.com/package/nomos-sdk"
+          }
+        ]
+      },
+      {
+        "header": "Company",
+        "items": [
+          {
+            "label": "GitHub",
+            "href": "https://github.com/dowhiledev/nomos"
+          },
+          {
+            "label": "Issues",
+            "href": "https://github.com/dowhiledev/nomos/issues"
+          }
+        ]
+      }
+    ]
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"]
   }
 }
