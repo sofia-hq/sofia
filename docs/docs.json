@@ -1,0 +1,99 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "name": "NOMOS",
+  "description": "Build Agents you can Audit",
+  "theme": "maple",
+  "logo": {
+    "light": "/assets/light.png",
+    "dark": "/assets/dark.png",
+    "href": "https://github.com/dowhiledev/nomos"
+  },
+  "favicon": "/assets/light.png",
+  "icons": {
+    "library": "lucide"
+  },
+  "colors": {
+    "primary": "#2563eb",
+    "light": "#3b82f6",
+    "dark": "#1d4ed8"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/dowhiledev/nomos"
+      },
+      {
+        "label": "Try Visual Builder",
+        "href": "https://nomos.dowhile.dev/try"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get Started",
+      "href": "https://github.com/dowhiledev/nomos"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "getting-started",
+              "configuration"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "flow-management",
+              "llm-support"
+            ]
+          },
+          {
+            "group": "Usage & Deployment",
+            "pages": [
+              "cli-usage",
+              "deployment"
+            ]
+          },
+          {
+            "group": "Community & Examples",
+            "pages": [
+              "examples",
+              "community"
+            ]
+          }
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Community",
+          "icon": "discord",
+          "href": "https://discord.gg/your-discord"
+        },
+        {
+          "anchor": "GitHub",
+          "icon": "github",
+          "href": "https://github.com/dowhiledev/nomos"
+        },
+        {
+          "anchor": "NPM Package",
+          "icon": "npm",
+          "href": "https://www.npmjs.com/package/nomos-sdk"
+        }
+      ]
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/dowhiledev/nomos"
+    }
+  }
+}
