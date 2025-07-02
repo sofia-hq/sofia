@@ -30,7 +30,7 @@
     ],
     "primary": {
       "type": "button",
-      "label": "Try Visual Builder",
+      "label": "Playground",
       "href": "https://nomos.dowhile.dev/playground"
     }
   },
@@ -116,7 +116,7 @@
         "header": "Resources",
         "items": [
           {
-            "label": "Visual Builder",
+            "label": "Playground",
             "href": "https://nomos.dowhile.dev/playground"
           },
           {

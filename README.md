@@ -25,7 +25,7 @@
 pip install nomos[cli]
 ```
 
-To learn more about NOMOS, check out [the documentation](docs/md/). If you're looking for quick prototyping, try our [Visual Flow Builder](https://nomos.dowhile.dev/playground) for drag-and-drop agent creation.
+To learn more about NOMOS, check out [the documentation](docs/md/). If you're looking for quick prototyping, try our [Playground](https://nomos.dowhile.dev/playground) for drag-and-drop agent creation.
 
 <details>
 <summary>Table of Contents</summary>
@@ -36,7 +36,7 @@ To learn more about NOMOS, check out [the documentation](docs/md/). If you're lo
 - [Documentation](#documentation)
 - [Additional Resources](#additional-resources)
 
-**[Complete Documentation](docs/md/) | [Try Visual Builder](https://nomos.dowhile.dev/playground) | [Quick Start Guide](docs/md/getting-started.md)**
+**[Complete Documentation](docs/md/) | [Try Playground](https://nomos.dowhile.dev/playground) | [Quick Start Guide](docs/md/getting-started.md)**
 
 </details>
 
@@ -48,7 +48,7 @@ NOMOS helps developers build sophisticated AI agents through structured workflow
 
 Use NOMOS for:
 - **Multi-step agent workflows**. Create complex, stateful interactions with step-by-step flow definitions, each with specialized tools and intelligent routing between conversation states.
-- **Rapid prototyping to production**. Start with our Visual Flow Builder for no-code prototyping, then seamlessly transition to YAML configuration or full Python implementation as your needs evolve.
+- **Rapid prototyping to production**. Start with our Playground for no-code prototyping, then seamlessly transition to YAML configuration or full Python implementation as your needs evolve.
 - **Tool ecosystem integration**. Leverage your existing Python functions, or integrate with CrewAI, LangChain tools, and any Python package through our unified tool system with automatic documentation generation.
 - **Production-ready deployment**. Built-in session management, error handling, monitoring, and Docker deployment options make it easy to scale from prototype to production.
 
@@ -56,7 +56,7 @@ Use NOMOS for:
 
 While NOMOS can be used standalone, it integrates with a growing ecosystem of tools and services designed for agent development:
 
-- **[Visual Flow Builder](https://nomos.dowhile.dev/playground)** - Design and prototype agent flows with our drag-and-drop interface. Perfect for rapid iteration and collaboration between technical and non-technical team members.
+- **[Playground](https://nomos.dowhile.dev/playground)** - Design and prototype agent flows with our drag-and-drop interface. Perfect for rapid iteration and collaboration between technical and non-technical team members.
 - **[TypeScript SDK](support/ts-sdk/README.md)** - Full-featured client library for web and Node.js applications, enabling seamless integration of NOMOS agents into your frontend applications.
 - **[Docker Base Images](docs/md/deployment.md#docker-base-image)** - Pre-configured containers for rapid deployment with built-in support for Redis, PostgreSQL, and monitoring integrations.
 - **[CLI Tools](docs/md/cli-usage.md)** - Comprehensive command-line interface for agent development, testing, and deployment with `nomos init`, `nomos run`, `nomos train`, `nomos serve`, `nomos test`, `nomos schema`, and `nomos --version` commands.
@@ -69,7 +69,7 @@ While NOMOS can be used standalone, it integrates with a growing ecosystem of to
 | | Advanced Flow Management | Organize steps into flows with shared context and components |
 | | Flow Memory | Each flow maintains context with intelligent cross-flow summarization |
 | **Development** | Multiple Config Options | Python API or declarative YAML configuration |
-| | Visual Flow Builder | Drag-and-drop interface for designing flows **[Try it live →](https://nomos.dowhile.dev/playground)** |
+| | Playground | Drag-and-drop interface for designing flows **[Try it live →](https://nomos.dowhile.dev/playground)** |
 | | Interactive CLI | Bootstrap agents with `nomos init`, run with `nomos run` |
 | **Tools & Integration** | Tool Integration | Register Python functions, packages, CrewAI, or LangChain tools |
 | | Auto Documentation | Tool descriptions generated from docstrings |
