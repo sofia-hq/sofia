@@ -31,7 +31,7 @@
     "primary": {
       "type": "button",
       "label": "Try Visual Builder",
-      "href": "https://nomos.dowhile.dev/try"
+      "href": "https://nomos.dowhile.dev/playground"
     }
   },
   "navigation": {
@@ -117,7 +117,7 @@
         "items": [
           {
             "label": "Visual Builder",
-            "href": "https://nomos.dowhile.dev/try"
+            "href": "https://nomos.dowhile.dev/playground"
           },
           {
             "label": "Cookbook",
