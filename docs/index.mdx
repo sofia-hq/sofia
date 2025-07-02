@@ -6,32 +6,85 @@ slug: "/docs"
 ---
 
 <div className="relative">
-
-<div className="px-4 py-16 lg:py-48 lg:pb-24 max-w-3xl mx-auto">
-<div className="flex justify-center mb-6">
-  <img
-    src="/assets/light.png"
-    alt="NOMOS Logo"
-    className="block dark:hidden h-32 w-auto"
-  />
-  <img
-    src="/assets/dark.png"
-    alt="NOMOS Logo"
-    className="hidden dark:block h-32 w-auto"
-  />
-</div>
-
-<p className="max-w-xl mx-auto px-4 mt-4 text-lg text-center text-gray-500 dark:text-zinc-500">
-Build Agents You can Audit.
-</p>
-
-<div className="flex justify-center mt-8">
-  <div className="inline-flex rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 p-1">
-    <code className="px-3 py-2 text-sm font-mono text-gray-700 dark:text-zinc-300">
-      pip install nomos[cli]
-    </code>
+  <div className="absolute top-0 lg:-top-16 left-0 right-0">
+    <img
+      src="https://github.com/mintlify/docs/raw/main/images/hero/background-light.png"
+      className="block dark:hidden pointer-events-none"
+    />
+    <img
+      src="https://github.com/mintlify/docs/raw/main/images/hero/background-dark.png"
+      className="hidden dark:block pointer-events-none"
+    />
+  </div>
+  <div className="px-4 py-16 lg:py-48 lg:pb-12 max-w-3xl mx-auto">
+    <div className="flex justify-center mb-6">
+      <img
+        src="/assets/light.png"
+        alt="NOMOS Logo"
+        className="block dark:hidden h-32 w-auto"
+      />
+      <img
+        src="/assets/dark.png"
+        alt="NOMOS Logo"
+        className="hidden dark:block h-32 w-auto"
+      />
+    </div>
+    <p className="max-w-xl mx-auto px-4 mt-4 text-lg text-center text-gray-500 dark:text-zinc-500">Build Agents You can Audit.</p>
   </div>
 </div>
-</div>
+
+<div className="max-w-6xl mx-auto px-4 py-4">
+
+<CardGroup cols={3}>
+  <Card title="Visual Playground" icon="mouse-pointer-2" href="https://nomos.dowhile.dev/playground">
+    Design flows visually with drag-and-drop, then export to YAML configuration files.
+  </Card>
+  <Card title="CLI Quick Start" icon="terminal">
+    ```bash
+    pip install nomos[cli]
+    nomos init
+    nomos run
+    ```
+  </Card>
+  <Card title="Examples" icon="book-open" href="/examples">
+    Explore real implementations including barista, financial advisor, and travel planner agents.
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2}>
+  <Card title="Enterprise-Grade AI Framework" icon="building" iconType="solid">
+    NOMOS is a comprehensive framework for building advanced LLM-powered assistants with structured, multi-step workflows. Designed for enterprise applications, it provides sophisticated AI agents through configurable flows, tools, and integrations—making complex agent development accessible from no-code to full-code approaches.
+  </Card>
+  <Card title="Production-Ready Architecture" icon="server" iconType="solid">
+    Built with scalability and reliability in mind, NOMOS features session management, error handling, monitoring capabilities, and Docker deployment options. Seamlessly transition from prototype to production with built-in support for Redis, PostgreSQL, and distributed monitoring.
+  </Card>
+</CardGroup>
+
+<CardGroup cols={3}>
+  <Card title="Drag & Drop Design" icon="mouse-pointer-2" iconType="solid">
+    Start with our intuitive Playground for visual flow design, perfect for rapid prototyping and collaboration between technical and non-technical teams.
+  </Card>
+  <Card title="Multi-Provider LLM Support" icon="brain-circuit" iconType="solid">
+    Integrate with OpenAI, Mistral, Gemini, Ollama, HuggingFace, and more through our unified interface with structured responses and persona-driven interactions.
+  </Card>
+  <Card title="Extensive Tool Ecosystem" icon="wrench" iconType="solid">
+    Leverage existing Python functions, CrewAI, LangChain tools, and any Python package through our unified tool system with automatic documentation generation.
+  </Card>
+</CardGroup>
+
+<Info>
+**Making AI Agent Development Accessible to Everyone**
+
+We envision a future where building sophisticated AI agents is accessible to everyone - from business analysts designing workflows in our visual Playground to engineers implementing complex multi-step flows in production environments.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="Innovation Through Simplicity" icon="lightbulb" iconType="solid" color="#059669">
+    Making advanced AI capabilities accessible through intuitive interfaces while maintaining the power and flexibility needed for enterprise applications.
+  </Card>
+  <Card title="Collaborative Development" icon="users" iconType="solid" color="#7c3aed">
+    Bridging the gap between domain experts and developers, enabling seamless collaboration in agent design and deployment across teams.
+  </Card>
+</CardGroup>
 
 </div>

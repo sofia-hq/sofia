@@ -50,9 +50,18 @@
             ]
           },
           {
-            "group": "Core Concepts",
+            "group": "Understanding NOMOS",
             "pages": [
-              "flow-management",
+              "philosophy",
+              "vs-other-frameworks"
+            ]
+          },
+          {
+            "group": "Building Blocks",
+            "pages": [
+              "steps",
+              "tools",
+              "flows",
               "llm-support"
             ]
           },
@@ -61,6 +70,13 @@
             "pages": [
               "cli-usage",
               "deployment"
+            ]
+          },
+          {
+            "group": "Quality Assurance",
+            "pages": [
+              "testing-evaluation",
+              "observability"
             ]
           },
           {

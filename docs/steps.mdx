@@ -1,0 +1,594 @@
+---
+title: "Steps"
+description: "Learn how to design and implement steps in your NOMOS agents"
+---
+
+# Steps
+
+Steps are the fundamental building blocks of NOMOS agents. Each step represents a discrete phase in your agent's workflow with specific responsibilities, available tools, and transition logic. This step-based architecture is what makes NOMOS agents testable, maintainable, and reliable.
+
+## What Are Steps?
+
+<Info>
+**Steps = Focused Responsibilities**
+
+Each step has a single, well-defined purpose in your agent's workflow. This decomposition makes complex agent behavior manageable and predictable.
+</Info>
+
+<CardGroup cols={2}>
+  <Card title="Single Purpose" icon="target" iconType="solid">
+    Each step handles one specific type of interaction or task
+  </Card>
+  <Card title="Controlled Tools" icon="wrench" iconType="solid">
+    Steps only have access to tools they actually need
+  </Card>
+  <Card title="Clear Transitions" icon="route" iconType="solid">
+    Explicit conditions determine when and where to move next
+  </Card>
+  <Card title="Independent Testing" icon="test-tube" iconType="solid">
+    Each step can be tested and validated separately
+  </Card>
+</CardGroup>
+
+## Step Anatomy
+
+### Basic Step Structure
+
+```yaml
+steps:
+  - step_id: greet_customer
+    description: |
+      Welcome the customer and understand their needs.
+      Ask how you can help them today and listen for their response.
+    available_tools: []
+    routes:
+      - target: take_order
+        condition: Customer wants to place an order
+      - target: customer_support
+        condition: Customer has questions or needs help
+      - target: end
+        condition: Customer wants to leave
+    examples:
+      - context: "New customer enters"
+        decision: "Greet warmly and ask how to help"
+        visibility: "always"
+```
+
+### Step Components
+
+<Tabs>
+  <Tab title="Identity">
+    **Step ID**: Unique identifier for the step
+    ```yaml
+    step_id: take_coffee_order
+    ```
+    This is how other steps reference this step in their routes.
+  </Tab>
+
+  <Tab title="Behavior">
+    **Description**: What the agent should do in this step
+    ```yaml
+    description: |
+      Take the customer's coffee order, including type, size, and any modifications.
+      Use the menu tool to show available options if needed.
+    ```
+    This guides the LLM's behavior and reasoning.
+  </Tab>
+
+  <Tab title="Capabilities">
+    **Available Tools**: Tools the agent can use in this step
+    ```yaml
+    available_tools:
+      - get_menu_items
+      - add_to_cart
+      - calculate_price
+    ```
+    Only these tools are accessible during this step.
+  </Tab>
+
+  <Tab title="Flow Control">
+    **Routes**: Where the agent can go next
+    ```yaml
+    routes:
+      - target: confirm_order
+        condition: Order is complete and customer is satisfied
+      - target: modify_order
+        condition: Customer wants to change something
+    ```
+    Defines possible transitions to other steps.
+  </Tab>
+</Tabs>
+
+## Step Design Patterns
+
+### 1. **Greeting Steps**
+
+<Card title="Entry Point" icon="door-open">
+Welcome users and route them to appropriate workflows
+</Card>
+
+```yaml
+- step_id: greeting
+  description: |
+    Greet the user warmly and introduce the available services.
+    Ask what you can help them with today.
+  available_tools: []
+  routes:
+    - target: product_inquiry
+      condition: User asks about products or services
+    - target: support_request
+      condition: User needs help with existing order or issue
+    - target: place_order
+      condition: User is ready to make a purchase
+    - target: end
+      condition: User just wants to say hello or is leaving
+```
+
+### 2. **Information Gathering Steps**
+
+<Card title="Data Collection" icon="clipboard-list">
+Collect necessary information from users
+</Card>
+
+```yaml
+- step_id: collect_order_details
+  description: |
+    Gather all necessary information for the order:
+    - Product selection and quantities
+    - Size/variant preferences
+    - Special instructions or modifications
+    - Delivery preferences
+  available_tools:
+    - show_product_catalog
+    - check_product_availability
+    - calculate_estimated_delivery
+  routes:
+    - target: review_order
+      condition: All order details are collected
+    - target: product_questions
+      condition: Customer has questions about products
+```
+
+### 3. **Action Steps**
+
+<Card title="Task Execution" icon="play">
+Perform specific actions or operations
+</Card>
+
+```yaml
+- step_id: process_payment
+  description: |
+    Handle payment processing for the confirmed order.
+    Collect payment method, process transaction, and confirm success.
+  available_tools:
+    - validate_payment_method
+    - process_transaction
+    - send_receipt
+    - update_order_status
+  routes:
+    - target: order_confirmation
+      condition: Payment successful
+    - target: payment_retry
+      condition: Payment failed but retryable
+    - target: payment_failure
+      condition: Payment failed permanently
+```
+
+### 4. **Decision Steps**
+
+<Card title="Route Logic" icon="git-branch">
+Evaluate conditions and route users appropriately
+</Card>
+
+```yaml
+- step_id: evaluate_issue
+  description: |
+    Analyze the customer's issue and determine the best resolution path.
+    Consider issue complexity, customer status, and available solutions.
+  available_tools:
+    - check_customer_history
+    - evaluate_issue_complexity
+    - check_policy_applicability
+  routes:
+    - target: simple_resolution
+      condition: Issue can be resolved immediately
+    - target: escalate_to_specialist
+      condition: Issue requires specialist knowledge
+    - target: schedule_callback
+      condition: Issue requires follow-up investigation
+```
+
+### 5. **Confirmation Steps**
+
+<Card title="Validation" icon="check-circle">
+Confirm actions and get user approval
+</Card>
+
+```yaml
+- step_id: confirm_order
+  description: |
+    Present complete order summary to customer and get final confirmation.
+    Show all items, quantities, prices, taxes, and total amount.
+  available_tools:
+    - generate_order_summary
+    - calculate_total_with_tax
+    - estimate_delivery_time
+  routes:
+    - target: process_payment
+      condition: Customer confirms order
+    - target: modify_order
+      condition: Customer wants to make changes
+    - target: cancel_order
+      condition: Customer decides not to proceed
+```
+
+## Advanced Step Features
+
+### Step Examples
+
+Provide examples to help the LLM understand expected behavior:
+
+```yaml
+- step_id: handle_complaint
+  description: |
+    Listen to customer complaints with empathy and work toward resolution.
+  available_tools:
+    - lookup_order_history
+    - check_return_policy
+    - issue_refund
+  examples:
+    - context: "Customer received damaged item"
+      decision: "Apologize, lookup order, offer refund or replacement"
+      visibility: "always"
+    - context: "Customer angry about delivery delay"
+      decision: "Acknowledge frustration, investigate delay, offer compensation"
+      visibility: "when_relevant"
+```
+
+### Conditional Tool Access
+
+Tools can be conditionally available based on context:
+
+```yaml
+- step_id: manager_escalation
+  description: |
+    Handle escalated issues that require manager authority.
+  available_tools:
+    - basic_customer_lookup
+    - issue_special_discount  # Only available in this step
+    - override_policy        # Manager-level tool
+    - escalate_to_regional   # Final escalation option
+  routes:
+    - target: resolution_complete
+      condition: Issue resolved with manager intervention
+    - target: regional_escalation
+      condition: Issue requires regional manager
+```
+
+### Step Memory and Context
+
+Steps can maintain context within flows:
+
+```yaml
+- step_id: multi_item_ordering
+  description: |
+    Handle adding multiple items to order, remembering previous selections.
+    Keep track of running total and customer preferences.
+  available_tools:
+    - add_item_to_cart
+    - remove_item_from_cart
+    - show_current_cart
+    - apply_bulk_discount
+  context_retention:
+    - cart_contents
+    - customer_preferences
+    - running_total
+  routes:
+    - target: add_more_items
+      condition: Customer wants to add more items
+    - target: checkout
+      condition: Customer finished adding items
+```
+
+## Step Transitions and Routing
+
+### Route Conditions
+
+Route conditions should be clear and specific:
+
+```yaml
+routes:
+  # Good: Specific conditions
+  - target: payment_processing
+    condition: Customer provided valid payment method and confirmed order total
+
+  # Good: Business logic conditions
+  - target: manager_approval
+    condition: Order total exceeds $1000 and requires manager approval
+
+  # Good: Error handling
+  - target: retry_payment
+    condition: Payment failed due to insufficient funds
+
+  # Avoid: Vague conditions
+  # - target: next_step
+  #   condition: When ready
+```
+
+### Complex Routing Logic
+
+Handle multiple routing scenarios:
+
+```yaml
+- step_id: order_validation
+  description: |
+    Validate order details and route based on validation results.
+  available_tools:
+    - validate_shipping_address
+    - check_inventory_availability
+    - verify_payment_method
+  routes:
+    - target: process_order
+      condition: All validations pass and order can be processed immediately
+    - target: address_correction
+      condition: Shipping address needs correction
+    - target: inventory_backorder
+      condition: Some items are backordered but customer accepts delay
+    - target: payment_issues
+      condition: Payment method validation failed
+    - target: order_cancellation
+      condition: Critical validation failures that cannot be resolved
+```
+
+## Error Handling in Steps
+
+### Graceful Error Recovery
+
+```yaml
+- step_id: external_api_integration
+  description: |
+    Integrate with external service, handling potential failures gracefully.
+  available_tools:
+    - call_external_api
+    - fallback_local_data
+    - notify_technical_team
+  routes:
+    - target: api_success_processing
+      condition: External API call successful
+    - target: fallback_processing
+      condition: API unavailable but fallback data sufficient
+    - target: service_unavailable
+      condition: Neither API nor fallback available
+  error_handling:
+    max_retries: 3
+    timeout: 30
+    fallback_step: service_unavailable
+```
+
+### Validation Steps
+
+```yaml
+- step_id: input_validation
+  description: |
+    Validate user input and provide helpful error messages for invalid data.
+  available_tools:
+    - validate_email_format
+    - validate_phone_number
+    - check_required_fields
+  routes:
+    - target: process_valid_input
+      condition: All input validation passes
+    - target: request_email_correction
+      condition: Email format invalid
+    - target: request_phone_correction
+      condition: Phone number format invalid
+    - target: request_missing_fields
+      condition: Required fields are missing
+```
+
+## Step Performance and Optimization
+
+### Efficient Tool Usage
+
+```yaml
+- step_id: optimized_lookup
+  description: |
+    Efficiently lookup customer information using cached data when possible.
+  available_tools:
+    - quick_customer_lookup   # Fast, cached lookup
+    - detailed_customer_fetch # Slower, comprehensive lookup
+    - update_customer_cache   # Update cache with new info
+  routes:
+    - target: serve_from_cache
+      condition: Customer info found in cache and is recent
+    - target: fetch_and_cache
+      condition: Customer info not cached or outdated
+```
+
+### Parallel Processing
+
+```yaml
+- step_id: order_processing
+  description: |
+    Process order components in parallel where possible.
+  available_tools:
+    - validate_inventory      # Can run in parallel
+    - process_payment        # Can run in parallel
+    - reserve_shipping       # Depends on inventory
+    - send_confirmation      # Depends on payment
+  routes:
+    - target: order_complete
+      condition: All parallel processes completed successfully
+    - target: partial_failure_recovery
+      condition: Some processes failed but order can be salvaged
+```
+
+## Testing Individual Steps
+
+Steps can be tested independently:
+
+```yaml
+# tests.agent.yaml
+unit:
+  test_greeting_step:
+    context:
+      current_step_id: "greeting"
+    input: "Hello, I'm looking for help with my order"
+    expectation: "Greets customer and routes to support_request step"
+
+  test_order_step_with_tools:
+    context:
+      current_step_id: "take_order"
+    input: "I'd like a large latte with oat milk"
+    expectation: "Uses menu tools and adds specific item to cart"
+
+  test_error_handling:
+    context:
+      current_step_id: "payment_processing"
+    input: "My card was declined"
+    expectation: "Provides helpful error message and routes to payment_retry"
+```
+
+## Best Practices for Step Design
+
+### 1. **Single Responsibility Principle**
+
+<Card title="One Job Per Step" icon="target">
+Each step should have one clear purpose
+</Card>
+
+```yaml
+# Good: Focused steps
+- step_id: collect_shipping_address
+- step_id: validate_shipping_address
+- step_id: calculate_shipping_cost
+
+# Avoid: Overloaded steps
+# - step_id: handle_all_shipping_stuff
+```
+
+### 2. **Clear Transition Logic**
+
+<Card title="Explicit Routing" icon="route">
+Make transition conditions obvious and testable
+</Card>
+
+```yaml
+routes:
+  # Good: Clear conditions
+  - target: payment_success
+    condition: Payment processed successfully and confirmation email sent
+
+  # Avoid: Ambiguous conditions
+  # - target: next
+  #   condition: When done
+```
+
+### 3. **Appropriate Tool Access**
+
+<Card title="Minimal Tool Scope" icon="key">
+Only provide tools that are needed for the step's purpose
+</Card>
+
+```yaml
+- step_id: customer_greeting
+  available_tools: []  # No tools needed for greeting
+
+- step_id: lookup_order
+  available_tools:
+    - search_orders    # Only order search capability
+
+- step_id: process_refund
+  available_tools:
+    - search_orders    # Need to find order
+    - issue_refund     # Need to process refund
+    # No other payment tools
+```
+
+### 4. **Comprehensive Error Handling**
+
+<Card title="Expect the Unexpected" icon="shield">
+Plan for failure scenarios and edge cases
+</Card>
+
+```yaml
+- step_id: api_dependent_step
+  routes:
+    - target: success_path
+      condition: API call successful
+    - target: retry_path
+      condition: API call failed but retryable
+    - target: fallback_path
+      condition: API unavailable but alternative exists
+    - target: failure_path
+      condition: No alternatives available
+```
+
+<Tip>
+**Start Simple, Then Refine**
+
+Begin with basic steps and gradually add complexity. It's easier to split a step that's doing too much than to combine steps that are too granular.
+</Tip>
+
+## Real-World Step Examples
+
+Here are well-designed steps from the NOMOS examples:
+
+<CodeGroup>
+```yaml Barista Steps
+- step_id: start
+  description: |
+    Greet the customer and ask how can I help them.
+    Use the get_available_coffee_options tool if they need menu information.
+  available_tools:
+    - get_available_coffee_options
+  routes:
+    - target: take_coffee_order
+      condition: Customer is ready to place a new order
+
+- step_id: take_coffee_order
+  description: |
+    Ask for coffee preference and size.
+    Manage cart operations based on customer requests.
+  available_tools:
+    - get_available_coffee_options
+    - add_to_cart
+    - remove_item
+    - clear_cart
+  routes:
+    - target: finalize_order
+      condition: User wants to finalize the order
+    - target: end
+      condition: Customer wants to cancel
+```
+
+```yaml Financial Advisor Steps
+- step_id: budget_planning
+  description: |
+    Ask for monthly income and create a budget plan.
+    Explain the recommended allocations and reasoning.
+  available_tools:
+    - calculate_budget
+  routes:
+    - target: expense_tracking
+      condition: User wants to track expenses
+    - target: savings_goals
+      condition: User wants to set savings goals
+    - target: end
+      condition: User is satisfied with budget plan
+
+- step_id: financial_health
+  description: |
+    Analyze overall financial health and provide recommendations.
+  available_tools:
+    - get_financial_health
+    - get_expense_summary
+  routes:
+    - target: budget_planning
+      condition: User wants to adjust budget
+    - target: expense_tracking
+      condition: User wants to review expenses
+```
+</CodeGroup>
+
+Steps are the foundation of reliable AI agents. By designing them with clear purposes, appropriate tool access, and explicit transition logic, you create agents that are both powerful and predictable.

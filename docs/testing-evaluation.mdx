@@ -1,0 +1,388 @@
+---
+title: "Testing & Evaluation"
+description: "Learn how to test and evaluate your NOMOS agents for reliability and performance"
+---
+
+# Testing & Evaluation
+
+NOMOS brings software engineering best practices to AI agent development, making it possible to apply traditional testing methodologies to ensure your agents behave reliably and predictably.
+
+## Why Testing Matters for AI Agents
+
+<Warning>
+**The Challenge with Traditional AI Agents**
+
+Most AI agent frameworks make testing nearly impossible due to their reliance on monolithic prompts and unpredictable behavior patterns.
+</Warning>
+
+<CardGroup cols={2}>
+  <Card title="Reliability" icon="shield-check" iconType="solid">
+    Ensure your agent behaves consistently across different inputs and scenarios
+  </Card>
+  <Card title="Regression Prevention" icon="bug" iconType="solid">
+    Catch when changes to your agent break existing functionality
+  </Card>
+  <Card title="Quality Assurance" icon="test-tube" iconType="solid">
+    Validate agent behavior before deploying to production
+  </Card>
+  <Card title="Compliance" icon="document-check" iconType="solid">
+    Meet enterprise requirements for auditable and testable systems
+  </Card>
+</CardGroup>
+
+## NOMOS Testing Approach
+
+NOMOS enables comprehensive testing through its **step-based architecture**:
+
+<Info>
+**Unit Testing for AI**
+
+Each step in your agent can be tested independently, allowing you to verify specific behaviors without the complexity of end-to-end interactions.
+</Info>
+
+### Testing Architecture
+
+```yaml
+# tests.agent.yaml
+llm:
+  provider: openai
+  model: gpt-4o-mini
+
+unit:
+  test_greeting_response:
+    input: ""
+    expectation: "Greets the user warmly and asks how to help"
+
+  test_order_taking_with_context:
+    context:
+      current_step_id: "take_order"
+      history:
+        - type: summary
+          summary:
+            - "Customer expressed interest in ordering coffee"
+            - "Agent moved to order-taking step"
+    input: "I'd like a large latte"
+    expectation: "Acknowledges the order and asks for any additional items"
+
+  test_invalid_transition:
+    context:
+      current_step_id: "greeting"
+    input: "Process my payment"
+    expectation: "Explains that payment processing comes after order confirmation"
+    invalid: true  # This test expects the agent to NOT transition inappropriately
+```
+
+## Test Configuration
+
+### Basic Test Structure
+
+Each test case includes:
+
+<Tabs>
+  <Tab title="Input">
+    **User Input**: The message or query to send to the agent
+    ```yaml
+    input: "I want to order a coffee"
+    ```
+  </Tab>
+
+  <Tab title="Context">
+    **Session Context**: The current state, step, and conversation history
+    ```yaml
+    context:
+      current_step_id: "take_order"
+      history:
+        - type: summary
+          summary: ["Customer greeted and expressed interest"]
+    ```
+  </Tab>
+
+  <Tab title="Expectation">
+    **Expected Behavior**: What the agent should do or respond
+    ```yaml
+    expectation: "Acknowledges order and uses add_to_cart tool"
+    ```
+  </Tab>
+
+  <Tab title="Validation">
+    **Test Type**: Whether this should pass or fail
+    ```yaml
+    invalid: false  # Test should pass
+    verbose: true   # Show detailed output
+    ```
+  </Tab>
+</Tabs>
+
+### Advanced Test Scenarios
+
+**Testing Tool Usage:**
+```yaml
+test_tool_integration:
+  context:
+    current_step_id: "check_inventory"
+  input: "Do you have medium lattes available?"
+  expectation: "Uses get_available_coffee_options tool and provides accurate availability"
+```
+
+**Testing Step Transitions:**
+```yaml
+test_step_routing:
+  context:
+    current_step_id: "order_complete"
+  input: "Thank you, goodbye"
+  expectation: "Transitions to farewell step and thanks customer"
+```
+
+**Testing Error Handling:**
+```yaml
+test_invalid_input:
+  context:
+    current_step_id: "payment"
+  input: "banana helicopter"
+  expectation: "Asks for clarification about payment method"
+  invalid: true
+```
+
+## Running Tests
+
+### Command Line Interface
+
+```bash
+# Run all tests for an agent
+nomos test --config config.agent.yaml --tests tests.agent.yaml
+
+# Run specific test cases
+nomos test --config config.agent.yaml --tests tests.agent.yaml --filter "test_greeting"
+
+# Run tests with verbose output
+nomos test --config config.agent.yaml --tests tests.agent.yaml --verbose
+
+# Generate test coverage report
+nomos test --config config.agent.yaml --tests tests.agent.yaml --coverage
+```
+
+### Test Output
+
+<CodeGroup>
+```bash Terminal Output
+Running tests for: general_knowledge_bot
+✓ test_greeting_and_topic_selection (0.8s)
+✓ test_science_question_response (1.2s)
+✗ test_invalid_transition (0.9s)
+  Expected: Should stay in current step
+  Actual: Transitioned to payment step
+✓ test_ending_conversation (0.7s)
+
+4 tests run, 3 passed, 1 failed
+Coverage: 85% of steps tested
+```
+
+```json JSON Report
+{
+  "agent": "general_knowledge_bot",
+  "total_tests": 4,
+  "passed": 3,
+  "failed": 1,
+  "coverage": {
+    "steps_tested": 6,
+    "total_steps": 7,
+    "percentage": 85.7
+  },
+  "results": [
+    {
+      "test_name": "test_greeting_and_topic_selection",
+      "status": "passed",
+      "duration": 0.8
+    }
+  ]
+}
+```
+</CodeGroup>
+
+## Testing Best Practices
+
+### 1. **Test Each Step Independently**
+
+<Card title="Step-Level Testing" icon="layers">
+Create tests for each step's specific behavior and available tools
+</Card>
+
+```yaml
+# Test greeting step
+test_greeting:
+  context:
+    current_step_id: "greeting"
+  input: "Hello"
+  expectation: "Warm greeting and explanation of available services"
+
+# Test order step
+test_order_taking:
+  context:
+    current_step_id: "take_order"
+  input: "I want a latte"
+  expectation: "Uses menu tools and confirms order details"
+```
+
+### 2. **Test Transitions and Routing**
+
+<Card title="Flow Testing" icon="git-branch">
+Verify that your agent transitions correctly between steps
+</Card>
+
+```yaml
+test_order_to_payment:
+  context:
+    current_step_id: "confirm_order"
+  input: "Yes, proceed with payment"
+  expectation: "Transitions to payment step and requests payment details"
+```
+
+### 3. **Test Edge Cases and Error Handling**
+
+<Card title="Robustness Testing" icon="shield">
+Ensure your agent handles unexpected inputs gracefully
+</Card>
+
+```yaml
+test_unclear_input:
+  context:
+    current_step_id: "take_order"
+  input: "Maybe something warm"
+  expectation: "Asks clarifying questions about coffee preferences"
+```
+
+### 4. **Test Tool Integration**
+
+<Card title="Tool Testing" icon="wrench">
+Verify that tools are called correctly with proper parameters
+</Card>
+
+```yaml
+test_tool_parameters:
+  context:
+    current_step_id: "add_item"
+  input: "Add a large cappuccino to my order"
+  expectation: "Calls add_to_cart with coffee_type='Cappuccino', size='Large'"
+```
+
+## Evaluation Metrics
+
+### Automated Metrics
+
+<AccordionGroup>
+  <Accordion title="Success Rate">
+    Percentage of test cases that pass consistently across multiple runs
+  </Accordion>
+  <Accordion title="Step Coverage">
+    Percentage of agent steps that have associated test cases
+  </Accordion>
+  <Accordion title="Tool Coverage">
+    Percentage of available tools that are tested
+  </Accordion>
+  <Accordion title="Response Time">
+    Average time for agent to respond to test inputs
+  </Accordion>
+</AccordionGroup>
+
+### Manual Evaluation
+
+**Conversation Quality Assessment:**
+- Naturalness and fluency of responses
+- Accuracy of information provided
+- Appropriateness of tool usage
+- User experience and satisfaction
+
+**Business Logic Validation:**
+- Correct handling of business rules
+- Proper error recovery
+- Compliance with requirements
+- Security and privacy adherence
+
+## Continuous Integration
+
+### GitHub Actions Example
+
+```yaml
+name: NOMOS Agent Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install nomos
+          pip install -r requirements.txt
+
+      - name: Run agent tests
+        run: |
+          nomos test --config config.agent.yaml --tests tests.agent.yaml --coverage
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+## Testing Strategy
+
+<Steps>
+  <Step title="Start with Happy Path">
+    Test the main user journey through your agent with typical inputs
+  </Step>
+  <Step title="Add Edge Cases">
+    Include tests for unusual inputs, error conditions, and boundary cases
+  </Step>
+  <Step title="Test Tool Integration">
+    Verify that each tool is called correctly with proper parameters
+  </Step>
+  <Step title="Validate Transitions">
+    Ensure step routing works correctly under different conditions
+  </Step>
+  <Step title="Performance Testing">
+    Test response times and resource usage under load
+  </Step>
+</Steps>
+
+<Tip>
+**Start Small, Scale Up**
+
+Begin with a few critical test cases and gradually expand your test suite as your agent becomes more complex.
+</Tip>
+
+## Real-World Example
+
+Here's how the barista agent might be tested:
+
+```yaml
+# Barista agent tests
+unit:
+  test_greeting_new_customer:
+    input: "Hi there"
+    expectation: "Greets warmly and offers to show menu or take order"
+
+  test_menu_inquiry:
+    context:
+      current_step_id: "start"
+    input: "What drinks do you have?"
+    expectation: "Uses get_available_coffee_options and lists available drinks with prices"
+
+  test_add_to_cart:
+    context:
+      current_step_id: "take_coffee_order"
+    input: "I'll have a large latte"
+    expectation: "Calls add_to_cart with correct parameters and confirms addition"
+
+  test_invalid_payment_method:
+    context:
+      current_step_id: "finalize_order"
+    input: "I'll pay with bitcoin"
+    expectation: "Explains accepted payment methods (Card or Cash)"
+    invalid: true
+```
+
+This comprehensive testing approach ensures your NOMOS agents are reliable, predictable, and ready for production deployment.
