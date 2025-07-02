@@ -13,15 +13,19 @@
     "library": "lucide"
   },
   "colors": {
-    "primary": "#2563eb",
-    "light": "#3b82f6",
-    "dark": "#1d4ed8"
+    "primary": "#0D9373",
+    "light": "#55D799",
+    "dark": "#0D9373"
   },
   "navbar": {
     "links": [
       {
         "label": "Community",
-        "href": "https://discord.gg/your-discord"
+        "href": "https://discord.gg/dowhiledev"
+      },
+      {
+        "label": "Github Repository",
+        "href": "https://github.com/dowhiledev/nomos"
       }
     ],
     "primary": {
@@ -34,8 +38,8 @@
     "dropdowns": [
       {
         "dropdown": "Documentation",
-        "icon": "book",
-        "description": "Learn how to build agents with NOMOS",
+        "description": "Learn to build agents",
+        "icon": "book-open",
         "groups": [
           {
             "group": "Getting Started",
@@ -70,12 +74,31 @@
       {
         "dropdown": "Community",
         "icon": "users",
-        "description": "Connect with the NOMOS community",
+        "description": "Connect with Builders",
         "groups": [
           {
             "group": "Community",
+            "icon": "heart",
             "pages": [
-              "community"
+              "community",
+              "Showcase"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "icon": "code",
+            "pages": [
+              "contributing-guidelines"
+            ]
+          },
+          {
+            "group": "Support",
+            "icon": "help-circle",
+            "pages": [
+              "faq",
+              "support",
+              "privacy-policy",
+              "terms-of-service"
             ]
           }
         ]
@@ -85,7 +108,8 @@
   "footer": {
     "socials": {
       "github": "https://github.com/dowhiledev/nomos",
-      "x": "https://x.com/dowhiledev"
+      "x": "https://x.com/dowhiledev",
+      "linkedin": "https://www.linkedin.com/company/dowhiledev"
     },
     "links": [
       {
@@ -94,6 +118,10 @@
           {
             "label": "Visual Builder",
             "href": "https://nomos.dowhile.dev/try"
+          },
+          {
+            "label": "Cookbook",
+            "href": "https://github.com/dowhiledev/nomos/tree/main/cookbook"
           },
           {
             "label": "Examples",
@@ -106,15 +134,36 @@
         ]
       },
       {
-        "header": "Company",
+        "header": "Github",
         "items": [
           {
-            "label": "GitHub",
+            "label": "Repository",
             "href": "https://github.com/dowhiledev/nomos"
           },
           {
             "label": "Issues",
             "href": "https://github.com/dowhiledev/nomos/issues"
+          },
+          {
+            "label": "Pull Requests",
+            "href": "https://github.com/dowhiledev/nomos/pulls"
+          },
+          {
+            "label": "Discussions",
+            "href": "https://github.com/dowhiledev/nomos/discussions"
+          }
+        ]
+      },
+      {
+        "header": "Legal",
+        "items": [
+          {
+            "label": "Privacy Policy",
+            "href": "https://nomos.dowhile.dev/privacy-policy"
+          },
+          {
+            "label": "Terms of Service",
+            "href": "https://nomos.dowhile.dev/terms-of-service"
           }
         ]
       }
