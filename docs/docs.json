@@ -66,7 +66,7 @@
           {
             "group": "Tools",
             "pages": [
-              "tools/introduction",
+              "tools/index",
               "tools/external-tools",
               "tools/security-best-practices"
             ]

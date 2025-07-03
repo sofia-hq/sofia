@@ -1,8 +1,8 @@
 ---
 title: "Introduction"
-description: "Learn how to integrate and manage tools in your NOMOS agents"
+description: "Tools are the hands and eyes of your NOMOS agent—they enable interaction with external systems, data processing, and action execution. NOMOS provides a flexible and secure tool integration system that gives agents capabilities while maintaining control and auditability."
+icon: "wrench"
 ---
-Tools are the hands and eyes of your NOMOS agent—they enable interaction with external systems, data processing, and action execution. NOMOS provides a flexible and secure tool integration system that gives agents capabilities while maintaining control and auditability.
 
 ## What Are Tools?
 
@@ -22,7 +22,7 @@ Tools are functions that your agent can call to interact with the world—from s
   <Card title="Type Safety" icon="shield-check" iconType="solid">
     Automatic parameter validation and type checking prevent runtime errors
   </Card>
-  <Card title="Framework Integration" icon="puzzle-piece" iconType="solid">
+  <Card title="Framework Integration" icon="blocks" iconType="solid">
     Compatible with existing tools from LangChain, CrewAI, and other frameworks
   </Card>
 </CardGroup>
@@ -144,122 +144,23 @@ tools:
     - financial_tools.py
     - external_apis.py
 
-  tool_arg_descriptions:
+  tool_defs:
     calculate_budget:
-      monthly_income: "User's monthly income in dollars"
-      has_dependents: "Whether the user has dependents"
-
+      args:
+        - key: monthly_income
+          type: float
+          description: "User's monthly income in dollars"
+        - key: has_dependents
+          type: bool
+          description: "Whether the user has dependents"
     get_stock_price:
-      symbol: "Stock symbol (e.g., AAPL, GOOGL)"
-      exchange: "Stock exchange (optional)"
-```
-
-## Tool Types
-
-### 1. **Information Retrieval Tools**
-
-<Card title="Data Access" icon="database">
-Tools that fetch information from databases, APIs, or knowledge bases
-</Card>
-
-```python
-def search_knowledge_base(query: str) -> str:
-    """
-    Search the company knowledge base for relevant information.
-
-    Args:
-        query: Search query string
-
-    Returns:
-        str: Relevant information from knowledge base
-    """
-    # Implementation using vector search, database query, etc.
-    results = vector_search(query, top_k=5)
-    return format_search_results(results)
-
-def get_weather(location: str) -> str:
-    """
-    Get current weather information for a location.
-
-    Args:
-        location: City name or coordinates
-
-    Returns:
-        str: Weather information
-    """
-    response = requests.get(f"https://api.weather.com/v1/current?location={location}")
-    return format_weather_data(response.json())
-```
-
-### 2. **Action Tools**
-
-<Card title="System Actions" icon="play">
-Tools that perform actions or modify system state
-</Card>
-
-```python
-def send_email(recipient: str, subject: str, body: str) -> str:
-    """
-    Send an email to the specified recipient.
-
-    Args:
-        recipient: Email address of recipient
-        subject: Email subject line
-        body: Email body content
-
-    Returns:
-        str: Confirmation of email sent
-    """
-    # Email sending logic
-    email_service.send(recipient, subject, body)
-    return f"Email sent successfully to {recipient}"
-
-def create_calendar_event(title: str, start_time: str, duration: int) -> str:
-    """
-    Create a new calendar event.
-
-    Args:
-        title: Event title
-        start_time: Start time in ISO format
-        duration: Duration in minutes
-
-    Returns:
-        str: Confirmation with event details
-    """
-    # Calendar API integration
-    event = calendar_api.create_event(title, start_time, duration)
-    return f"Created event '{title}' at {start_time}"
-```
-
-### 3. **Calculation Tools**
-
-<Card title="Processing" icon="calculator">
-Tools that perform calculations or data processing
-</Card>
-
-```python
-def calculate_loan_payment(principal: float, rate: float, years: int) -> str:
-    """
-    Calculate monthly loan payment.
-
-    Args:
-        principal: Loan amount in dollars
-        rate: Annual interest rate as decimal (e.g., 0.05 for 5%)
-        years: Loan term in years
-
-    Returns:
-        str: Monthly payment amount and total interest
-    """
-    monthly_rate = rate / 12
-    num_payments = years * 12
-
-    monthly_payment = principal * (monthly_rate * (1 + monthly_rate)**num_payments) / \
-                     ((1 + monthly_rate)**num_payments - 1)
-
-    total_paid = monthly_payment * num_payments
-    total_interest = total_paid - principal
-
-    return f"Monthly payment: ${monthly_payment:.2f}, Total interest: ${total_interest:.2f}"
+      args:
+        - key: symbol
+          type: str
+          description: "Stock symbol (e.g., AAPL, GOOGL)"
+        - key: exchange
+          type: str
+          description: "Stock exchange (optional)"
 ```
 
 ## Next Steps
@@ -267,7 +168,7 @@ def calculate_loan_payment(principal: float, rate: float, years: int) -> str:
 <CardGroup cols={2}>
   <Card
     title="External Tools"
-    icon="puzzle-piece"
+    icon="square-arrow-out-up-right"
     href="/tools/external-tools"
   >
     Learn about integrating Python packages, CrewAI, and LangChain tools

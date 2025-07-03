@@ -1,11 +1,8 @@
 ---
-title: "External Tools Integration"
-description: "Integrate Python packages, CrewAI tools, and LangChain tools directly in NOMOS"
+title: "External Tools"
+description: "Integrate Python packages, CrewAI tools, and LangChain tools directly"
+icon: "puzzle"
 ---
-
-# External Tools Integration
-
-NOMOS allows you to use existing tools from various frameworks and Python packages without writing wrapper code. This powerful feature gives you access to the entire Python ecosystem and established tool libraries.
 
 ## Python Package Tools
 
@@ -59,7 +56,7 @@ config = AgentConfig(
   <Card title="No Wrapper Code" icon="code">
     Use any Python function directly without writing wrapper code
   </Card>
-  <Card title="Automatic Validation" icon="check-circle">
+  <Card title="Automatic Validation" icon="circle-check-big">
     Function signatures provide automatic parameter validation
   </Card>
   <Card title="Docstring Descriptions" icon="book">
@@ -291,128 +288,9 @@ tools:
       name: "python_repl"
 ```
 
-## Environment Setup
-
-### Required Dependencies
-
-Install the necessary packages for the tools you want to use:
-
-```bash
-# For CrewAI tools
-pip install crewai-tools
-
-# For LangChain tools
-pip install langchain-community
-pip install duckduckgo-search  # For DuckDuckGo search
-pip install wikipedia-api      # For Wikipedia search
-
-# For specific LangChain tools
-pip install google-search-results  # For Google search
-pip install arxiv                  # For Arxiv search
-```
-
-### Environment Variables
-
-Set up required API keys:
-
-```bash
-# For Google search tools
-export GOOGLE_API_KEY="your-google-api-key"
-export GOOGLE_CSE_ID="your-custom-search-engine-id"
-
-# For Serper (CrewAI)
-export SERPER_API_KEY="your-serper-api-key"
-
-# For other services
-export ARXIV_API_KEY="your-arxiv-key"  # If required
-```
-
-## Best Practices
-
-### 1. **Choose the Right Tool Source**
-
-<Card title="Tool Selection Strategy" icon="target">
-Prefer tools in this order: Python packages → CrewAI → LangChain
-</Card>
-
-- **Python packages**: Most efficient, direct function calls
-- **CrewAI tools**: Well-designed, focused tools for specific tasks
-- **LangChain tools**: Comprehensive but may have more overhead
-
-### 2. **Tool Naming Conventions**
-
-```yaml
-tools:
-  external_tools:
-    # Good: Clear, descriptive names
-    - tag: "@langchain/DuckDuckGoSearchRun"
-      name: "web_search"
-    - tag: "@crewai/FileReadTool"
-      name: "read_file"
-
-    # Avoid: Generic or unclear names
-    # - tag: "@langchain/DuckDuckGoSearchRun"
-    #   name: "tool1"
-```
-
-### 3. **Error Handling**
-
-External tools may fail, so handle errors gracefully:
-
-```python
-# Custom wrapper for external tools if needed
-def safe_web_search(query: str) -> str:
-    """Safe web search wrapper with error handling."""
-    try:
-        # This would be handled automatically by NOMOS
-        return web_search(query)
-    except Exception as e:
-        return f"Search failed: {str(e)}. Please try a different query."
-```
-
-### 4. **Security Considerations**
-
-<Warning>
-**Security Notice**
-
-External tools can execute arbitrary code. Only use tools from trusted sources and review their functionality before deployment.
-</Warning>
-
-- Review tool source code before use
-- Use environment variables for sensitive configuration
-- Limit tool access to specific steps
-- Monitor tool usage in production
-
-### 5. **Specify Fallback Error Types**
-
-When using external tools, specify fallback error handling to ensure graceful degradation:
-
-```python
-# In your tool definitions, specify fallback behavior
-from nomos.config import ToolDef, ArgDef
-
-# Example tool definition with fallback
-tool_defs = {
-    "web_search": ToolDef(
-        desc="Search the web for information",
-        args=[ArgDef(key="query", type="str", desc="Search query")],
-        fallback_error_type="network_error",  # Specify fallback error type
-        fallback_message="Web search is currently unavailable. Please try again later."
-    )
-}
-```
-
-```yaml
-# In YAML configuration
-tools:
-  external_tools:
-    - tag: "@langchain/DuckDuckGoSearchRun"
-      name: "web_search"
-      fallback_error_type: "network_error"
-      fallback_message: "Search service temporarily unavailable"
-```
-
-This ensures that when external tools fail, your agent can provide meaningful feedback to users instead of crashing.
+<Info>
+Follow the respective documentation for each tool source to set up your environment
+</Info>
 
 ## Troubleshooting
 
@@ -466,4 +344,6 @@ This ensures that when external tools fail, your agent can provide meaningful fe
   </Card>
 </CardGroup>
 
+<Note>
 External tool integration makes NOMOS incredibly powerful by giving you access to the entire ecosystem of existing tools while maintaining the structure and auditability that makes NOMOS unique.
+</Note>
