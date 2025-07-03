@@ -75,7 +75,7 @@ Build Agents you can audit.
 def print_banner() -> None:
     """Print the Nomos banner."""
     banner = Panel(
-        Text.from_markup(banner_text, justify="center"),
+        Text.from_markup(banner_text.strip(), justify="center"),
         border_style=PRIMARY_COLOR,
         title_align="left",
         padding=(1, 2),
@@ -426,6 +426,9 @@ def serve(
             f"[bold green]Starting server on port [bold]{port or 'config'}[/bold][/bold green]",
             title="Serve",
             border_style=PRIMARY_COLOR,
+            title_align="left",
+            padding=(1, 2),
+            expand=False,
         )
     )
 
@@ -468,6 +471,9 @@ def test(
             "[bold cyan]Running Nomos agent tests[/bold cyan]",
             title="Testing Framework",
             border_style=PRIMARY_COLOR,
+            title_align="left",
+            padding=(1, 2),
+            expand=False,
         )
     )
 
