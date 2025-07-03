@@ -45,23 +45,22 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "getting-started",
-              "configuration"
+              "getting-started"
             ]
           },
           {
-            "group": "Understanding NOMOS",
+            "group": "Why NOMOS?",
             "pages": [
-              "philosophy",
-              "vs-other-frameworks"
+              "nomos/philosophy",
+              "nomos/vs-other-frameworks"
             ]
           },
           {
             "group": "Building Blocks",
             "pages": [
-              "steps",
-              "flows",
-              "llm-support"
+              "building-blocks/steps",
+              "building-blocks/flows",
+              "building-blocks/llm-support"
             ]
           },
           {
@@ -75,21 +74,22 @@
           {
             "group": "Development & Deployment",
             "pages": [
-              "cli-usage",
-              "deployment"
+              "dev-deploy/configuration",
+              "dev-deploy/cli-usage",
+              "dev-deploy/deployment"
             ]
           },
           {
             "group": "Quality Assurance",
             "pages": [
-              "testing-evaluation",
-              "observability"
+              "qa/testing-evaluation",
+              "qa/observability"
             ]
           },
           {
             "group": "Examples & Guides",
             "pages": [
-              "examples"
+              "guides/index"
             ]
           }
         ]
@@ -103,25 +103,25 @@
             "group": "Community",
             "icon": "heart",
             "pages": [
-              "community",
-              "Showcase"
+              "community/index",
+              "community/showcase"
             ]
           },
           {
             "group": "Contributing",
             "icon": "code",
             "pages": [
-              "contributing-guidelines"
+              "community/contributing"
             ]
           },
           {
             "group": "Support",
             "icon": "help-circle",
             "pages": [
-              "faq",
-              "support",
-              "privacy-policy",
-              "terms-of-service"
+              "community/support/index",
+              "community/support/faq",
+              "community/support/privacy-policy",
+              "community/support/terms-of-service"
             ]
           }
         ]
@@ -193,6 +193,11 @@
     ]
   },
   "contextual": {
-    "options": ["copy", "view", "chatgpt", "claude"]
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude"
+    ]
   }
 }
