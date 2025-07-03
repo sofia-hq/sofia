@@ -97,6 +97,18 @@ export const StepNode = memo((props: NodeProps) => {
             Auto Flow
           </div>
         )}
+
+        {data.quick_suggestions && (
+          <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+            Quick Suggestions
+          </div>
+        )}
+
+        {data.examples && data.examples.length > 0 && (
+          <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">
+            {data.examples.length} Example{data.examples.length > 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {/* Handles */}

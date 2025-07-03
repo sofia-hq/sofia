@@ -148,6 +148,96 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
             <Label htmlFor="auto-flow">Auto Flow (automatically proceed to next step)</Label>
           </div>
 
+          {/* Quick Suggestions */}
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="quick-suggestions"
+              checked={formData.quick_suggestions || false}
+              onChange={(e) => setFormData(prev => ({ ...prev, quick_suggestions: e.target.checked }))}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="quick-suggestions">Quick Suggestions (provide response suggestions)</Label>
+          </div>
+
+          {/* Decision Examples */}
+          <div className="space-y-2">
+            <Label>Decision Examples</Label>
+            {(formData.examples || []).map((example, index) => (
+              <div key={index} className="border rounded p-3 space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Example {index + 1}</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newExamples = [...(formData.examples || [])];
+                      newExamples.splice(index, 1);
+                      setFormData(prev => ({ ...prev, examples: newExamples }));
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs">Context</Label>
+                    <Textarea
+                      value={example.context || ''}
+                      onChange={(e) => {
+                        const newExamples = [...(formData.examples || [])];
+                        newExamples[index] = { ...example, context: e.target.value };
+                        setFormData(prev => ({ ...prev, examples: newExamples }));
+                      }}
+                      placeholder="Describe the situation context"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Decision</Label>
+                    <Textarea
+                      value={example.decision || ''}
+                      onChange={(e) => {
+                        const newExamples = [...(formData.examples || [])];
+                        newExamples[index] = { ...example, decision: e.target.value };
+                        setFormData(prev => ({ ...prev, examples: newExamples }));
+                      }}
+                      placeholder="Expected decision for this context"
+                      rows={2}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Visibility</Label>
+                    <select
+                      value={example.visibility || 'dynamic'}
+                      onChange={(e) => {
+                        const newExamples = [...(formData.examples || [])];
+                        newExamples[index] = { ...example, visibility: e.target.value as 'always' | 'never' | 'dynamic' };
+                        setFormData(prev => ({ ...prev, examples: newExamples }));
+                      }}
+                      className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                    >
+                      <option value="dynamic">Dynamic (shown based on similarity)</option>
+                      <option value="always">Always (always shown)</option>
+                      <option value="never">Never (hidden)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const newExamples = [...(formData.examples || []), { context: '', decision: '', visibility: 'dynamic' as const }];
+                setFormData(prev => ({ ...prev, examples: newExamples }));
+              }}
+            >
+              Add Example
+            </Button>
+          </div>
+
           {/* Connected Tools (Read-only) */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">

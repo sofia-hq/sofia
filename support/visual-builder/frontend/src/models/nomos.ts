@@ -1,19 +1,37 @@
 // TypeScript models for Nomos configuration entities
 
+export interface DecisionExample {
+  context: string;
+  decision: string;
+  visibility?: 'always' | 'never' | 'dynamic';
+}
+
 export interface StepConfig {
   step_id: string;
-  persona?: string;
-  tools?: string[];
-  routes?: Record<string, string>;
-  answer_model?: string;
-  max_iter?: number;
-  allow_delegation?: boolean;
-  max_delegation?: number;
-  stop_on_error?: boolean;
+  description: string;
+  available_tools?: string[];
+  routes?: Array<{
+    target: string;
+    condition: string;
+  }>;
+  auto_flow?: boolean;
+  quick_suggestions?: boolean;
+  examples?: DecisionExample[];
+}
+
+export interface ArgDef {
+  key: string;
+  desc?: string;
+  type?: string;
+}
+
+export interface ToolDef {
+  desc?: string;
+  args?: ArgDef[];
 }
 
 export interface ToolConfig {
-  tool_id: string;
+  name: string;
   description?: string;
   parameters?: Record<string, ToolParameter>;
   package_reference?: string;
@@ -60,7 +78,7 @@ export interface NomosConfig {
   tools?: {
     tool_files?: string[];
     external_tools?: Array<{ tag: string; name: string; kwargs?: Record<string, any> }>;
-    tool_arg_descriptions?: Record<string, Record<string, string>>;
+    tool_defs?: Record<string, ToolDef>;
   };
   llm?: LLMConfig;
   max_iter?: number;

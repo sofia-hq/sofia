@@ -7,6 +7,8 @@ export interface StepNodeData {
     condition: string;
   }>;
   auto_flow?: boolean;
+  quick_suggestions?: boolean;
+  examples?: DecisionExample[];
   [key: string]: unknown;
 }
 
@@ -28,10 +30,21 @@ export interface ExternalTool {
   kwargs?: Record<string, any>;
 }
 
+export interface ArgDef {
+  key: string;
+  desc?: string;
+  type?: string;
+}
+
+export interface ToolDef {
+  desc?: string;
+  args?: ArgDef[];
+}
+
 export interface ToolsConfig {
   tool_files?: string[];
   external_tools?: ExternalTool[];
-  tool_arg_descriptions?: Record<string, Record<string, string>>;
+  tool_defs?: Record<string, ToolDef>;
 }
 
 export interface AgentConfig {
@@ -44,6 +57,12 @@ export interface AgentConfig {
   llm?: LLMConfig;
 }
 
+export interface DecisionExample {
+  context: string;
+  decision: string;
+  visibility?: 'always' | 'never' | 'dynamic';
+}
+
 export interface StepConfig {
   step_id: string;
   description: string;
@@ -53,6 +72,8 @@ export interface StepConfig {
     condition: string;
   }>;
   auto_flow?: boolean;
+  quick_suggestions?: boolean;
+  examples?: DecisionExample[];
 }
 
 export interface FlowConfig {
@@ -108,4 +129,19 @@ export interface FlowContext {
   setEditingFlow: (flowId: string | null) => void;
   updateNodeData: (nodeId: string, data: Partial<StepNodeData | ToolNodeData>) => void;
   updateFlowData: (flowId: string, data: Partial<FlowGroupData>) => void;
+}
+
+// Session state interface to match nomos.models.agent.State
+export interface SessionState {
+  session_id: string;
+  current_step_id: string;
+  history: Array<{
+    role: string;
+    content: string;
+  } | {
+    summary: string;
+  } | {
+    step_id: string;
+  }>;
+  flow_state?: any;
 }

@@ -133,7 +133,10 @@ export function exportToYaml(
         step_id: data.step_id,
         description: data.description || `Step ${data.step_id}`,
         ...(routes.length > 0 && { routes }),
-        ...(availableTools.length > 0 && { available_tools: availableTools })
+        ...(availableTools.length > 0 && { available_tools: availableTools }),
+        ...(data.auto_flow && { auto_flow: data.auto_flow }),
+        ...(data.quick_suggestions && { quick_suggestions: data.quick_suggestions }),
+        ...(data.examples && data.examples.length > 0 && { examples: data.examples })
       };
 
       steps.push(stepConfig);
@@ -182,22 +185,35 @@ export function exportToYaml(
       }
     }
 
-    // Build tool arg descriptions
-    const toolArgDescriptions: Record<string, Record<string, string>> = {};
+    // Build tool definitions using the new tool_defs structure
+    const toolDefs: Record<string, any> = {};
     toolNodes.forEach(node => {
       const data = node.data as ToolNodeData;
       if (
         data.parameters &&
         (data.tool_type === 'custom' || data.tool_type === 'pkg' || !data.tool_type)
       ) {
-        const argDescriptions: Record<string, string> = {};
+        const args: Array<{key: string; desc?: string; type?: string}> = [];
         Object.entries(data.parameters).forEach(([key, param]) => {
+          const arg: any = { key };
           if (param.description) {
-            argDescriptions[key] = param.description;
+            arg.desc = param.description;
           }
+          if (param.type) {
+            arg.type = param.type;
+          }
+          args.push(arg);
         });
-        if (Object.keys(argDescriptions).length > 0) {
-          toolArgDescriptions[data.name] = argDescriptions;
+
+        if (args.length > 0 || data.description) {
+          const toolDef: any = {};
+          if (data.description) {
+            toolDef.desc = data.description;
+          }
+          if (args.length > 0) {
+            toolDef.args = args;
+          }
+          toolDefs[data.name] = toolDef;
         }
       }
     });
@@ -222,8 +238,8 @@ export function exportToYaml(
     if (externalTools.length > 0) {
       toolsSection.external_tools = externalTools;
     }
-    if (Object.keys(toolArgDescriptions).length > 0) {
-      toolsSection.tool_arg_descriptions = toolArgDescriptions;
+    if (Object.keys(toolDefs).length > 0) {
+      toolsSection.tool_defs = toolDefs;
     }
 
     // Build final config
@@ -355,7 +371,7 @@ export function importFromYaml(yamlContent: string): ImportResult {
           description: `Tool: ${toolName}`,
           parameters: getToolParameters(
             toolName,
-            (parsedConfig.tools?.tool_arg_descriptions || (parsedConfig as any).tool_arg_descriptions)
+            (parsedConfig.tools?.tool_defs || (parsedConfig as any).tool_defs)
           ),
           tool_type: toolInfo ? toolInfo.type : 'custom',
           tool_identifier: toolInfo?.identifier,
@@ -379,6 +395,9 @@ export function importFromYaml(yamlContent: string): ImportResult {
           step_id: step.step_id,
           description: step.description,
           available_tools: step.available_tools || [],
+          auto_flow: step.auto_flow || false,
+          quick_suggestions: step.quick_suggestions || false,
+          examples: step.examples || [],
           routes: step.routes?.map(route => ({
             target: route.target,
             condition: route.condition
@@ -736,6 +755,28 @@ function validateConfig(config: AgentConfig, errors: ValidationError[], warnings
       message: `Multiple steps have no routes: ${stepsWithNoRoutes.map(s => s.step_id).join(', ')}`
     });
   }
+
+  // Validate auto_flow steps
+  config.steps.forEach(step => {
+    if (step.auto_flow) {
+      if (!step.routes || step.routes.length === 0) {
+        if (!step.available_tools || step.available_tools.length === 0) {
+          errors.push({
+            type: 'error',
+            message: `Auto-flow step '${step.step_id}' must have at least one route or tool`,
+            path: `steps[${step.step_id}]`
+          });
+        }
+      }
+      if (step.quick_suggestions) {
+        errors.push({
+          type: 'error',
+          message: `Auto-flow step '${step.step_id}' cannot have quick suggestions enabled`,
+          path: `steps[${step.step_id}]`
+        });
+      }
+    }
+  });
 }
 
 /**
@@ -813,23 +854,29 @@ function calculateGroupPosition(index: number, _total: number): { x: number; y: 
 }
 
 /**
- * Get tool parameters from tool_arg_descriptions
+ * Get tool parameters from tool_defs
  */
 function getToolParameters(
   toolName: string,
-  toolArgDescriptions?: Record<string, Record<string, string>>
+  toolDefs?: Record<string, any>
 ): Record<string, { type: string; description?: string }> {
-  if (!toolArgDescriptions || !toolArgDescriptions[toolName]) {
+  if (!toolDefs || !toolDefs[toolName]) {
     return {};
   }
 
   const parameters: Record<string, { type: string; description?: string }> = {};
-  Object.entries(toolArgDescriptions[toolName]).forEach(([key, description]) => {
-    parameters[key] = {
-      type: 'string', // Default type
-      description
-    };
-  });
+  const toolDef = toolDefs[toolName];
+
+  if (toolDef.args && Array.isArray(toolDef.args)) {
+    toolDef.args.forEach((arg: any) => {
+      if (arg.key) {
+        parameters[arg.key] = {
+          type: arg.type || 'string', // Default type
+          description: arg.desc
+        };
+      }
+    });
+  }
 
   return parameters;
 }

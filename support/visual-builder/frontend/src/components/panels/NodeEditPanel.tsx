@@ -58,65 +58,144 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                 />
               </div>
 
-              {/* Persona */}
+              {/* Description */}
               <div className="space-y-2">
-                <Label htmlFor="persona">Persona</Label>
+                <Label htmlFor="description">Description</Label>
                 <Textarea
-                  id="persona"
-                  value={formData.persona || ''}
-                  onChange={(e) => updateField('persona', e.target.value)}
-                  placeholder="Define the agent's persona and behavior"
+                  id="description"
+                  value={formData.description || ''}
+                  onChange={(e) => updateField('description', e.target.value)}
+                  placeholder="Describe what this step does"
                   rows={3}
                 />
               </div>
 
-              {/* Tools */}
+              {/* Available Tools */}
               <div className="space-y-2">
-                <Label htmlFor="tools">Tools (comma-separated)</Label>
+                <Label htmlFor="available_tools">Available Tools (comma-separated)</Label>
                 <Textarea
-                  id="tools"
-                  value={formData.tools?.join(', ') || ''}
-                  onChange={(e) => updateField('tools', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                  id="available_tools"
+                  value={formData.available_tools?.join(', ') || ''}
+                  onChange={(e) => updateField('available_tools', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
                   placeholder="tool1, tool2, tool3"
                   rows={2}
                 />
               </div>
 
-              {/* Max Iterations */}
-              <div className="space-y-2">
-                <Label htmlFor="max_iter">Max Iterations</Label>
-                <Input
-                  id="max_iter"
-                  type="number"
-                  value={formData.max_iter || ''}
-                  onChange={(e) => updateField('max_iter', parseInt(e.target.value) || undefined)}
-                  placeholder="Maximum iterations (optional)"
+              {/* Auto Flow */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="auto_flow"
+                  checked={formData.auto_flow || false}
+                  onChange={(e) => updateField('auto_flow', e.target.checked)}
+                  className="rounded border-gray-300"
                 />
+                <Label htmlFor="auto_flow">Auto Flow</Label>
               </div>
 
-              {/* Answer Model */}
-              <div className="space-y-2">
-                <Label htmlFor="answer_model">Answer Model</Label>
-                <Input
-                  id="answer_model"
-                  value={formData.answer_model || ''}
-                  onChange={(e) => updateField('answer_model', e.target.value)}
-                  placeholder="Pydantic model for structured responses (optional)"
+              {/* Quick Suggestions */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="quick_suggestions"
+                  checked={formData.quick_suggestions || false}
+                  onChange={(e) => updateField('quick_suggestions', e.target.checked)}
+                  className="rounded border-gray-300"
                 />
+                <Label htmlFor="quick_suggestions">Quick Suggestions</Label>
+              </div>
+
+              {/* Decision Examples */}
+              <div className="space-y-2">
+                <Label>Decision Examples</Label>
+                {(formData.examples || []).map((example: any, index: number) => (
+                  <div key={index} className="border rounded p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Example {index + 1}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const newExamples = [...(formData.examples || [])];
+                          newExamples.splice(index, 1);
+                          updateField('examples', newExamples);
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs">Context</Label>
+                        <Textarea
+                          value={example.context || ''}
+                          onChange={(e) => {
+                            const newExamples = [...(formData.examples || [])];
+                            newExamples[index] = { ...example, context: e.target.value };
+                            updateField('examples', newExamples);
+                          }}
+                          placeholder="Situation context"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Decision</Label>
+                        <Textarea
+                          value={example.decision || ''}
+                          onChange={(e) => {
+                            const newExamples = [...(formData.examples || [])];
+                            newExamples[index] = { ...example, decision: e.target.value };
+                            updateField('examples', newExamples);
+                          }}
+                          placeholder="Expected decision"
+                          rows={2}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Visibility</Label>
+                        <select
+                          value={example.visibility || 'dynamic'}
+                          onChange={(e) => {
+                            const newExamples = [...(formData.examples || [])];
+                            newExamples[index] = { ...example, visibility: e.target.value };
+                            updateField('examples', newExamples);
+                          }}
+                          className="flex h-8 w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
+                        >
+                          <option value="dynamic">Dynamic</option>
+                          <option value="always">Always</option>
+                          <option value="never">Never</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const newExamples = [...(formData.examples || []), { context: '', decision: '', visibility: 'dynamic' }];
+                    updateField('examples', newExamples);
+                  }}
+                >
+                  Add Example
+                </Button>
               </div>
             </>
           )}
 
           {isToolNode && (
             <>
-              {/* Tool ID */}
+              {/* Tool Name */}
               <div className="space-y-2">
-                <Label htmlFor="tool_id">Tool ID</Label>
+                <Label htmlFor="name">Tool Name</Label>
                 <Input
-                  id="tool_id"
-                  value={formData.tool_id || ''}
-                  onChange={(e) => updateField('tool_id', e.target.value)}
-                  placeholder="Enter tool identifier"
+                  id="name"
+                  value={formData.name || ''}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  placeholder="Enter tool name"
                 />
               </div>
 

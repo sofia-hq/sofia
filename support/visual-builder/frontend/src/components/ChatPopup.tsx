@@ -7,9 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { ChevronDown, ChevronUp, Send, X, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { exportToYaml } from '../utils/nomosYaml';
 import * as yaml from 'js-yaml';
-import { SessionData } from 'nomos-sdk';
 import { useDraggable } from '../hooks/useDraggable';
 import ReactMarkdown from 'react-markdown';
+import type { SessionState } from '../types';
 
 interface EnvVar { key: string; value: string }
 
@@ -60,16 +60,19 @@ interface AssistantMessageProps {
     current_step_id?: string;
     flow_id?: string;
   };
-  onHighlightNode?: (nodeId: string | null) => void;
+  onHighlightStep?: (stepId: string | null) => void;
 }
 
-const AssistantMessage = ({ content, reasoning, state, onHighlightNode }: AssistantMessageProps) => {
+const AssistantMessage = ({ content, reasoning, state, onHighlightStep }: AssistantMessageProps) => {
   const [showReasoning, setShowReasoning] = useState(false);
 
+  // Debug logging
+  console.log('AssistantMessage received state:', state);
+
   // Handle node highlighting on hover
-  const handleStepHover = (nodeId: string | null) => {
-    if (onHighlightNode) {
-      onHighlightNode(nodeId);
+  const handleStepHover = (stepId: string | null) => {
+    if (onHighlightStep) {
+      onHighlightStep(stepId);
     }
   };
 
@@ -169,13 +172,28 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
   const [showEnv, setShowEnv] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [sessionData, setSessionData] = useState<SessionData | undefined>();
+  const [sessionData, setSessionData] = useState<SessionState | undefined>();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { position, onMouseDown, setPosition } = useDraggable({ x: 0, y: 0 });
+
+  // Create a function to map step IDs to node IDs for highlighting
+  const handleStepHighlight = useCallback((stepId: string | null) => {
+    if (onHighlightNode) {
+      if (stepId) {
+        // Find the node ID that corresponds to this step ID
+        const stepNode = nodes.find((node: any) =>
+          node.type === 'step' && node.data?.step_id === stepId
+        );
+        onHighlightNode(stepNode ? stepNode.id : null);
+      } else {
+        onHighlightNode(null);
+      }
+    }
+  }, [nodes, onHighlightNode]);
 
   useEffect(() => {
     try {
@@ -376,6 +394,8 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
       }
 
       const res = await response.json();
+      console.log('Backend response:', res);
+      console.log('Session data:', res.session_data);
       setSessionData(res.session_data);
       setIsTyping(false);
 
@@ -410,14 +430,15 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         content: '',
         reasoning,
         isStreaming: true,
-        state: res.state
+        state: res.session_data  // Use session_data from backend response
       };
 
+      console.log('Assistant message state:', assistantMessage.state);
       setMessages(m => [...m, assistantMessage]);
 
       // Start streaming the response
       const messageIndex = messages.length + 1; // +1 because we already added user message
-      streamText(assistantContent, messageIndex, reasoning, res.state);
+      streamText(assistantContent, messageIndex, reasoning, res.session_data);
 
     } catch (error) {
       setIsTyping(false);
@@ -634,7 +655,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
                     content={m.content}
                     reasoning={m.reasoning}
                     state={m.state}
-                    onHighlightNode={onHighlightNode}
+                    onHighlightStep={handleStepHighlight}
                   />
                 )}
               </div>

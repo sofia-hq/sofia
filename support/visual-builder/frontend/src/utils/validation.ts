@@ -73,6 +73,44 @@ export function validateStepNode(data: StepNodeData): ValidationResult {
     });
   }
 
+  // Auto flow validation
+  if (data.auto_flow) {
+    if ((!data.routes || data.routes.length === 0) && (!data.available_tools || data.available_tools.length === 0)) {
+      errors.push({
+        field: 'auto_flow',
+        message: 'Auto-flow steps must have at least one route or tool',
+        severity: 'error'
+      });
+    }
+    if (data.quick_suggestions) {
+      errors.push({
+        field: 'quick_suggestions',
+        message: 'Auto-flow steps cannot have quick suggestions enabled',
+        severity: 'error'
+      });
+    }
+  }
+
+  // Examples validation
+  if (data.examples && data.examples.length > 0) {
+    data.examples.forEach((example, index) => {
+      if (!example.context || example.context.trim() === '') {
+        errors.push({
+          field: `examples.${index}.context`,
+          message: `Example ${index + 1}: Context is required`,
+          severity: 'error'
+        });
+      }
+      if (!example.decision || example.decision.trim() === '') {
+        errors.push({
+          field: `examples.${index}.decision`,
+          message: `Example ${index + 1}: Decision is required`,
+          severity: 'error'
+        });
+      }
+    });
+  }
+
   return {
     isValid: errors.length === 0,
     errors,
