@@ -67,7 +67,7 @@ class ScenarioRunner:
         user_input = None
         turns = 0
         while True:
-            decision, _, session_data = agent.next(user_input, session_data)
+            decision, _, session_data, _ = agent.next(user_input, session_data)
             chat_history.append(
                 Message(
                     role="agent",
