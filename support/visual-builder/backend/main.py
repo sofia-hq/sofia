@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from nomos.api.models import ChatRequest, ChatResponse
 from nomos.core import Agent, AgentConfig
+from nomos.models.agent import Response
 
 from pydantic import BaseModel
 
@@ -107,17 +108,17 @@ def chat(request: ServerlessChatRequest) -> ChatResponse:
             agent = Agent.from_config(config=request.agent_config, tools=tool_list)
 
         # Process the chat request
-        decision, tool_output, session_data, state = agent.next(
-            **request.chat_request.model_dump(),
-            verbose=request.verbose,
-            return_session_state=True,
+        res: Response = agent.next(
+            user_input=request.chat_request.user_input,
+            session_data=request.chat_request.session_data,
+            return_step=request.verbose,
+            return_tool=request.verbose,
         )
 
         return ChatResponse(
-            response=decision.model_dump(mode="json"),
-            tool_output=tool_output,
-            session_data=session_data,
-            state=state,
+            response=res.decision.model_dump(mode="json"),
+            tool_output=res.tool_output,
+            session_data=res.state,
         )
 
     finally:
