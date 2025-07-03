@@ -1,10 +1,8 @@
 ---
 title: 'Flows'
-description: 'Learn how to organize complex agent workflows using flows in NOMOS'
+description: "NOMOS lets you group related steps into flows with shared context and components, making it easy to manage complex, stateful workflows."
 icon: 'group'
 ---
-
-NOMOS provides advanced flow management capabilities that allow you to organize related steps into logical groups with shared context and components. Flows are perfect for complex workflows that require stateful interactions, context preservation, and intelligent transitions between different parts of your agent's behavior.
 
 ## What are Flows?
 
@@ -104,9 +102,6 @@ flows:
           method: embedding
           kwargs:
             k: 5
-    metadata:
-      max_context_size: 50
-      summary_threshold: 20
 
   - flow_id: support_workflow
     description: "Customer support and issue resolution"
@@ -121,9 +116,6 @@ flows:
           model: gpt-4o-mini
         retriever:
           method: embedding
-    metadata:
-      max_context_size: 30
-      summary_threshold: 15
 ```
 
 ## Flow Memory and Context
@@ -195,16 +187,11 @@ flows:
           model: gpt-4o-mini
         retriever:
           method: embedding
-    metadata:
-      max_context_size: 50
-      summary_threshold: 20
 ```
 
 <Note>
 This flow ensures that all order-related context (customer preferences, cart contents, order history) is maintained throughout the ordering process and properly summarized when the order is complete.
 </Note>
-
-## Advanced Flow Patterns
 
 ### Multi-Flow Applications
 
@@ -234,63 +221,6 @@ flows:
 Flows automatically handle context transfer when users move between different workflows, ensuring seamless user experience while maintaining relevant information.
 </Info>
 
-## Flow Implementation Patterns
-
-### Sequential Flows
-
-For processes that must happen in order:
-
-```yaml
-flows:
-  - flow_id: onboarding_sequence
-    description: "Step-by-step user onboarding"
-    enters:
-      - welcome_new_user
-    exits:
-      - onboarding_complete
-    components:
-      memory:
-        llm:
-          provider: openai
-          model: gpt-4o-mini
-    metadata:
-      max_context_size: 40
-      summary_threshold: 15
-```
-
-### Parallel Flows
-
-For independent workflows that can run simultaneously:
-
-```yaml
-flows:
-  - flow_id: order_processing
-    description: "Handle order fulfillment"
-    enters: [process_order]
-    exits: [order_shipped, order_cancelled]
-
-  - flow_id: customer_communication
-    description: "Manage customer updates"
-    enters: [send_confirmation]
-    exits: [communication_complete]
-```
-
-### Conditional Flows
-
-For workflows that depend on specific conditions:
-
-```yaml
-flows:
-  - flow_id: premium_customer_flow
-    description: "Enhanced service for premium customers"
-    enters: [verify_premium_status]
-    exits: [premium_service_complete]
-    conditions:
-      entry_requirements:
-        - customer_tier: "premium"
-        - account_status: "active"
-```
-
 ## Best Practices
 
 <CardGroup cols={2}>
@@ -319,98 +249,3 @@ flows:
     Always provide clear exit paths from each flow
   </Card>
 </CardGroup>
-
-## Flow Debugging and Monitoring
-
-### Flow State Tracking
-
-Monitor flow transitions and context:
-
-```python
-# Access flow information programmatically
-session = agent.create_session()
-current_flow = session.state_machine.current_flow
-flow_context = session.state_machine.flow_context
-
-print(f"Current flow: {current_flow.flow_id if current_flow else 'None'}")
-print(f"Flow memory size: {len(flow_context.memory) if flow_context else 0}")
-```
-
-### Debugging Flow Issues
-
-Common flow-related problems and solutions:
-
-<AccordionGroup>
-  <Accordion title="Context Not Persisting">
-    **Problem**: Information is lost between steps within a flow
-
-    **Solution**: Check flow memory configuration and ensure proper context retention
-    ```yaml
-    components:
-      memory:
-        llm:
-          provider: openai
-          model: gpt-4o-mini
-        retriever:
-          method: embedding
-    metadata:
-      max_context_size: 50  # Increase if context is being truncated
-      summary_threshold: 20  # Adjust summarization trigger
-    ```
-  </Accordion>
-
-  <Accordion title="Unexpected Flow Transitions">
-    **Problem**: Agent exits or enters flows unexpectedly
-
-    **Solution**: Review entry/exit conditions and ensure they're specific enough
-    ```yaml
-    enters:
-      - specific_step_name  # Be explicit about entry points
-    exits:
-      - completion_step     # Clear exit conditions
-      - error_step
-    ```
-  </Accordion>
-
-  <Accordion title="Flow Memory Overhead">
-    **Problem**: Flows consuming too much memory or processing time
-
-    **Solution**: Optimize memory settings and use appropriate summarization
-    ```yaml
-    metadata:
-      max_context_size: 30     # Reduce context size
-      summary_threshold: 10    # Summarize more frequently
-    ```
-  </Accordion>
-</AccordionGroup>
-
-## Flow Testing
-
-Test flows independently:
-
-```yaml
-# flow_tests.agent.yaml
-unit:
-  test_flow_entry:
-    context:
-      current_step_id: "order_taking"
-    input: "I want to order multiple items"
-    expectation: "Enters take_coffee_order flow and maintains context"
-
-  test_flow_context_retention:
-    context:
-      current_step_id: "take_coffee_order"
-      flow_context:
-        - customer_preferences: "oat milk, extra hot"
-        - cart_items: ["medium latte"]
-    input: "Add another latte"
-    expectation: "Remembers preferences and applies to new item"
-
-  test_flow_exit:
-    context:
-      current_step_id: "finalize_order"
-      flow_context:
-        - order_complete: true
-    input: "Thank you"
-    expectation: "Exits flow and transitions to farewell step"
-```

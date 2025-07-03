@@ -1,6 +1,7 @@
 ---
 title: 'LLM'
 description: 'Learn about the multiple LLM providers supported by NOMOS'
+icon: 'brain'
 ---
 
 NOMOS supports multiple LLM providers, allowing you to choose the best model for your use case.
@@ -10,45 +11,49 @@ NOMOS supports multiple LLM providers, allowing you to choose the best model for
 <CardGroup cols={2}>
   <Card
     title="OpenAI"
-    icon="openai"
     href="#openai"
   >
     GPT-4o, GPT-4o-mini, and more
   </Card>
   <Card
     title="Anthropic"
-    icon="robot"
     href="#anthropic"
   >
     Claude 3.5 Sonnet, Haiku, and Opus
   </Card>
   <Card
     title="Google Gemini"
-    icon="google"
     href="#google-gemini"
   >
     Gemini 2.0 Flash, Pro, and more
   </Card>
   <Card
     title="Mistral AI"
-    icon="brain"
     href="#mistral-ai"
   >
     Mistral Large, Medium, and Small
   </Card>
   <Card
     title="Ollama"
-    icon="server"
     href="#ollama-local-models"
   >
     Local models including Llama, Qwen, and more
   </Card>
   <Card
     title="HuggingFace"
-    icon="hugging-face"
     href="#huggingface"
   >
     Open source models via HuggingFace
+  </Card>
+  <Card
+    title="Custom"
+  >
+    Use the `BaseLLM` class to implement your own provider
+  </Card>
+  <Card
+    title="More Coming Soon"
+  >
+    NOMOS is continuously expanding support for new LLM providers
   </Card>
 </CardGroup>
 
@@ -319,64 +324,11 @@ llm:
 
 </CodeGroup>
 
-## Model Selection Guidelines
-
-<Tabs>
-  <Tab title="Production">
-    ### For Production Use
-
-    <CardGroup cols={2}>
-      <Card title="OpenAI GPT-4o" icon="star">
-        Best overall performance, most reliable
-      </Card>
-      <Card title="Anthropic Claude 3.5 Sonnet" icon="brain">
-        Excellent reasoning and coding capabilities
-      </Card>
-      <Card title="Mistral Large" icon="zap">
-        Strong performance, competitive pricing
-      </Card>
-      <Card title="Google Gemini 2.0 Flash" icon="flash">
-        Fast and capable for most tasks
-      </Card>
-    </CardGroup>
-  </Tab>
-
-  <Tab title="Development">
-    ### For Development/Testing
-
-    <CardGroup cols={2}>
-      <Card title="OpenAI GPT-4o-mini" icon="dollar">
-        Fast and cost-effective
-      </Card>
-      <Card title="Anthropic Claude 3.5 Haiku" icon="balance-scale">
-        Good balance of capability and speed
-      </Card>
-      <Card title="Mistral Small" icon="piggy-bank">
-        Affordable option with good performance
-      </Card>
-      <Card title="Ollama" icon="server">
-        Local models, no API costs
-      </Card>
-    </CardGroup>
-  </Tab>
-
-  <Tab title="Specialized">
-    ### For Specialized Tasks
-
-    | Task | Recommended Models |
-    |------|-------------------|
-    | **Code Generation** | GPT-4o, Claude 3.5 Sonnet, Codestral (via Ollama) |
-    | **Conversational** | GPT-4o-mini, Claude 3.5 Haiku, Mistral Medium |
-    | **Reasoning & Analysis** | Claude 3.5 Sonnet, GPT-4o, Claude 3 Opus |
-    | **Multilingual** | Gemini 2.0 Flash, GPT-4o |
-  </Tab>
-</Tabs>
-
 ## Troubleshooting
 
 <AccordionGroup>
   <Accordion title="API Key Not Found">
-    Ensure environment variables are set correctly in your shell profile or `.env` file
+    Ensure environment variables are set correctly in your shell profile or `.env.local` file
   </Accordion>
   <Accordion title="Model Not Available">
     Check that the model name is correct and available in your region

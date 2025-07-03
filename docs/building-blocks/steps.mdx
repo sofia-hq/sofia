@@ -1,11 +1,9 @@
 ---
 title: "Steps"
-description: "Learn how to design and implement steps in your NOMOS agents"
+description: "Steps are the fundamental building blocks of NOMOS agents. Each step represents a discrete phase in your agent's workflow with specific responsibilities, available tools, and transition logic. This step-based architecture is what makes NOMOS agents testable, maintainable, and reliable.
+"
+icon: "footprints"
 ---
-
-# Steps
-
-Steps are the fundamental building blocks of NOMOS agents. Each step represents a discrete phase in your agent's workflow with specific responsibilities, available tools, and transition logic. This step-based architecture is what makes NOMOS agents testable, maintainable, and reliable.
 
 ## What Are Steps?
 
@@ -99,129 +97,6 @@ steps:
   </Tab>
 </Tabs>
 
-## Step Design Patterns
-
-### 1. **Greeting Steps**
-
-<Card title="Entry Point" icon="door-open">
-Welcome users and route them to appropriate workflows
-</Card>
-
-```yaml
-- step_id: greeting
-  description: |
-    Greet the user warmly and introduce the available services.
-    Ask what you can help them with today.
-  available_tools: []
-  routes:
-    - target: product_inquiry
-      condition: User asks about products or services
-    - target: support_request
-      condition: User needs help with existing order or issue
-    - target: place_order
-      condition: User is ready to make a purchase
-    - target: end
-      condition: User just wants to say hello or is leaving
-```
-
-### 2. **Information Gathering Steps**
-
-<Card title="Data Collection" icon="clipboard-list">
-Collect necessary information from users
-</Card>
-
-```yaml
-- step_id: collect_order_details
-  description: |
-    Gather all necessary information for the order:
-    - Product selection and quantities
-    - Size/variant preferences
-    - Special instructions or modifications
-    - Delivery preferences
-  available_tools:
-    - show_product_catalog
-    - check_product_availability
-    - calculate_estimated_delivery
-  routes:
-    - target: review_order
-      condition: All order details are collected
-    - target: product_questions
-      condition: Customer has questions about products
-```
-
-### 3. **Action Steps**
-
-<Card title="Task Execution" icon="play">
-Perform specific actions or operations
-</Card>
-
-```yaml
-- step_id: process_payment
-  description: |
-    Handle payment processing for the confirmed order.
-    Collect payment method, process transaction, and confirm success.
-  available_tools:
-    - validate_payment_method
-    - process_transaction
-    - send_receipt
-    - update_order_status
-  routes:
-    - target: order_confirmation
-      condition: Payment successful
-    - target: payment_retry
-      condition: Payment failed but retryable
-    - target: payment_failure
-      condition: Payment failed permanently
-```
-
-### 4. **Decision Steps**
-
-<Card title="Route Logic" icon="git-branch">
-Evaluate conditions and route users appropriately
-</Card>
-
-```yaml
-- step_id: evaluate_issue
-  description: |
-    Analyze the customer's issue and determine the best resolution path.
-    Consider issue complexity, customer status, and available solutions.
-  available_tools:
-    - check_customer_history
-    - evaluate_issue_complexity
-    - check_policy_applicability
-  routes:
-    - target: simple_resolution
-      condition: Issue can be resolved immediately
-    - target: escalate_to_specialist
-      condition: Issue requires specialist knowledge
-    - target: schedule_callback
-      condition: Issue requires follow-up investigation
-```
-
-### 5. **Confirmation Steps**
-
-<Card title="Validation" icon="check-circle">
-Confirm actions and get user approval
-</Card>
-
-```yaml
-- step_id: confirm_order
-  description: |
-    Present complete order summary to customer and get final confirmation.
-    Show all items, quantities, prices, taxes, and total amount.
-  available_tools:
-    - generate_order_summary
-    - calculate_total_with_tax
-    - estimate_delivery_time
-  routes:
-    - target: process_payment
-      condition: Customer confirms order
-    - target: modify_order
-      condition: Customer wants to make changes
-    - target: cancel_order
-      condition: Customer decides not to proceed
-```
-
 ## Advanced Step Features
 
 ### Step Examples
@@ -263,31 +138,6 @@ Tools can be conditionally available based on context:
       condition: Issue resolved with manager intervention
     - target: regional_escalation
       condition: Issue requires regional manager
-```
-
-### Step Memory and Context
-
-Steps can maintain context within flows:
-
-```yaml
-- step_id: multi_item_ordering
-  description: |
-    Handle adding multiple items to order, remembering previous selections.
-    Keep track of running total and customer preferences.
-  available_tools:
-    - add_item_to_cart
-    - remove_item_from_cart
-    - show_current_cart
-    - apply_bulk_discount
-  context_retention:
-    - cart_contents
-    - customer_preferences
-    - running_total
-  routes:
-    - target: add_more_items
-      condition: Customer wants to add more items
-    - target: checkout
-      condition: Customer finished adding items
 ```
 
 ## Step Transitions and Routing
@@ -342,7 +192,7 @@ Handle multiple routing scenarios:
 
 ## Error Handling in Steps
 
-### Graceful Error Recovery
+### Graceful Error Recovery (Coming Soon)
 
 ```yaml
 - step_id: external_api_integration
@@ -365,27 +215,6 @@ Handle multiple routing scenarios:
     fallback_step: service_unavailable
 ```
 
-### Validation Steps
-
-```yaml
-- step_id: input_validation
-  description: |
-    Validate user input and provide helpful error messages for invalid data.
-  available_tools:
-    - validate_email_format
-    - validate_phone_number
-    - check_required_fields
-  routes:
-    - target: process_valid_input
-      condition: All input validation passes
-    - target: request_email_correction
-      condition: Email format invalid
-    - target: request_phone_correction
-      condition: Phone number format invalid
-    - target: request_missing_fields
-      condition: Required fields are missing
-```
-
 ## Step Performance and Optimization
 
 ### Efficient Tool Usage
@@ -403,24 +232,6 @@ Handle multiple routing scenarios:
       condition: Customer info found in cache and is recent
     - target: fetch_and_cache
       condition: Customer info not cached or outdated
-```
-
-### Parallel Processing
-
-```yaml
-- step_id: order_processing
-  description: |
-    Process order components in parallel where possible.
-  available_tools:
-    - validate_inventory      # Can run in parallel
-    - process_payment        # Can run in parallel
-    - reserve_shipping       # Depends on inventory
-    - send_confirmation      # Depends on payment
-  routes:
-    - target: order_complete
-      condition: All parallel processes completed successfully
-    - target: partial_failure_recovery
-      condition: Some processes failed but order can be salvaged
 ```
 
 ## Testing Individual Steps
