@@ -118,7 +118,7 @@ export function ImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[42vw] max-h-[80vh] overflow-hidden flex flex-col"
         style={{ width: '42vw', maxWidth: 'none' }}
       >
@@ -171,8 +171,8 @@ export function ImportDialog({
 
           {/* Import Button */}
           <div className="flex justify-center">
-            <Button 
-              onClick={handleImport} 
+            <Button
+              onClick={handleImport}
               disabled={!importText.trim()}
               className="w-full max-w-xs"
             >
@@ -250,7 +250,7 @@ export function ImportDialog({
             Cancel
           </Button>
           {importResult && importResult.nodes.length > 0 && (
-            <Button 
+            <Button
               onClick={handleApplyImport}
               disabled={importResult.errors.length > 0}
             >

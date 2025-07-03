@@ -111,7 +111,7 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[42vw] max-h-[80vh] overflow-y-auto"
         style={{ width: '42vw', maxWidth: 'none' }}
       >

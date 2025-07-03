@@ -56,7 +56,7 @@ export function ExportDialog({
   const handleExport = useCallback(() => {
     const result = exportToYaml(nodes, edges, currentAgentName, currentPersona);
     setExportResult(result);
-    
+
     // Update agent config
     if (onAgentConfigChange) {
       onAgentConfigChange(currentAgentName, currentPersona);
@@ -121,7 +121,7 @@ export function ExportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[42vw] max-h-[80vh] overflow-hidden flex flex-col"
         style={{ width: '42vw', maxWidth: 'none' }}
       >

@@ -37,7 +37,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[70vw] max-h-[80vh] overflow-y-auto"
         style={{ width: '70vw', maxWidth: 'none' }}
       >
@@ -53,7 +53,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
               {/* Left Column - Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 border-b pb-2">Basic Information</h3>
-                
+
                 {/* Step ID */}
                 <div className="space-y-2">
                   <Label htmlFor="step_id">Step ID</Label>
@@ -120,7 +120,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
               {/* Right Column - Decision Examples */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 border-b pb-2">Decision Examples</h3>
-                
+
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {(formData.examples || []).map((example: any, index: number) => (
                     <div key={index} className="border rounded-lg p-3 space-y-2 bg-gray-50 dark:bg-gray-800">
@@ -186,7 +186,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                     </div>
                   ))}
                 </div>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -207,7 +207,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
               {/* Left Column - Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 border-b pb-2">Tool Information</h3>
-                
+
                 {/* Tool Name */}
                 <div className="space-y-2">
                   <Label htmlFor="name">Tool Name</Label>
@@ -251,7 +251,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
               {/* Right Column - Configuration */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 border-b pb-2">Configuration</h3>
-                
+
                 {formData.tool_type && formData.tool_type !== 'custom' && (
                   <>
                     <div className="space-y-2">
@@ -282,7 +282,7 @@ export function NodeEditPanel({ node, onClose, onSave }: NodeEditPanelProps) {
                     </div>
                   </>
                 )}
-                
+
                 {(!formData.tool_type || formData.tool_type === 'custom') && (
                   <div className="text-sm text-gray-500 dark:text-gray-400 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     Custom tools are defined in your uploaded Python files. Configure the tool type above to set up tool-specific parameters.

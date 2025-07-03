@@ -91,7 +91,7 @@ export function FlowGroupEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[45vw] max-h-[90vh] overflow-y-auto"
         style={{ width: '45vw', maxWidth: 'none' }}
       >
@@ -238,7 +238,7 @@ export function FlowGroupEditDialog({
           <div className="space-y-8">
             <div>
               <h3 className="text-lg font-semibold border-b border-gray-200 dark:border-gray-700 pb-3 mb-6">Flow Components</h3>
-              
+
               <div className="space-y-6 border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-gray-50/50 dark:bg-gray-800/30">
                 <div>
                   <Label className="text-sm font-medium">Memory Configuration</Label>

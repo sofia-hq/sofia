@@ -96,7 +96,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[45vw] max-h-[85vh] overflow-y-auto"
         style={{ width: '45vw', maxWidth: 'none' }}
       >
@@ -235,7 +235,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
                 return (
                   <div key={index} className="border rounded p-3 space-y-2">
                     <div className="flex justify-between items-center">
-                      <div 
+                      <div
                         className="flex items-center gap-2 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
                         onClick={() => toggleExampleCollapse(index)}
                       >
@@ -259,7 +259,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
                         Remove
                       </Button>
                     </div>
-                    
+
                     {!isCollapsed && (
                       <div className="space-y-2">
                     <div>
@@ -309,7 +309,7 @@ export function StepEditDialog({ open, onClose, stepData, onSave, nodeId, nodes,
                   </div>
                 );
               })}
-              
+
               {(!formData.examples || formData.examples.length === 0) && (
                 <div className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
                   No decision examples defined. Add examples to help guide the AI's decision-making process.

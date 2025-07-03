@@ -104,7 +104,7 @@ export function FlowEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
+      <DialogContent
         className="max-w-none w-[70vw] max-h-[85vh] overflow-y-auto"
         style={{ width: '70vw', maxWidth: 'none' }}
       >

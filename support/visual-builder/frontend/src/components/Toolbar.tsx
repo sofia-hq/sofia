@@ -176,16 +176,24 @@ export function Toolbar({
 
       {/* Center Logo */}
       <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
-        <img 
-          src="/light.png" 
-          alt="Nomos Logo" 
-          className="h-8 w-auto dark:hidden"
-        />
-        <img 
-          src="/dark.png" 
-          alt="Nomos Logo" 
-          className="h-8 w-auto hidden dark:block"
-        />
+        <a
+          href="https://github.com/dowhiledev/nomos"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+          title="Visit Nomos on GitHub"
+        >
+          <img
+            src="/light.png"
+            alt="Nomos Logo"
+            className="h-8 w-auto dark:hidden"
+          />
+          <img
+            src="/dark.png"
+            alt="Nomos Logo"
+            className="h-8 w-auto hidden dark:block"
+          />
+        </a>
       </div>
 
       {/* Right Section */}
