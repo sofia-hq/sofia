@@ -20,7 +20,8 @@ import { CustomContextMenu } from './context-menu/CustomContextMenu';
 import { FlowProvider, useFlowContext } from '../context/FlowContext';
 import { NodeEditDialogs } from './dialogs/NodeEditDialogs';
 import { FlowGroupEditDialog } from './dialogs/FlowGroupEditDialog';
-import { ExportImportDialog } from './dialogs/ExportImportDialog';
+import { ExportDialog } from './dialogs/ExportDialog';
+import { ImportDialog } from './dialogs/ImportDialog';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
 import { SearchFilter } from './SearchFilter';
 import { autoArrangeNodes } from '../utils/autoArrange';
@@ -594,7 +595,8 @@ export default function FlowBuilder({ onPreview, onSaveConfig, highlightedNodeId
     id: string;
     data: FlowGroupData;
   } | null>(null);
-  const [showExportImportDialog, setShowExportImportDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [agentName, setAgentName] = useState('my-agent');
   const [persona, setPersona] = useState('A helpful assistant');
   const [contextMenu, setContextMenu] = useState<{
@@ -729,11 +731,11 @@ export default function FlowBuilder({ onPreview, onSaveConfig, highlightedNodeId
 
   // Export/Import handlers
   const handleExportYaml = useCallback(() => {
-    setShowExportImportDialog(true);
+    setShowExportDialog(true);
   }, []);
 
   const handleImportYaml = useCallback(() => {
-    setShowExportImportDialog(true);
+    setShowImportDialog(true);
   }, []);
 
   const handleNewConfig = useCallback(() => {
@@ -1363,8 +1365,8 @@ export default function FlowBuilder({ onPreview, onSaveConfig, highlightedNodeId
       <div className="h-full w-full relative">
         {/* Flow Builder */}
         <div className="h-full w-full" ref={reactFlowWrapper}>
-          {/* Floating Toolbar */}
-          <div className="absolute top-4 left-4 z-10">
+          {/* Top Toolbar */}
+          <div className="absolute top-4 left-4 right-4 z-10 flex justify-center">
             <Toolbar
               onAutoArrange={handleAutoArrange}
               onCreateFlowGroup={handleCreateFlowGroup}
@@ -1479,14 +1481,21 @@ export default function FlowBuilder({ onPreview, onSaveConfig, highlightedNodeId
           />
         )}
 
-        <ExportImportDialog
-          open={showExportImportDialog}
-          onClose={() => setShowExportImportDialog(false)}
+        <ExportDialog
+          open={showExportDialog}
+          onClose={() => setShowExportDialog(false)}
+          nodes={nodes}
+          edges={edges}
+          agentName={agentName}
+          persona={persona}
+        />
+
+        <ImportDialog
+          open={showImportDialog}
+          onClose={() => setShowImportDialog(false)}
           nodes={nodes}
           edges={edges}
           onImport={handleImportFlow}
-          agentName={agentName}
-          persona={persona}
           onAgentConfigChange={handleAgentConfigChange}
         />
 
