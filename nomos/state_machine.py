@@ -2,6 +2,9 @@
 
 from typing import Dict, List, Optional, Tuple
 
+import colorama
+from colorama import Fore, Style
+
 from .config import AgentConfig
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
@@ -137,7 +140,9 @@ class StateMachine:
             self.current_flow = None
             self.flow_context = None
 
-    def handle_flow_transitions(self, step_id: str, session_id: str) -> None:
+    def handle_flow_transitions(
+        self, step_id: str, session_id: str, verbose: bool = False
+    ) -> None:
         """Enter or exit flows based on current step."""
         if not self.flow_manager:
             return
@@ -147,6 +152,8 @@ class StateMachine:
         if enters and not self.current_flow:
             flow_to_enter = self.flow_manager.flows[enters[0]]
             self._enter_flow(flow_to_enter, step_id, session_id)
+            if verbose:
+                self.pp_flow_transitions("enter", step_id, flow_to_enter.flow_id)
 
         if (
             self.current_flow
@@ -154,6 +161,20 @@ class StateMachine:
             and self.current_flow.flow_id in exits
         ):
             self._exit_flow(step_id)
+            if verbose:
+                self.pp_flow_transitions("exit", step_id, self.current_flow.flow_id)
+
+    @staticmethod
+    def pp_flow_transitions(type: str, step_id: str, flow_id: str) -> None:
+        """Pretty print flow transitions for debugging with colors."""
+        colorama.init(autoreset=True)
+
+        type_str = "Entering" if type == "enter" else "Exiting"
+
+        print(
+            f"\n{Style.BRIGHT}{Fore.CYAN}{type_str} flow{Style.RESET_ALL}: "
+            f"{flow_id} at step {step_id}"
+        )
 
     # ------------------------------------------------------------------
     # Persistence helpers

@@ -2,7 +2,19 @@
 
 import asyncio
 import inspect
-from typing import Any, Callable, Dict, List, Literal, Optional, Type, Union
+from concurrent.futures import Future
+from typing import (
+    Any,
+    Callable,
+    Coroutine,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 
 from docstring_parser import parse
 
@@ -61,6 +73,10 @@ class Tool(BaseModel):
     function: Callable
     parameters: Dict[str, Dict[str, Any]] = {}
     args_model: Optional[Type[BaseModel]] = None
+
+    def __hash__(self) -> int:
+        """Get the hash of the Tool instance based on its name."""
+        return hash(self.name)
 
     @classmethod
     def from_function(
@@ -253,9 +269,11 @@ class Tool(BaseModel):
             return self.args_model
         camel_case_fn_name = self.name.replace("_", " ").title().replace(" ", "")
         basemodel_name = f"{camel_case_fn_name}Args"
+        description = f"Arguments for the {self.name} tool."
         args_model = create_base_model(
             basemodel_name,
             self.parameters,
+            desc=description,
         )
         self.args_model = args_model
         return args_model
@@ -273,7 +291,14 @@ class Tool(BaseModel):
             args_model(**kwargs)
         except ValidationError as e:
             raise InvalidArgumentsError(e)
-        return str(self.function(*args, **kwargs))
+
+        result = self.function(*args, **kwargs)
+        if inspect.iscoroutine(result) or isinstance(result, asyncio.Future):
+            result = asyncio.run(cast(Coroutine[Any, Any, Any], result))
+        elif isinstance(result, Future):
+            result = result.result()
+
+        return str(result)
 
     def __str__(self) -> str:
         """String representation of the Tool instance."""

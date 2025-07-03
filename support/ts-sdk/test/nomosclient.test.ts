@@ -46,7 +46,7 @@ describe('NomosClient', () => {
   });
 
   it('getSessionHistory returns history', async () => {
-    const resp = { session_id: '1', history: [{ content: 'hi' }] };
+    const resp = { session_id: '1', history: [{ role: 'user', content: 'hi' }] };
     nock(base).get('/session/1/history').reply(200, resp);
     const result = await client.getSessionHistory('1');
     expect(result).toEqual(resp);

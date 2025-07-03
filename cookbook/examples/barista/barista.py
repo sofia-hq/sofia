@@ -166,7 +166,7 @@ ordering_flow_config = FlowConfig(
                 "model": "gpt-4o-mini",
             },
             "retriever": {
-                "method": "bm25",
+                "method": "embedding",
             },
         }
     },
@@ -223,10 +223,10 @@ sess = barista.create_session()
 # Simulating a conversation (You can use fastapi or any other method to get user input)
 user_input = None
 while True:
-    decision, _ = sess.next(user_input)
-    if decision.action in [Action.ASK, Action.ANSWER]:
-        user_input = input(f"Assistant: {decision.response}\nYou: ")
-    elif decision.action == Action.END:
+    res = sess.next(user_input)
+    if res.decision.action == Action.RESPOND:
+        user_input = input(f"Assistant: {res.decision.response}\nYou: ")
+    elif res.decision.action == Action.END:
         print("Session ended.")
         break
     else:

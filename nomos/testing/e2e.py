@@ -50,7 +50,7 @@ class ScenarioRunner:
     @staticmethod
     def run(
         agent: Agent, scenario: Scenario, max_turns: int = 5
-    ) -> Tuple[List[Message], List[Tuple[datetime, State]]]:
+    ) -> Tuple[List[Message], List[Tuple[datetime, Optional[State]]]]:
         """
         Run a scenario against an agent and verify expectations.
 
@@ -61,24 +61,25 @@ class ScenarioRunner:
         """
         llm = agent.llm
         session_data = None
-        session_history: List[tuple[datetime, State]] = []
+        session_history: List[tuple[datetime, Optional[State]]] = []
         chat_history: List[Message] = []
 
         user_input = None
         turns = 0
         while True:
-            decision, _, session_data = agent.next(user_input, session_data)
+            res = agent.next(user_input, session_data)
+            session_data = res.state
             chat_history.append(
                 Message(
                     role="agent",
-                    content=decision.model_dump(mode="json").get(
+                    content=res.decision.model_dump(mode="json").get(
                         "response", "<No response provided>"
                     ),
                 )
             )
             session_history.append((datetime.now(), session_data))
 
-            action = getattr(decision, "action", None)
+            action = getattr(res.decision, "action", None)
             if getattr(action, "value", action) == "END":
                 break
             if turns >= max_turns:
