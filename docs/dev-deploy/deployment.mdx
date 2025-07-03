@@ -1,6 +1,7 @@
 ---
-title: 'Deployment Guide'
+title: 'Deployment'
 description: 'Learn how to deploy NOMOS agents in various environments'
+icon: 'cloud'
 ---
 
 NOMOS provides multiple deployment options to suit different environments and requirements.
@@ -40,26 +41,35 @@ nomos serve --config config.agent.yaml --tools tools.py --tools utils.py
 
 ## Docker Base Image
 
-NOMOS provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `chandralegend/nomos-base`.
-
-### Using the Base Image
+NOMOS provides a base Docker image that you can use to quickly containerize your agents. The base image is available on Docker Hub as `dowhiledev/nomos-base`.
 
 <Steps>
-  <Step title="Create a Dockerfile">
+  <Step title="Create a Dockerfile using the base image">
     ```dockerfile
-    FROM chandralegend/nomos-base:latest
-
+    # If using the base image
+    FROM dowhiledev/nomos-base:latest
     # Copy your config file
     COPY config.agent.yaml /app/config.agent.yaml
-
     # Copy your tools
     COPY tools.py /app/src/tools/
     ```
   </Step>
+  <Step title="Or Build from scratch">
+    ```dockerfile
+    # If building from scratch
+    FROM python:3.11-slim
+    WORKDIR /app
+    # Install dependencies
+    RUN pip install nomos[cli,openai]
+    # Copy files
+    COPY . /app/
+    CMD ["nomos", "serve", "--config", "config.agent.yaml"]
+    ```
+  </Step>
   <Step title="Build and run your container">
     ```bash
-    docker build -t my-nomos-agent .
-    docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 my-nomos-agent
+    docker build -t your-nomos-agent .
+    docker run -e OPENAI_API_KEY=your-api-key-here -p 8000:8000 your-nomos-agent
     ```
   </Step>
 </Steps>
@@ -115,7 +125,7 @@ For orchestrated deployments:
 version: '3.8'
 services:
   nomos-agent:
-    image: chandralegend/nomos-base:latest
+    image: your-nomos-agent:latest
     ports:
       - "8000:8000"
     environment:
@@ -146,7 +156,7 @@ spec:
     spec:
       containers:
       - name: nomos-agent
-        image: chandralegend/nomos-base:latest
+        image: your-nomos-agent:latest
         ports:
         - containerPort: 8000
         env:

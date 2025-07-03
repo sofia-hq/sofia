@@ -1,6 +1,7 @@
 ---
 title: "vs Other Frameworks"
 description: "How NOMOS compares to other AI agent frameworks"
+icon: "diff"
 ---
 
 Understanding how NOMOS differs from other agent frameworks helps you choose the right tool for your needs. Here's a comprehensive comparison with popular alternatives.
@@ -8,20 +9,14 @@ Understanding how NOMOS differs from other agent frameworks helps you choose the
 ## Framework Comparison Overview
 
 <CardGroup cols={3}>
-  <Card title="LangChain" icon="link" iconType="solid">
-    **Prompt-based multi-agent framework**
-
-    Great for rapid prototyping and research, but challenging for production deployments requiring reliability and testability.
+  <Card title="LangChain" icon="pocket-knife" iconType="solid">
+    Fast for prototyping, but hard to use reliably in production.
   </Card>
-  <Card title="CrewAI" icon="users-gear" iconType="solid">
-    **Multi-agent collaboration platform**
-
-    Focuses on agent-to-agent communication and role-based interactions, but lacks structured workflow management.
+  <Card title="CrewAI" icon="users-round" iconType="solid">
+    Enables agent collaboration, but lacks structured workflow control.
   </Card>
   <Card title="NOMOS" icon="circuit-board" iconType="solid">
-    **State machine + LLM framework**
-
-    Combines AI intelligence with software engineering practices for auditable, testable, and production-ready agents.
+    Combines AI with engineering for reliable, testable, production-ready agents.
   </Card>
 </CardGroup>
 
@@ -30,34 +25,29 @@ Understanding how NOMOS differs from other agent frameworks helps you choose the
 <Tabs>
   <Tab title="Architecture">
     <div className="space-y-6">
+      <Accordion title="LangChain">
+          **Approach**: *Everything is defined through prompts and chains*
 
-      ### LangChain
-      <Card title="Prompt-Centric Design" icon="message-square" horizontal>
-        **Approach**: Everything is defined through prompts and chains
+          **Pros**: *Quick to get started, flexible for experimentation*
 
-        **Pros**: Quick to get started, flexible for experimentation
+          **Cons**: *Fragile prompts, difficult to debug, hard to maintain at scale*
+      </Accordion>
 
-        **Cons**: Fragile prompts, difficult to debug, hard to maintain at scale
-      </Card>
+      <Accordion title="CrewAI">
+          **Approach**: *Agents with defined roles collaborate to complete tasks*
 
-      ### CrewAI
-      <Card title="Agent Role-Based" icon="users" horizontal>
-        **Approach**: Agents with defined roles collaborate to complete tasks
+          **Pros**: *Natural multi-agent interactions, good for complex workflows*
 
-        **Pros**: Natural multi-agent interactions, good for complex workflows
+          **Cons**: *Limited control over individual agent behavior, prompt dependency*
+      </Accordion>
 
-        **Cons**: Limited control over individual agent behavior, prompt dependency
-      </Card>
+      <Accordion title="NOMOS">
+          **Approach**: *Structured workflows with controlled state transitions*
 
-      ### NOMOS
-      <Card title="State Machine Foundation" icon="state-machine" horizontal>
-        **Approach**: Structured workflows with controlled state transitions
+          **Pros**: *Predictable behavior, testable components, production-ready*
 
-        **Pros**: Predictable behavior, testable components, production-ready
-
-        **Cons**: Initial setup complexity, requires workflow thinking
-      </Card>
-
+          **Cons**: *Initial setup complexity, requires workflow thinking*
+      </Accordion>
     </div>
   </Tab>
 
@@ -68,28 +58,25 @@ Understanding how NOMOS differs from other agent frameworks helps you choose the
 
       | Aspect | LangChain | CrewAI | NOMOS |
       |--------|-----------|---------|--------|
-      | **Debugging** | ❌ Complex | ❌ Limited | ✅ Step-by-step |
-      | **Testing** | ❌ Prompt-dependent | ❌ End-to-end only | ✅ Unit testable |
-      | **Collaboration** | ❌ Prompt conflicts | ⚠️ Role coordination | ✅ Multi-disciplinary |
-      | **Version Control** | ⚠️ Prompt diffs | ⚠️ Config changes | ✅ Structured code |
+      | **Debugging** | Complex | Limited | Step-by-step |
+      | **Testing** | Prompt-dependent | End-to-end only |  Unit testable |
+      | **Collaboration** | Prompt conflicts |  Role coordination |  Multi-disciplinary |
+      | **Version Control** |  Prompt diffs |  Config changes |  Structured code |
 
       ### Team Collaboration
 
       <CardGroup cols={3}>
-        <Card title="LangChain Teams" icon="code">
-          **Challenge**: Prompt engineering expertise required for all team members
-
-          Difficult for non-technical stakeholders to contribute meaningfully
+        <Card title="LangChain Teams">
+          *Prompt engineering expertise required for all team members
+          Difficult for non-technical stakeholders to contribute meaningfully*
         </Card>
-        <Card title="CrewAI Teams" icon="users-gear">
-          **Challenge**: Agent coordination complexity
-
-          Requires understanding of multi-agent dynamics and role interactions
+        <Card title="CrewAI Teams">
+          *Agent coordination complexity
+          Requires understanding of multi-agent dynamics and role interactions*
         </Card>
-        <Card title="NOMOS Teams" icon="users-cog">
-          **Advantage**: Role-appropriate interfaces
-
-          Visual design for PMs, YAML for analysts, Python for developers
+        <Card title="NOMOS Teams">
+          *Role-appropriate interfaces
+          Visual design for PMs, YAML for analysts, Python for developers*
         </Card>
       </CardGroup>
 
@@ -118,7 +105,7 @@ Understanding how NOMOS differs from other agent frameworks helps you choose the
       | Feature | LangChain | CrewAI | NOMOS |
       |---------|-----------|---------|--------|
       | **Step Tracing** | ⚠️ Chain level | ⚠️ Agent level | ✅ Granular steps |
-      | **Tool Usage Tracking** | ❌ Limited | ❌ Basic | ✅ Comprehensive |
+      | **Tool Usage Tracking** | Limited | ❌ Basic | ✅ Comprehensive |
       | **Decision Audit Trail** | ❌ Minimal | ❌ High-level | ✅ Complete |
       | **Performance Metrics** | ⚠️ Basic | ⚠️ Basic | ✅ Detailed |
 
@@ -230,21 +217,13 @@ NOMOS can integrate with existing LangChain and CrewAI tools, allowing you to le
 </Info>
 
 <CardGroup cols={2}>
-  <Card title="LangChain Tool Integration" icon="puzzle" horizontal>
-    Import and use your existing LangChain tools within NOMOS steps for seamless migration.
+  <Card title="LangChain & CrewAI Tool Integration" icon="puzzle" horizontal>
+    Import and use your existing LangChain & CrewAI tools within NOMOS steps for seamless migration.
   </Card>
   <Card title="Hybrid Approaches" icon="merge" horizontal>
     Use NOMOS for structured workflows while keeping LangChain for experimental components.
   </Card>
 </CardGroup>
-
-## Summary
-
-The choice between frameworks depends on your specific needs:
-
-- **For exploration and research**: LangChain offers the fastest path to experimentation
-- **For multi-agent scenarios**: CrewAI provides natural role-based collaboration
-- **For production applications**: NOMOS delivers the structure, reliability, and maintainability required for enterprise deployment
 
 <Check>
 **The NOMOS Advantage**
