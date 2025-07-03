@@ -108,7 +108,7 @@ export const SearchFilter = memo(({ nodes, onFilter, onClearFilter }: SearchFilt
   const selectedCount = nodes.filter(n => n.selected).length;
 
   return (
-    <div className="flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm">
+    <div className="flex items-center gap-2 bg-white border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm" style={{ backgroundColor: 'var(--background)' }}>
       {/* Search Input */}
       <div className="relative flex-1 min-w-[200px]">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />

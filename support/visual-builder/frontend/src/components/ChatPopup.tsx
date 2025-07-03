@@ -77,7 +77,7 @@ const AssistantMessage = ({ content, reasoning, state, onHighlightStep }: Assist
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
+    <div className="bg-white border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]" style={{ backgroundColor: 'var(--background)' }}>
       <div className="flex items-center justify-between mb-1">
         <div className="text-xs opacity-70 font-medium text-gray-900 dark:text-gray-100">Assistant</div>
 
@@ -121,7 +121,7 @@ const AssistantMessage = ({ content, reasoning, state, onHighlightStep }: Assist
           </Button>
 
           {showReasoning && (
-            <div className="mt-2 p-2 bg-gray-50 dark:bg-gray-700 rounded border-l-2 border-blue-200 dark:border-blue-500">
+            <div className="mt-2 p-2 bg-gray-50 rounded border-l-2 border-blue-200 dark:border-blue-500" style={{ backgroundColor: 'var(--secondary)' }}>
               <div className="space-y-1">
                 {reasoning.map((step, index) => (
                   <div key={index} className="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-2">
@@ -143,8 +143,8 @@ const AssistantMessage = ({ content, reasoning, state, onHighlightStep }: Assist
             h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-gray-900 dark:text-gray-100">{children}</h1>,
             h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-gray-900 dark:text-gray-100">{children}</h2>,
             h3: ({ children }) => <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-gray-100">{children}</h3>,
-            code: ({ children }) => <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-xs font-mono text-gray-900 dark:text-gray-100">{children}</code>,
-            pre: ({ children }) => <pre className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-xs overflow-x-auto text-gray-900 dark:text-gray-100">{children}</pre>,
+            code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono text-gray-900 dark:text-gray-100" style={{ backgroundColor: 'var(--secondary)' }}>{children}</code>,
+            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto text-gray-900 dark:text-gray-100" style={{ backgroundColor: 'var(--secondary)' }}>{children}</pre>,
             ul: ({ children }) => <ul className="list-disc list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">{children}</ul>,
             ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">{children}</ol>,
             li: ({ children }) => <li className="text-sm text-gray-900 dark:text-gray-100">{children}</li>,
@@ -339,7 +339,7 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
 
   // Typing indicator component
   const TypingIndicator = () => (
-    <div className="bg-white dark:bg-gray-800 border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]">
+    <div className="bg-white border dark:border-gray-600 mr-auto shadow-sm p-3 rounded-lg max-w-[85%]" style={{ backgroundColor: 'var(--background)' }}>
       <div className="text-xs opacity-70 mb-1 font-medium text-gray-900 dark:text-gray-100">Assistant</div>
       <div className="flex items-center space-x-1">
         <div className="flex space-x-1">
@@ -471,15 +471,16 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
         `}
       </style>
       <div
-        className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl"
+        className="fixed z-50 bg-white border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl"
         style={{
+          backgroundColor: 'var(--background)',
           left: position.x,
           top: position.y,
           width: sidebarCollapsed ? '480px' : '780px',
           height: '600px'
         }}
       >
-      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 cursor-move bg-gray-50 dark:bg-gray-700 rounded-t-lg" onMouseDown={onMouseDown}>
+      <div className="flex items-center justify-between p-2 border-b border-gray-200 dark:border-gray-700 cursor-move bg-gray-50 rounded-t-lg" style={{ backgroundColor: 'var(--secondary)' }} onMouseDown={onMouseDown}>
         <h3 className="text-sm font-medium">Chat Preview</h3>
         <div className="flex items-center gap-2">
           {messages.length > 0 && (
@@ -612,10 +613,11 @@ export const ChatPopup = forwardRef<ChatPopupRef, ChatPopupProps>(function ChatP
           variant="ghost"
           size="sm"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className={`absolute top-2 z-10 h-8 w-8 p-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 ${
+          className={`absolute top-2 z-10 h-8 w-8 p-0 bg-white border border-gray-200 dark:border-gray-600 rounded-full shadow-sm hover:bg-gray-50 ${
             sidebarCollapsed ? 'left-0' : 'left-64'
           } transition-all duration-200`}
           style={{
+            backgroundColor: 'var(--background)',
             transform: sidebarCollapsed
               ? 'translateX(-50%)'
               : 'translateX(-50%)'

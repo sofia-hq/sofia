@@ -61,7 +61,8 @@ export const KeyboardShortcuts = memo(() => {
       <Button
         variant="ghost"
         size="sm"
-        className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md z-50"
+        className="fixed bottom-4 right-4 bg-white border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md z-50"
+        style={{ backgroundColor: 'var(--background)' }}
         onClick={() => setOpen(true)}
         title="Keyboard Shortcuts"
       >

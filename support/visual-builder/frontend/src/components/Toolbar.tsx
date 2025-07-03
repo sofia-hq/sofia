@@ -56,7 +56,7 @@ export function Toolbar({
   onPreview,
 }: ToolbarProps) {
   return (
-    <div className="flex items-center justify-between w-full max-w-6xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm">
+    <div className="flex items-center justify-between w-full max-w-6xl bg-white border border-gray-200 dark:border-gray-700 rounded-lg p-2 shadow-sm" style={{ backgroundColor: 'var(--background)' }}>
       {/* Left Section */}
       <div className="flex items-center gap-2">
         {/* File Operations */}
