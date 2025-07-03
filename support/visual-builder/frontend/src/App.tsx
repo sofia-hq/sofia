@@ -33,7 +33,7 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div className="h-screen w-screen bg-white dark:bg-gray-900 transition-colors">
+      <div className="h-screen w-screen bg-white transition-colors" style={{ backgroundColor: 'var(--background)' }}>
         <ReactFlowProvider>
           <FlowBuilder
             onPreview={handlePreview}

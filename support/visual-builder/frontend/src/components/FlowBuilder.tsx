@@ -1424,7 +1424,8 @@ export default function FlowBuilder({ onPreview, onSaveConfig, highlightedNodeId
           <Background
             gap={20}
             color="#374151"
-            className="dark:bg-gray-900"
+            style={{ backgroundColor: 'var(--background)' }}
+            className=""
           />
           <Controls />
 

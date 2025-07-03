@@ -86,7 +86,7 @@
 }
 
 .dark {
-  --background: oklch(0.147 0.004 49.25);
+  --background: #0b0d0e;
   --foreground: oklch(0.985 0.001 106.423);
   --card: oklch(0.216 0.006 56.043);
   --card-foreground: oklch(0.985 0.001 106.423);
@@ -94,7 +94,7 @@
   --popover-foreground: oklch(0.985 0.001 106.423);
   --primary: oklch(0.923 0.003 48.717);
   --primary-foreground: oklch(0.216 0.006 56.043);
-  --secondary: oklch(0.268 0.007 34.298);
+  --secondary: #262626;
   --secondary-foreground: oklch(0.985 0.001 106.423);
   --muted: oklch(0.268 0.007 34.298);
   --muted-foreground: oklch(0.709 0.01 56.259);
@@ -130,38 +130,38 @@
 
 /* ReactFlow Dark Mode Support */
 .dark .react-flow__controls {
-  background: rgb(31 41 55) !important;
-  border: 1px solid rgb(75 85 99) !important;
+  background: #262626 !important;
+  border: 1px solid #404040 !important;
 }
 
 .dark .react-flow__controls-button {
-  background: rgb(31 41 55) !important;
-  border-color: rgb(75 85 99) !important;
+  background: #262626 !important;
+  border-color: #404040 !important;
   color: rgb(229 231 235) !important;
 }
 
 .dark .react-flow__controls-button:hover {
-  background: rgb(55 65 81) !important;
+  background: #404040 !important;
 }
 
 .dark .react-flow__panel {
-  background: rgb(31 41 55) !important;
-  border: 1px solid rgb(75 85 99) !important;
+  background: #262626 !important;
+  border: 1px solid #404040 !important;
   color: rgb(229 231 235) !important;
 }
 
 .dark .react-flow__minimap {
-  background: rgb(31 41 55) !important;
-  border: 1px solid rgb(75 85 99) !important;
+  background: #262626 !important;
+  border: 1px solid #404040 !important;
 }
 
 .dark .react-flow__attribution {
-  background: rgb(31 41 55) !important;
+  background: #262626 !important;
   color: rgb(156 163 175) !important;
 }
 
 .dark .react-flow__background {
-  background: rgb(17 24 39) !important;
+  background: #0b0d0e !important;
 }
 
 .dark .react-flow__edge-path {

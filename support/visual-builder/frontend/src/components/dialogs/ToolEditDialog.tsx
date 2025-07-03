@@ -109,8 +109,6 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
     }));
   };
 
-  const parameterTypes = ['string', 'number', 'boolean', 'array', 'object'];
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent 
@@ -257,15 +255,12 @@ export function ToolEditDialog({ open, onClose, toolData, onSave }: ToolEditDial
                     placeholder="Parameter name"
                     onKeyPress={(e) => e.key === 'Enter' && addParameter()}
                   />
-                  <select
+                  <Input
                     value={newParamType}
                     onChange={(e) => setNewParamType(e.target.value)}
+                    placeholder="Parameter type (e.g., string, number, boolean)"
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                  >
-                    {parameterTypes.map(type => (
-                      <option key={type} value={type}>{type}</option>
-                    ))}
-                  </select>
+                  />
                   <Button type="button" onClick={addParameter} size="sm">
                     <Plus className="w-4 h-4" />
                   </Button>
