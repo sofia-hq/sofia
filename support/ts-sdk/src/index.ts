@@ -1,7 +1,27 @@
 import fetch from 'node-fetch';
 
 export interface Message {
+  role: string;
   content: string;
+}
+
+export interface Summary {
+  summary: string[];
+}
+
+export interface StepIdentifier {
+  step_id: string;
+}
+
+export interface FlowContext {
+  flow_id: string;
+  [key: string]: unknown;
+}
+
+export interface FlowState {
+  flow_id: string;
+  flow_context: FlowContext;
+  flow_memory_context: Array<Message | Summary | StepIdentifier>;
 }
 
 export interface SessionResponse {
@@ -12,7 +32,8 @@ export interface SessionResponse {
 export interface SessionData {
   session_id: string;
   current_step_id: string;
-  history: unknown[];
+  history: Array<Message | Summary | StepIdentifier>;
+  flow_state?: FlowState;
 }
 
 export interface ChatRequest {
@@ -55,11 +76,11 @@ export class NomosClient {
     return (await res.json()) as { message: string };
   }
 
-  async getSessionHistory(sessionId: string): Promise<{ session_id: string; history: Message[] }> {
+  async getSessionHistory(sessionId: string): Promise<{ session_id: string; history: Array<Message | Summary | StepIdentifier> }> {
     const url = new URL(`/session/${sessionId}/history`, this.baseUrl);
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return (await res.json()) as { session_id: string; history: Message[] };
+    return (await res.json()) as { session_id: string; history: Array<Message | Summary | StepIdentifier> };
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {

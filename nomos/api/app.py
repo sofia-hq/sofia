@@ -219,7 +219,7 @@ async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
     return ChatResponse(
         response=res.decision.model_dump(mode="json"),
         tool_output=res.tool_output,
-        session_data=res.session_data,
+        session_data=res.state,
     )
 
 
