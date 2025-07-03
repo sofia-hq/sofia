@@ -1,6 +1,7 @@
 ---
 title: 'Configuration Guide'
 description: 'Learn how to configure NOMOS agents using Python API and YAML files'
+icon: 'cog'
 ---
 
 NOMOS provides flexible configuration options through both Python API and YAML files, supporting a spectrum from no-code to full-code development.
@@ -262,43 +263,6 @@ steps:
 
 Use the `max_examples` and `threshold` settings in `AgentConfig` to control how many examples are displayed and the minimum similarity required.
 
-## External Tool Integration
-
-NOMOS allows you to reference Python package functions, CrewAI tools, and LangChain tools directly in your configuration.
-
-### Benefits
-
-<CardGroup cols={2}>
-  <Card
-    title="No-code/Low-code Development"
-    icon="puzzle-piece"
-  >
-    Use existing Python functions without writing wrapper code
-  </Card>
-  <Card
-    title="Automatic Documentation"
-    icon="book"
-  >
-    Function docstrings generate tool descriptions and parameter docs
-  </Card>
-  <Card
-    title="Simplified Configuration"
-    icon="gear"
-  >
-    Easily reference any Python function in your environment
-  </Card>
-  <Card
-    title="String Compatibility"
-    icon="link"
-  >
-    Function returns must be string representable
-  </Card>
-</CardGroup>
-
-<Warning>
-Make sure the package is installed in your environment and function returns an output that is string representable.
-</Warning>
-
 ## Error Handling Configuration
 
 ```yaml
@@ -328,28 +292,28 @@ More configuration examples are available in the cookbook:
   <Card
     title="Barista Agent"
     icon="coffee"
-    href="../cookbook/examples/barista/"
+    href="https://github.com/dowhiledev/nomos/blob/main/cookbook/examples/barista/"
   >
     Complete coffee ordering workflow
   </Card>
   <Card
     title="Financial Advisor"
     icon="chart-line"
-    href="../cookbook/examples/financial-advisor/"
+    href="https://github.com/dowhiledev/nomos/blob/main/cookbook/examples/financial-advisor/"
   >
     Budget planning and financial advice
   </Card>
   <Card
     title="General Bot"
     icon="robot"
-    href="../cookbook/examples/general-bot/"
+    href="https://github.com/dowhiledev/nomos/blob/main/cookbook/examples/general-bot/"
   >
     Basic conversational agent
   </Card>
   <Card
     title="Travel Planner"
     icon="plane"
-    href="../cookbook/examples/travel-itinery-planner/"
+    href="https://github.com/dowhiledev/nomos/blob/main/cookbook/examples/travel-itinery-planner/"
   >
     Travel planning assistant
   </Card>
