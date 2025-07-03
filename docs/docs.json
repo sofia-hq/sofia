@@ -5,8 +5,7 @@
   "theme": "maple",
   "logo": {
     "light": "/assets/light.png",
-    "dark": "/assets/dark.png",
-    "href": "https://github.com/dowhiledev/nomos"
+    "dark": "/assets/dark.png"
   },
   "favicon": "/assets/light.png",
   "icons": {

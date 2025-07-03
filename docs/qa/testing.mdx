@@ -163,18 +163,18 @@ When using the Pythonic approach, NOMOS provides special pytest features:
 def test_tool_call_validation(agent: Agent):
     """Test that agent makes correct tool calls."""
     decision, _, _ = agent.next("I want to calculate my budget for $5000 income")
-    
+
     # Traditional assertion
     assert decision.action.value == "TOOL_CALL"
     assert decision.tool_call.tool_name == "calculate_budget"
-    
+
     # Smart assertion using natural language
     smart_assert(
         decision,
         "Calls the calculate_budget tool with monthly income of 5000",
         agent.llm
     )
-    
+
     # You can also check negative cases
     with pytest.raises(AssertionError):
         smart_assert(
@@ -472,7 +472,7 @@ def test_complete_coffee_order_scenario(coffee_agent: Agent):
         scenario="Customer wants to order a large latte and pay with cash",
         expectation="Successfully processes the order from greeting to payment completion"
     )
-    
+
     # Run the scenario against your agent
     ScenarioRunner.run(coffee_agent, scenario, max_turns=10)
 
@@ -708,11 +708,11 @@ def test_menu_inquiry_with_tools(barista_agent):
         "What drinks do you have?",
         session_data=context.model_dump(mode="json")
     )
-    
+
     # Traditional assertions
     assert decision.action.value == "TOOL_CALL"
     assert decision.tool_call.tool_name == "get_available_coffee_options"
-    
+
     # Smart assertion
     smart_assert(
         decision,
@@ -732,10 +732,10 @@ def test_add_to_cart_various_orders(barista_agent, order, expected_item, expecte
         order,
         session_data=context.model_dump(mode="json")
     )
-    
+
     assert decision.action.value == "TOOL_CALL"
     assert decision.tool_call.tool_name == "add_to_cart"
-    
+
     tool_kwargs = decision.tool_call.tool_kwargs.model_dump()
     assert expected_item.lower() in tool_kwargs.get("coffee_type", "").lower()
     assert expected_size.lower() in tool_kwargs.get("size", "").lower()
@@ -747,7 +747,7 @@ def test_invalid_payment_method(barista_agent):
         "I'll pay with bitcoin",
         session_data=context.model_dump(mode="json")
     )
-    
+
     # Verify it doesn't accept invalid payment
     with pytest.raises(AssertionError):
         smart_assert(
@@ -755,7 +755,7 @@ def test_invalid_payment_method(barista_agent):
             "Accepts bitcoin as a valid payment method",
             barista_agent.llm
         )
-    
+
     # Verify it explains valid payment methods
     smart_assert(
         decision,
@@ -769,7 +769,7 @@ def test_complete_order_scenario(barista_agent):
         scenario="Customer orders a medium cappuccino and pays with card",
         expectation="Successfully processes order from greeting to payment completion"
     )
-    
+
     # This will run the full conversation flow
     ScenarioRunner.run(barista_agent, scenario, max_turns=12)
 
@@ -780,7 +780,7 @@ def test_edge_case_unclear_order(barista_agent):
         "I want something warm and caffeinated",
         session_data=context.model_dump(mode="json")
     )
-    
+
     smart_assert(
         decision,
         "Asks clarifying questions about coffee preferences rather than guessing",
