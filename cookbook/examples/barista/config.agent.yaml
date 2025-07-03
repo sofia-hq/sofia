@@ -20,6 +20,10 @@ steps:
     routes:
       - target: take_coffee_order
         condition: Customer is ready to place a new order
+    examples:
+      - context: "Customer asked for coffee options"
+        decision: "Call the `get_available_coffee_options` tool to get the available coffee options"
+        visibility: "always"
 
   - step_id: take_coffee_order
     description: |
@@ -77,9 +81,7 @@ flows:
           provider: openai
           model: gpt-4o-mini
         retriever:
-          method: bm25
-          kwargs:
-            k1: 5
+          method: embedding
     metadata:
       max_context_size: 50
       summary_threshold: 20
@@ -101,17 +103,25 @@ flows:
 tools:
   tool_files:
     - barista_tools.py
-  tool_arg_descriptions:
+  tool_defs:
     add_to_cart:
-      coffee_type: Coffee type (e.g., Espresso, Latte, Cappuccino)
-      size: Size of the coffee (Small, Medium, Large)
-      price: Price of the coffee
+      args:
+        - key: coffee_type
+          desc: "Type of coffee (e.g., Espresso, Latte, Cappuccino)"
+        - key: size
+          desc: "Size of the coffee (Small, Medium, Large)"
+        - key: price
+          desc: "Price of the coffee"
     remove_item:
-      item_id: The ID of the item to remove from the cart
+      args:
+        - key: item_id
+          desc: "The ID of the item to remove from the cart"
     finalize_order:
-      payment_method: Payment method (Card or Cash)
-      payment: Payment amount (required if payment_method is Cash)
-
+      args:
+        - key: payment_method
+          desc: "Payment method (Card or Cash)"
+        - key: payment
+          desc: "Payment amount (required if payment_method is Cash)"
 
 # llm configuration
 llm:

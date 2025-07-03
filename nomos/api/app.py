@@ -78,12 +78,12 @@ async def create_session(initiate: Optional[bool] = False) -> SessionResponse:
     await session_store.set(session_id, session)
     # Get initial message from agent
     if initiate:
-        decision, _ = session.next(None)
+        res = session.next(None)
         await session_store.set(session_id, session)
     return SessionResponse(
         session_id=session_id,
         message=(
-            decision.model_dump(mode="json")
+            res.decision.model_dump(mode="json")
             if initiate
             else {"status": "Session created successfully"}
         ),
@@ -98,10 +98,10 @@ async def send_message(session_id: str, message: Message) -> SessionResponse:
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    decision, _ = session.next(message.content)
+    res = session.next(message.content)
     await session_store.set(session_id, session)
     return SessionResponse(
-        session_id=session_id, message=decision.model_dump(mode="json")
+        session_id=session_id, message=res.decision.model_dump(mode="json")
     )
 
 
@@ -164,10 +164,10 @@ async def _handle_websocket(
         session = session_opt
 
     if initiate:
-        decision, _ = session.next(None)
+        res = session.next(None)
         await session_store.set(sid, session)
         await websocket.send_json(
-            {"session_id": sid, "message": decision.model_dump(mode="json")}
+            {"session_id": sid, "message": res.decision.model_dump(mode="json")}
         )
     elif created:
         await websocket.send_json({"session_id": sid})
@@ -184,10 +184,10 @@ async def _handle_websocket(
                 await websocket.send_json({"error": "Invalid message"})
                 continue
 
-            decision, _ = session.next(user_message)
+            res = session.next(user_message)
             await session_store.set(sid, session)
             await websocket.send_json(
-                {"session_id": sid, "message": decision.model_dump(mode="json")}
+                {"session_id": sid, "message": res.decision.model_dump(mode="json")}
             )
 
 
@@ -215,13 +215,11 @@ async def websocket_endpoint(
 @app.post("/chat")
 async def chat(request: ChatRequest, verbose: bool = False) -> ChatResponse:
     """Chat endpoint to get the next response from the agent based on the session data."""
-    decision, tool_output, session_data, _ = agent.next(
-        **request.model_dump(), verbose=verbose
-    )
+    res = agent.next(**request.model_dump(), verbose=verbose)
     return ChatResponse(
-        response=decision.model_dump(mode="json"),
-        tool_output=tool_output,
-        session_data=session_data,
+        response=res.decision.model_dump(mode="json"),
+        tool_output=res.tool_output,
+        session_data=res.session_data,
     )
 
 

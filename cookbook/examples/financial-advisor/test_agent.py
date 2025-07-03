@@ -7,14 +7,14 @@ from nomos import *
 
 def test_greets_user(financial_advisor_agent: Agent):
     """Test that the financial advisor agent greets the user."""
-    decision, *_ = financial_advisor_agent.next("Hello")
-    assert decision.action.value == "ASK"
+    decision, _, _ = financial_advisor_agent.next("Hello")
+    assert decision.action.value == "RESPOND"
     smart_assert(decision, "Greets the User", financial_advisor_agent.llm)
 
 
 def test_budget_calculation(financial_advisor_agent: Agent):
     """Test that the financial advisor agent asks for requirements for budget plan."""
-    context = SessionContext(
+    context = State(
         current_step_id="budget_planning",
         history=[
             Summary(
@@ -39,7 +39,7 @@ def test_budget_calculation(financial_advisor_agent: Agent):
 
 def test_budget_calculation_smart(financial_advisor_agent: Agent):
     """Test that the financial advisor agent asks for requirements for budget plan."""
-    context = SessionContext(
+    context = State(
         current_step_id="budget_planning",
         history=[
             Summary(
@@ -64,7 +64,7 @@ def test_budget_calculation_smart(financial_advisor_agent: Agent):
 
 def test_invalid_request(financial_advisor_agent: Agent):
     """Test that the financial advisor agent handles invalid requests."""
-    context = SessionContext(
+    context = State(
         current_step_id="budget_planning",
         history=[
             Summary(

@@ -1,4 +1,4 @@
-"""Mistral LLM integration for SOFIA."""
+"""Mistral LLM integration for Nomos."""
 
 import os
 from typing import List
@@ -10,7 +10,7 @@ from ..models.agent import Message
 
 
 class Mistral(LLMBase):
-    """Mistral AI LLM integration for SOFIA."""
+    """Mistral AI LLM integration for Nomos."""
 
     __provider__: str = "mistral"
 

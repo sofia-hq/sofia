@@ -14,7 +14,7 @@ from .llms import LLMBase, LLMConfig, OpenAI
 from .memory import MemoryConfig
 from .models.agent import Step
 from .models.flow import FlowConfig
-from .models.tool import ToolWrapper
+from .models.tool import ToolDef, ToolWrapper
 from .utils.utils import convert_camelcase_to_snakecase
 
 
@@ -32,9 +32,9 @@ class ExternalTool(BaseModel):
     """Configuration for an external tool."""
 
     tag: str  # Tag of the external tool (eg - @pkg/itertools.combinations, @crewai/FileReadTool, @langchain/BingSearchAPIWrapper)
-    name: Optional[
-        str
-    ]  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    name: Optional[str] = (
+        None  # snake case name of the tool (eg - combinations, file_read_tool, bing_search)
+    )
     kwargs: Optional[Dict[str, Union[str, int, float]]] = (
         None  # Optional keyword arguments for the Tool initialization
     )
@@ -46,9 +46,7 @@ class ExternalTool(BaseModel):
         :return: ToolWrapper instance.
         """
         tool_type, tool_name = self.tag.split("/", 1)
-        name = self.name or convert_camelcase_to_snakecase(
-            self.tool_name.split(".")[-1]
-        )
+        name = self.name or convert_camelcase_to_snakecase(tool_name.split(".")[-1])
         tool_type = tool_type.replace("@", "")
         assert tool_type in [
             "pkg",
@@ -68,7 +66,7 @@ class ToolsConfig(BaseModel):
 
     tool_files: List[str] = []  # List of tool files to load
     external_tools: Optional[List[ExternalTool]] = None  # List of external tools
-    tool_arg_descriptions: Optional[Dict[str, Dict[str, str]]] = None
+    tool_defs: Optional[Dict[str, ToolDef]] = None
 
     def get_tools(self) -> List[Union[Callable, ToolWrapper]]:
         """
@@ -148,8 +146,16 @@ class AgentConfig(BaseSettings):
         system_message (Optional[str]): System message for the agent. Default system message will be used if not provided.
         show_steps_desc (bool): Flag to show step descriptions.
         max_errors (int): Maximum number of errors allowed.
+        max_examples (int): Maximum number of examples to use in decision-making.
+        threshold (float): Minimum similarity score to include an example.
         max_iter (int): Maximum number of iterations allowed.
         llm (Optional[LLMConfig]): Optional LLM configuration.
+        embedding_model (Optional[LLMConfig]): Optional embedding model configuration.
+        memory (Optional[MemoryConfig]): Optional memory configuration.
+        flows (Optional[List[FlowConfig]]): Optional flow configurations.
+        server (ServerConfig): Configuration for the FastAPI server.
+        tools (ToolsConfig): Configuration for tools.
+        logging (Optional[LoggingConfig]): Optional logging configuration.
     Methods:
         from_yaml(file_path: str) -> "AgentConfig": Load configuration from a YAML file.
         to_yaml(file_path: str) -> None: Save configuration to a YAML file.
@@ -165,8 +171,13 @@ class AgentConfig(BaseSettings):
     show_steps_desc: bool = False
     max_errors: int = 3
     max_iter: int = 10
+    max_examples: int = 5  # Maximum number of examples to use in decision-making
+    threshold: float = 0.5  # Minimum similarity score to include an example
 
     llm: Optional[LLMConfig] = None  # Optional LLM configuration
+    embedding_model: Optional[LLMConfig] = (
+        None  # Optional embedding model configuration
+    )
     memory: Optional[MemoryConfig] = None  # Optional memory configuration
     flows: Optional[List[FlowConfig]] = None  # Optional flow configurations
 
@@ -210,7 +221,7 @@ class AgentConfig(BaseSettings):
         import yaml
 
         with open(file_path, "w") as file:
-            yaml.dump(self.model_dump(), file)
+            yaml.dump(self.model_dump(mode="json"), file)
 
     def get_llm(self) -> LLMBase:
         """
@@ -219,6 +230,14 @@ class AgentConfig(BaseSettings):
         :return: An instance of the defined LLM integration.
         """
         return self.llm.get_llm() if self.llm else OpenAI()
+
+    def get_embedding_model(self) -> Optional[LLMBase]:
+        """
+        Get the appropriate embedding model instance based on the configuration.
+
+        :return: An instance of the defined embedding model integration.
+        """
+        return self.embedding_model.get_llm() if self.embedding_model else None
 
 
 __all__ = ["AgentConfig", "ServerConfig"]

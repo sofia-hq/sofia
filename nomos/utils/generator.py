@@ -10,7 +10,7 @@ from rich.prompt import Confirm, Prompt
 import yaml
 
 from ..llms import LLMConfig
-from ..models.agent import Message, Route
+from ..models.agent import Message, Route, Step as AgentStep
 
 
 REASONING_PROMPT = """
@@ -46,6 +46,16 @@ class Step(BaseModel):
         description="Flag indicating a step in a workflow where agent should not require user input to continue",
     )
 
+    def to_agent_step(self) -> AgentStep:
+        """Convert this Step to an AgentStep."""
+        return AgentStep(
+            step_id=self.step_id,
+            description=self.description,
+            routes=self.routes,
+            available_tools=self.available_tools,
+            auto_flow=self.auto_flow,
+        )
+
 
 class AgentConfiguration(BaseModel):
     """Configuration for the agent."""
@@ -59,6 +69,10 @@ class AgentConfiguration(BaseModel):
         default=None,
         description="ID of the step to start with. If not provided, the first step will be used.",
     )
+
+    def to_agent_steps(self) -> list[AgentStep]:
+        """Convert all steps to AgentStep objects."""
+        return [step.to_agent_step() for step in self.steps]
 
     def dump(self, filename: str) -> None:
         """Save the agent configuration to a YAML file."""

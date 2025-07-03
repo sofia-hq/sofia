@@ -1,1 +1,1 @@
-"""SOFIA Base API Server."""
+"""Nomos Base API Server."""

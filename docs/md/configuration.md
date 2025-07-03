@@ -51,7 +51,7 @@ flows = [
         components={
             "memory": {
                 "llm": {"provider": "openai", "model": "gpt-4o-mini"},
-                "retriever": {"method": "bm25", "kwargs": {"k": 3}}
+                "retriever": {"method": "embedding", "kwargs": {"k": 3}}
             }
         }
     )
@@ -124,6 +124,22 @@ llm:
   model: gpt-4o-mini
 ```
 
+### Generate YAML Schema
+
+Create a JSON schema for your configuration to enable editor validation and autocompletion:
+
+```bash
+nomos schema --output agent.schema.json
+```
+
+Include the schema in your YAML file:
+
+```yaml
+# yaml-language-server: $schema=./agent.schema.json
+or
+# yaml-language-server: $schema=https://https://raw.githubusercontent.com/dowhiledev/nomos/refs/heads/main/support/schemas/.nomos.json
+```
+
 ## Tool Configuration
 
 ### New in v0.2.4: Integrated Tool Configuration
@@ -184,6 +200,28 @@ tools:
 ```bash
 nomos run --config config.agent.yaml --tools tools/my_tools.py
 ```
+
+## Step Examples
+
+You can provide decision examples for any step. Each example contains the user
+context and the expected decision. NOMOS retrieves relevant examples using
+embeddings and includes them in the system prompt to guide the model.
+
+```yaml
+steps:
+  - step_id: start
+    description: Initial step
+    examples:
+      - context: "User asks for the time"
+        decision: "Answer with the current time."
+        visibility: always
+      - context: "sqrt 4"
+        decision: "Call sqrt tool"
+        visibility: dynamic
+```
+
+Use the `max_examples` and `threshold` settings in `AgentConfig` to control how
+many examples are displayed and the minimum similarity required.
 
 ## External Tool Integration
 

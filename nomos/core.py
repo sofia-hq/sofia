@@ -1,57 +1,58 @@
 """Core models and logic for the Nomos package, including flow management and session handling."""
 
-import contextlib
 import os
 import pickle
 import uuid
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from pydantic import BaseModel
-
 from .config import AgentConfig
-from .constants import ACTION_ENUMS
 from .llms import LLMBase
 from .memory.base import Memory
 from .memory.flow import FlowMemoryComponent
 from .models.agent import (
+    Action,
+    Decision,
+    DecisionConstraints,
     Message,
-    SessionContext,
+    Response,
+    State,
     Step,
     StepIdentifier,
-    Summary,
-    create_decision_model,
 )
-from .models.flow import Flow, FlowContext, FlowManager
-from .models.tool import FallbackError, Tool, ToolWrapper, get_tools
-from .utils.flow_utils import (
-    create_flows_from_config,
-    should_enter_flow,
-    should_exit_flow,
+from .models.flow import Flow
+from .models.tool import (
+    FallbackError,
+    InvalidArgumentsError,
+    Tool,
+    ToolWrapper,
+    get_tools,
 )
-from .utils.logging import log_debug, log_error, log_info
+from .state_machine import StateMachine
+from .utils.flow_utils import create_flows_from_config
+from .utils.logging import log_debug, log_error, pp_response
 
 
 class Session:
-    """Manages a single agent session, including step transitions, tool calls, and history."""
+    """Manages a single agent session, including step IDs, tool calls, and history."""
 
     def __init__(
         self,
         name: str,
         llm: LLMBase,
+        embedding_model: LLMBase,
         memory: Memory,
         steps: Dict[str, Step],
         start_step_id: str,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        flows: Optional[List[Flow]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
-        history: Optional[List[Union[Message, StepIdentifier, Summary]]] = None,
-        current_step_id: Optional[str] = None,
-        session_id: Optional[str] = None,
-        verbose: bool = False,
+        state: Optional[State] = None,
+        **kwargs,
     ) -> None:
         """
         Initialize a Session.
@@ -67,12 +68,10 @@ class Session:
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
-        :param history: List of messages and steps in the session. (Optional)
-        :param current_step_id: Current step ID. (Defaults to start_step_id)
-        :param session_id: Unique session ID. (Defaults to a UUID)
+        :param state: Optional session state data.
         """
         # Fixed
-        self.session_id = session_id or f"{name}_{str(uuid.uuid4())}"
+        self.session_id = state.session_id if state else f"{name}_{str(uuid.uuid4())}"
         self.name = name
         self.llm = llm
         self.steps = steps
@@ -81,34 +80,46 @@ class Session:
         self.persona = persona
         self.max_errors = max_errors
         self.max_iter = max_iter
-        self.verbose = verbose
-        self.config = config
-
-        # Flow management
-        self.flow_manager: Optional[FlowManager] = None
-        self.current_flow: Optional[Flow] = None
-        self.flow_context: Optional[FlowContext] = None
-
-        if config and config.flows:
-            self.flow_manager = create_flows_from_config(config)
-            log_debug(
-                f"Flow manager initialized with {len(self.flow_manager.flows)} flows"
-            )
-
-        tool_arg_descs = (
-            self.config.tools.tool_arg_descriptions
-            if self.config and self.config.tools.tool_arg_descriptions
-            else {}
+        self.config = config or AgentConfig(
+            name=name,
+            steps=list(steps.values()),
+            start_step_id=start_step_id,
+            system_message=system_message,
+            persona=persona,
+            show_steps_desc=show_steps_desc,
+            max_errors=max_errors,
+            max_iter=max_iter,
         )
-        self.tools = get_tools(tools, tool_arg_descs)
-        # Variable
-        self.memory = memory
-        self.memory.context = history or []
-        self.current_step: Step = (
-            steps[current_step_id] if current_step_id else steps[start_step_id]
+        self.embedding_model = embedding_model
+
+        tool_defs = (
+            self.config.tools.tool_defs
+            if self.config and self.config.tools.tool_defs
+            else None
         )
+        self.tools = get_tools(tools, tool_defs)
+        # Compile state machine for fast transitions and flow lookups
+        self.state_machine = StateMachine(
+            self.steps,
+            flows=flows,
+            config=self.config,
+            memory=memory,
+            start_step_id=start_step_id,
+        )
+        self.state_machine.load_state(state)
+
         # For OpenTelemetry tracing context
         self._otel_root_span_ctx: Any = None
+
+    @property
+    def current_step(self) -> Step:
+        """Get the current step object."""
+        return self.state_machine.current_step
+
+    @property
+    def memory(self) -> Memory:
+        """Get the session memory."""
+        return self.state_machine.memory
 
     def save_session(self) -> None:
         """Save the current session to disk as a pickle file."""
@@ -128,37 +139,19 @@ class Session:
             log_debug(f"Session {session_id} loaded from disk.")
             return pickle.load(f)
 
-    def to_dict(self) -> dict[str, Any]:
+    def get_state(self) -> State:
         """
-        Convert the session to a dictionary representation.
+        Get the current session state as a State object.
 
-        :return: Dictionary representation of the session.
+        :return: The current session state.
         """
-        session_dict = {
-            "session_id": self.session_id,
-            "current_step_id": self.current_step.step_id,
-            "history": [msg.model_dump(mode="json") for msg in self.memory.context],
-        }
-
-        # Include flow state if active
-        if self.current_flow and self.flow_context:
-            session_dict["flow_state"] = {
-                "flow_id": self.current_flow.flow_id,
-                "flow_context": self.flow_context.model_dump(mode="json"),
-            }  # type: ignore
-
-        return session_dict
-
-    def get_session_state(self) -> dict[str, Any]:  # noqa
-        """
-        Get the current session state as a dictionary.
-
-        :return: Dictionary containing session state.
-        """
-        return {
-            "current_step_id": self.current_step.step_id,
-            "flow_id": self.current_flow.flow_id if self.current_flow else None,
-        }
+        state = State(
+            session_id=self.session_id,
+            current_step_id=self.current_step.step_id,
+            history=self.memory.context,
+            flow_state=self.state_machine.get_flow_state(),
+        )
+        return state
 
     def _run_tool(self, tool_name: str, kwargs: Dict[str, Any]) -> Any:  # noqa: ANN401
         """
@@ -175,9 +168,10 @@ class Session:
                 f"Tool '{tool_name}' not found in session tools. Please check the tool name."
             )
         log_debug(f"Running tool: {tool_name} with args: {kwargs}")
+
         return tool.run(**kwargs)
 
-    def _get_current_step_tools(self) -> List[Tool]:
+    def _get_current_step_tools(self) -> tuple[Tool, ...]:
         """
         Get the list of tools available in the current step.
 
@@ -190,7 +184,7 @@ class Session:
                 log_error(f"Tool '{tool}' not found in session tools. Skipping.")
                 continue
             tools.append(_tool)
-        return tools
+        return tuple(tools)
 
     def _add_message(self, role: str, message: str) -> None:
         """
@@ -202,8 +196,8 @@ class Session:
         message_obj = Message(role=role, content=message)
 
         # If we're in a flow, only update flow memory
-        if self.current_flow and self.flow_context:
-            flow_memory = self.current_flow.get_memory()
+        if self.state_machine.current_flow and self.state_machine.flow_context:
+            flow_memory = self.state_machine.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory.add_to_context(message_obj)
             # Don't update session memory while in flow
@@ -213,108 +207,42 @@ class Session:
 
         log_debug(f"{role.title()} added: {message}")
 
-    def _handle_flow_transitions(self) -> None:
-        """Handle flow entry and exit based on current step."""
-        if not self.flow_manager:
-            return
-
-        current_step_id = self.current_step.step_id
-
-        # Check if we should enter any flows
-        entry_flows = should_enter_flow(self.flow_manager, current_step_id)
-        if entry_flows and not self.current_flow:
-            # Enter the first matching flow
-            flow_to_enter = entry_flows[0]
-            self._enter_flow(flow_to_enter, current_step_id)
-
-        # Check if we should exit current flow
-        if self.current_flow and self.flow_context:
-            exit_flows = should_exit_flow(self.flow_manager, current_step_id)
-            if self.current_flow in exit_flows:
-                self._exit_flow(current_step_id)
-
-    def _enter_flow(self, flow: Flow, entry_step: str) -> None:
-        """Enter a flow at the specified step."""
-        try:
-            # Get recent conversation history for flow context
-            recent_history = (
-                self.memory.get_history()[-10:] if self.memory.get_history() else []
-            )
-            previous_context = [
-                msg for msg in recent_history if isinstance(msg, (Message, Summary))
-            ]
-
-            self.flow_context = flow.enter(
-                entry_step=entry_step,
-                previous_context=previous_context,
-                metadata={
-                    "session_id": self.session_id,
-                    "entry_time": str(uuid.uuid4()),  # Simple timestamp alternative
-                },
-            )
-            self.current_flow = flow
-            log_debug(f"Entered flow '{flow.flow_id}' at step '{entry_step}'")
-
-        except Exception as e:
-            log_error(f"Failed to enter flow '{flow.flow_id}': {e}")
-
-    def _exit_flow(self, exit_step: str) -> None:
-        """Exit the current flow at the specified step."""
-        if not self.current_flow or not self.flow_context:
-            return
-
-        try:
-            exit_data = self.current_flow.exit(exit_step, self.flow_context)
-
-            # Store flow summary in main memory if available
-            if "memory" in exit_data and exit_data["memory"]:
-                self.memory.add(exit_data["memory"])
-
-            log_debug(
-                f"Exited flow '{self.current_flow.flow_id}' at step '{exit_step}'"
-            )
-
-            self.current_flow = None
-            self.flow_context = None
-
-        except Exception as e:
-            log_error(f"Failed to exit flow: {e}")
-            # Clean up flow state even if exit fails
-            if self.current_flow and self.flow_context:
-                with contextlib.suppress(Exception):
-                    self.current_flow.cleanup(self.flow_context)
-            self.current_flow = None
-            self.flow_context = None
-
-    def _get_next_decision(self) -> BaseModel:
+    def _get_next_decision(
+        self, decision_constraints: Optional[DecisionConstraints] = None
+    ) -> Decision:
         """
         Get the next decision from the LLM based on the current step and history.
 
         :return: The decision made by the LLM.
         """
-        route_decision_model = create_decision_model(
+        _decision_model = self.llm._create_decision_model(
             current_step=self.current_step,
             current_step_tools=self._get_current_step_tools(),
+            constraints=decision_constraints,
         )
 
         # Get memory context - use flow memory if available, otherwise use session memory
         memory_context = self.memory.get_history()
         flow_memory_context = None
 
-        if self.current_flow and self.flow_context:
-            flow_memory = self.current_flow.get_memory()
+        if self.state_machine.current_flow and self.state_machine.flow_context:
+            flow_memory = self.state_machine.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory_context = flow_memory.memory.context
-
-        decision = self.llm._get_output(
+        _decision = self.llm._get_output(
             steps=self.steps,
             current_step=self.current_step,
             tools=self.tools,
             history=flow_memory_context if flow_memory_context else memory_context,
-            response_format=route_decision_model,
+            response_format=_decision_model,
             system_message=self.system_message,
             persona=self.persona,
+            max_examples=self.config.max_examples,
+            embedding_model=self.embedding_model,
         )
+
+        # Convert to a Decision model
+        decision = self.llm._create_decision_from_output(output=_decision)
         log_debug(f"Model decision: {decision}")
         return decision
 
@@ -324,8 +252,10 @@ class Session:
         no_errors: int = 0,
         next_count: int = 0,
         return_tool: bool = False,
-        return_step_transition: bool = False,
-    ) -> tuple[BaseModel, Any]:
+        return_step: bool = False,
+        verbose: bool = False,
+        decision_constraints: Optional[DecisionConstraints] = None,
+    ) -> Response:
         """
         Advance the session to the next step based on user input and LLM decision.
 
@@ -333,7 +263,9 @@ class Session:
         :param no_errors: Number of consecutive errors encountered.
         :param next_count: Number of times the next function has been called.
         :param return_tool: Whether to return tool results.
-        :param return_step_transition: Whether to return step transition.
+        :param return_step: Whether to return step Transitions.
+        :param verbose: Whether to print verbose output.
+        :param decision_constraints: Optional constraints for the decision model on retry.
         :return: A tuple containing the decision and any tool results.
         """
         if no_errors >= self.max_errors:
@@ -349,7 +281,12 @@ class Session:
                         "available context, produce a fallback response."
                     ),
                 )
-                return self.next()
+                return self.next(
+                    verbose=verbose,
+                    decision_constraints=DecisionConstraints(
+                        actions=["RESPOND"], fields=["response"]
+                    ),
+                )
             else:
                 raise RecursionError(
                     f"Maximum iterations reached ({self.max_iter}). Stopping session."
@@ -360,29 +297,65 @@ class Session:
         log_debug(f"Current step: {self.current_step.step_id}")
 
         # Check for flow transitions
-        self._handle_flow_transitions()
+        self.state_machine.handle_flow_transitions(
+            self.current_step.step_id, self.session_id, verbose=verbose
+        )
 
-        decision = self._get_next_decision()
-        log_info(str(decision)) if self.verbose else log_debug(str(decision))
+        decision = self._get_next_decision(decision_constraints=decision_constraints)
+        log_debug(str(decision))
         log_debug(f"Action decided: {decision.action}")
 
+        # Validate decision
+        if decision.action == Action.RESPOND and decision.response is None:
+            self._add_message(
+                "error", "RESPOND action requires a response, but none was provided."
+            )
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(
+                    actions=["RESPOND"], fields=["response"]
+                ),
+                verbose=verbose,
+            )
+        if decision.action == Action.MOVE and decision.step_id is None:
+            self._add_message(
+                "error", "MOVE action requires a step_id, but none was provided."
+            )
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(
+                    actions=["MOVE"], fields=["step_id"]
+                ),
+                verbose=verbose,
+            )
+        if decision.action == Action.TOOL_CALL and decision.tool_call is None:
+            self._add_message(
+                "error", "TOOL_CALL action requires a tool_call, but none was provided."
+            )
+            return self.next(
+                no_errors=no_errors + 1,
+                next_count=next_count + 1,
+                decision_constraints=DecisionConstraints(
+                    actions=["TOOL_CALL"], fields=["tool_call"]
+                ),
+                verbose=verbose,
+            )
+
         self._add_step_identifier(self.current_step.get_step_identifier())
-        action = decision.action.value
-        response = getattr(decision, "response", None)
-        tool_call = getattr(decision, "tool_call", None)
-        step_transition = getattr(decision, "step_transition", None)
-        if action in [ACTION_ENUMS["ASK"], ACTION_ENUMS["ANSWER"]]:
-            self._add_message(self.name, str(response))
-            return decision, None
-        elif action == ACTION_ENUMS["TOOL_CALL"]:
+        if decision.action == Action.RESPOND:
+            self._add_message(self.name, str(decision.response))
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            return res
+        elif decision.action == Action.TOOL_CALL and decision.tool_call:
             _error: Optional[Exception] = None
+            tool_results = None
             try:
-                assert (
-                    tool_call is not None and tool_call.__class__.__name__ == "ToolCall"
-                ), "Expected ToolCall response"
-                tool_name: str = tool_call.tool_name  # type: ignore
-                tool_kwargs_model: BaseModel = tool_call.tool_kwargs  # type: ignore
-                tool_kwargs: dict = tool_kwargs_model.model_dump()
+                tool_name = decision.tool_call.tool_name  # type: ignore
+                tool_kwargs: dict = decision.tool_call.tool_kwargs.model_dump()
                 log_debug(f"Running tool: {tool_name} with args: {tool_kwargs}")
                 try:
                     tool_results = self._run_tool(tool_name, tool_kwargs)
@@ -395,78 +368,118 @@ class Session:
                         "tool", f"Running tool {tool_name} with args {tool_kwargs}"
                     )
                     raise e
-                log_info(f"Tool Results: {tool_results}") if self.verbose else None
+                log_debug(f"Tool Results: {tool_results}")
             except FallbackError as e:
                 _error = e
                 self._add_message("fallback", str(e))
+            except InvalidArgumentsError as e:
+                _error = e
+                self._add_message("error", str(e))
             except Exception as e:
                 _error = e
                 self._add_message("error", str(e))
 
+            res = Response(decision=decision, tool_output=tool_results)
+            if verbose:
+                pp_response(res)
             if return_tool and _error is None:
-                return decision, tool_results
+                return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
-            )
-        elif action == ACTION_ENUMS["MOVE"]:
-            _error = None
-            if step_transition in self.current_step.get_available_routes():
-                # Check if we need to exit current flow before moving
-                if self.current_flow and self.flow_context:
-                    exit_flows = (
-                        should_exit_flow(self.flow_manager, self.current_step.step_id)
-                        if self.flow_manager
-                        else []
+                decision_constraints=(
+                    DecisionConstraints(
+                        actions=["TOOL_CALL"],
+                        fields=["tool_call"],
+                        tool_name=decision.tool_call.tool_name,
                     )
-                    if self.current_flow in exit_flows:
-                        self._exit_flow(self.current_step.step_id)
+                    if (
+                        _error
+                        and isinstance(_error, InvalidArgumentsError)
+                        and decision.tool_call
+                    )
+                    else None
+                ),
+                verbose=verbose,
+            )
+        elif decision.action == Action.MOVE and decision.step_id:
+            _error = None
+            if self.state_machine.can_transition(
+                self.state_machine.current_step_id, decision.step_id
+            ):
+                # Check if we need to exit current flow before moving
+                if self.state_machine.current_flow and self.state_machine.flow_context:
+                    _, exits = self.state_machine.get_flow_transitions(
+                        self.state_machine.current_step_id
+                    )
+                    if self.state_machine.current_flow.flow_id in exits:
+                        self.state_machine._exit_flow(
+                            self.state_machine.current_step_id
+                        )
 
-                self.current_step = self.steps[step_transition]
-                log_debug(f"Moving to next step: {self.current_step.step_id}")
+                self.state_machine.move(decision.step_id)
+                log_debug(f"Moving to next step: {self.state_machine.current_step_id}")
                 self._add_step_identifier(self.current_step.get_step_identifier())
 
-                # Check if we need to enter a new flow after moving
-                self._handle_flow_transitions()
-
             else:
+                allowed = self.state_machine.transitions.get(
+                    self.state_machine.current_step_id, []
+                )
                 self._add_message(
                     "error",
-                    f"Invalid route: {step_transition} not in {self.current_step.get_available_routes()}",
+                    f"Invalid route: {decision.step_id} not in {allowed}",
                 )
                 _error = ValueError(
-                    f"Invalid route: {step_transition} not in {self.current_step.get_available_routes()}"
+                    f"Invalid route: {decision.step_id} not in {allowed}"
                 )
-            if return_step_transition:
-                return decision, None
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            if return_step:
+                self.state_machine.handle_flow_transitions(
+                    self.state_machine.current_step_id, self.session_id, verbose=verbose
+                )
+                return res
             return self.next(
                 no_errors=no_errors + 1 if _error else 0,
                 next_count=next_count + 1,
+                decision_constraints=(
+                    DecisionConstraints(actions=["MOVE"], fields=["step_id"])
+                    if _error
+                    else None
+                ),
+                verbose=verbose,
             )
-        elif action == ACTION_ENUMS["END"]:
+        elif decision.action == Action.END:
             # Clean up any active flows before ending
-            if self.current_flow and self.flow_context:
+            if self.state_machine.current_flow and self.state_machine.flow_context:
                 try:
-                    self.current_flow.cleanup(self.flow_context)
+                    self.state_machine.current_flow.cleanup(
+                        self.state_machine.flow_context
+                    )
                     log_debug(
-                        f"Cleaned up flow '{self.current_flow.flow_id}' on session end"
+                        f"Cleaned up flow '{self.state_machine.current_flow.flow_id}' on session end"
                     )
                 except Exception as e:
                     log_error(f"Error cleaning up flow on session end: {e}")
                 finally:
-                    self.current_flow = None
-                    self.flow_context = None
+                    self.state_machine.current_flow = None
+                    self.state_machine.flow_context = None
 
             self._add_message("end", "Session ended.")
-            return decision, None
+            res = Response(decision=decision)
+            if verbose:
+                pp_response(res)
+            return res
         else:
             self._add_message(
                 "error",
-                f"Unknown action: {action}. Please check the action type.",
+                f"Unknown action: {decision.action}. Please check the action type.",
             )
             return self.next(
                 no_errors=no_errors + 1,
                 next_count=next_count + 1,
+                verbose=verbose,
             )
 
     def _add_step_identifier(self, step_identifier: StepIdentifier) -> None:
@@ -476,8 +489,8 @@ class Session:
         :param step_identifier: The step identifier to add.
         """
         # If we're in a flow, only update flow memory
-        if self.current_flow and self.flow_context:
-            flow_memory = self.current_flow.get_memory()
+        if self.state_machine.current_flow and self.state_machine.flow_context:
+            flow_memory = self.state_machine.current_flow.get_memory()
             if flow_memory and isinstance(flow_memory, FlowMemoryComponent):
                 flow_memory.add_to_context(step_identifier)
             # Don't update session memory while in flow
@@ -500,10 +513,12 @@ class Agent:
         persona: Optional[str] = None,
         system_message: Optional[str] = None,
         tools: Optional[List[Union[Callable, ToolWrapper]]] = None,
+        flows: Optional[List[Flow]] = None,
         show_steps_desc: bool = False,
         max_errors: int = 3,
         max_iter: int = 5,
         config: Optional[AgentConfig] = None,
+        embedding_model: Optional[LLMBase] = None,
     ) -> None:
         """
         Initialize an Agent.
@@ -515,10 +530,12 @@ class Agent:
         :param persona: Optional persona string.
         :param system_message: Optional system message.
         :param tools: List of tool callables or ToolWrapper instances.
+        :param flows: Optional list of Flow objects.
         :param show_steps_desc: Whether to show step descriptions.
         :param max_errors: Maximum consecutive errors before stopping or fallback. (Defaults to 3)
         :param max_iter: Maximum number of decision loops for single action. (Defaults to 5)
         :param config: Optional AgentConfig.
+        :param embedding_model: Optional LLMBase instance for embeddings.
         """
         self.llm = llm
         self.name = name
@@ -530,7 +547,17 @@ class Agent:
         self.max_errors = max_errors
         self.max_iter = max_iter
         self.config = config
+        self.embedding_model = (
+            embedding_model
+            or (config.get_embedding_model() if config else None)
+            or self.llm
+        )
         self._setup_logging()
+        self.flows = flows or (
+            list(create_flows_from_config(config).flows.values())
+            if config and config.flows
+            else None
+        )
 
         # Remove duplicates of tools based on their names or IDs
         seen = set()
@@ -545,12 +572,6 @@ class Agent:
             if tool_id not in seen:
                 seen.add(tool_id)
                 self.tools.append(tool)
-
-        # Initialize flow manager if flows are configured
-        self.flow_manager: Optional[FlowManager] = None
-        if config and config.flows:
-            self.flow_manager = create_flows_from_config(config)
-            log_debug(f"Agent initialized with {len(self.flow_manager.flows)} flows")
 
         # Validate start step ID
         if start_step_id not in self.steps:
@@ -581,7 +602,14 @@ class Agent:
                     raise ValueError(
                         f"Tool {step_tool} not found in tools for step {step.step_id}\nAvailable tools: {self.tools}"
                     )
-        log_debug(f"FlowManager initialized with start step '{start_step_id}'")
+
+        # Go through all the steps and if there are examples in them, perform batch embedding
+        for step in self.steps.values():
+            if step.examples:
+                log_debug(
+                    f"Step {step.step_id} has examples, performing batch embedding"
+                )
+                step.batch_embed_examples(embedding_model=self.embedding_model)
 
     @classmethod
     def from_config(
@@ -633,14 +661,11 @@ class Agent:
                     "NOMOS_LOG_LEVEL", logging_config.handlers[0].level.upper()
                 )
 
-    def create_session(
-        self, memory: Optional[Memory] = None, verbose: bool = False
-    ) -> Session:
+    def create_session(self, memory: Optional[Memory] = None) -> Session:
         """
         Create a new Session for this agent.
 
         :param memory: Optional Memory instance.
-        :param verbose: Whether to return verbose output.
         :return: Session instance.
         """
         log_debug("Creating new session")
@@ -659,11 +684,12 @@ class Agent:
             system_message=self.system_message,
             persona=self.persona,
             tools=self.tools,
+            flows=list(self.flows) if self.flows else None,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
-            verbose=verbose,
             config=self.config,
+            embedding_model=self.embedding_model,
         )
 
     def load_session(self, session_id: str) -> Session:
@@ -676,30 +702,14 @@ class Agent:
         log_debug(f"Loading session {session_id}")
         return Session.load_session(session_id)
 
-    def get_session_from_dict(self, session_data: dict) -> Session:
+    def get_session_from_state(self, state: State) -> Session:
         """
-        Create a Session from a dictionary.
+        Create a Session from a State object.
 
-        :param session_data: Dictionary containing session data.
+        :param state: The session state
         :return: Session instance.
         """
-        log_debug(f"Creating session from dict: {session_data}")
-
-        # Convert the History items into list of Message or Step
-        new_session_data = session_data.copy()
-        new_session_data["history"] = []
-        for history_item in session_data.get("history", []):
-            if isinstance(history_item, dict):
-                if "role" in history_item:
-                    new_session_data["history"].append(Message(**history_item))
-                elif "step_id" in history_item:
-                    new_session_data["history"].append(StepIdentifier(**history_item))
-                elif "content" in history_item:
-                    new_session_data["history"].append(Summary(**history_item))
-            else:
-                raise ValueError(
-                    f"Invalid history item: {history_item}. Must be a dict."
-                )
+        log_debug(f"Creating session from state: {state}")
 
         memory = (
             self.config.memory.get_memory()
@@ -713,60 +723,57 @@ class Agent:
             memory=memory,
             tools=self.tools,
             config=self.config,
+            embedding_model=self.embedding_model,
             persona=self.persona,
             steps=self.steps,
             start_step_id=self.start,
             system_message=self.system_message,
+            flows=list(self.flows) if self.flows else None,
             show_steps_desc=self.show_steps_desc,
             max_errors=self.max_errors,
             max_iter=self.max_iter,
-            **new_session_data,
+            state=state,
         )
-
-        # Restore flow state if present
-        if "flow_state" in session_data and session.flow_manager:
-            flow_state = session_data["flow_state"]
-            flow_id = flow_state.get("flow_id")
-            flow_context_data = flow_state.get("flow_context")
-
-            if flow_id in session.flow_manager.flows and flow_context_data:
-                from .models.flow import FlowContext
-
-                session.current_flow = session.flow_manager.flows[flow_id]
-                session.flow_context = FlowContext(**flow_context_data)
-                log_debug(f"Restored flow state for flow '{flow_id}'")
 
         return session
 
     def next(
         self,
         user_input: Optional[str] = None,
-        session_data: Optional[Union[dict, SessionContext]] = None,
+        session_data: Optional[Union[dict, State]] = None,
+        return_tool: bool = False,
+        return_step: bool = False,
         verbose: bool = False,
-        return_session_state: bool = False,
-    ) -> tuple[BaseModel, str, dict, Optional[dict[str, Any]]]:  # noqa
+        decision_constraints: Optional[DecisionConstraints] = None,
+    ) -> Response:
         """
         Advance the session to the next step based on user input and LLM decision.
 
         :param user_input: Optional user input string.
-        :param session_data: Optional session data dictionary.
+        :param session_data: Optional session data as a dictionary or State object.
+        :param return_tool: Whether to return tool results.
+        :param return_step: Whether to return step Transitions.
         :param verbose: Whether to return verbose output.
-        :return: A tuple containing the decision and session data.
+        :param decision_constraints: Optional constraints for the decision model on retry.
+        :return: A tuple containing the decision and tool output, along with the updated session state.
+        :raises ValueError: If session_data is provided but not a valid State object.
         """
-        if isinstance(session_data, SessionContext):
-            session_data = session_data.model_dump(mode="json")
+        if isinstance(session_data, dict):
+            session_data = State.model_validate(session_data)
         session = (
-            self.get_session_from_dict(session_data)
-            if session_data
+            self.get_session_from_state(session_data)
+            if session_data is not None and isinstance(session_data, State)
             else self.create_session()
         )
-        decision, tool_output = session.next(
-            user_input=user_input, return_tool=verbose, return_step_transition=verbose
+        res = session.next(
+            user_input=user_input,
+            return_tool=return_tool,
+            return_step=return_step,
+            decision_constraints=decision_constraints,
+            verbose=verbose,
         )
-        session_state = (
-            None if not return_session_state else session.get_session_state()
-        )
-        return decision, tool_output, session.to_dict(), session_state
+        res.state = session.get_state()
+        return res
 
 
 __all__ = ["Session", "Agent"]

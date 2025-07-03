@@ -1,17 +1,32 @@
-"""LLMBase class for SOFIA agent framework."""
+"""LLMBase class for Nomos agent framework."""
 
-from typing import Dict, List, Optional, Union
+from functools import cache
+from typing import Dict, List, Literal, Optional, Type, Union
 
 from pydantic import BaseModel
 
-from ..constants import DEFAULT_PERSONA, DEFAULT_SYSTEM_MESSAGE
-from ..models.agent import Message, Step, StepIdentifier, Summary
+from ..constants import (
+    DEFAULT_PERSONA,
+    DEFAULT_SYSTEM_MESSAGE,
+    PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE,
+)
+from ..models.agent import (
+    Decision,
+    DecisionConstraints,
+    Message,
+    Step,
+    StepIdentifier,
+    Summary,
+    ToolCall,
+    create_action_enum,
+)
 from ..models.tool import Tool
 from ..utils.logging import log_error
+from ..utils.utils import create_base_model
 
 
 class LLMBase:
-    """Abstract base class for LLM integrations in SOFIA."""
+    """Abstract base class for LLM integrations in Nomos."""
 
     __provider__: str = "base"
 
@@ -100,6 +115,8 @@ class LLMBase:
         history: List[Union[Message, Step, Summary]],
         system_message: str,
         persona: str,
+        max_examples: int = 5,
+        embedding_model: Optional["LLMBase"] = None,
     ) -> List[Message]:
         """
         Construct the list of messages to send to the LLM.
@@ -125,8 +142,22 @@ class LLMBase:
             if current_step.tool_ids
             else ""
         )
-        messages.append(Message(role="system", content=system_prompt))
+        if current_step.examples:
+            example_str = ["\nExamples:"]
+            for i, example in enumerate(
+                current_step.get_examples(
+                    embedding_model=embedding_model or self,
+                    similarity_fn=self.text_similarity,
+                    context_emb=self.embed_text(self.format_history(history)),
+                    max_examples=max_examples,
+                )
+            ):
+                example_str.append(f"{i + 1}. {str(example)}")
+            system_prompt += "\n".join(example_str) + "\n"
+
         user_prompt = f"History:\n{self.format_history(history)}"
+
+        messages.append(Message(role="system", content=system_prompt))
         messages.append(Message(role="user", content=user_prompt))
         return messages
 
@@ -155,6 +186,8 @@ class LLMBase:
         response_format: BaseModel,
         system_message: Optional[str] = None,
         persona: Optional[str] = None,
+        max_examples: int = 5,
+        embedding_model: Optional["LLMBase"] = None,
     ) -> BaseModel:
         """
         Get a structured response from the LLM using the agent's context.
@@ -166,6 +199,7 @@ class LLMBase:
         :param response_format: Pydantic model for the expected response.
         :param system_message: Optional system prompt.
         :param persona: Optional agent persona.
+        :param max_examples: Maximum number of examples to include.
         :return: Parsed response as a BaseModel.
         """
         history = [
@@ -180,6 +214,8 @@ class LLMBase:
                 system_message if system_message else DEFAULT_SYSTEM_MESSAGE.strip()
             ),
             persona=persona if persona else DEFAULT_PERSONA.strip(),
+            max_examples=max_examples,
+            embedding_model=embedding_model,
         )
         return self.get_output(messages=messages, response_format=response_format)
 
@@ -200,6 +236,222 @@ class LLMBase:
     def token_counter(self, text: str) -> int:
         """Count the number of tokens in a string."""
         return len(text.split())
+
+    @staticmethod
+    @cache
+    def _create_decision_model(
+        current_step: Step,
+        current_step_tools: tuple[Tool, ...],
+        constraints: Optional["DecisionConstraints"] = None,
+    ) -> Type[BaseModel]:
+        """
+        Dynamically create a Pydantic model for route/tool decision output.
+
+        :param available_step_ids: List of available step IDs for routing.
+        :param tool_ids: List of available tool names.
+        :param tool_models: List of Pydantic models for tool arguments.
+        :return: A dynamically created Pydantic BaseModel for the decision.
+        """
+        available_step_ids = current_step.get_available_routes()
+        if constraints and constraints.tool_name:
+            current_step_tools = tuple(
+                tool
+                for tool in current_step_tools
+                if tool.name == constraints.tool_name
+            )
+        tool_ids = [tool.name for tool in current_step_tools]
+        tool_models = [tool.get_args_model() for tool in current_step_tools]
+
+        if constraints and constraints.actions:
+            action_ids = constraints.actions
+        else:
+            action_ids = (
+                (["RESPOND", "END"] if not current_step.auto_flow else ["END"])
+                + (["MOVE"] if available_step_ids else [])
+                + (["TOOL_CALL"] if tool_ids else [])
+            )
+        ActionEnum = create_action_enum(action_ids)  # noqa
+
+        params = {
+            "reasoning": {
+                "type": List[str],
+                "description": "Step by Step Reasoning to Decide",
+            },
+            "action": {"type": ActionEnum, "description": "Next Action"},
+        }
+
+        if not current_step.auto_flow and (
+            not constraints
+            or not constraints.fields
+            or "response" in constraints.fields
+        ):
+            if current_step.answer_model:
+                answer_model = current_step.get_answer_model()
+                response_type = Union.__getitem__((str, answer_model))
+                response_desc = (
+                    f"Response as string or {answer_model.__name__} if RESPOND."
+                )
+            else:
+                response_type = str
+                response_desc = "Response (String) if RESPOND."
+            params["response"] = {
+                "type": response_type,
+                "description": response_desc,
+                "optional": bool(not constraints),
+                "default": None,
+            }
+            if current_step.quick_suggestions and (
+                not constraints
+                or not constraints.fields
+                or "suggestions" in constraints.fields
+            ):
+                params["suggestions"] = {
+                    "type": List[str],
+                    "description": "Quick User Input Suggestions for the User to Choose if RESPOND.",
+                    "optional": bool(not constraints),
+                    "default": None,
+                }
+
+        if len(available_step_ids) > 0 and (
+            not constraints or not constraints.fields or "step_id" in constraints.fields
+        ):
+            params["step_id"] = {
+                "type": Literal.__getitem__(tuple(available_step_ids)),
+                "description": "Step Id (String) if MOVE.",
+                "optional": bool(not constraints),
+                "default": None,
+            }
+
+        if (
+            len(tool_ids) > 0
+            and len(tool_models) > 0
+            and (
+                not constraints
+                or not constraints.fields
+                or "tool_call" in constraints.fields
+            )
+        ):
+            tool_call_model = create_base_model(
+                "ToolCall",
+                {
+                    "tool_name": {
+                        "type": Literal.__getitem__(tuple(tool_ids)),
+                        "description": "Tool name for TOOL_CALL.",
+                    },
+                    "tool_kwargs": {
+                        "type": (
+                            tool_models[0]
+                            if len(tool_models) == 1
+                            else Union.__getitem__(tuple(tool_models))
+                        ),
+                        "description": "Corresponding Tool arguments for TOOL_CALL.",
+                    },
+                },
+            )
+            params["tool_call"] = {
+                "type": tool_call_model,
+                "description": "Tool Call (ToolCall) if TOOL_CALL.",
+                "optional": bool(not constraints),
+                "default": None,
+            }
+
+        assert (
+            len(params) > 2
+        ), f"Something went wrong, Please check the step configuration for {current_step.step_id}. Params {params}"
+
+        model = create_base_model(
+            "Decision",
+            params,
+        )
+        return model
+
+    @staticmethod
+    def _create_decision_from_output(
+        output: BaseModel,
+    ) -> Decision:
+        """
+        Create a Decision object from the LLM output.
+
+        :param output: LLM output as a BaseModel.
+        :return: Decision object.
+        """
+        return Decision(
+            reasoning=output.reasoning,
+            action=output.action.value,
+            response=output.response if hasattr(output, "response") else None,
+            suggestions=output.suggestions if hasattr(output, "suggestions") else None,
+            step_id=(output.step_id if hasattr(output, "step_id") else None),
+            tool_call=(
+                ToolCall(
+                    tool_name=output.tool_call.tool_name,
+                    tool_kwargs=output.tool_call.tool_kwargs,
+                )
+                if hasattr(output, "tool_call") and output.tool_call
+                else None
+            ),
+        )
+
+    def embed_text(self, text: str) -> List[float]:
+        """
+        Generate an embedding for the given text.
+
+        :param text: Text to embed.
+        :return: List of floats representing the embedding.
+        """
+        raise NotImplementedError(
+            "This LLM does not support text embedding. Please Specify an embedding model."
+        )
+
+    def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings for a batch of texts.
+
+        :param texts: List of texts to embed.
+        :return: List of embeddings, each embedding is a list of floats.
+        """
+        raise NotImplementedError(
+            "This LLM does not support batch text embedding. Please Specify an embedding model."
+        )
+
+    def text_similarity(self, emb1: List[float], emb2: List[float]) -> float:
+        """
+        Calculate the similarity between two text embeddings (cosine similarity).
+
+        :param emb1: Embedding of the first text.
+        :param emb2: Embedding of the second text.
+        :return: Similarity score as a float.
+        """
+        import numpy as np
+
+        if len(emb1) != len(emb2):
+            raise ValueError("Embeddings must be of the same length.")
+        emb1 = np.array(emb1)
+        emb2 = np.array(emb2)
+        similarity = np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
+        return float(similarity)
+
+    def generate_summary(
+        self, history: List[Union[Message, StepIdentifier, Summary]]
+    ) -> Summary:
+        """
+        Generate a summary of the conversation history.
+
+        :param history: List of Message or StepIdentifier objects.
+        :return: Summary object containing the summarized content.
+        """
+        items_str = "\n".join([str(item) for item in history])
+        summary = self.get_output(
+            messages=[
+                Message(role="system", content=PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE),
+                Message(
+                    role="user",
+                    content=f"Summarize the following Context:\n\n{items_str}",
+                ),
+            ],
+            response_format=Summary,
+        )
+        assert isinstance(summary, Summary), "Summary generation failed."
+        return summary
 
 
 __all__ = ["LLMBase"]

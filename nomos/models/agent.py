@@ -1,16 +1,46 @@
 """Flow models for Nomos's decision-making process."""
 
+import heapq
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Literal, Optional, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 from uuid import uuid4
+
 
 from pydantic import BaseModel, Field
 
-from .tool import Tool
-from ..constants import ACTION_ENUMS
+
 from ..utils.utils import create_base_model, create_enum
 
-Action = create_enum("Action", ACTION_ENUMS)
+if TYPE_CHECKING:
+    from ..llms.base import LLMBase
+    from ..models.flow import FlowContext
+
+
+class Action(Enum):
+    """
+    Enum representing the possible actions in the agent's flow.
+
+    Attributes:
+        MOVE: Transition to another step.
+        RESPOND: Provide or request information from the user.
+        TOOL_CALL: Call a tool with arguments.
+        END: End the flow.
+    """
+
+    MOVE = "MOVE"
+    RESPOND = "RESPOND"
+    TOOL_CALL = "TOOL_CALL"
+    END = "END"
 
 
 class Route(BaseModel):
@@ -47,6 +77,26 @@ class StepIdentifier(BaseModel):
     step_id: str
 
 
+class DecisionExample(BaseModel):
+    """Represents an example decision made by the agent."""
+
+    context: str
+    decision: Union["Decision", str]
+    visibility: Literal["always", "never", "dynamic"] = "dynamic"
+    _ctx_embedding: Optional[List[float]] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the decision example."""
+        return f"{self.context} -> {self.decision}"
+
+    def embedding(self, EmbeddingModel: "LLMBase") -> List[float]:
+        """Get the context embedding if available."""
+        if self._ctx_embedding is not None:
+            return self._ctx_embedding
+        self._ctx_embedding = EmbeddingModel.embed_text(self.context)
+        return self._ctx_embedding
+
+
 class Step(BaseModel):
     """
     Represents a step in the agent's flow.
@@ -72,6 +122,11 @@ class Step(BaseModel):
     auto_flow: bool = False
     quick_suggestions: bool = False
     flow_id: Optional[str] = None  # Add this to associate steps with flows
+    examples: Optional[List[DecisionExample]] = None
+
+    def __hash__(self) -> int:
+        """Get the hash of the step based on its ID."""
+        return hash(self.step_id)
 
     def model_post_init(self, __context) -> None:
         """Validate that auto_flow steps have at least one tool or route."""
@@ -128,6 +183,58 @@ class Step(BaseModel):
         """Return a string representation of the step."""
         return f"[Step] {self.step_id}: {self.description}"
 
+    def get_examples(
+        self,
+        embedding_model: "LLMBase",
+        similarity_fn: Callable,
+        max_examples: int,
+        context_emb: List[float],
+        threshold: float = 0.5,
+    ) -> List[DecisionExample]:
+        """
+        Get examples for this step based on the provided context.
+
+        :param similarity_fn: Function to compute similarity between contexts.
+        :param max_examples: Maximum number of examples to return.
+        :param context_emb: Embedding of the context to compare against examples.
+        :param threshold: Minimum similarity score to include an example.
+        :return: List of tuples containing DecisionExample and its similarity score.
+        """
+        _always = [
+            (example, 1.0)
+            for example in self.examples or []
+            if example.visibility == "always"
+        ]
+        dynamic_examples = [
+            example
+            for example in self.examples or []
+            if example.visibility == "dynamic"
+        ]
+        _examples = [
+            (example, similarity_fn(example.embedding(embedding_model), context_emb))
+            for example in dynamic_examples
+        ]
+        # Only keep the top (max_examples - len(_always)) dynamic examples by similarity
+        _examples = heapq.nlargest(
+            max_examples - len(_always), _examples, key=lambda x: x[1]
+        )
+        examples = _always + _examples
+        return [example for example, similarity in examples if similarity >= threshold]
+
+    def batch_embed_examples(self, embedding_model: "LLMBase") -> None:
+        """
+        Batch embed examples for this step.
+
+        :param embedding_model: The LLMBase instance to use for embedding.
+        :param max_examples: Maximum number of examples to embed.
+        """
+        if not self.examples:
+            return
+        ctxs = [example.context for example in self.examples]
+        embeddings = embedding_model.embed_batch(ctxs)
+        for example, emb in zip(self.examples, embeddings):
+            example._ctx_embedding = emb
+
 
 class Message(BaseModel):
     """
@@ -163,106 +270,89 @@ class Summary(BaseModel):
         return f"[Past Summary] {self.content}"
 
 
-class SessionContext(BaseModel):
-    """Container for session data required by `Agent.next`."""
+class FlowState(BaseModel):
+    """Represents the state of a flow in the agent's session."""
+
+    flow_id: str
+    flow_context: "FlowContext"
+    flow_memory_context: List[Union[Message, Summary, StepIdentifier]] = Field(
+        default_factory=list
+    )
+
+
+class State(BaseModel):
+    """Container for session data required by ``Agent.next``."""
 
     session_id: str = Field(default_factory=lambda: str(uuid4()))
-    current_step_id: Optional[str] = None
+    current_step_id: str
     history: List[Union[Summary, Message, StepIdentifier]] = Field(default_factory=list)
+    flow_state: Optional[FlowState] = None
 
 
-def create_decision_model(
-    current_step: Step, current_step_tools: List[Tool]
-) -> Type[BaseModel]:
+class ToolCall(BaseModel):
     """
-    Dynamically create a Pydantic model for route/tool decision output.
+    Represents a tool call made by the agent.
 
-    :param available_step_ids: List of available step IDs for routing.
-    :param tool_ids: List of available tool names.
-    :param tool_models: List of Pydantic models for tool arguments.
-    :return: A dynamically created Pydantic BaseModel for the decision.
+    Attributes:
+        tool_name (str): Name of the tool to call.
+        tool_kwargs (BaseModel): Arguments to pass to the tool.
     """
-    available_step_ids = current_step.get_available_routes()
-    tool_ids = [tool.name for tool in current_step_tools]
-    tool_models = [tool.get_args_model() for tool in current_step_tools]
-    action_ids = (
-        (["ASK", "ANSWER", "END"] if not current_step.auto_flow else ["END"])
-        + (["MOVE"] if available_step_ids else [])
-        + (["TOOL_CALL"] if tool_ids else [])
-    )
-    ActionEnum = create_action_enum(action_ids)  # noqa
 
-    params = {
-        "reasoning": {
-            "type": List[str],
-            "description": "Step by Step Reasoning to Decide",
-        },
-        "action": {"type": ActionEnum, "description": "Next Action"},
-    }
+    tool_name: str
+    tool_kwargs: BaseModel
 
-    if not current_step.auto_flow:
-        if current_step.answer_model:
-            answer_model = current_step.get_answer_model()
-            response_type = Union.__getitem__((str, answer_model))
-            response_desc = (
-                f"Response as string if ASK or {answer_model.__name__} if ANSWER."
+
+@dataclass
+class DecisionConstraints:
+    """Constraints for dynamically creating decision models."""
+
+    actions: Optional[List[str]] = None
+    fields: Optional[List[str]] = None
+    tool_name: Optional[str] = None
+
+    def __hash__(self) -> int:
+        """Get the hash of the constraints based on their attributes."""
+        return hash(
+            (
+                tuple(self.actions) if self.actions else None,
+                tuple(self.fields) if self.fields else None,
+                self.tool_name,
             )
-        else:
-            response_type = str
-            response_desc = "Response (String) if ASK or ANSWER."
-        params["response"] = {
-            "type": response_type,
-            "description": response_desc,
-            "optional": True,
-            "default": None,
-        }
-        if current_step.quick_suggestions:
-            params["suggestions"] = {
-                "type": List[str],
-                "description": "Quick User Input Suggestions for the User to Choose if ASK.",
-                "optional": True,
-                "default": None,
-            }
-
-    if len(available_step_ids) > 0:
-        params["step_transition"] = {
-            "type": Literal.__getitem__(tuple(available_step_ids)),
-            "description": "Step Id (String) if MOVE.",
-            "optional": True,
-            "default": None,
-        }
-
-    if len(tool_ids) > 0 and len(tool_models) > 0:
-        tool_call_model = create_base_model(
-            "ToolCall",
-            {
-                "tool_name": {
-                    "type": Literal.__getitem__(tuple(tool_ids)),
-                    "description": "Tool name for TOOL_CALL.",
-                },
-                "tool_kwargs": {
-                    "type": (
-                        tool_models[0]
-                        if len(tool_models) == 1
-                        else Union.__getitem__(tuple(tool_models))
-                    ),
-                    "description": "Corresponding Tool arguments for TOOL_CALL.",
-                },
-            },
         )
-        params["tool_call"] = {
-            "type": tool_call_model,
-            "description": "Tool Call (ToolCall) if TOOL_CALL.",
-            "optional": True,
-            "default": None,
-        }
 
-    assert len(params) > 2, "Something went wrong, Please check the step configuration."
 
-    return create_base_model(
-        "Decision",
-        params,
-    )
+class Decision(BaseModel):
+    """
+    Represents the decision made by the agent at a step.
+
+    Attributes:
+        reasoning (List[str]): Step by step reasoning to decide.
+        action (Action): The next action to take.
+        response (Optional[Union[str, BaseModel]]): Response if RESPOND.
+        suggestions (Optional[List[str]]): Quick user input suggestions if RESPOND.
+        step_id (Optional[str]): Step ID to transition to if MOVE.
+        tool_call (Optional[Dict[str, Any]]): Tool call details if TOOL_CALL.
+    """
+
+    reasoning: List[str]
+    action: Action
+    response: Optional[Union[str, BaseModel]] = None
+    suggestions: Optional[List[str]] = None
+    step_id: Optional[str] = None
+    tool_call: Optional[ToolCall] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the decision."""
+        if self.action == Action.RESPOND:
+            return f"action: {self.action.value}, response: {self.response}"
+        elif self.action == Action.MOVE:
+            return f"action: {self.action.value}, step_id: {self.step_id}"
+        elif self.action == Action.TOOL_CALL and self.tool_call:
+            return f"action: {self.action.value}, tool_call: {self.tool_call.tool_name} with args {self.tool_call.tool_kwargs.model_dump_json()}"
+        elif self.action == Action.END:
+            return f"action: {self.action.value}"
+        else:
+            raise ValueError(f"Unknown action: {self.action}")
 
 
 def create_action_enum(actions: List[str]) -> Enum:
@@ -274,17 +364,82 @@ def create_action_enum(actions: List[str]) -> Enum:
     :return: A dynamically created Enum class.
     """
     actions_dict = {
-        action: ACTION_ENUMS[action] for action in actions if action in ACTION_ENUMS
+        action: action.upper() for action in actions if isinstance(action, str)
     }
     return create_enum("Action", actions_dict)
+
+
+def history_to_types(
+    context: List[dict],
+) -> List[Union[Message, Summary, StepIdentifier]]:
+    """
+    Convert a history dictionary to a list of Message, Summary, or StepIdentifier objects.
+
+    :param context: Dictionary containing the history.
+    :return: List of Message, Summary, or StepIdentifier objects.
+    """
+    history = []
+    for item in context:
+        if isinstance(item, dict):
+            if "role" in item and "content" in item:
+                history.append(Message(**item))
+            elif "summary" in item:
+                history.append(Summary(**item))
+            elif "step_id" in item:
+                history.append(StepIdentifier(**item))
+        else:
+            raise ValueError(f"Unknown history item type: {type(item)}")
+    return history
+
+
+class Response(BaseModel):
+    """
+    Represents a response from the agent's session.
+
+    Attributes:
+        decision (Decision): The decision made by the agent.
+        tool_output (Optional[Any]): Output from the tool call, if any.
+        state (State): The updated session state after the decision.
+    """
+
+    decision: Decision
+    tool_output: Optional[Any] = None
+    state: Optional[State] = None
+
+    def __str__(self) -> str:
+        """Return a string representation of the response."""
+        return f"Decision: {self.decision}, Tool Output: {self.tool_output}, State: {self.state}"
 
 
 __all__ = [
     "Action",
     "Route",
     "Step",
+    "ToolCall",
     "Message",
+    "Response",
     "Summary",
-    "create_decision_model",
-    "SessionContext",
+    "State",
+    "Decision",
+    "DecisionConstraints",
+    "create_action_enum",
+    "DecisionExample",
+    "StepIdentifier",
+    "history_to_types",
 ]
+
+
+# Fix forward reference after all models are defined
+def _rebuild_models() -> None:
+    """Rebuild models to resolve forward references."""
+    try:
+        from .flow import FlowContext  # noqa
+
+        FlowState.model_rebuild()
+        State.model_rebuild()
+    except ImportError:
+        # Handle case where flow module is not available
+        pass
+
+
+_rebuild_models()

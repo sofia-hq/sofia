@@ -6,8 +6,18 @@ The Nomos CLI provides powerful commands to bootstrap, develop, and deploy your 
 
 - [`nomos init`](#initialize-a-new-agent) - Create a new agent project
 - [`nomos run`](#development-mode) - Run agent in development mode
+- [`nomos train`](#training-mode) - Interactively refine agent decisions
 - [`nomos serve`](#production-deployment) - Deploy agent with Docker
 - [`nomos test`](#testing) - Run agent tests
+- [`nomos schema`](#generate-yaml-schema) - Export JSON schema for your config
+- `nomos --version` - Display CLI version
+
+### Check Version and Help
+
+```bash
+nomos --version
+nomos --help
+```
 
 ## Initialize a New Agent
 
@@ -68,6 +78,16 @@ nomos run --config my-config.yaml --tools tools.py --tools utils.py
 # With verbose logging on custom port
 nomos run --verbose --port 3000
 ```
+
+## Training Mode
+
+Run the agent interactively and record new decision examples:
+
+```bash
+nomos train
+```
+
+During training, the CLI shows each step ID and tool result. If you're not satisfied with the response, you can provide feedback which will be stored as an example for the current step.
 
 ## Production Deployment
 
@@ -137,11 +157,11 @@ Use `smart_assert` to validate agent responses using LLM-based evaluation:
 
 ```python
 from nomos.testing import smart_assert
-from nomos import SessionContext, Summary, StepIdentifier
+from nomos import State, Summary, StepIdentifier
 from nomos.models.agent import Message
 
 def test_greeting(agent):
-    context = SessionContext(
+    context = State(
         history=[
             Summary(content="Initial summary"),
             Message(role="user", content="Hello"),
@@ -188,4 +208,18 @@ e2e:
   budget_flow:
     scenario: "User asks for budgeting advice"
     expectation: "Agent explains how to plan a budget"
+```
+
+## Generate YAML Schema
+
+Export the JSON schema for `config.agent.yaml` to enable editor validation and autocompletion:
+
+```bash
+nomos schema --output agent.schema.json
+```
+
+Reference the schema in your YAML file (works with VS Code YAML extension):
+
+```yaml
+# yaml-language-server: $schema=./agent.schema.json
 ```

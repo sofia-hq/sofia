@@ -1,19 +1,68 @@
 """Constants for Nomos."""
 
+from .models.agent import Route, Step
+
 DEFAULT_SYSTEM_MESSAGE = "Your task is to decide the next action based on the current step, user input and history."
 
 DEFAULT_PERSONA = "You are a helpful assistant, kind and polite. Use human-like natural language when responding."
-
-ACTION_ENUMS = {
-    "MOVE": "MOVE",
-    "ANSWER": "ANSWER",
-    "ASK": "ASK",
-    "TOOL_CALL": "TOOL_CALL",
-    "END": "END",
-}
 
 PERIODICAL_SUMMARIZATION_SYSTEM_MESSAGE = (
     "Your task is to summarize the a list of Messages, Tool calls with results. (Context)"
     "Identify the most important information and summarize it in a concise manner."
     "Do not include unnecessary details or irrelevant information."
 )
+
+LLM_CHOICES = {
+    "OpenAI": {
+        "provider": "openai",
+        "model": "gpt-4o-mini",
+    },
+    "Mistral": {
+        "provider": "mistral",
+        "model": "ministral-8b-latest",
+    },
+    "Google": {
+        "provider": "google",
+        "model": "gemini-2.0-flash",
+    },
+    "Ollama": {
+        "provider": "ollama",
+        "model": "llama3",
+    },
+    "HuggingFace": {
+        "provider": "huggingface",
+        "model": "",
+    },
+}
+
+TEMPLATES = {
+    "basic": {
+        "name": "basic_agent",
+        "persona": "A basic agent that can handle simple tasks and conversations.",
+        "steps": [
+            Step(
+                step_id="start",
+                description="Greet the user and understand their needs",
+                available_tools=[],
+                routes=[Route(target="help", condition="User needs assistance")],
+            ),
+            Step(
+                step_id="help",
+                description="Provide assistance to the user",
+                available_tools=[],
+                routes=[Route(target="end", condition="Task completed")],
+            ),
+            Step(
+                step_id="end",
+                description="End the conversation politely",
+                available_tools=[],
+                routes=[],
+            ),
+        ],
+    },
+}
+
+PRIMARY_COLOR = "cyan"
+SUCCESS_COLOR = "green"
+WARNING_COLOR = "yellow"
+ERROR_COLOR = "red"
