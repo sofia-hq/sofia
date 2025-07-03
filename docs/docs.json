@@ -82,7 +82,7 @@
           {
             "group": "Quality Assurance",
             "pages": [
-              "qa/testing-evaluation",
+              "qa/testing",
               "qa/observability"
             ]
           },
