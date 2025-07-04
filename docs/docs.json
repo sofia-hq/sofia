@@ -30,7 +30,7 @@
     "primary": {
       "type": "button",
       "label": "Playground",
-      "href": "https://nomos.dowhile.dev/playground"
+      "href": "https://nomos-builder.vercel.app/"
     }
   },
   "navigation": {
@@ -146,7 +146,7 @@
         "items": [
           {
             "label": "Playground",
-            "href": "https://nomos.dowhile.dev/playground"
+            "href": "https://nomos-builder.vercel.app/"
           },
           {
             "label": "Cookbook",
