@@ -1,6 +1,7 @@
 """State machine for managing steps and flow transitions in Nomos."""
 
 from typing import Dict, List, Optional, Tuple
+from concurrent.futures import Future
 
 import colorama
 from colorama import Fore, Style
@@ -135,7 +136,11 @@ class StateMachine:
         try:
             exit_data = self.current_flow.exit(exit_step, self.flow_context)
             if self.memory and "memory" in exit_data and exit_data["memory"]:
-                self.memory.add(exit_data["memory"])
+                mem_item = exit_data["memory"]
+                if isinstance(mem_item, Future):
+                    mem_item.add_done_callback(lambda f: self.memory.add(f.result()))
+                else:
+                    self.memory.add(mem_item)
         finally:
             self.current_flow = None
             self.flow_context = None

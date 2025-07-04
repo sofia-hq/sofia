@@ -1,4 +1,6 @@
 import pytest
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from nomos.memory.flow import FlowMemory, Retriver
 from nomos.memory.summary import PeriodicalSummarizationMemory
@@ -48,6 +50,8 @@ def test_flow_memory_enter_appends_summary():
     llm = CounterLLM()
     memory = FlowMemory.__new__(FlowMemory)
     Memory.__init__(memory)
+    memory._executor = ThreadPoolExecutor(max_workers=1)
+    memory._lock = threading.Lock()
     memory.llm = llm
     memory.retriever = StubRetriever()
     memory.context = []
@@ -55,6 +59,8 @@ def test_flow_memory_enter_appends_summary():
 
     previous = [Message(role="user", content="hi")]
     memory._enter(previous)
+    if memory._enter_future:
+        memory._enter_future.result()
 
     assert len(memory.context) == 1
     assert isinstance(memory.context[0], Summary)
