@@ -122,6 +122,13 @@
               "community/support/privacy-policy",
               "community/support/terms-of-service"
             ]
+          },
+          {
+            "group": "Roadmap",
+            "icon": "map-pin",
+            "pages": [
+              "kosmos"
+            ]
           }
         ]
       }
