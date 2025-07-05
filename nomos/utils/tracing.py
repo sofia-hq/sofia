@@ -58,7 +58,7 @@ class NomosInstrumentor(BaseInstrumentor):
         _original_next = Session.next  # type: ignore
 
         @functools.wraps(Session.next)
-        def traced_next(self_, *args, **kwargs) -> tuple:
+        def traced_next(self_, *args, **kwargs) -> BaseModel:
             """Get the next decision and tool result."""
             ctx = getattr(self_, "_otel_root_span_ctx", None)
             span_ctx = ctx if ctx is not None else trace.get_current_span()
@@ -79,23 +79,23 @@ class NomosInstrumentor(BaseInstrumentor):
                 },
             ) as span:
                 try:
-                    decision, tool_result = _original_next(self_, *args, **kwargs)
+                    res = _original_next(self_, *args, **kwargs)
                     span.set_attribute(
                         "decision.action",
-                        getattr(getattr(decision, "action", None), "value", None),
+                        getattr(getattr(res.decision, "action", None), "value", None),
                     )
                     span.set_attribute(
-                        "decision.input", getattr(decision, "input", None)
+                        "decision.input", getattr(res.decision, "input", None)
                     )
-                    if getattr(decision, "tool_name", None):
-                        span.set_attribute("tool.name", decision.tool_name)
+                    if getattr(res.decision, "tool_name", None):
+                        span.set_attribute("tool.name", res.decision.tool_name)
                         span.set_attribute(
-                            "tool.kwargs", str(getattr(decision, "tool_kwargs", {}))
+                            "tool.kwargs", str(getattr(res.decision, "tool_kwargs", {}))
                         )
-                    if tool_result is not None:
-                        span.set_attribute("tool.result", str(tool_result))
+                    if res.tool_output is not None:
+                        span.set_attribute("tool.result", str(res.tool_output))
                     span.set_attribute("session.history_length", len(self_.history))
-                    return decision, tool_result
+                    return res
                 except Exception as e:
                     span.record_exception(e)
                     span.set_status(
