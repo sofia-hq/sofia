@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "name": "NOMOS",
   "description": "Build Agents you can Audit",
-  "theme": "maple",
+  "theme": "mint",
   "logo": {
     "light": "/assets/light.png",
     "dark": "/assets/dark.png"
