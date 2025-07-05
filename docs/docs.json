@@ -43,7 +43,7 @@
           {
             "group": "Getting Started",
             "pages": [
-              "start",
+              "index",
               "getting-started"
             ]
           },
