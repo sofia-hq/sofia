@@ -103,7 +103,7 @@ def basic_steps():
 @pytest.fixture
 def mcp_server_url():
     """MCP Server URL"""
-    return "https://mcpserver.com/mcp"
+    return "https://gitmcp.io/dowhiledev/nomos"
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 import pytest
 from enum import Enum
 
-from nomos.utils.url import join_urls
+from nomos.utils.misc import join_urls
 from nomos.utils.utils import create_base_model, create_enum
 
 

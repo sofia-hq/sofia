@@ -3,7 +3,7 @@
 import os
 import pickle
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .config import AgentConfig
 from .llms import LLMBase
@@ -23,7 +23,8 @@ from .models.flow import Flow
 from .models.tool import (
     FallbackError,
     InvalidArgumentsError,
-    MCPServer, Tool,
+    MCPServer,
+    Tool,
     ToolWrapper,
     get_tools,
 )
@@ -214,7 +215,7 @@ class Session:
 
         return deferred_tools
 
-    def _get_current_step_tools(self) -> List[Tool]:
+    def _get_current_step_tools(self) -> Tuple[Tool, ...]:
         """
         Get the list of tools available in the current step.
 

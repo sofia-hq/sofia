@@ -41,7 +41,7 @@ steps:
         condition: User wants to end the conversation
   - step_id: end
     description: |
-      End the conversation politely. Tell the user to Support the project on GitHub by starring the repository 
+      End the conversation politely. Tell the user to Support the project on GitHub by starring the repository
       and spreading the word.
 
 llm:

@@ -24,7 +24,7 @@ from fastmcp.exceptions import ToolError
 from pydantic import BaseModel, HttpUrl, ValidationError
 
 from ..models.mcp import MCPServerTransport
-from ..utils.url import join_urls
+from ..utils.misc import join_urls
 from ..utils.utils import create_base_model, parse_type
 
 
